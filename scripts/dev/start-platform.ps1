@@ -88,11 +88,9 @@ function Wait-Infrastructure {
         @{ name = "redis"; port = (Get-DockerPortValue -Root $RepoRoot -Name "PORT_REDIS" -DefaultValue 16379) },
         @{ name = "nacos"; port = (Get-DockerPortValue -Root $RepoRoot -Name "PORT_NACOS_HTTP" -DefaultValue 18848) },
         @{ name = "nacos-grpc"; port = (Get-DockerPortValue -Root $RepoRoot -Name "PORT_NACOS_GRPC" -DefaultValue 19848) },
-        @{ name = "nacos-grpc-compat"; port = (Get-DockerPortValue -Root $RepoRoot -Name "PORT_NACOS_GRPC_COMPAT" -DefaultValue 12937) },
         @{ name = "rocketmq-namesrv"; port = (Get-DockerPortValue -Root $RepoRoot -Name "PORT_RMQ_NAMESRV" -DefaultValue 20011) },
         @{ name = "elasticsearch"; port = (Get-DockerPortValue -Root $RepoRoot -Name "PORT_ES_HTTP" -DefaultValue 19200) },
-        @{ name = "minio"; port = (Get-DockerPortValue -Root $RepoRoot -Name "PORT_MINIO_API" -DefaultValue 19000) },
-        @{ name = "seata-server"; port = (Get-DockerPortValue -Root $RepoRoot -Name "PORT_SEATA_SERVER" -DefaultValue 18091) }
+        @{ name = "minio"; port = (Get-DockerPortValue -Root $RepoRoot -Name "PORT_MINIO_API" -DefaultValue 19000) }
     )
 
     if ($WaitSkyWalking) {
@@ -141,7 +139,7 @@ function Wait-Infrastructure {
             throw ("Infrastructure port not ready: {0}:{1}" -f $target.name, $target.port)
         }
         if ($target.name -eq "nacos") {
-            $deadline = (Get-Date).AddSeconds(120)
+            $deadline = (Get-Date).AddSeconds(240)
             $ready = $false
             while ((Get-Date) -lt $deadline) {
                 if (Get-NacosHealthState -Port $target.port) {
@@ -157,7 +155,7 @@ function Wait-Infrastructure {
         Write-Host ("WAIT_PORT name={0} port={1} status=ready" -f $target.name, $target.port)
     }
 
-    $nacosWarmupSeconds = 15
+    $nacosWarmupSeconds = 45
     if (-not [string]::IsNullOrWhiteSpace($env:NACOS_READY_GRACE_SECONDS)) {
         $parsedWarmup = 0
         if ([int]::TryParse($env:NACOS_READY_GRACE_SECONDS, [ref]$parsedWarmup) -and $parsedWarmup -ge 0) {

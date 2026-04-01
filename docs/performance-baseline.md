@@ -82,5 +82,5 @@ Before re-running a pressure test:
 
 - `docs/dev-startup.md`
 - `docs/observability-stack.md`
-- `docs/seata-order-transaction.md`
+- `docs/transaction-strategy.md`
 - `docs/TEST_SCRIPT_INDEX.md`

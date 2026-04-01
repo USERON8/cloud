@@ -25,6 +25,11 @@ public class StockLedgerDubboService implements StockDubboApi {
   }
 
   @Override
+  public Boolean preCheck(List<StockOperateCommandDTO> commands) {
+    return stockLedgerService.preCheck(commands);
+  }
+
+  @Override
   public Boolean reserve(StockOperateCommandDTO command) {
     return stockLedgerService.reserve(command);
   }

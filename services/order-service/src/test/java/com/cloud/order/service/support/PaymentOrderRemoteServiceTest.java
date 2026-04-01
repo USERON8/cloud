@@ -6,6 +6,7 @@ import static org.mockito.Mockito.when;
 
 import com.cloud.api.payment.PaymentDubboApi;
 import com.cloud.common.domain.vo.payment.PaymentOrderVO;
+import com.cloud.common.remote.RemoteCallSupport;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -22,7 +23,7 @@ class PaymentOrderRemoteServiceTest {
 
   @BeforeEach
   void setUp() {
-    paymentOrderRemoteService = new PaymentOrderRemoteService();
+    paymentOrderRemoteService = new PaymentOrderRemoteService(new RemoteCallSupport(null));
     ReflectionTestUtils.setField(paymentOrderRemoteService, "paymentDubboApi", paymentDubboApi);
   }
 

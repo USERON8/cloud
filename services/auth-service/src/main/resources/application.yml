@@ -6,7 +6,13 @@ server:
       min-spare: ${SERVER_TOMCAT_THREADS_MIN_SPARE:20}
     max-connections: ${SERVER_TOMCAT_MAX_CONNECTIONS:20000}
     accept-count: ${SERVER_TOMCAT_ACCEPT_COUNT:1000}
-
+dubbo:
+  registry:
+    address: nacos://${NACOS_HOST:127.0.0.1}:${NACOS_PORT:15001}
+  protocol:
+    port: 20881
+  application:
+    qos-enable: false
 spring:
   application:
     name: auth-service
@@ -14,13 +20,18 @@ spring:
     import: "optional:nacos:common.yaml"
   profiles:
     active: dev
+    include: rocketmq
   main:
     allow-circular-references: true
   cloud:
     nacos:
+      discovery:
+        server-addr: ${NACOS_SERVER_ADDR:${NACOS_HOST:127.0.0.1}:${NACOS_PORT:15001}}
+        username: ${NACOS_USERNAME:nacos}
+        password: ${NACOS_PASSWORD:nacos}
       config:
         enabled: true
-        server-addr: ${NACOS_SERVER_ADDR:${NACOS_HOST:127.0.0.1}:${NACOS_PORT:18848}}
+        server-addr: ${NACOS_SERVER_ADDR:${NACOS_HOST:127.0.0.1}:${NACOS_PORT:15001}}
         username: ${NACOS_USERNAME:nacos}
         password: ${NACOS_PASSWORD:nacos}
         namespace: public
@@ -53,6 +64,7 @@ spring:
 logging:
   file:
     name: ${logging.file.path}/auth-service.log
+    path: ./logs
   level:
     root: info
     com.cloud.auth: info
@@ -161,4 +173,3 @@ management:
   endpoint:
     shutdown:
       enabled: false
-

@@ -1,4 +1,5 @@
 com.cloud.common.messaging.config.MessagingSupportAutoConfiguration
 com.cloud.common.messaging.config.DeadLetterAutoConfiguration
+com.cloud.common.messaging.config.DeadLetterOpsAutoConfiguration
 com.cloud.common.messaging.config.OutboxMapperAutoConfiguration
 com.cloud.common.messaging.config.OutboxAutoConfiguration

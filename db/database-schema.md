@@ -517,71 +517,6 @@ If a table definition differs from runtime, update the corresponding init SQL fi
 | deleted | TINYINT |
 | version | INT |
 
-## seata
-
-### branch_table
-
-| Column | Type |
-| --- | --- |
-| branch_id | BIGINT |
-| xid | VARCHAR(128) |
-| transaction_id | BIGINT |
-| resource_group_id | VARCHAR(32) |
-| resource_id | VARCHAR(256) |
-| branch_type | VARCHAR(8) |
-| status | TINYINT |
-| client_id | VARCHAR(64) |
-| application_data | VARCHAR(2000) |
-| gmt_create | DATETIME(6) |
-| gmt_modified | DATETIME(6) |
-
-### distributed_lock
-
-| Column | Type |
-| --- | --- |
-| lock_key | CHAR(20) |
-| lock_value | VARCHAR(20) |
-| expire | BIGINT |
-
-### global_table
-
-| Column | Type |
-| --- | --- |
-| xid | VARCHAR(128) |
-| transaction_id | BIGINT |
-| status | TINYINT |
-| application_id | VARCHAR(32) |
-| transaction_service_group | VARCHAR(32) |
-| transaction_name | VARCHAR(128) |
-| timeout | INT |
-| begin_time | BIGINT |
-| application_data | VARCHAR(2000) |
-| gmt_create | DATETIME |
-| gmt_modified | DATETIME |
-
-### lock_table
-
-| Column | Type |
-| --- | --- |
-| row_key | VARCHAR(128) |
-| xid | VARCHAR(128) |
-| transaction_id | BIGINT |
-| branch_id | BIGINT |
-| resource_id | VARCHAR(256) |
-| table_name | VARCHAR(32) |
-| pk | VARCHAR(36) |
-| status | TINYINT |
-| gmt_create | DATETIME |
-| gmt_modified | DATETIME |
-
-### vgroup_table
-
-| Column | Type |
-| --- | --- |
-| vGroup | VARCHAR(255) |
-| namespace | VARCHAR(255) |
-| cluster | VARCHAR(255) |
-
 ## skywalking
 
 ## stock_db
@@ -620,15 +555,16 @@ If a table definition differs from runtime, update the corresponding init SQL fi
 | deleted | TINYINT |
 | version | INT |
 
-### stock_ledger
+### stock_segment
 
 | Column | Type |
 | --- | --- |
 | id | BIGINT UNSIGNED |
 | sku_id | BIGINT UNSIGNED |
-| on_hand_qty | INT |
-| reserved_qty | INT |
-| salable_qty | INT |
+| segment_id | INT |
+| available_qty | INT |
+| locked_qty | INT |
+| sold_qty | INT |
 | alert_threshold | INT |
 | status | TINYINT |
 | created_at | DATETIME |
@@ -641,9 +577,11 @@ If a table definition differs from runtime, update the corresponding init SQL fi
 | Column | Type |
 | --- | --- |
 | id | BIGINT UNSIGNED |
+| main_order_no | VARCHAR(64) |
 | sub_order_no | VARCHAR(64) |
 | sku_id | BIGINT UNSIGNED |
-| reserved_qty | INT |
+| segment_id | INT |
+| quantity | INT |
 | status | VARCHAR(32) |
 | idempotency_key | VARCHAR(128) |
 | created_at | DATETIME |
@@ -657,15 +595,16 @@ If a table definition differs from runtime, update the corresponding init SQL fi
 | --- | --- |
 | id | BIGINT UNSIGNED |
 | sku_id | BIGINT UNSIGNED |
+| segment_id | INT |
 | sub_order_no | VARCHAR(64) |
 | txn_type | VARCHAR(32) |
 | quantity | INT |
-| before_on_hand | INT |
-| after_on_hand | INT |
-| before_reserved | INT |
-| after_reserved | INT |
-| before_salable | INT |
-| after_salable | INT |
+| before_available | INT |
+| after_available | INT |
+| before_locked | INT |
+| after_locked | INT |
+| before_sold | INT |
+| after_sold | INT |
 | remark | VARCHAR(1000) |
 | created_at | DATETIME |
 | updated_at | DATETIME |

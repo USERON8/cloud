@@ -25,18 +25,45 @@ spring:
         binder:
           name-server: ${ROCKETMQ_NAME_SERVER:${ROCKETMQ_NAMESRV_HOST:127.0.0.1}:${ROCKETMQ_NAMESRV_PORT:20011}}
         bindings:
+          stockReserveRequestConsumer-in-0:
+            consumer:
+              <<: *stockConsumerDefaults
+          stockReleaseRequestConsumer-in-0:
+            consumer:
+              <<: *stockConsumerDefaults
+          stockConfirmRequestConsumer-in-0:
+            consumer:
+              <<: *stockConsumerDefaults
           stockFreezeFailedProducer-out-0:
             producer:
               <<: *stockProducerDefaults
           stockAlertProducer-out-0:
             producer:
               <<: *stockProducerDefaults
+          productSyncProducer-out-0:
+            producer:
+              <<: *stockProducerDefaults
       bindings:
+        stockReserveRequestConsumer-in-0:
+          destination: stock-reserve-request
+          content-type: application/json
+          group: stock-reserve-request-consumer-group
+        stockReleaseRequestConsumer-in-0:
+          destination: stock-release-request
+          content-type: application/json
+          group: stock-release-request-consumer-group
+        stockConfirmRequestConsumer-in-0:
+          destination: stock-confirm-request
+          content-type: application/json
+          group: stock-confirm-request-consumer-group
         stockFreezeFailedProducer-out-0:
           destination: stock-freeze-failed
           content-type: application/json
         stockAlertProducer-out-0:
           destination: stock-alert
+          content-type: application/json
+        productSyncProducer-out-0:
+          destination: product-sync
           content-type: application/json
 
 rocketmq:

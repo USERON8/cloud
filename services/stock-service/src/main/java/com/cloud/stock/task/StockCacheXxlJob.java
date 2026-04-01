@@ -2,8 +2,8 @@ package com.cloud.stock.task;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cloud.common.annotation.DistributedLock;
+import com.cloud.common.domain.vo.stock.StockLedgerVO;
 import com.cloud.common.task.XxlJobSupport;
-import com.cloud.stock.module.entity.StockLedger;
 import com.cloud.stock.service.StockLedgerQueryService;
 import com.cloud.stock.service.support.StockRedisCacheService;
 import com.xxl.job.core.handler.annotation.XxlJob;
@@ -33,12 +33,12 @@ public class StockCacheXxlJob {
     long pageIndex = 1;
     int pageSize = DEFAULT_PAGE_SIZE;
     while (true) {
-      Page<StockLedger> page = stockLedgerQueryService.pageActiveLedgers(pageIndex, pageSize);
-      List<StockLedger> records = page.getRecords();
+      Page<StockLedgerVO> page = stockLedgerQueryService.pageActiveLedgers(pageIndex, pageSize);
+      List<StockLedgerVO> records = page.getRecords();
       if (records == null || records.isEmpty()) {
         break;
       }
-      for (StockLedger ledger : records) {
+      for (StockLedgerVO ledger : records) {
         stockRedisCacheService.cacheLedger(ledger);
         total++;
       }
@@ -61,12 +61,12 @@ public class StockCacheXxlJob {
     long pageIndex = 1;
     int pageSize = DEFAULT_PAGE_SIZE;
     while (true) {
-      Page<StockLedger> page = stockLedgerQueryService.pageActiveLedgers(pageIndex, pageSize);
-      List<StockLedger> records = page.getRecords();
+      Page<StockLedgerVO> page = stockLedgerQueryService.pageActiveLedgers(pageIndex, pageSize);
+      List<StockLedgerVO> records = page.getRecords();
       if (records == null || records.isEmpty()) {
         break;
       }
-      for (StockLedger ledger : records) {
+      for (StockLedgerVO ledger : records) {
         if (ledger.getSkuId() == null) {
           continue;
         }
@@ -74,11 +74,11 @@ public class StockCacheXxlJob {
           stockRedisCacheService.cacheLedger(ledger);
           fixed++;
         }
-        if (ledger.getSalableQty() != null && ledger.getSalableQty() < 0) {
+        if (ledger.getAvailableQty() != null && ledger.getAvailableQty() < 0) {
           log.warn(
-              "Stock ledger salable negative: skuId={}, salable={}",
+              "Stock ledger available negative: skuId={}, available={}",
               ledger.getSkuId(),
-              ledger.getSalableQty());
+              ledger.getAvailableQty());
         }
       }
       if (records.size() < pageSize) {

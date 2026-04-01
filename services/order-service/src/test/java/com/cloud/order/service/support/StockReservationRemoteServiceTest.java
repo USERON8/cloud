@@ -7,6 +7,7 @@ import com.cloud.api.stock.StockDubboApi;
 import com.cloud.common.domain.dto.stock.StockOperateCommandDTO;
 import com.cloud.common.enums.ResultCode;
 import com.cloud.common.exception.BizException;
+import com.cloud.common.remote.RemoteCallSupport;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -23,7 +24,7 @@ class StockReservationRemoteServiceTest {
 
   @BeforeEach
   void setUp() {
-    stockReservationRemoteService = new StockReservationRemoteService();
+    stockReservationRemoteService = new StockReservationRemoteService(new RemoteCallSupport(null));
     ReflectionTestUtils.setField(stockReservationRemoteService, "stockDubboApi", stockDubboApi);
   }
 

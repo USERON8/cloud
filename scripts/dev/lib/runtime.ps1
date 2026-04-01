@@ -92,7 +92,6 @@ function Set-ServiceRuntimeEnvironment {
     $nacosGrpcPort = Get-DockerPortValue -Root $Root -Name "PORT_NACOS_GRPC" -DefaultValue ($nacosPort + 1000)
     $nacosGrpcOffset = $nacosGrpcPort - $nacosPort
     $rocketMqNamesrvPort = Get-DockerPortValue -Root $Root -Name "PORT_RMQ_NAMESRV" -DefaultValue 20011
-    $seataPort = Get-DockerPortValue -Root $Root -Name "PORT_SEATA_SERVER" -DefaultValue 18091
     $minioPort = Get-DockerPortValue -Root $Root -Name "PORT_MINIO_API" -DefaultValue 19000
 
     $nacosServerAddr = "127.0.0.1:$nacosPort"
@@ -145,19 +144,6 @@ function Set-ServiceRuntimeEnvironment {
         $env:DUBBO_APPLICATION_QOS_ENABLE = "false"
     }
 
-    $env:SEATA_SERVER_ADDR = "127.0.0.1:$seataPort"
-    $env:SEATA_REGISTRY_TYPE = "file"
-    if ([string]::IsNullOrWhiteSpace($env:SEATA_TX_SERVICE_GROUP)) {
-        $env:SEATA_TX_SERVICE_GROUP = "default_tx_group"
-    }
-    if ([string]::IsNullOrWhiteSpace($env:SEATA_TX_CLUSTER)) {
-        $env:SEATA_TX_CLUSTER = "default"
-    }
-    $env:SEATA_SERVICE_VGROUP_MAPPING_DEFAULT_TX_GROUP = $env:SEATA_TX_CLUSTER
-    $env:SEATA_SERVICE_GROUPLIST_DEFAULT = $env:SEATA_SERVER_ADDR
-    if ([string]::IsNullOrWhiteSpace($env:SEATA_SAGA_ENABLED)) {
-        $env:SEATA_SAGA_ENABLED = "false"
-    }
     if ([string]::IsNullOrWhiteSpace($env:XXL_JOB_ENABLED)) {
         $env:XXL_JOB_ENABLED = "false"
     }
@@ -179,6 +165,9 @@ function Set-ServiceRuntimeEnvironment {
     if ([string]::IsNullOrWhiteSpace($env:GATEWAY_SIGNATURE_SECRET)) {
         $env:GATEWAY_SIGNATURE_SECRET = "cloud-gateway-signature-dev"
     }
+    if ([string]::IsNullOrWhiteSpace($env:GATEWAY_INTERNAL_IDENTITY_SECRET)) {
+        $env:GATEWAY_INTERNAL_IDENTITY_SECRET = $env:GATEWAY_SIGNATURE_SECRET
+    }
     if ([string]::IsNullOrWhiteSpace($env:CLIENT_SERVICE_SECRET)) {
         $env:CLIENT_SERVICE_SECRET = "cloud-client-service-secret-dev"
     }
@@ -198,5 +187,22 @@ function Set-ServiceRuntimeEnvironment {
         $env:GITHUB_CLIENT_SECRET = "cloud-github-secret-dev"
     }
 
-    Write-Host ("SERVICE_ENV nacos={0} rocketmq={1} seata={2} gatewaySignature=configured authSecrets=configured" -f $env:NACOS_SERVER_ADDR, $env:ROCKETMQ_NAME_SERVER, $env:SEATA_SERVER_ADDR)
+    $seataAutoConfigExcludes = @(
+        "org.apache.seata.spring.boot.autoconfigure.SeataAutoConfiguration",
+        "org.apache.seata.spring.boot.autoconfigure.SeataCoreAutoConfiguration"
+    )
+    $existingAutoConfigExcludes = @()
+    if (-not [string]::IsNullOrWhiteSpace($env:SPRING_AUTOCONFIGURE_EXCLUDE)) {
+        $existingAutoConfigExcludes = $env:SPRING_AUTOCONFIGURE_EXCLUDE.Split(",") |
+            ForEach-Object { $_.Trim() } |
+            Where-Object { -not [string]::IsNullOrWhiteSpace($_) }
+    }
+    foreach ($exclude in $seataAutoConfigExcludes) {
+        if ($existingAutoConfigExcludes -notcontains $exclude) {
+            $existingAutoConfigExcludes += $exclude
+        }
+    }
+    $env:SPRING_AUTOCONFIGURE_EXCLUDE = ($existingAutoConfigExcludes -join ",")
+
+    Write-Host ("SERVICE_ENV nacos={0} rocketmq={1} gatewaySignature=configured authSecrets=configured" -f $env:NACOS_SERVER_ADDR, $env:ROCKETMQ_NAME_SERVER)
 }

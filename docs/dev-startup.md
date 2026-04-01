@@ -32,7 +32,7 @@ powershell -File scripts/dev/start-all.ps1 --with-monitoring
 `start-platform.*` orchestrates:
 - `start-containers.*`
 - infrastructure readiness checks using host ports from `docker/.env`
-- runtime env export for `NACOS_SERVER_ADDR`, `ROCKETMQ_NAME_SERVER`, and `SEATA_SERVER_ADDR`
+- runtime env export for `NACOS_SERVER_ADDR` and `ROCKETMQ_NAME_SERVER`
 - automatic SkyWalking agent wiring with local cache/download
 - scheduled outbox relay inside `order-service`, `payment-service`, and `stock-service`
 - `start-services.*`

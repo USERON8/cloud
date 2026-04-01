@@ -1,5 +1,7 @@
 package com.cloud.common.config.properties;
 
+import java.util.ArrayList;
+import java.util.List;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
@@ -15,13 +17,15 @@ public class MessageProperties {
 
   private boolean traceEnabled = true;
 
-  private boolean idempotentEnabled = false;
+  private boolean idempotentEnabled = true;
 
   private long idempotentExpireSeconds = 86400;
 
   private HeaderConfig header = new HeaderConfig();
 
   private LogConfig log = new LogConfig();
+
+  private MonitorConfig monitor = new MonitorConfig();
 
   @Data
   public static class HeaderConfig {
@@ -45,5 +49,35 @@ public class MessageProperties {
     private boolean logHeaders = true;
 
     private int payloadMaxLength = 1000;
+  }
+
+  @Data
+  public static class MonitorConfig {
+
+    private boolean enabled = true;
+
+    private long lagScanIntervalMs = 60000;
+
+    private long lagAlertThreshold = 1000;
+
+    private long deadLetterAlertThreshold = 10;
+
+    private int deadLetterQueryLimit = 100;
+
+    private boolean adminEndpointEnabled = true;
+
+    private List<TargetConfig> targets = new ArrayList<>();
+  }
+
+  @Data
+  public static class TargetConfig {
+
+    private String topic;
+
+    private String consumerGroup;
+
+    private long lagAlertThreshold = -1L;
+
+    private int maxReconsumeTimes = -1;
   }
 }

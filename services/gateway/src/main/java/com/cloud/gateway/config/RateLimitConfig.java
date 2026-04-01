@@ -71,8 +71,25 @@ public class RateLimitConfig {
     if (path == null || path.isBlank()) {
       return "/";
     }
-    String normalized = path.startsWith("/") ? path.substring(1) : path;
-    int idx = normalized.indexOf('/');
-    return idx < 0 ? normalized : normalized.substring(0, idx);
+    String[] segments =
+        java.util.Arrays.stream(path.split("/"))
+            .filter(segment -> segment != null && !segment.isBlank())
+            .limit(4)
+            .map(this::normalizeSegment)
+            .toArray(String[]::new);
+    if (segments.length == 0) {
+      return "/";
+    }
+    return "/" + String.join("/", segments);
+  }
+
+  private String normalizeSegment(String segment) {
+    if (segment.chars().allMatch(Character::isDigit)) {
+      return "{id}";
+    }
+    if (segment.matches("(?i)[0-9a-f]{8,}(-[0-9a-f]{4,}){0,4}")) {
+      return "{id}";
+    }
+    return segment;
   }
 }

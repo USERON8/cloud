@@ -49,10 +49,10 @@ class ProductDocumentBuildServiceTest {
 
     StockLedgerVO firstLedger = new StockLedgerVO();
     firstLedger.setSkuId(501L);
-    firstLedger.setSalableQty(7);
+    firstLedger.setAvailableQty(7);
     StockLedgerVO secondLedger = new StockLedgerVO();
     secondLedger.setSkuId(502L);
-    secondLedger.setSalableQty(5);
+    secondLedger.setAvailableQty(5);
 
     when(orderDubboApi.statSellCountByProductIds(List.of(1001L))).thenReturn(List.of(stat));
     when(stockDubboApi.listLedgersBySkuIds(List.of(501L, 502L)))

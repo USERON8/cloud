@@ -11,6 +11,8 @@ import com.cloud.search.service.ElasticsearchOptimizedService;
 import com.cloud.search.service.SearchFacadeService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.math.BigDecimal;
@@ -30,6 +32,13 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 @Tag(name = "Product Search", description = "Product search and filter APIs")
 @Validated
+@ApiResponses({
+  @ApiResponse(responseCode = "400", description = "Invalid search parameters"),
+  @ApiResponse(responseCode = "401", description = "Authentication required when applicable"),
+  @ApiResponse(responseCode = "403", description = "Insufficient permissions"),
+  @ApiResponse(responseCode = "404", description = "Search resource not found"),
+  @ApiResponse(responseCode = "500", description = "Search service internal error")
+})
 public class ProductSearchController {
 
   private final SearchFacadeService searchFacadeService;

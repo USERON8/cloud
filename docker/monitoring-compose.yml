@@ -27,7 +27,7 @@ services:
 
   # Grafana
   grafana:
-    image: grafana/grafana:12.2.0-17084981832
+    image: grafana/grafana:13.0.0-23826080413
     container_name: cloud-grafana
     depends_on:
       - prometheus
@@ -128,85 +128,85 @@ services:
       - /scripts/acceptance-cases.js
     networks:
       - monitoring
-
-  redis-exporter:
-    image: oliver006/redis_exporter:v1.67.0
-    container_name: cloud-redis-exporter
-    command:
-      - "--redis.addr=redis://host.docker.internal:16379"
-      - "--redis.password=root"
-      - "--web.listen-address=:9121"
-      - "--redis-only-metrics=true"
-    ports:
-      - "${PORT_REDIS_EXPORTER_HTTP:-19121}:9121"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    networks:
-      - monitoring
-
-  mysqld-exporter:
-    image: prom/mysqld-exporter:v0.17.2
-    container_name: cloud-mysqld-exporter
-    command:
-      - "--config.my-cnf=/etc/mysqld-exporter/.my.cnf"
-      - "--collect.global_status"
-      - "--collect.info_schema.processlist"
-      - "--collect.info_schema.innodb_metrics"
-    ports:
-      - "${PORT_MYSQL_EXPORTER_HTTP:-19104}:9104"
-    volumes:
-      - type: bind
-        source: ./monitor/mysql-exporter/config/.my.cnf
-        target: /etc/mysqld-exporter/.my.cnf
-        read_only: true
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    networks:
-      - monitoring
-
-  nginx-exporter:
-    image: nginx/nginx-prometheus-exporter:1.4.2
-    container_name: cloud-nginx-exporter
-    command:
-      - "--nginx.scrape-uri=http://host.docker.internal:18080/nginx_status"
-    ports:
-      - "${PORT_NGINX_EXPORTER_HTTP:-19113}:9113"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    networks:
-      - monitoring
-
-  elasticsearch-exporter:
-    image: quay.io/prometheuscommunity/elasticsearch-exporter:v1.9.0
-    container_name: cloud-elasticsearch-exporter
-    command:
-      - "--es.uri=http://host.docker.internal:19200"
-      - "--es.all"
-      - "--es.indices"
-      - "--es.shards"
-    ports:
-      - "${PORT_ELASTICSEARCH_EXPORTER_HTTP:-19114}:9114"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    networks:
-      - monitoring
-
-  blackbox-exporter:
-    image: prom/blackbox-exporter:v0.26.0
-    container_name: cloud-blackbox-exporter
-    command:
-      - "--config.file=/etc/blackbox_exporter/config.yml"
-    ports:
-      - "${PORT_BLACKBOX_EXPORTER_HTTP:-19115}:9115"
-    volumes:
-      - type: bind
-        source: ./monitor/blackbox/config/blackbox.yml
-        target: /etc/blackbox_exporter/config.yml
-        read_only: true
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    networks:
-      - monitoring
+#
+#  redis-exporter:
+#    image: oliver006/redis_exporter:v1.67.0
+#    container_name: cloud-redis-exporter
+#    command:
+#      - "--redis.addr=redis://host.docker.internal:16379"
+#      - "--redis.password=root"
+#      - "--web.listen-address=:9121"
+#      - "--redis-only-metrics=true"
+#    ports:
+#      - "${PORT_REDIS_EXPORTER_HTTP:-19121}:9121"
+#    extra_hosts:
+#      - "host.docker.internal:host-gateway"
+#    networks:
+#      - monitoring
+#
+#  mysqld-exporter:
+#    image: prom/mysqld-exporter:v0.17.2
+#    container_name: cloud-mysqld-exporter
+#    command:
+#      - "--config.my-cnf=/etc/mysqld-exporter/.my.cnf"
+#      - "--collect.global_status"
+#      - "--collect.info_schema.processlist"
+#      - "--collect.info_schema.innodb_metrics"
+#    ports:
+#      - "${PORT_MYSQL_EXPORTER_HTTP:-19104}:9104"
+#    volumes:
+#      - type: bind
+#        source: ./monitor/mysql-exporter/config/.my.cnf
+#        target: /etc/mysqld-exporter/.my.cnf
+#        read_only: true
+#    extra_hosts:
+#      - "host.docker.internal:host-gateway"
+#    networks:
+#      - monitoring
+#
+#  nginx-exporter:
+#    image: nginx/nginx-prometheus-exporter:1.4.2
+#    container_name: cloud-nginx-exporter
+#    command:
+#      - "--nginx.scrape-uri=http://host.docker.internal:18080/nginx_status"
+#    ports:
+#      - "${PORT_NGINX_EXPORTER_HTTP:-19113}:9113"
+#    extra_hosts:
+#      - "host.docker.internal:host-gateway"
+#    networks:
+#      - monitoring
+#
+#  elasticsearch-exporter:
+#    image: quay.io/prometheuscommunity/elasticsearch-exporter:v1.9.0
+#    container_name: cloud-elasticsearch-exporter
+#    command:
+#      - "--es.uri=http://host.docker.internal:19200"
+#      - "--es.all"
+#      - "--es.indices"
+#      - "--es.shards"
+#    ports:
+#      - "${PORT_ELASTICSEARCH_EXPORTER_HTTP:-19114}:9114"
+#    extra_hosts:
+#      - "host.docker.internal:host-gateway"
+#    networks:
+#      - monitoring
+#
+#  blackbox-exporter:
+#    image: prom/blackbox-exporter:v0.26.0
+#    container_name: cloud-blackbox-exporter
+#    command:
+#      - "--config.file=/etc/blackbox_exporter/config.yml"
+#    ports:
+#      - "${PORT_BLACKBOX_EXPORTER_HTTP:-19115}:9115"
+#    volumes:
+#      - type: bind
+#        source: ./monitor/blackbox/config/blackbox.yml
+#        target: /etc/blackbox_exporter/config.yml
+#        read_only: true
+#    extra_hosts:
+#      - "host.docker.internal:host-gateway"
+#    networks:
+#      - monitoring
 
 networks:
   monitoring:

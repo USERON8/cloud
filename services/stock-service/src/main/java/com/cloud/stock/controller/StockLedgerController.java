@@ -7,6 +7,7 @@ import com.cloud.stock.service.StockLedgerService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -36,6 +37,13 @@ public class StockLedgerController {
   @Operation(summary = "Reserve stock")
   public Result<Boolean> reserve(@Valid @RequestBody StockOperateCommandDTO command) {
     return Result.success(stockLedgerService.reserve(command));
+  }
+
+  @PostMapping("/pre-check")
+  @PreAuthorize("hasAuthority('SCOPE_internal')")
+  @Operation(summary = "Pre-check stock availability")
+  public Result<Boolean> preCheck(@RequestBody List<@Valid StockOperateCommandDTO> commands) {
+    return Result.success(stockLedgerService.preCheck(commands));
   }
 
   @PostMapping("/confirm")

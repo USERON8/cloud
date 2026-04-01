@@ -34,7 +34,12 @@ public class ResilientIdentifierGenerator implements IdentifierGenerator {
   private long lastTimestamp = -1L;
 
   public ResilientIdentifierGenerator() {
-    this(resolveNodeIds(), System::currentTimeMillis);
+    this(resolveNodeIds(true), System::currentTimeMillis);
+  }
+
+  public ResilientIdentifierGenerator(
+      Long workerId, Long datacenterId, boolean allowRandomFallback) {
+    this(resolveNodeIds(workerId, datacenterId, allowRandomFallback), System::currentTimeMillis);
   }
 
   ResilientIdentifierGenerator(long workerId, long datacenterId, LongSupplier clock) {
@@ -88,7 +93,7 @@ public class ResilientIdentifierGenerator implements IdentifierGenerator {
         | sequence;
   }
 
-  private static long resolveDatacenterId() {
+  private static long resolveDatacenterId(boolean allowRandomFallback) {
     try {
       Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
       while (interfaces != null && interfaces.hasMoreElements()) {
@@ -111,6 +116,10 @@ public class ResilientIdentifierGenerator implements IdentifierGenerator {
     } catch (Exception exception) {
       log.warn("Failed to resolve datacenter id from network interface", exception);
     }
+    if (!allowRandomFallback) {
+      throw new IllegalStateException(
+          "Unable to resolve datacenterId automatically and random fallback is disabled");
+    }
     return new SecureRandom().nextInt((int) MAX_DATACENTER_ID + 1);
   }
 
@@ -121,10 +130,21 @@ public class ResilientIdentifierGenerator implements IdentifierGenerator {
     return Math.floorMod(hash, (int) MAX_WORKER_ID + 1);
   }
 
-  private static long[] resolveNodeIds() {
-    long datacenterId = resolveDatacenterId();
+  private static long[] resolveNodeIds(boolean allowRandomFallback) {
+    long datacenterId = resolveDatacenterId(allowRandomFallback);
     long workerId = resolveWorkerId(datacenterId);
     return new long[] {workerId, datacenterId};
+  }
+
+  private static long[] resolveNodeIds(
+      Long workerId, Long datacenterId, boolean allowRandomFallback) {
+    if (workerId != null || datacenterId != null) {
+      if (workerId == null || datacenterId == null) {
+        throw new IllegalArgumentException("workerId and datacenterId must be configured together");
+      }
+      return new long[] {workerId, datacenterId};
+    }
+    return resolveNodeIds(allowRandomFallback);
   }
 
   private static void sleepQuietly(long rollbackMs) {

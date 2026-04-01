@@ -67,9 +67,7 @@ Push-Location (Join-Path $root "docker")
 try {
     docker compose -f docker-compose.yml up -d --pull missing --build
     if ($WithMonitoring) {
-        docker compose -f monitoring-compose.yml up -d --pull missing `
-            prometheus grafana redis-exporter mysqld-exporter `
-            nginx-exporter elasticsearch-exporter blackbox-exporter
+        docker compose -f monitoring-compose.yml up -d --pull missing
     }
 } finally {
     Pop-Location

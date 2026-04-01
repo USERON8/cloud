@@ -121,19 +121,6 @@ CREATE TABLE IF NOT EXISTS inbox_consume_log
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci;
 
-CREATE TABLE undo_log (
-  branch_id BIGINT NOT NULL,
-  xid VARCHAR(128) NOT NULL,
-  context VARCHAR(128) NOT NULL,
-  rollback_info LONGBLOB NOT NULL,
-  log_status INT NOT NULL,
-  log_created DATETIME NOT NULL,
-  log_modified DATETIME NOT NULL,
-  UNIQUE KEY ux_undo_log (xid,branch_id),
-  INDEX idx_undo_log_xid (xid),
-  INDEX idx_undo_log_branch (branch_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
 CREATE TABLE IF NOT EXISTS dead_letter
 (
     id          BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,

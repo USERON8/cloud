@@ -6,7 +6,13 @@ server:
       min-spare: ${SERVER_TOMCAT_THREADS_MIN_SPARE:20}
     max-connections: ${SERVER_TOMCAT_MAX_CONNECTIONS:20000}
     accept-count: ${SERVER_TOMCAT_ACCEPT_COUNT:1000}
-
+dubbo:
+  registry:
+    address: nacos://${NACOS_HOST:127.0.0.1}:${NACOS_PORT:15001}
+  protocol:
+    port: 20885
+  application:
+    qos-enable: false
 spring:
   application:
     name: payment-service
@@ -19,11 +25,13 @@ spring:
     type: ${SPRING_DATASOURCE_TYPE:com.alibaba.druid.pool.DruidDataSource}
   cloud:
     nacos:
-      config:
-        enabled: true
-        server-addr: ${NACOS_SERVER_ADDR:${NACOS_HOST:127.0.0.1}:${NACOS_PORT:18848}}
+      discovery:
+        server-addr: ${NACOS_SERVER_ADDR:${NACOS_HOST:127.0.0.1}:${NACOS_PORT:15001}}
         username: ${NACOS_USERNAME:nacos}
         password: ${NACOS_PASSWORD:nacos}
+      config:
+        enabled: true
+        server-addr: ${NACOS_SERVER_ADDR:${NACOS_HOST:127.0.0.1}:${NACOS_PORT:15001}}
         namespace: public
         group: DEFAULT_GROUP
         file-extension: yaml
@@ -42,6 +50,7 @@ rocketmq:
 logging:
   file:
     name: ${logging.file.path}/payment-service.log
+    path: ./logs
 
 mybatis-plus:
   mapper-locations: classpath*:mapper/**/*.xml
@@ -197,4 +206,3 @@ xxl:
   job:
     executor:
       port: ${XXL_JOB_PORT:19086}
-

@@ -2,13 +2,11 @@ package com.cloud.auth.service;
 
 import com.cloud.api.user.UserDubboApi;
 import com.cloud.common.domain.dto.user.UserProfileDTO;
-import com.cloud.common.enums.ResultCode;
-import com.cloud.common.exception.RemoteException;
+import com.cloud.common.remote.RemoteCallSupport;
 import java.util.Collection;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.dubbo.config.annotation.DubboReference;
-import org.apache.dubbo.rpc.RpcException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -18,6 +16,8 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 public class PermissionCheckService {
+
+  private final RemoteCallSupport remoteCallSupport;
 
   @DubboReference(check = false, timeout = 5000, retries = 0)
   private UserDubboApi userDubboApi;
@@ -130,17 +130,15 @@ public class PermissionCheckService {
     if (principal instanceof Jwt) {
       Jwt jwt = (Jwt) principal;
       Long userId = resolveUserId(jwt);
+      if (userId == null) {
+        return null;
+      }
       try {
-        if (userId == null) {
-          return null;
-        }
-        return userDubboApi.findById(userId);
-      } catch (RpcException ex) {
+        return remoteCallSupport.query(
+            "user-service.findById", () -> userDubboApi.findById(userId));
+      } catch (RuntimeException ex) {
         log.error("Failed to load current user profile, userId={}", userId, ex);
-        throw new RemoteException(
-            ResultCode.REMOTE_SERVICE_UNAVAILABLE,
-            "user-service unavailable when loading current user profile",
-            ex);
+        throw ex;
       }
     }
 

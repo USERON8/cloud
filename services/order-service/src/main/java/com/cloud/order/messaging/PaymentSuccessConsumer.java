@@ -1,22 +1,13 @@
 package com.cloud.order.messaging;
 
-import com.cloud.common.domain.dto.stock.StockOperateCommandDTO;
 import com.cloud.common.messaging.consumer.AbstractJsonMqConsumer;
 import com.cloud.common.messaging.event.PaymentSuccessEvent;
 import com.cloud.common.metrics.TradeMetrics;
-import com.cloud.order.dto.OrderAggregateResponse;
-import com.cloud.order.entity.OrderItem;
 import com.cloud.order.entity.OrderMain;
-import com.cloud.order.entity.OrderSub;
-import com.cloud.order.enums.OrderAction;
 import com.cloud.order.mapper.OrderMainMapper;
-import com.cloud.order.service.OrderService;
-import com.cloud.order.service.support.StockReservationRemoteService;
+import com.cloud.order.service.support.OrderInventoryEventService;
 import java.time.Instant;
-import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.rocketmq.common.message.MessageExt;
@@ -34,12 +25,10 @@ import org.springframework.stereotype.Component;
 public class PaymentSuccessConsumer extends AbstractJsonMqConsumer<PaymentSuccessEvent> {
 
   private static final String NS_PAYMENT_SUCCESS = "order:payment:success";
-  private static final Set<String> CONFIRMABLE_STATUSES = Set.of("STOCK_RESERVED");
   private static final String WS_CHANNEL_PREFIX = "ws:message:";
 
   private final OrderMainMapper orderMainMapper;
-  private final OrderService orderService;
-  private final StockReservationRemoteService stockReservationRemoteService;
+  private final OrderInventoryEventService orderInventoryEventService;
   private final TradeMetrics tradeMetrics;
   private final StringRedisTemplate stringRedisTemplate;
 
@@ -56,30 +45,7 @@ public class PaymentSuccessConsumer extends AbstractJsonMqConsumer<PaymentSucces
       return;
     }
 
-    OrderAggregateResponse aggregate = orderService.getOrderAggregate(mainOrder.getId());
-    if (aggregate == null || aggregate.getSubOrders() == null) {
-      tradeMetrics.incrementMessageConsume("payment_success", "failed");
-      return;
-    }
-
-    String targetSubOrderNo = event.getSubOrderNo();
-    for (OrderAggregateResponse.SubOrderWithItems wrapped : aggregate.getSubOrders()) {
-      OrderSub subOrder = wrapped.getSubOrder();
-      if (subOrder == null) {
-        continue;
-      }
-      if (targetSubOrderNo != null
-          && !targetSubOrderNo.isBlank()
-          && !targetSubOrderNo.equals(subOrder.getSubOrderNo())) {
-        continue;
-      }
-      if (!CONFIRMABLE_STATUSES.contains(subOrder.getOrderStatus())) {
-        continue;
-      }
-      confirmStockForSubOrder(subOrder, wrapped.getItems(), event.getOrderNo());
-      orderService.advanceSubOrderStatus(subOrder.getId(), OrderAction.PAY);
-    }
-
+    orderInventoryEventService.handlePaymentSuccess(event);
     pushPaymentSuccessMessage(event);
   }
 
@@ -131,28 +97,6 @@ public class PaymentSuccessConsumer extends AbstractJsonMqConsumer<PaymentSucces
   @Override
   protected void onUnknownException(MessageExt msgExt, PaymentSuccessEvent payload, Exception ex) {
     tradeMetrics.incrementMessageConsume("payment_success", "retry");
-  }
-
-  private void confirmStockForSubOrder(OrderSub subOrder, List<OrderItem> items, String orderNo) {
-    if (items == null || items.isEmpty()) {
-      return;
-    }
-    Map<Long, Integer> skuQuantities = new LinkedHashMap<>();
-    for (OrderItem item : items) {
-      if (item.getSkuId() == null || item.getQuantity() == null) {
-        continue;
-      }
-      skuQuantities.merge(item.getSkuId(), item.getQuantity(), Integer::sum);
-    }
-    for (Map.Entry<Long, Integer> entry : skuQuantities.entrySet()) {
-      StockOperateCommandDTO command = new StockOperateCommandDTO();
-      command.setSubOrderNo(subOrder.getSubOrderNo());
-      command.setOrderNo(orderNo);
-      command.setSkuId(entry.getKey());
-      command.setQuantity(entry.getValue());
-      command.setReason("confirm stock for payment " + subOrder.getSubOrderNo());
-      stockReservationRemoteService.confirm(command);
-    }
   }
 
   private void pushPaymentSuccessMessage(PaymentSuccessEvent event) {

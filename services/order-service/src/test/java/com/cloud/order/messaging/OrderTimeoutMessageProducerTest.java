@@ -22,11 +22,12 @@ class OrderTimeoutMessageProducerTest {
 
   @Mock private OutboxEventService outboxEventService;
   @Mock private ObjectMapper objectMapper;
+  @Mock private OrderOutboxDispatcher orderOutboxDispatcher;
 
   @Test
   void sendAfterCommitShouldEnqueueOrderTimeoutEvent() throws Exception {
     OrderTimeoutMessageProducer producer =
-        new OrderTimeoutMessageProducer(outboxEventService, objectMapper);
+        new OrderTimeoutMessageProducer(outboxEventService, objectMapper, orderOutboxDispatcher);
     OrderTimeoutEvent event = OrderTimeoutEvent.builder().subOrderNo("S-1").build();
     when(objectMapper.writeValueAsString(event)).thenReturn("{\"subOrderNo\":\"S-1\"}");
 
@@ -35,6 +36,7 @@ class OrderTimeoutMessageProducerTest {
     verify(outboxEventService)
         .enqueue(
             eq("ORDER"), eq("S-1"), eq("ORDER_TIMEOUT"), eq("{\"subOrderNo\":\"S-1\"}"), any());
+    verify(orderOutboxDispatcher).dispatchAfterCommit();
     assertThat(event.getEventId()).isNotBlank();
     assertThat(event.getEventType()).isEqualTo("ORDER_TIMEOUT");
     assertThat(event.getTimestamp()).isNotNull();
@@ -43,7 +45,7 @@ class OrderTimeoutMessageProducerTest {
   @Test
   void sendAfterCommitShouldIgnoreNullEvent() {
     OrderTimeoutMessageProducer producer =
-        new OrderTimeoutMessageProducer(outboxEventService, objectMapper);
+        new OrderTimeoutMessageProducer(outboxEventService, objectMapper, orderOutboxDispatcher);
 
     producer.sendAfterCommit(null);
 
@@ -53,7 +55,7 @@ class OrderTimeoutMessageProducerTest {
   @Test
   void sendAfterCommitShouldPropagateSerializationFailure() throws Exception {
     OrderTimeoutMessageProducer producer =
-        new OrderTimeoutMessageProducer(outboxEventService, objectMapper);
+        new OrderTimeoutMessageProducer(outboxEventService, objectMapper, orderOutboxDispatcher);
     OrderTimeoutEvent event = OrderTimeoutEvent.builder().subOrderNo("S-2").build();
     when(objectMapper.writeValueAsString(event))
         .thenThrow(new JsonProcessingException("bad json") {});

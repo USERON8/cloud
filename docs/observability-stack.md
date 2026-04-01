@@ -118,6 +118,13 @@ In SkyWalking UI, focus first on:
 
 - Business metrics are reported by `TradeMetrics`: `trade_order_total`, `trade_payment_total`, `trade_refund_total`, `trade_stock_freeze_total`, and `trade_message_consume_total`
 - Metric labels include `result` (`success`, `failed`, `retry`) and `eventType` (such as `payment_success` and `refund_completed`)
+- Remote call governance metrics are exposed through `remote.call` with labels `kind`, `target`, and `outcome`
 - Outbox health recommendation: track `NEW`, `FAILED`, and `DEAD` rows in `outbox_event` per database; `DEAD > 0` means the relay or MQ send path needs inspection
-- MQ trace note: RocketMQ does not automatically propagate `traceId`, and the Outbox relay does not inject tracing headers either; manual propagation is required for full SkyWalking end-to-end traces
+- `OutboxMetricsMonitor` adds outbox backlog, oldest-age, retry, and success-oriented gauges/counters for shared monitoring
+- MQ governance support exists through:
+  - `GET /internal/mq/governance/consumers`
+  - `GET /internal/mq/dead-letters/pending`
+  - `POST /internal/mq/dead-letters/handle`
+- RocketMQ lag monitoring uses `RocketMqConsumerTopology` + `RocketMqLagMonitor`, and thresholds are configured through `MessageProperties`
+- MQ trace note: consumer-side trace restoration is now wired in the shared messaging layer, but full producer-to-consumer continuity still depends on message headers being preserved consistently
 - Dead-letter monitoring note: failed consumers write into the `dead_letter` table, but Grafana does not visualize it by default; add a dedicated collector and dashboard if needed

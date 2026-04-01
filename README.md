@@ -14,7 +14,14 @@ Frontend: UniApp (Vue 3 + TypeScript).
 - Payment success is delivered via RocketMQ transactional message in `payment-service`.
 - Consumers are idempotent (Redis-based) to tolerate replays.
 - User notifications are enqueued to RocketMQ (`user-notification`) and retried on consumer failure.
-- Seata TCC (order placement) and Seata SAGA (refund) are enabled in `order-service`; `payment-service` keeps Seata disabled.
+- No Seata coordinator is required. Cross-service consistency uses local transactions, Outbox, RocketMQ, and idempotent consumers.
+
+## Current Platform Governance
+
+- `gateway` validates public JWTs, signs internal identity headers, and applies both route-level and user-level Sentinel rules.
+- Shared remote service calls use `RemoteCallSupport` to standardize timeout, fallback, and error translation semantics.
+- MQ governance includes consumer topology discovery, lag thresholds, dead-letter admin endpoints, and outbox backlog metrics.
+- Product/category/shop/stock caches now follow Cache-Aside plus delayed double delete after commit.
 
 ## Modules And Ports
 
@@ -63,7 +70,7 @@ Frontend: UniApp (Vue 3 + TypeScript).
   - Redis Lua updates remain the cross-request consistency source for reserve, release, confirm, and rollback flows.
 - `order-service`
   - Completed main-order aggregate reads now use a pragmatic multi-level cache: short-lived local L1 plus Redis aggregate cache.
-  - Aggregate cache invalidation is already wired into sub-order status transitions, shipping updates, after-sale changes, refund saga updates, and TCC reserve/cancel flows.
+- Aggregate cache invalidation is already wired into sub-order status transitions, shipping updates, after-sale changes, refund updates, and stock command flows.
 - `payment-service`
   - Payment security and anti-duplication paths use explicit Redis single-level cache for idempotency keys, result reuse, short-lived status lookup, checkout tickets, and rate limiting.
   - No local L1 cache is used here because the cache role is correctness support and abuse control rather than domain read acceleration.

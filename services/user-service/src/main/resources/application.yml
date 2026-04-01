@@ -6,7 +6,17 @@ server:
       min-spare: ${SERVER_TOMCAT_THREADS_MIN_SPARE:20}
     max-connections: ${SERVER_TOMCAT_MAX_CONNECTIONS:20000}
     accept-count: ${SERVER_TOMCAT_ACCEPT_COUNT:1000}
-
+dubbo:
+  registry:
+    address: nacos://${NACOS_HOST:127.0.0.1}:${NACOS_PORT:15001}
+  protocol:
+    port: 20882
+  application:
+    qos-enable: false
+logging:
+  file:
+    path: ./logs
+    name: ${logging.file.path}/user-service.log
 spring:
   application:
     name: user-service
@@ -22,9 +32,13 @@ spring:
     allow-bean-definition-overriding: true
   cloud:
     nacos:
+      discovery:
+        server-addr: ${NACOS_SERVER_ADDR:${NACOS_HOST:127.0.0.1}:${NACOS_PORT:15001}}
+        username: ${NACOS_USERNAME:nacos}
+        password: ${NACOS_PASSWORD:nacos}
       config:
         enabled: true
-        server-addr: ${NACOS_SERVER_ADDR:${NACOS_HOST:127.0.0.1}:${NACOS_PORT:18848}}
+        server-addr: ${NACOS_SERVER_ADDR:${NACOS_HOST:127.0.0.1}:${NACOS_PORT:15001}}
         username: ${NACOS_USERNAME:nacos}
         password: ${NACOS_PASSWORD:nacos}
         namespace: public
@@ -98,9 +112,6 @@ spring:
 rocketmq:
   name-server: ${ROCKETMQ_NAME_SERVER:${ROCKETMQ_NAMESRV_HOST:127.0.0.1}:${ROCKETMQ_NAMESRV_PORT:20011}}
 
-logging:
-  file:
-    name: ${logging.file.path}/user-service.log
 
 mybatis-plus:
   mapper-locations: classpath*:mapper/**/*.xml
@@ -194,7 +205,4 @@ management:
   health:
     elasticsearch:
       enabled: false
-
-seata:
-  enabled: false
 

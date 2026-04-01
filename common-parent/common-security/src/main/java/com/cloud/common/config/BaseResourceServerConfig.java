@@ -1,6 +1,7 @@
 package com.cloud.common.config;
 
 import com.cloud.common.security.AudienceTokenValidator;
+import com.cloud.common.security.GatewayInternalAuthenticationFilter;
 import com.cloud.common.security.InternalScopeClientValidator;
 import com.cloud.common.security.JwtBlacklistTokenValidator;
 import jakarta.servlet.FilterChain;
@@ -83,6 +84,15 @@ public class BaseResourceServerConfig {
       "${app.security.cors.allowed-origin-patterns:http://127.0.0.1:*,https://127.0.0.1:*,http://localhost:*,https://localhost:*}")
   private String corsAllowedOriginPatterns;
 
+  @Value("${app.security.internal-identity.enabled:true}")
+  private boolean internalIdentityEnabled;
+
+  @Value("${app.security.internal-identity.secret:${GATEWAY_INTERNAL_IDENTITY_SECRET:}}")
+  private String internalIdentitySecret;
+
+  @Value("${app.security.internal-identity.timestamp-skew-seconds:30}")
+  private long internalIdentityTimestampSkewSeconds;
+
   private final Environment environment;
   private final ServiceSecurityCustomizer serviceSecurityCustomizer;
 
@@ -124,6 +134,16 @@ public class BaseResourceServerConfig {
           testAuthenticationBypassFilter(), UsernamePasswordAuthenticationFilter.class);
       http.authorizeHttpRequests(authz -> authz.anyRequest().permitAll());
       return http.build();
+    }
+
+    if (internalIdentityEnabled) {
+      if (internalIdentitySecret == null || internalIdentitySecret.isBlank()) {
+        throw new IllegalStateException(
+            "GATEWAY_INTERNAL_IDENTITY_SECRET must be configured when internal identity is enabled");
+      }
+      http.addFilterBefore(
+          gatewayInternalAuthenticationFilter(jwtAuthenticationConverter()),
+          UsernamePasswordAuthenticationFilter.class);
     }
 
     http.authorizeHttpRequests(
@@ -214,6 +234,15 @@ public class BaseResourceServerConfig {
   @Bean
   public JwtAuthenticationConverter jwtAuthenticationConverter() {
     return serviceSecurityCustomizer.buildJwtAuthenticationConverter();
+  }
+
+  public GatewayInternalAuthenticationFilter gatewayInternalAuthenticationFilter(
+      JwtAuthenticationConverter jwtAuthenticationConverter) {
+    return new GatewayInternalAuthenticationFilter(
+        jwtAuthenticationConverter,
+        internalIdentityEnabled,
+        internalIdentitySecret,
+        internalIdentityTimestampSkewSeconds);
   }
 
   private boolean isProtectedProfile() {

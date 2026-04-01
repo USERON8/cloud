@@ -13,6 +13,7 @@ Search service responsible for product and shop discovery, recommendations, and 
 - Maintains Elasticsearch-backed query endpoints for product and shop discovery.
 - Consumes upstream product synchronization messages and XXL full-index rebuild jobs.
 - Maintains Redis-based hot keyword ranking and today hot-selling product ranking.
+- Rebuilds product documents from product, category, and stock signals using `availableQty` as the searchable stock field.
 
 ## Core Endpoints
 
@@ -33,7 +34,7 @@ Search service responsible for product and shop discovery, recommendations, and 
 ## Data Sources And Background Jobs
 
 - This service does not maintain an independent MySQL bootstrap script
-- Product data is synchronized from upstream services into Elasticsearch, with MQ-based incremental sync and XXL full rebuild already connected
+- Product, category, and stock data is synchronized from upstream services into Elasticsearch, with MQ-based incremental sync and XXL full rebuild already connected
 - Redis-backed hot data caches and search cache policies are configured in `application.yml`
 - Hot keyword DB synchronization uses `scheduled` mode by default; switch to XXL with `SEARCH_HOT_DB_SYNC_TRIGGER_MODE=xxl`
 
@@ -53,6 +54,8 @@ Search service responsible for product and shop discovery, recommendations, and 
 
 - `search-service` hot-data and keyword/search cache paths are now aligned to explicit Redis single-level cache.
 - Cache invalidation for hot keywords is still interval-driven, so correctness still depends on TTL plus invalidation timing rather than strong consistency.
+- Incremental Elasticsearch sync now depends on MQ events from product and stock domains instead of direct database coupling.
+- Stock-driven document rebuild uses available inventory totals instead of the old salable-quantity naming.
 - If the team later wants stronger freshness for search-result cache, the next step should be explicit invalidation events tied to product index updates.
 
 ## Local Run

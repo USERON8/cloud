@@ -9,11 +9,11 @@ import lombok.Data;
 public class StockLedgerVO implements Serializable {
   @Serial private static final long serialVersionUID = 1L;
 
-  private Long id;
   private Long skuId;
-  private Integer onHandQty;
-  private Integer reservedQty;
-  private Integer salableQty;
+  private Integer availableQty;
+  private Integer lockedQty;
+  private Integer soldQty;
+  private Integer segmentCount;
   private Integer alertThreshold;
   private Integer status;
   private LocalDateTime createdAt;

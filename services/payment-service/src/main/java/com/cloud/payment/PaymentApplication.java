@@ -33,7 +33,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @Slf4j
 @EnableScheduling
 @EnableAspectJAutoProxy(proxyTargetClass = true)
-@MapperScan("com.cloud.payment.mapper")
+@MapperScan({"com.cloud.payment.mapper", "com.cloud.common.messaging.outbox"})
 public class PaymentApplication {
 
   public static void main(String[] args) {

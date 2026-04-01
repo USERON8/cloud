@@ -42,4 +42,15 @@ public interface OutboxEventMapper extends BaseMapper<OutboxEvent> {
       @Param("status") String status,
       @Param("retryCount") int retryCount,
       @Param("nextRetryAt") LocalDateTime nextRetryAt);
+
+  @Select(
+      "SELECT COUNT(1) FROM outbox_event WHERE deleted = 0 AND status IN ('NEW','FAILED','PROCESSING')")
+  @InterceptorIgnore(illegalSql = "1")
+  long countPending();
+
+  @Select(
+      "SELECT COALESCE(TIMESTAMPDIFF(SECOND, MIN(created_at), NOW()), 0) "
+          + "FROM outbox_event WHERE deleted = 0 AND status IN ('NEW','FAILED','PROCESSING')")
+  @InterceptorIgnore(illegalSql = "1")
+  long oldestPendingAgeSeconds();
 }

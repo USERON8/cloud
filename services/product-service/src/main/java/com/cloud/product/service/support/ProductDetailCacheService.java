@@ -6,6 +6,7 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import jakarta.annotation.PostConstruct;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -16,7 +17,10 @@ import java.util.function.Supplier;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.scheduling.TaskScheduler;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @Slf4j
 @Service
@@ -37,10 +41,16 @@ public class ProductDetailCacheService {
   @Value("${product.cache.guard.l1-max-size:2000}")
   private long l1MaxSize;
 
-  private Cache<Long, SpuDetailVO> l1Cache;
+  @Value("${product.cache.guard.delayed-double-delete-ms:500}")
+  private long delayedDoubleDeleteMs;
 
-  public ProductDetailCacheService(RedisTemplate<String, Object> redisTemplate) {
+  private Cache<Long, SpuDetailVO> l1Cache;
+  private final TaskScheduler taskScheduler;
+
+  public ProductDetailCacheService(
+      RedisTemplate<String, Object> redisTemplate, TaskScheduler taskScheduler) {
     this.redisTemplate = redisTemplate;
+    this.taskScheduler = taskScheduler;
   }
 
   @PostConstruct
@@ -88,6 +98,21 @@ public class ProductDetailCacheService {
     if (spuId == null) {
       return;
     }
+    deleteNow(spuId);
+  }
+
+  public void evictAfterCommit(Long spuId) {
+    if (spuId == null) {
+      return;
+    }
+    runAfterCommit(
+        () -> {
+          deleteNow(spuId);
+          scheduleDelayedDelete(spuId);
+        });
+  }
+
+  private void deleteNow(Long spuId) {
     l1Cache.invalidate(spuId);
     try {
       redisTemplate.delete(buildKey(spuId));
@@ -174,5 +199,27 @@ public class ProductDetailCacheService {
       return safeBase;
     }
     return safeBase + ThreadLocalRandom.current().nextLong(safeJitter + 1);
+  }
+
+  private void runAfterCommit(Runnable task) {
+    if (TransactionSynchronizationManager.isSynchronizationActive()) {
+      TransactionSynchronizationManager.registerSynchronization(
+          new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+              task.run();
+            }
+          });
+      return;
+    }
+    task.run();
+  }
+
+  private void scheduleDelayedDelete(Long spuId) {
+    long delayMs = Math.max(0L, delayedDoubleDeleteMs);
+    if (delayMs <= 0L) {
+      return;
+    }
+    taskScheduler.schedule(() -> deleteNow(spuId), Instant.now().plusMillis(delayMs));
   }
 }

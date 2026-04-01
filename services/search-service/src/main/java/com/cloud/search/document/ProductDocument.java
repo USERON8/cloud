@@ -98,10 +98,16 @@ public class ProductDocument {
   @Field(type = FieldType.Integer)
   private Integer reviewCount;
 
-  @Field(type = FieldType.Date, format = DateFormat.date_hour_minute_second_millis)
+  @Field(
+      type = FieldType.Date,
+      format = {DateFormat.date_optional_time, DateFormat.epoch_millis},
+      pattern = {"uuuu-MM-dd HH:mm:ss"})
   private LocalDateTime createdAt;
 
-  @Field(type = FieldType.Date, format = DateFormat.date_hour_minute_second_millis)
+  @Field(
+      type = FieldType.Date,
+      format = {DateFormat.date_optional_time, DateFormat.epoch_millis},
+      pattern = {"uuuu-MM-dd HH:mm:ss"})
   private LocalDateTime updatedAt;
 
   @Field(type = FieldType.Double)

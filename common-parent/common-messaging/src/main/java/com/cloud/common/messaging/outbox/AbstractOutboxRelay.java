@@ -1,5 +1,6 @@
 package com.cloud.common.messaging.outbox;
 
+import com.cloud.common.trace.TraceIdUtil;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -58,9 +59,19 @@ public abstract class AbstractOutboxRelay {
 
       if (sent) {
         outboxEventService.markSent(event.getId());
+        if (meterRegistry != null) {
+          meterRegistry
+              .counter("outbox.relay.success", "eventType", event.getEventType())
+              .increment();
+        }
       } else {
         outboxEventService.markFailed(
             event, outboxProperties.getMaxRetry(), outboxProperties.getRetryBackoffSeconds());
+        if (meterRegistry != null) {
+          meterRegistry
+              .counter("outbox.relay.retry", "eventType", event.getEventType())
+              .increment();
+        }
       }
     }
   }
@@ -120,6 +131,8 @@ public abstract class AbstractOutboxRelay {
     putIfHasText(headers, MessageConst.PROPERTY_TAGS, tag);
     putIfHasText(headers, "eventId", eventId);
     putIfHasText(headers, "eventType", eventType);
+    putIfHasText(headers, "traceId", TraceIdUtil.currentOrGenerate());
+    headers.put("timestamp", System.currentTimeMillis());
     if (extraHeaders != null && !extraHeaders.isEmpty()) {
       headers.putAll(extraHeaders);
     }

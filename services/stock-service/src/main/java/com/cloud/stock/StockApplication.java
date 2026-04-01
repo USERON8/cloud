@@ -35,7 +35,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableDiscoveryClient
 @EnableScheduling
 @EnableCaching
-@MapperScan("com.cloud.stock.mapper")
+@MapperScan({"com.cloud.stock.mapper", "com.cloud.common.messaging.outbox"})
 public class StockApplication {
 
   public static void main(String[] args) {

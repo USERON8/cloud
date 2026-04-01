@@ -7,7 +7,11 @@ export interface UserInfo {
   avatarUrl?: string
   email?: string
   phone?: string
+  status?: number
   roles?: string[]
+  createdAt?: string
+  updatedAt?: string
+  deleted?: number
 }
 
 export interface OAuthTokenResponse {
@@ -45,6 +49,8 @@ export interface SearchProductDocument {
   shopId?: number
   shopName?: string
   productName?: string
+  categoryName?: string
+  brandName?: string
   price?: number
   stockQuantity?: number
   categoryId?: number
@@ -52,6 +58,21 @@ export interface SearchProductDocument {
   status?: number
   description?: string
   imageUrl?: string
+  detailImages?: string
+  tags?: string[]
+  sku?: string
+  salesCount?: number
+  reviewCount?: number
+  createdAt?: string
+  updatedAt?: string
+  hotScore?: number
+  searchWeight?: number
+  recommended?: boolean
+  isNew?: boolean
+  isHot?: boolean
+  merchantId?: number
+  merchantName?: string
+  remark?: string
 }
 
 export interface SmartSearchResult {
@@ -107,6 +128,7 @@ export interface CreateOrderPayload {
   skuId: number
   quantity: number
   price: number
+  clientOrderId?: string
   receiverName: string
   receiverPhone: string
   receiverAddress: string
@@ -182,8 +204,10 @@ export interface MerchantInfo {
   roles?: string[]
   status?: number
   authStatus?: number
+  auditStatus?: number
   createdAt?: string
   updatedAt?: string
+  deleted?: number
 }
 
 export interface MerchantUpsertPayload {
@@ -302,7 +326,7 @@ export interface ProductDocument {
   description?: string
   imageUrl?: string
   detailImages?: string
-  tags?: string
+  tags?: string[]
   weight?: number
   sku?: string
   salesCount?: number
@@ -402,6 +426,73 @@ export interface AfterSaleInfo {
   closeReason?: string
   createdAt?: string
   updatedAt?: string
+  deleted?: number
+  version?: number
+}
+
+export interface OrderAggregateItem {
+  id?: number
+  mainOrderId?: number
+  subOrderId?: number
+  spuId?: number
+  skuId?: number
+  skuCode?: string
+  skuName?: string
+  skuSnapshot?: string
+  quantity?: number
+  unitPrice?: number
+  totalPrice?: number
+  createdAt?: string
+  updatedAt?: string
+}
+
+export interface OrderAggregateSubOrder {
+  id?: number
+  mainOrderId?: number
+  subOrderNo?: string
+  merchantId?: number
+  orderStatus?: string
+  itemAmount?: number
+  shippingFee?: number
+  discountAmount?: number
+  payableAmount?: number
+  receiverName?: string
+  receiverPhone?: string
+  receiverAddress?: string
+  paidAt?: string
+  shippedAt?: string
+  completedAt?: string
+  cancelledAt?: string
+  cancelReason?: string
+  shippingCompany?: string
+  trackingNumber?: string
+  createdAt?: string
+  updatedAt?: string
+}
+
+export interface OrderAggregateMainOrder {
+  id?: number
+  mainOrderNo?: string
+  userId?: number
+  orderStatus?: string
+  totalAmount?: number
+  payableAmount?: number
+  payChannel?: string
+  paidAt?: string
+  cancelledAt?: string
+  cancelReason?: string
+  remark?: string
+  idempotencyKey?: string
+  createdAt?: string
+  updatedAt?: string
+}
+
+export interface OrderAggregateResponse {
+  mainOrder?: OrderAggregateMainOrder
+  subOrders?: Array<{
+    subOrder?: OrderAggregateSubOrder
+    items?: OrderAggregateItem[]
+  }>
 }
 
 export interface StockLedger {

@@ -23,10 +23,10 @@ import com.cloud.order.mapper.OrderItemMapper;
 import com.cloud.order.mapper.OrderMainMapper;
 import com.cloud.order.mapper.OrderSubMapper;
 import com.cloud.order.messaging.OrderAutoReceiveMessageProducer;
+import com.cloud.order.messaging.OrderMessageProducer;
 import com.cloud.order.messaging.OrderShippedMessageProducer;
 import com.cloud.order.service.support.OrderAggregateCacheService;
 import com.cloud.order.service.support.OrderRefundSagaCoordinator;
-import com.cloud.order.service.support.StockReservationRemoteService;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
@@ -49,8 +49,6 @@ class OrderServiceImplTest {
 
   @Mock private AfterSaleMapper afterSaleMapper;
 
-  @Mock private StockReservationRemoteService stockReservationRemoteService;
-
   @Mock private OrderRefundSagaCoordinator orderRefundSagaCoordinator;
 
   @Mock private ObjectProvider<OrderRefundSagaCoordinator> orderRefundSagaCoordinatorProvider;
@@ -63,6 +61,8 @@ class OrderServiceImplTest {
 
   @Mock private OrderAutoReceiveMessageProducer orderAutoReceiveMessageProducer;
 
+  @Mock private OrderMessageProducer orderMessageProducer;
+
   private OrderServiceImpl orderService;
 
   @BeforeEach
@@ -73,12 +73,12 @@ class OrderServiceImplTest {
             orderSubMapper,
             orderItemMapper,
             afterSaleMapper,
-            stockReservationRemoteService,
             orderRefundSagaCoordinatorProvider,
             tradeMetrics,
             orderAggregateCacheService,
             orderShippedMessageProducer,
-            orderAutoReceiveMessageProducer);
+            orderAutoReceiveMessageProducer,
+            orderMessageProducer);
   }
 
   @Test
@@ -162,15 +162,16 @@ class OrderServiceImplTest {
     when(orderSubMapper.selectById(13L)).thenReturn(subOrder);
     when(orderItemMapper.listActiveBySubOrderId(13L)).thenReturn(List.of(item1, item2, item3));
     when(orderMainMapper.selectById(21L)).thenReturn(mainOrder);
+    when(orderMessageProducer.sendStockReleaseRequestEvent(any())).thenReturn(true);
 
     orderService.advanceSubOrderStatus(13L, OrderAction.CANCEL);
 
-    ArgumentCaptor<StockOperateCommandDTO> captor =
-        ArgumentCaptor.forClass(StockOperateCommandDTO.class);
-    verify(stockReservationRemoteService, org.mockito.Mockito.times(2)).release(captor.capture());
+    ArgumentCaptor<com.cloud.common.messaging.event.StockReleaseRequestEvent> captor =
+        ArgumentCaptor.forClass(com.cloud.common.messaging.event.StockReleaseRequestEvent.class);
+    verify(orderMessageProducer).sendStockReleaseRequestEvent(captor.capture());
 
     Map<Long, Integer> quantities =
-        captor.getAllValues().stream()
+        captor.getValue().getItems().stream()
             .collect(
                 java.util.stream.Collectors.toMap(
                     StockOperateCommandDTO::getSkuId, StockOperateCommandDTO::getQuantity));

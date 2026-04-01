@@ -1,53 +1,8 @@
-x-skywalking-common: &skywalking-common
-  JAVA_TOOL_OPTIONS: "-javaagent:/skywalking/agent/skywalking-agent.jar -DNACOS.CONNECT.TIMEOUT=3000 -DNACOS.READ.TIMEOUT=10000 -Dnacos.remote.client.grpc.timeout=10000 -Dnacos.remote.client.grpc.server.check.timeout=10000 -Dnacos.remote.client.grpc.health.timeout=10000 -Dnacos.remote.client.grpc.health.retry=5"
-  SW_AGENT_COLLECTOR_BACKEND_SERVICES: "skywalking-oap:11800"
-  SW_LOGGING_OUTPUT: "CONSOLE"
-  SW_LOGGING_LEVEL: "WARN"
-  SW_AGENT_PROFILE_ACTIVE: "false"
-  SW_AGENT_ASYNC_PROFILER_ACTIVE: "false"
-
-x-nacos-client-common: &nacos-client-common
-  NACOS_SERVER_ADDR: nacos:8848
-  NACOS_USERNAME: nacos
-  NACOS_PASSWORD: nacos
-  NACOS_NAMESPACE: public
-  NACOS_GROUP: DEFAULT_GROUP
-  DUBBO_REGISTRY_ADDRESS: nacos://nacos:8848
-  DUBBO_REGISTRY_USERNAME: nacos
-  DUBBO_REGISTRY_PASSWORD: nacos
-  DUBBO_REGISTRY_PARAMETERS_NAMESPACE: public
-  DUBBO_REGISTRY_PARAMETERS_GROUP: DUBBO_GROUP
-  SEATA_TX_SERVICE_GROUP: default_tx_group
-  SEATA_TX_CLUSTER: default
-  SEATA_SERVICE_VGROUP_MAPPING_DEFAULT_TX_GROUP: default
-  SEATA_SERVICE_GROUPLIST_DEFAULT: seata-server:8091
-  SPRING_CLOUD_NACOS_SERVER_ADDR: nacos:8848
-  SPRING_CLOUD_NACOS_USERNAME: nacos
-  SPRING_CLOUD_NACOS_PASSWORD: nacos
-  SPRING_CLOUD_NACOS_NAMESPACE: public
-  SPRING_CLOUD_NACOS_CONFIG_SERVER_ADDR: nacos:8848
-  SPRING_CLOUD_NACOS_CONFIG_USERNAME: nacos
-  SPRING_CLOUD_NACOS_CONFIG_PASSWORD: nacos
-  SPRING_CLOUD_NACOS_CONFIG_NAMESPACE: public
-  SPRING_CLOUD_NACOS_CONFIG_GROUP: DEFAULT_GROUP
-  SPRING_CLOUD_NACOS_CONFIG_FILE_EXTENSION: yaml
-  SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: nacos:8848
-  SPRING_CLOUD_NACOS_DISCOVERY_USERNAME: nacos
-  SPRING_CLOUD_NACOS_DISCOVERY_PASSWORD: nacos
-  SPRING_CLOUD_NACOS_DISCOVERY_NAMESPACE: public
-  SPRING_CLOUD_NACOS_DISCOVERY_GROUP: DEFAULT_GROUP
-
-x-skywalking-agent-volume: &skywalking-agent-volume
-  type: bind
-  source: ./monitor/skywalking/agent
-  target: /skywalking/agent
-  read_only: true
-
 services:
   # Compatibility note standardized.
   mysql:
-    image: mysql:9.3.0
-    container_name: cloud-mysql
+    image: mysql:8.4.4
+    container_name: mysql
     entrypoint:
       - /bin/bash
       - /opt/mysql/scripts/reset-and-bootstrap.sh
@@ -93,8 +48,8 @@ services:
 
   # Compatibility note standardized.
   redis:
-    image: redis:7.4.5-bookworm
-    container_name: cloud-redis
+    image: redis:7.4.3-alpine
+    container_name: redis
     networks:
       service_net:
         ipv4_address: 172.28.0.20
@@ -122,8 +77,8 @@ services:
 
   # Compatibility note standardized.
   nacos:
-    image: nacos/nacos-server:v3.0.2
-    container_name: cloud-nacos
+    image: nacos/nacos-server:v3.2.0
+    container_name: nacos
     networks:
       service_net:
         ipv4_address: 172.28.0.30
@@ -160,8 +115,9 @@ services:
       NACOS_CORE_AUTH_DEFAULT_ROLES: ADMIN
       NACOS_CORE_AUTH_DEFAULT_RESOURCE: "public:*:*"
       # Compatibility note standardized.
-      JVM_XMS: 256m
-      JVM_XMX: 256m
+      JVM_XMS: 384m
+      JVM_XMX: 384m
+      JVM_XMN: 128m
       # Disable CMDB (not needed)
       NACOS_CMDB_ENABLED: "false"
       # Disable Istio MCP (not needed)
@@ -171,11 +127,9 @@ services:
       # Reduce the heartbeat interval to lower network overhead (milliseconds)
       NACOS_NAMING_CLIENT_BEAT_INTERVAL: "5000"
 
-    mem_limit: 384m
+    mem_limit: 768m
     ports:
       - "${PORT_NACOS_HTTP:-18848}:8848"
-      - "${PORT_NACOS_GRPC:-19090}:9848"
-      - "${PORT_NACOS_GRPC_COMPAT:-12937}:9848"
       - "${PORT_NACOS_RAFT:-19848}:9849"
     volumes:
       - type: bind
@@ -191,15 +145,31 @@ services:
       mysql:
         condition: service_healthy
     healthcheck:
-      test: [ "CMD-SHELL", "curl -fsS http://127.0.0.1:9090/nacos/ >/dev/null && nc -z 127.0.0.1 9848" ]
+      test: [ "CMD-SHELL", "curl -fsS http://127.0.0.1:8848/nacos/actuator/health >/dev/null" ]
       interval: 10s
       timeout: 5s
-      retries: 12
+      retries: 24
+
+  nacos-grpc-proxy:
+    image: alpine/socat
+    container_name: nacos-grpc-proxy
+    networks:
+      service_net:
+        ipv4_address: 172.28.0.31
+    depends_on:
+      nacos:
+        condition: service_healthy
+    command:
+      - TCP-LISTEN:19090,fork,reuseaddr
+      - TCP:nacos:9848
+    ports:
+      - "${PORT_NACOS_GRPC:-16001}:19090"
+    restart: unless-stopped
 
   # Compatibility note standardized. 
   namesrv:
     image: apache/rocketmq:5.3.2
-    container_name: cloud-rmq-namesrv
+    container_name: rmq-namesrv
     networks:
       service_net:
         ipv4_address: 172.28.0.40
@@ -218,7 +188,7 @@ services:
   # Compatibility note standardized.
   broker:
     image: apache/rocketmq:5.3.2
-    container_name: cloud-rmq-broker
+    container_name: rmq-broker
     user: "0:0"
     networks:
       service_net:
@@ -252,7 +222,7 @@ services:
   # Compatibility note standardized.
   rmq-console:
     image: apacherocketmq/rocketmq-dashboard:2.1.0
-    container_name: cloud-rmq-dashboard
+    container_name: rmq-dashboard
     networks:
       service_net:
         ipv4_address: 172.28.0.65
@@ -267,8 +237,8 @@ services:
 
   # Compatibility note standardized.
   nginx:
-    image: nginx:stable-perl
-    container_name: cloud-nginx-gateway
+    image: nginx:stable-alpine3.23-perl
+    container_name: nginx
     networks:
       service_net:
         ipv4_address: 172.28.0.70
@@ -285,7 +255,7 @@ services:
         source: ./docker-compose/nginx/logs
         target: /var/log/nginx
       - type: bind
-        source: ../my-shop-uniapp/dist
+        source: ../my-shop-uniapp/dist/h5
         target: /usr/share/nginx/html
     command:
       - /bin/sh
@@ -294,331 +264,9 @@ services:
     depends_on:
       - nacos
 
-  gateway:
-    image: eclipse-temurin:17-jre
-    container_name: cloud-gateway
-    profiles:
-      - services
-    networks:
-      service_net:
-        ipv4_address: 172.28.0.140
-    ports:
-      - "${PORT_GATEWAY_SERVICE_HOST:-8080}:8080"
-    depends_on:
-      nacos:
-        condition: service_healthy
-      skywalking-oap:
-        condition: service_started
-    volumes:
-      - *skywalking-agent-volume
-      - type: bind
-        source: ../services/gateway/target/gateway-1.1.0.jar
-        target: /workspace/app.jar
-    environment:
-      <<: [*skywalking-common, *nacos-client-common]
-      SW_AGENT_NAME: gateway
-      LOGGING_FILE_PATH: /workspace/logs
-      AUTH_HOST: auth-service
-      AUTH_PORT: 8081
-      SENTINEL_DASHBOARD: sentinel-dashboard:8858
-      ROCKETMQ_NAME_SERVER: namesrv:9876
-      SPRING_REDIS_HOST: redis
-      SPRING_REDIS_PORT: 6379
-      SPRING_DATA_REDIS_HOST: redis
-      SPRING_DATA_REDIS_PORT: 6379
-      GATEWAY_SIGNATURE_SECRET: ${GATEWAY_SIGNATURE_SECRET:-cloud-gateway-signature-dev}
-      SEATA_SERVER_ADDR: seata-server:8091
-    command:
-      - java
-      - -jar
-      - /workspace/app.jar
-      - --spring.profiles.active=dev,route
-
-  auth-service:
-    image: eclipse-temurin:17-jre
-    container_name: cloud-auth-service
-    profiles:
-      - services
-    networks:
-      - service_net
-    ports:
-      - "${PORT_AUTH_SERVICE_HOST:-8081}:8081"
-    depends_on:
-      nacos:
-        condition: service_healthy
-      skywalking-oap:
-        condition: service_started
-    volumes:
-      - *skywalking-agent-volume
-      - type: bind
-        source: ../services/auth-service/target/auth-service-1.1.0.jar
-        target: /workspace/app.jar
-    environment:
-      <<: [*skywalking-common, *nacos-client-common]
-      SW_AGENT_NAME: auth-service
-      LOGGING_FILE_PATH: /workspace/logs
-      AUTH_HOST: auth-service
-      AUTH_PORT: 8081
-      ROCKETMQ_NAME_SERVER: namesrv:9876
-      SPRING_DATASOURCE_URL: "jdbc:mysql://mysql:3306/auth_db?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=GMT%2B8"
-      SPRING_REDIS_HOST: redis
-      SPRING_REDIS_PORT: 6379
-      SPRING_DATA_REDIS_HOST: redis
-      SPRING_DATA_REDIS_PORT: 6379
-      CLIENT_SERVICE_SECRET: ${CLIENT_SERVICE_SECRET:-cloud-client-service-secret-dev}
-      APP_OAUTH2_INTERNAL_CLIENT_SECRET: ${APP_OAUTH2_INTERNAL_CLIENT_SECRET:-cloud-internal-client-secret-dev}
-      APP_JWT_ALLOW_GENERATED_KEYPAIR: ${APP_JWT_ALLOW_GENERATED_KEYPAIR:-true}
-      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-cloud-github-client-dev}
-      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-cloud-github-secret-dev}
-      SEATA_ENABLED: "false"
-      SEATA_SERVER_ADDR: seata-server:8091
-    command:
-      - java
-      - -jar
-      - /workspace/app.jar
-      - --spring.profiles.active=dev
-
-  user-service:
-    image: eclipse-temurin:17-jre
-    container_name: cloud-user-service
-    profiles:
-      - services
-    networks:
-      - service_net
-    ports:
-      - "${PORT_USER_SERVICE_HOST:-8082}:8082"
-    depends_on:
-      nacos:
-        condition: service_healthy
-      skywalking-oap:
-        condition: service_started
-    volumes:
-      - *skywalking-agent-volume
-      - type: bind
-        source: ../services/user-service/target/user-service-1.1.0.jar
-        target: /workspace/app.jar
-    environment:
-      <<: [*skywalking-common, *nacos-client-common]
-      SW_AGENT_NAME: user-service
-      LOGGING_FILE_PATH: /workspace/logs
-      AUTH_HOST: auth-service
-      AUTH_PORT: 8081
-      ROCKETMQ_NAME_SERVER: namesrv:9876
-      SPRING_DATASOURCE_URL: "jdbc:mysql://mysql:3306/user_db?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=GMT%2B8"
-      SPRING_REDIS_HOST: redis
-      SPRING_REDIS_PORT: 6379
-      SPRING_DATA_REDIS_HOST: redis
-      SPRING_DATA_REDIS_PORT: 6379
-      SEATA_SERVER_ADDR: seata-server:8091
-    command:
-      - java
-      - -jar
-      - /workspace/app.jar
-      - --spring.profiles.active=dev
-
-  order-service:
-    image: eclipse-temurin:17-jre
-    container_name: cloud-order-service
-    profiles:
-      - services
-    networks:
-      - service_net
-    ports:
-      - "${PORT_ORDER_SERVICE_HOST:-8083}:8083"
-    depends_on:
-      nacos:
-        condition: service_healthy
-      skywalking-oap:
-        condition: service_started
-    volumes:
-      - *skywalking-agent-volume
-      - type: bind
-        source: ../services/order-service/target/order-service-1.1.0.jar
-        target: /workspace/app.jar
-    environment:
-      <<: [*skywalking-common, *nacos-client-common]
-      SW_AGENT_NAME: order-service
-      LOGGING_FILE_PATH: /workspace/logs
-      AUTH_HOST: auth-service
-      AUTH_PORT: 8081
-      ROCKETMQ_NAME_SERVER: namesrv:9876
-      SPRING_DATASOURCE_URL: "jdbc:mysql://mysql:3306/order_db?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=GMT%2B8"
-      SPRING_REDIS_HOST: redis
-      SPRING_REDIS_PORT: 6379
-      SPRING_DATA_REDIS_HOST: redis
-      SPRING_DATA_REDIS_PORT: 6379
-      SEATA_SAGA_ENABLED: ${SEATA_SAGA_ENABLED:-false}
-      SEATA_SERVER_ADDR: seata-server:8091
-    command:
-      - java
-      - -jar
-      - /workspace/app.jar
-      - --spring.profiles.active=dev
-
-  product-service:
-    image: eclipse-temurin:17-jre
-    container_name: cloud-product-service
-    profiles:
-      - services
-    networks:
-      - service_net
-    ports:
-      - "${PORT_PRODUCT_SERVICE_HOST:-8084}:8084"
-    depends_on:
-      nacos:
-        condition: service_healthy
-      skywalking-oap:
-        condition: service_started
-    volumes:
-      - *skywalking-agent-volume
-      - type: bind
-        source: ../services/product-service/target/product-service-1.1.0.jar
-        target: /workspace/app.jar
-    environment:
-      <<: [*skywalking-common, *nacos-client-common]
-      SW_AGENT_NAME: product-service
-      LOGGING_FILE_PATH: /workspace/logs
-      AUTH_HOST: auth-service
-      AUTH_PORT: 8081
-      ROCKETMQ_NAME_SERVER: namesrv:9876
-      MINIO_ENDPOINT: http://minio:9000
-      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
-      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin}
-      MINIO_PUBLIC_ENDPOINT: ${MINIO_PUBLIC_ENDPOINT:-http://127.0.0.1:19000}
-      SPRING_DATASOURCE_URL: "jdbc:mysql://mysql:3306/product_db?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true"
-      SPRING_REDIS_HOST: redis
-      SPRING_REDIS_PORT: 6379
-      SPRING_DATA_REDIS_HOST: redis
-      SPRING_DATA_REDIS_PORT: 6379
-      SEATA_SERVER_ADDR: seata-server:8091
-    command:
-      - java
-      - -jar
-      - /workspace/app.jar
-      - --spring.profiles.active=dev
-
-  stock-service:
-    image: eclipse-temurin:17-jre
-    container_name: cloud-stock-service
-    profiles:
-      - services
-    networks:
-      - service_net
-    ports:
-      - "${PORT_STOCK_SERVICE_HOST:-8085}:8085"
-    depends_on:
-      nacos:
-        condition: service_healthy
-      skywalking-oap:
-        condition: service_started
-    volumes:
-      - *skywalking-agent-volume
-      - type: bind
-        source: ../services/stock-service/target/stock-service-1.1.0.jar
-        target: /workspace/app.jar
-    environment:
-      <<: [*skywalking-common, *nacos-client-common]
-      SW_AGENT_NAME: stock-service
-      LOGGING_FILE_PATH: /workspace/logs
-      AUTH_HOST: auth-service
-      AUTH_PORT: 8081
-      ROCKETMQ_NAME_SERVER: namesrv:9876
-      SPRING_DATASOURCE_URL: "jdbc:mysql://mysql:3306/stock_db?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true"
-      SPRING_REDIS_HOST: redis
-      SPRING_REDIS_PORT: 6379
-      SPRING_DATA_REDIS_HOST: redis
-      SPRING_DATA_REDIS_PORT: 6379
-      SEATA_SERVER_ADDR: seata-server:8091
-    command:
-      - java
-      - -jar
-      - /workspace/app.jar
-      - --spring.profiles.active=dev
-
-  payment-service:
-    image: eclipse-temurin:17-jre
-    container_name: cloud-payment-service
-    profiles:
-      - services
-    networks:
-      - service_net
-    ports:
-      - "${PORT_PAYMENT_SERVICE_HOST:-8086}:8086"
-    depends_on:
-      nacos:
-        condition: service_healthy
-      skywalking-oap:
-        condition: service_started
-    volumes:
-      - *skywalking-agent-volume
-      - type: bind
-        source: ../services/payment-service/target/payment-service-1.1.0.jar
-        target: /workspace/app.jar
-    environment:
-      <<: [*skywalking-common, *nacos-client-common]
-      SW_AGENT_NAME: payment-service
-      LOGGING_FILE_PATH: /workspace/logs
-      AUTH_HOST: auth-service
-      AUTH_PORT: 8081
-      ROCKETMQ_NAME_SERVER: namesrv:9876
-      ROCKETMQ_PRODUCER_GROUP: payment-service-producer
-      SPRING_DATASOURCE_URL: "jdbc:mysql://mysql:3306/payment_db?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=GMT%2B8"
-      SPRING_REDIS_HOST: redis
-      SPRING_REDIS_PORT: 6379
-      SPRING_DATA_REDIS_HOST: redis
-      SPRING_DATA_REDIS_PORT: 6379
-      SEATA_SERVER_ADDR: seata-server:8091
-    command:
-      - java
-      - -jar
-      - /workspace/app.jar
-      - --spring.profiles.active=dev
-
-  search-service:
-    image: eclipse-temurin:17-jre
-    container_name: cloud-search-service
-    profiles:
-      - services
-    networks:
-      - service_net
-    ports:
-      - "${PORT_SEARCH_SERVICE_HOST:-8087}:8087"
-    depends_on:
-      nacos:
-        condition: service_healthy
-      skywalking-oap:
-        condition: service_started
-      elasticsearch:
-        condition: service_healthy
-    volumes:
-      - *skywalking-agent-volume
-      - type: bind
-        source: ../services/search-service/target/search-service-1.1.0.jar
-        target: /workspace/app.jar
-    environment:
-      <<: [*skywalking-common, *nacos-client-common]
-      SW_AGENT_NAME: search-service
-      LOGGING_FILE_PATH: /workspace/logs
-      AUTH_HOST: auth-service
-      AUTH_PORT: 8081
-      ROCKETMQ_NAME_SERVER: namesrv:9876
-      SPRING_ELASTICSEARCH_URIS: http://elasticsearch:9200
-      SEATA_ENABLED: "false"
-      SPRING_DATASOURCE_URL: "jdbc:mysql://mysql:3306/search_db?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true"
-      SPRING_REDIS_HOST: redis
-      SPRING_REDIS_PORT: 6379
-      SPRING_DATA_REDIS_HOST: redis
-      SPRING_DATA_REDIS_PORT: 6379
-      SEATA_SERVER_ADDR: seata-server:8091
-    command:
-      - java
-      - -jar
-      - /workspace/app.jar
-      - --spring.profiles.active=dev
-  # Compatibility note standardized.
   minio:
     image: minio/minio:RELEASE.2025-07-23T15-54-02Z-cpuv1
-    container_name: cloud-minio
+    container_name: minio
     networks:
       service_net:
         ipv4_address: 172.28.0.80
@@ -638,7 +286,7 @@ services:
   # Compatibility note standardized.
   elasticsearch:
     image: elasticsearch:9.1.2
-    container_name: cloud-es-search
+    container_name: es-search
     networks:
       service_net:
         ipv4_address: 172.28.0.90  # Compatibility note standardized.
@@ -677,7 +325,7 @@ services:
       context: ./docker-compose/elasticsearch
       dockerfile: Dockerfile
     image: cloud/elasticsearch:8.15.3-pinyin
-    container_name: cloud-es-oap
+    container_name: es-oap
     networks:
       service_net:
         ipv4_address: 172.28.0.91
@@ -709,7 +357,7 @@ services:
   # Kibana
   kibana:
     image: kibana:9.1.2
-    container_name: cloud-kibana-search
+    container_name: kibana-search
     depends_on:
       - elasticsearch
     networks:
@@ -753,7 +401,7 @@ services:
     build:
       context: ./monitor/logstash
       dockerfile: Dockerfile
-    container_name: cloud-logstash-sync
+    container_name: logstash
     depends_on:
       mysql:
         condition: service_healthy
@@ -768,7 +416,7 @@ services:
       - "${PORT_LOGSTASH_API:-19600}:9600"
     environment:
       TZ: Asia/Shanghai
-      MYSQL_HOST: cloud-mysql
+      MYSQL_HOST: mysql
       MYSQL_PORT: 3306
       MYSQL_DATABASE: product_db
       MYSQL_USER: root
@@ -833,10 +481,34 @@ services:
       timeout: 5s
       retries: 8
       start_period: 45s
-
+  canal-server:
+    image: canal/canal-server:v1.1.8
+    container_name: canal-server
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      service_net:
+        ipv4_address: 172.28.0.140
+    mem_limit: 512m
+    ports:
+      - "${PORT_CANAL_SERVER:-11111}:11111"
+      - "${PORT_CANAL_ADMIN:-11110}:11110"
+    environment:
+      canal.instance.master.address: mysql:3306
+      canal.instance.dbUsername: root
+      canal.instance.dbPassword: root
+      canal.instance.filter.regex: product_db\\..*
+      canal.destinations: product
+      canal.serverMode: tcp
+    volumes:
+      - type: bind
+        source: ./docker-compose/canal/logs
+        target: /home/admin/canal-server/logs
+    restart: unless-stopped
   skywalking-oap:
     image: apache/skywalking-oap-server:10.3.0
-    container_name: cloud-skywalking-oap
+    container_name: skywalking-oap
     depends_on:
       elasticsearch-oap:
         condition: service_healthy
@@ -868,7 +540,7 @@ services:
 
   skywalking-ui:
     image: apache/skywalking-ui:10.3.0
-    container_name: cloud-skywalking-ui
+    container_name: skywalking-ui
     depends_on:
       - skywalking-oap
     networks:
@@ -884,7 +556,7 @@ services:
   #     context: ./docker-compose/jenkins
   #     dockerfile: Dockerfile
   #   image: cloud/jenkins:jdk17-docker
-  #   container_name: cloud-jenkins
+  #   container_name: jenkins
   #   user: root
   #   networks:
   #     service_net:
@@ -894,7 +566,7 @@ services:
   #     - "${PORT_JENKINS_AGENT:-15000}:50000"
   #   mem_limit: 1g
   #   environment:
-  #     JAVA_OPTS: -Djenkins.install.runSetupWizard=false -Xmx1g
+  #     JAVA_OPTS: -Djenkins.install.runSetupWizard=false -BMG
   #     TZ: Asia/Shanghai
   #     DOCKER_HOST: unix:///var/run/docker.sock
   #   volumes:
@@ -910,8 +582,8 @@ services:
   #   restart: unless-stopped
 
   sentinel-dashboard:
-    image: bladex/sentinel-dashboard:1.8.6
-    container_name: cloud-sentinel-dashboard
+    image: bladex/sentinel-dashboard:1.8.9
+    container_name: sentinel-dashboard
     networks:
       service_net:
         ipv4_address: 172.28.0.132
@@ -925,7 +597,7 @@ services:
 
   xxl-job-admin:
     image: xuxueli/xxl-job-admin:2.4.0
-    container_name: cloud-xxl-job-admin
+    container_name: xxl-job-admin
     depends_on:
       mysql:
         condition: service_healthy
@@ -950,38 +622,6 @@ services:
         source: ./docker-compose/xxl-job-admin/logs
         target: /data/applogs
     restart: unless-stopped
-  seata-server:
-    image: apache/seata-server:2.6.0.jdk17
-    container_name: cloud-seata-server
-    depends_on:
-      mysql:
-        condition: service_healthy
-    networks:
-      service_net:
-        ipv4_address: 172.28.0.133
-    mem_limit: 256m
-    ports:
-      - "${PORT_SEATA_SERVER:-18091}:8091"
-    environment:
-      SEATA_CONFIG_NAME: file:/seata-server/resources/registry
-
-      # Store transaction logs in MySQL
-      SEATA_STORE_MODE: db
-      SEATA_STORE_DB_DRIVER_CLASS_NAME: com.mysql.cj.jdbc.Driver
-      SEATA_STORE_DB_URL: jdbc:mysql://mysql:3306/seata?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
-      SEATA_STORE_DB_USER: root
-      SEATA_STORE_DB_PASSWORD: root
-    volumes:
-      - type: bind
-        source: ./docker-compose/seata/config/registry.conf
-        target: /seata-server/resources/registry.conf
-        read_only: true
-      - type: bind
-        source: ./docker-compose/seata/config/file.conf
-        target: /seata-server/resources/file.conf
-        read_only: true
-    restart: unless-stopped
-
 # Compatibility note standardized.
 networks:
   service_net:

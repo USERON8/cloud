@@ -6,7 +6,19 @@ server:
       min-spare: ${SERVER_TOMCAT_THREADS_MIN_SPARE:20}
     max-connections: ${SERVER_TOMCAT_MAX_CONNECTIONS:20000}
     accept-count: ${SERVER_TOMCAT_ACCEPT_COUNT:1000}
-
+dubbo:
+  registry:
+    address: nacos://${NACOS_HOST:127.0.0.1}:${NACOS_PORT:15001}
+    username: ${NACOS_USERNAME:nacos}
+    password: ${NACOS_PASSWORD:nacos}
+  protocol:
+    port: 20887
+  application:
+    qos-enable: false
+logging:
+  file:
+    path: ./logs
+    name: ${logging.file.path}/search-service.log
 spring:
   application:
     name: search-service
@@ -34,9 +46,13 @@ spring:
     uris: ${SPRING_ELASTICSEARCH_URIS:http://127.0.0.1:19200}
   cloud:
     nacos:
+      discovery:
+        server-addr: ${NACOS_SERVER_ADDR:${NACOS_HOST:127.0.0.1}:${NACOS_PORT:15001}}
+        username: ${NACOS_USERNAME:nacos}
+        password: ${NACOS_PASSWORD:nacos}
       config:
         enabled: true
-        server-addr: ${NACOS_SERVER_ADDR:${NACOS_HOST:127.0.0.1}:${NACOS_PORT:18848}}
+        server-addr: ${NACOS_SERVER_ADDR:${NACOS_HOST:127.0.0.1}:${NACOS_PORT:15001}}
         username: ${NACOS_USERNAME:nacos}
         password: ${NACOS_PASSWORD:nacos}
         namespace: public
@@ -49,9 +65,6 @@ spring:
         import-check:
           enabled: false
 
-logging:
-  file:
-    name: ${logging.file.path}/search-service.log
 
 app:
   mybatis:
@@ -169,8 +182,5 @@ management:
       enabled: false
     elasticsearch:
       enabled: true
-
-seata:
-  enabled: false
 
 

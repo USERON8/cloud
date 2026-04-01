@@ -2,22 +2,24 @@ DROP DATABASE IF EXISTS stock_db;
 CREATE DATABASE IF NOT EXISTS stock_db DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE stock_db;
 
-CREATE TABLE IF NOT EXISTS stock_ledger
+CREATE TABLE IF NOT EXISTS stock_segment
 (
     id                BIGINT UNSIGNED PRIMARY KEY,
     sku_id            BIGINT UNSIGNED NOT NULL,
-    on_hand_qty       INT             NOT NULL DEFAULT 0,
-    reserved_qty      INT             NOT NULL DEFAULT 0,
-    salable_qty       INT             NOT NULL DEFAULT 0,
+    segment_id        INT             NOT NULL,
+    available_qty     INT             NOT NULL DEFAULT 0,
+    locked_qty        INT             NOT NULL DEFAULT 0,
+    sold_qty          INT             NOT NULL DEFAULT 0,
     alert_threshold   INT             NOT NULL DEFAULT 0,
     status            TINYINT         NOT NULL DEFAULT 1,
     created_at        DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at        DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted           TINYINT         NOT NULL DEFAULT 0,
     version           INT             NOT NULL DEFAULT 0,
-    UNIQUE KEY uk_stock_ledger_sku (sku_id),
-    INDEX idx_stock_ledger_sku_deleted (sku_id, deleted),
-    INDEX idx_stock_ledger_status_deleted (status, deleted)
+    UNIQUE KEY uk_stock_segment_sku_segment (sku_id, segment_id),
+    INDEX idx_stock_segment_sku_deleted (sku_id, deleted),
+    INDEX idx_stock_segment_sku_available (sku_id, available_qty, deleted),
+    INDEX idx_stock_segment_status_deleted (status, deleted)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci;
@@ -25,16 +27,18 @@ CREATE TABLE IF NOT EXISTS stock_ledger
 CREATE TABLE IF NOT EXISTS stock_reservation
 (
     id                BIGINT UNSIGNED PRIMARY KEY,
+    main_order_no     VARCHAR(64)     NULL,
     sub_order_no      VARCHAR(64)     NOT NULL,
     sku_id            BIGINT UNSIGNED NOT NULL,
-    reserved_qty      INT             NOT NULL,
+    segment_id        INT             NOT NULL,
+    quantity          INT             NOT NULL,
     status            VARCHAR(32)     NOT NULL,
     idempotency_key   VARCHAR(128)    NOT NULL,
     created_at        DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at        DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted           TINYINT         NOT NULL DEFAULT 0,
     version           INT             NOT NULL DEFAULT 0,
-    UNIQUE KEY uk_stock_reservation_sub_sku (sub_order_no, sku_id),
+    UNIQUE KEY uk_stock_reservation_sub_sku_segment (sub_order_no, sku_id, segment_id),
     UNIQUE KEY uk_stock_reservation_idempotency (idempotency_key),
     INDEX idx_stock_reservation_sub_sku_deleted (sub_order_no, sku_id, deleted),
     INDEX idx_stock_reservation_sku_status_deleted (sku_id, status, deleted)
@@ -46,15 +50,16 @@ CREATE TABLE IF NOT EXISTS stock_txn
 (
     id                BIGINT UNSIGNED PRIMARY KEY,
     sku_id            BIGINT UNSIGNED NOT NULL,
+    segment_id        INT             NULL,
     sub_order_no      VARCHAR(64)     NULL,
     txn_type          VARCHAR(32)     NOT NULL,
     quantity          INT             NOT NULL,
-    before_on_hand    INT             NULL,
-    after_on_hand     INT             NULL,
-    before_reserved   INT             NULL,
-    after_reserved    INT             NULL,
-    before_salable    INT             NULL,
-    after_salable     INT             NULL,
+    before_available  INT             NULL,
+    after_available   INT             NULL,
+    before_locked     INT             NULL,
+    after_locked      INT             NULL,
+    before_sold       INT             NULL,
+    after_sold        INT             NULL,
     remark            VARCHAR(1000)   NULL,
     created_at        DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at        DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -106,19 +111,6 @@ CREATE TABLE IF NOT EXISTS inbox_consume_log
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci;
-
-CREATE TABLE undo_log (
-  branch_id BIGINT NOT NULL,
-  xid VARCHAR(128) NOT NULL,
-  context VARCHAR(128) NOT NULL,
-  rollback_info LONGBLOB NOT NULL,
-  log_status INT NOT NULL,
-  log_created DATETIME NOT NULL,
-  log_modified DATETIME NOT NULL,
-  UNIQUE KEY ux_undo_log (xid,branch_id),
-  INDEX idx_undo_log_xid (xid),
-  INDEX idx_undo_log_branch (branch_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS dead_letter
 (

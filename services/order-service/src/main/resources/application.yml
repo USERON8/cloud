@@ -6,7 +6,15 @@ server:
       min-spare: ${SERVER_TOMCAT_THREADS_MIN_SPARE:20}
     max-connections: ${SERVER_TOMCAT_MAX_CONNECTIONS:20000}
     accept-count: ${SERVER_TOMCAT_ACCEPT_COUNT:1000}
-
+dubbo:
+  registry:
+    address: nacos://${NACOS_HOST:127.0.0.1}:${NACOS_PORT:15001}
+  protocol:
+    port: 20883
+  application:
+    qos-enable: false
+  consumer:
+    actives: ${ORDER_DUBBO_CONSUMER_ACTIVES:64}
 spring:
   application:
     name: order-service
@@ -32,9 +40,13 @@ spring:
       min-evictable-idle-time-millis: 300000
   cloud:
     nacos:
+      discovery:
+        server-addr: ${NACOS_SERVER_ADDR:${NACOS_HOST:127.0.0.1}:${NACOS_PORT:15001}}
+        username: ${NACOS_USERNAME:nacos}
+        password: ${NACOS_PASSWORD:nacos}
       config:
         enabled: true
-        server-addr: ${NACOS_SERVER_ADDR:${NACOS_HOST:127.0.0.1}:${NACOS_PORT:18848}}
+        server-addr: ${NACOS_SERVER_ADDR:${NACOS_HOST:127.0.0.1}:${NACOS_PORT:15001}}
         username: ${NACOS_USERNAME:nacos}
         password: ${NACOS_PASSWORD:nacos}
         namespace: public
@@ -73,6 +85,7 @@ spring:
 logging:
   file:
     name: ${logging.file.path}/order-service.log
+    path: ./logs
 
 mybatis-plus:
   mapper-locations: classpath*:mapper/**/*.xml
@@ -172,28 +185,4 @@ management:
   health:
     db:
       enabled: true
-
-seata:
-  saga:
-    enabled: ${SEATA_SAGA_ENABLED:true}
-    state-machine:
-      resources: classpath:saga/*.json
-      async-thread-pool:
-        core-pool-size: 2
-        max-pool-size: 4
-
-  registry:
-    type: ${SEATA_REGISTRY_TYPE:file}
-    nacos:
-      application: ${SEATA_REGISTRY_APPLICATION:seata-server}
-      server-addr: ${SEATA_REGISTRY_SERVER_ADDR:${NACOS_SERVER_ADDR:${NACOS_HOST:127.0.0.1}:${NACOS_PORT:18848}}}
-      group: ${SEATA_REGISTRY_GROUP:SEATA_GROUP}
-      namespace: ${SEATA_REGISTRY_NAMESPACE:}
-      cluster: ${SEATA_TX_CLUSTER:default}
-      username: ${SEATA_REGISTRY_USERNAME:${NACOS_USERNAME:nacos}}
-      password: ${SEATA_REGISTRY_PASSWORD:${NACOS_PASSWORD:nacos}}
-
-dubbo:
-  consumer:
-    actives: ${ORDER_DUBBO_CONSUMER_ACTIVES:64}
 

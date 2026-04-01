@@ -12,17 +12,22 @@ import com.cloud.common.security.SecurityPermissionUtils;
 import com.cloud.user.service.MerchantService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Size;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -38,6 +43,14 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/merchant")
 @RequiredArgsConstructor
 @Tag(name = "Merchant Management", description = "Merchant REST APIs")
+@Validated
+@ApiResponses({
+  @ApiResponse(responseCode = "400", description = "Invalid merchant parameters or business state"),
+  @ApiResponse(responseCode = "401", description = "Authentication required"),
+  @ApiResponse(responseCode = "403", description = "Insufficient permissions"),
+  @ApiResponse(responseCode = "404", description = "Merchant resource not found"),
+  @ApiResponse(responseCode = "500", description = "Internal merchant service error")
+})
 public class MerchantController {
 
   private final MerchantService merchantService;
@@ -134,7 +147,11 @@ public class MerchantController {
           + "and @permissionManager.isMerchantOwner(#id, authentication))")
   @Operation(summary = "Update merchant", description = "Update merchant details")
   public Result<Boolean> updateMerchant(
-      @Parameter(description = "Merchant ID") @PathVariable Long id,
+      @Parameter(description = "Merchant ID")
+          @PathVariable
+          @NotNull(message = "merchant id is required")
+          @Positive(message = "merchant id must be positive")
+          Long id,
       @Parameter(description = "Merchant payload")
           @RequestBody
           @Valid
@@ -152,6 +169,7 @@ public class MerchantController {
       @Parameter(description = "Merchant ID")
           @PathVariable
           @NotNull(message = "merchant id is required")
+          @Positive(message = "merchant id must be positive")
           Long id) {
     boolean result = merchantService.deleteMerchant(id);
     return Result.success("merchant deleted", result);
@@ -161,7 +179,11 @@ public class MerchantController {
   @PreAuthorize("hasAuthority('merchant:audit')")
   @Operation(summary = "Approve merchant", description = "Approve merchant")
   public Result<Boolean> approveMerchant(
-      @Parameter(description = "Merchant ID") @PathVariable Long id,
+      @Parameter(description = "Merchant ID")
+          @PathVariable
+          @NotNull(message = "merchant id is required")
+          @Positive(message = "merchant id must be positive")
+          Long id,
       @Parameter(description = "Review remark") @RequestParam(required = false) String remark) {
     boolean result = merchantService.approveMerchant(id, remark);
     return Result.success("merchant approved", result);
@@ -171,8 +193,16 @@ public class MerchantController {
   @PreAuthorize("hasAuthority('merchant:audit')")
   @Operation(summary = "Reject merchant", description = "Reject merchant")
   public Result<Boolean> rejectMerchant(
-      @Parameter(description = "Merchant ID") @PathVariable Long id,
-      @Parameter(description = "Reject reason") @RequestParam String reason) {
+      @Parameter(description = "Merchant ID")
+          @PathVariable
+          @NotNull(message = "merchant id is required")
+          @Positive(message = "merchant id must be positive")
+          Long id,
+      @Parameter(description = "Reject reason")
+          @RequestParam
+          @NotBlank(message = "reason cannot be blank")
+          @Size(max = 255, message = "reason must be less than or equal to 255 characters")
+          String reason) {
     boolean result = merchantService.rejectMerchant(id, reason);
     return Result.success("merchant rejected", result);
   }
@@ -181,7 +211,11 @@ public class MerchantController {
   @PreAuthorize("hasAuthority('admin:all')")
   @Operation(summary = "Update merchant status", description = "Update merchant status")
   public Result<Boolean> updateMerchantStatus(
-      @Parameter(description = "Merchant ID") @PathVariable Long id,
+      @Parameter(description = "Merchant ID")
+          @PathVariable
+          @NotNull(message = "merchant id is required")
+          @Positive(message = "merchant id must be positive")
+          Long id,
       @Parameter(description = "Merchant status") @RequestParam Integer status) {
     boolean result = merchantService.updateMerchantStatus(id, status);
     return Result.success("merchant status updated", result);
@@ -194,7 +228,11 @@ public class MerchantController {
           + "and @permissionManager.isMerchantOwner(#id, authentication))")
   @Operation(summary = "Get merchant statistics", description = "Get statistics for one merchant")
   public Result<Object> getMerchantStatistics(
-      @Parameter(description = "Merchant ID") @PathVariable Long id,
+      @Parameter(description = "Merchant ID")
+          @PathVariable
+          @NotNull(message = "merchant id is required")
+          @Positive(message = "merchant id must be positive")
+          Long id,
       Authentication authentication) {
     Object statistics = merchantService.getMerchantStatistics(id);
     return Result.success("query successful", statistics);
@@ -208,7 +246,10 @@ public class MerchantController {
           @RequestBody
           @NotNull(message = "merchant ids are required")
           @NotEmpty(message = "merchant ids cannot be empty")
-          List<Long> ids) {
+          List<
+                  @NotNull(message = "merchant id cannot be null")
+                  @Positive(message = "merchant id must be positive") Long>
+              ids) {
     if (ids.size() > 100) {
       throw new BizException(ResultCode.BAD_REQUEST, "batch size cannot exceed 100");
     }
@@ -226,7 +267,10 @@ public class MerchantController {
       @Parameter(description = "Merchant IDs")
           @RequestParam
           @NotNull(message = "merchant ids are required")
-          List<Long> ids,
+          List<
+                  @NotNull(message = "merchant id cannot be null")
+                  @Positive(message = "merchant id must be positive") Long>
+              ids,
       @Parameter(description = "Merchant status")
           @RequestParam
           @NotNull(message = "status is required")
@@ -252,7 +296,10 @@ public class MerchantController {
           @RequestBody
           @NotNull(message = "merchant ids are required")
           @NotEmpty(message = "merchant ids cannot be empty")
-          List<Long> ids,
+          List<
+                  @NotNull(message = "merchant id cannot be null")
+                  @Positive(message = "merchant id must be positive") Long>
+              ids,
       @Parameter(description = "Review remark") @RequestParam(required = false) String remark) {
     if (ids.size() > 100) {
       throw new BizException(ResultCode.BAD_REQUEST, "batch size cannot exceed 100");

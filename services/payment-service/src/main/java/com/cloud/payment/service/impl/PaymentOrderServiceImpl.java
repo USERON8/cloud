@@ -9,6 +9,7 @@ import com.cloud.common.domain.vo.payment.PaymentOrderVO;
 import com.cloud.common.domain.vo.payment.PaymentRefundVO;
 import com.cloud.common.enums.ResultCode;
 import com.cloud.common.exception.BusinessException;
+import com.cloud.common.metrics.TradeMetrics;
 import com.cloud.payment.mapper.PaymentCallbackLogMapper;
 import com.cloud.payment.mapper.PaymentOrderMapper;
 import com.cloud.payment.mapper.PaymentRefundMapper;
@@ -46,6 +47,7 @@ public class PaymentOrderServiceImpl implements PaymentOrderService {
   private final PaymentOrderStateSupport paymentOrderStateSupport;
   private final PaymentSecurityCacheService paymentSecurityCacheService;
   private final List<PaymentProviderGateway> providerGateways;
+  private final TradeMetrics tradeMetrics;
 
   @Override
   @Transactional(rollbackFor = Exception.class)
@@ -216,48 +218,56 @@ public class PaymentOrderServiceImpl implements PaymentOrderService {
   @Override
   @Transactional(rollbackFor = Exception.class)
   public Boolean handlePaymentCallback(PaymentCallbackCommandDTO command) {
-    if (findCallbackLogByCallbackNo(command.getCallbackNo()) != null
-        || findCallbackLogByIdempotencyKey(command.getIdempotencyKey()) != null) {
+    try {
+      if (findCallbackLogByCallbackNo(command.getCallbackNo()) != null
+          || findCallbackLogByIdempotencyKey(command.getIdempotencyKey()) != null) {
+        tradeMetrics.incrementPaymentCallback("duplicate");
+        return true;
+      }
+
+      PaymentOrderEntity order =
+          paymentOrderMapper.selectOne(
+              new LambdaQueryWrapper<PaymentOrderEntity>()
+                  .eq(PaymentOrderEntity::getPaymentNo, command.getPaymentNo())
+                  .eq(PaymentOrderEntity::getDeleted, 0)
+                  .last("LIMIT 1"));
+      if (order == null) {
+        throw new BusinessException("payment order not found");
+      }
+      validateCallbackAgainstOrder(order, command);
+      String previousStatus = order.getStatus();
+      String normalizedStatus = normalizeCallbackStatus(command.getCallbackStatus());
+
+      PaymentCallbackLogEntity log = new PaymentCallbackLogEntity();
+      log.setPaymentNo(command.getPaymentNo());
+      log.setCallbackNo(command.getCallbackNo());
+      log.setCallbackStatus(normalizedStatus);
+      log.setProviderTxnNo(command.getProviderTxnNo());
+      log.setPayload(command.getPayload());
+      log.setIdempotencyKey(command.getIdempotencyKey());
+      paymentCallbackLogMapper.insert(log);
+
+      if (paymentOrderStateSupport.isTerminalStatus(previousStatus)) {
+        tradeMetrics.incrementPaymentCallback("ignored");
+        return true;
+      }
+
+      if ("SUCCESS".equals(normalizedStatus)) {
+        paymentOrderStateSupport.markPaid(order, command.getProviderTxnNo(), LocalDateTime.now());
+      } else if ("FAIL".equals(normalizedStatus)) {
+        paymentOrderStateSupport.markFailed(order);
+      }
+      order.setNextPollAt(null);
+      order.setLastPolledAt(LocalDateTime.now());
+      order.setLastPollError(null);
+      paymentOrderMapper.updateById(order);
+      paymentOrderStateSupport.handlePersistedState(order, previousStatus);
+      tradeMetrics.incrementPaymentCallback("success");
       return true;
+    } catch (Exception ex) {
+      tradeMetrics.incrementPaymentCallback("failed");
+      throw ex;
     }
-
-    PaymentOrderEntity order =
-        paymentOrderMapper.selectOne(
-            new LambdaQueryWrapper<PaymentOrderEntity>()
-                .eq(PaymentOrderEntity::getPaymentNo, command.getPaymentNo())
-                .eq(PaymentOrderEntity::getDeleted, 0)
-                .last("LIMIT 1"));
-    if (order == null) {
-      throw new BusinessException("payment order not found");
-    }
-    validateCallbackAgainstOrder(order, command);
-    String previousStatus = order.getStatus();
-    String normalizedStatus = normalizeCallbackStatus(command.getCallbackStatus());
-
-    PaymentCallbackLogEntity log = new PaymentCallbackLogEntity();
-    log.setPaymentNo(command.getPaymentNo());
-    log.setCallbackNo(command.getCallbackNo());
-    log.setCallbackStatus(normalizedStatus);
-    log.setProviderTxnNo(command.getProviderTxnNo());
-    log.setPayload(command.getPayload());
-    log.setIdempotencyKey(command.getIdempotencyKey());
-    paymentCallbackLogMapper.insert(log);
-
-    if (paymentOrderStateSupport.isTerminalStatus(previousStatus)) {
-      return true;
-    }
-
-    if ("SUCCESS".equals(normalizedStatus)) {
-      paymentOrderStateSupport.markPaid(order, command.getProviderTxnNo(), LocalDateTime.now());
-    } else if ("FAIL".equals(normalizedStatus)) {
-      paymentOrderStateSupport.markFailed(order);
-    }
-    order.setNextPollAt(null);
-    order.setLastPolledAt(LocalDateTime.now());
-    order.setLastPollError(null);
-    paymentOrderMapper.updateById(order);
-    paymentOrderStateSupport.handlePersistedState(order, previousStatus);
-    return true;
   }
 
   @Override

@@ -3,114 +3,157 @@ package com.cloud.order.service.impl;
 import cn.hutool.core.util.StrUtil;
 import com.cloud.common.domain.dto.stock.StockOperateCommandDTO;
 import com.cloud.common.exception.BizException;
+import com.cloud.common.messaging.event.OrderTimeoutEvent;
+import com.cloud.common.messaging.event.StockReserveRequestEvent;
 import com.cloud.order.dto.CreateMainOrderRequest;
 import com.cloud.order.dto.OrderAggregateResponse;
 import com.cloud.order.entity.OrderItem;
 import com.cloud.order.entity.OrderMain;
 import com.cloud.order.entity.OrderSub;
 import com.cloud.order.mapper.OrderMainMapper;
+import com.cloud.order.messaging.OrderMessageProducer;
+import com.cloud.order.messaging.OrderTimeoutMessageProducer;
 import com.cloud.order.service.OrderPlacementService;
 import com.cloud.order.service.OrderService;
-import com.cloud.order.service.support.StockReserveTccRemoteService;
-import com.cloud.order.tcc.OrderCreateTccAction;
+import com.cloud.order.service.support.OrderPlacementSupport;
+import com.cloud.order.service.support.StockReservationRemoteService;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import lombok.RequiredArgsConstructor;
-import org.apache.seata.spring.annotation.GlobalTransactional;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
 public class OrderPlacementServiceImpl implements OrderPlacementService {
 
-  private static final Set<String> RESERVE_REQUIRED_STATUSES = Set.of("CREATED");
-
   private final OrderMainMapper orderMainMapper;
   private final OrderService orderService;
-  private final OrderCreateTccAction orderCreateTccAction;
-  private final StockReserveTccRemoteService stockReserveTccRemoteService;
+  private final OrderPlacementSupport orderPlacementSupport;
+  private final StockReservationRemoteService stockReservationRemoteService;
+  private final OrderMessageProducer orderMessageProducer;
+  private final OrderTimeoutMessageProducer orderTimeoutMessageProducer;
 
   @Override
-  @GlobalTransactional(rollbackFor = Exception.class)
+  @Transactional(rollbackFor = Exception.class)
   public OrderAggregateResponse createOrder(CreateMainOrderRequest request) {
+    String clientOrderId = normalizeClientOrderId(request.getClientOrderId());
+    request.setClientOrderId(clientOrderId);
     String idempotencyKey =
         normalizeIdempotencyKey(request.getIdempotencyKey(), request.getUserId());
-    boolean prepared =
-        orderCreateTccAction.prepare(null, idempotencyKey, request.getCartId(), request);
-    if (!prepared) {
-      throw new BizException("failed to create order aggregate");
+    request.setIdempotencyKey(idempotencyKey);
+
+    OrderMain existingByClientOrderId =
+        orderMainMapper.selectActiveByClientOrderId(request.getUserId(), clientOrderId);
+    if (existingByClientOrderId != null) {
+      return requireAggregate(orderService.getOrderAggregate(existingByClientOrderId.getId()));
     }
 
-    OrderMain mainOrder = orderMainMapper.selectActiveByIdempotencyKey(idempotencyKey);
-    if (mainOrder == null) {
-      throw new BizException("order aggregate not found");
+    OrderMain existing = orderMainMapper.selectActiveByIdempotencyKey(idempotencyKey);
+    if (existing != null) {
+      return requireAggregate(orderService.getOrderAggregate(existing.getId()));
     }
 
+    orderPlacementSupport.prepareRequest(request);
+    List<StockOperateCommandDTO> stockCommands = buildStockCommands(request);
+    if (!Boolean.TRUE.equals(stockReservationRemoteService.preCheck(stockCommands))) {
+      throw new BizException("insufficient available stock");
+    }
+
+    OrderMain mainOrder = orderService.createMainOrder(request);
+    if (request.getCartId() != null) {
+      orderPlacementSupport.markCartCheckedOut(request.getCartId(), request.getUserId());
+    }
     OrderAggregateResponse aggregate =
         requireAggregate(orderService.getOrderAggregate(mainOrder.getId()));
-    reserveStockWithTcc(aggregate);
+    emitReserveRequest(aggregate);
+    emitTimeoutEvents(aggregate);
     return aggregate;
   }
 
-  private void reserveStockWithTcc(OrderAggregateResponse aggregate) {
-    List<StockReservationTask> tasks = collectReservationTasks(aggregate);
-    if (tasks.isEmpty()) {
-      return;
-    }
-    for (StockReservationTask task : tasks) {
-      StockOperateCommandDTO command = new StockOperateCommandDTO();
-      command.setSubOrderNo(task.getSubOrderNo());
-      command.setOrderNo(task.getMainOrderNo());
-      command.setSkuId(task.getSkuId());
-      command.setQuantity(task.getQuantity());
-      command.setReason("reserve stock for " + task.getMainOrderNo());
-
-      Boolean reserved = stockReserveTccRemoteService.tryReserve(command);
-      if (!Boolean.TRUE.equals(reserved)) {
-        throw new BizException("reserve stock failed for skuId=" + task.getSkuId());
-      }
+  private void emitReserveRequest(OrderAggregateResponse aggregate) {
+    StockReserveRequestEvent event =
+        StockReserveRequestEvent.builder()
+            .orderNo(aggregate.getMainOrder().getMainOrderNo())
+            .items(flattenStockCommands(aggregate))
+            .build();
+    if (!orderMessageProducer.sendStockReserveRequestEvent(event)) {
+      throw new IllegalStateException("failed to enqueue stock reserve request");
     }
   }
 
-  private List<StockReservationTask> collectReservationTasks(OrderAggregateResponse aggregate) {
-    List<StockReservationTask> tasks = new ArrayList<>();
+  private void emitTimeoutEvents(OrderAggregateResponse aggregate) {
     for (OrderAggregateResponse.SubOrderWithItems wrapped : aggregate.getSubOrders()) {
       OrderSub subOrder = wrapped.getSubOrder();
-      if (subOrder == null || !RESERVE_REQUIRED_STATUSES.contains(subOrder.getOrderStatus())) {
+      if (subOrder == null) {
         continue;
       }
-      tasks.addAll(buildReservationTasks(aggregate.getMainOrder(), subOrder, wrapped.getItems()));
+      OrderTimeoutEvent event =
+          OrderTimeoutEvent.builder()
+              .subOrderId(subOrder.getId())
+              .subOrderNo(subOrder.getSubOrderNo())
+              .mainOrderNo(aggregate.getMainOrder().getMainOrderNo())
+              .userId(aggregate.getMainOrder().getUserId())
+              .build();
+      orderTimeoutMessageProducer.sendAfterCommit(event);
     }
-    return tasks;
   }
 
-  private List<StockReservationTask> buildReservationTasks(
-      OrderMain mainOrder, OrderSub subOrder, List<OrderItem> items) {
-    if (items == null || items.isEmpty()) {
-      throw new BizException("order items are required for stock reservation");
-    }
-
-    Map<Long, Integer> skuQuantities = new LinkedHashMap<>();
-    for (OrderItem item : items) {
-      if (item == null || item.getSkuId() == null || item.getQuantity() == null) {
-        throw new BizException("invalid order item for stock reservation");
+  private List<StockOperateCommandDTO> buildStockCommands(CreateMainOrderRequest request) {
+    List<StockOperateCommandDTO> commands = new ArrayList<>();
+    for (CreateMainOrderRequest.CreateSubOrderRequest subOrder : request.getSubOrders()) {
+      Map<Long, Integer> skuQuantities = new LinkedHashMap<>();
+      for (CreateMainOrderRequest.CreateOrderItemRequest item : subOrder.getItems()) {
+        if (item == null || item.getSkuId() == null || item.getQuantity() == null) {
+          continue;
+        }
+        skuQuantities.merge(item.getSkuId(), item.getQuantity(), Integer::sum);
       }
-      skuQuantities.merge(item.getSkuId(), item.getQuantity(), Integer::sum);
+      for (Map.Entry<Long, Integer> entry : skuQuantities.entrySet()) {
+        StockOperateCommandDTO command = new StockOperateCommandDTO();
+        command.setSubOrderNo(
+            buildVirtualSubOrderNo(request, subOrder.getMerchantId(), entry.getKey()));
+        command.setSkuId(entry.getKey());
+        command.setQuantity(entry.getValue());
+        command.setReason("pre-check stock");
+        commands.add(command);
+      }
     }
+    return commands;
+  }
 
-    List<StockReservationTask> tasks = new ArrayList<>(skuQuantities.size());
-    for (Map.Entry<Long, Integer> entry : skuQuantities.entrySet()) {
-      tasks.add(
-          new StockReservationTask(
-              mainOrder.getMainOrderNo(),
-              subOrder.getSubOrderNo(),
-              entry.getKey(),
-              entry.getValue()));
+  private List<StockOperateCommandDTO> flattenStockCommands(OrderAggregateResponse aggregate) {
+    List<StockOperateCommandDTO> commands = new ArrayList<>();
+    for (OrderAggregateResponse.SubOrderWithItems wrapped : aggregate.getSubOrders()) {
+      OrderSub subOrder = wrapped.getSubOrder();
+      if (subOrder == null) {
+        continue;
+      }
+      Map<Long, Integer> skuQuantities = new LinkedHashMap<>();
+      for (OrderItem item : wrapped.getItems()) {
+        if (item == null || item.getSkuId() == null || item.getQuantity() == null) {
+          continue;
+        }
+        skuQuantities.merge(item.getSkuId(), item.getQuantity(), Integer::sum);
+      }
+      for (Map.Entry<Long, Integer> entry : skuQuantities.entrySet()) {
+        StockOperateCommandDTO command = new StockOperateCommandDTO();
+        command.setOrderNo(aggregate.getMainOrder().getMainOrderNo());
+        command.setSubOrderNo(subOrder.getSubOrderNo());
+        command.setSkuId(entry.getKey());
+        command.setQuantity(entry.getValue());
+        command.setReason("reserve stock for " + aggregate.getMainOrder().getMainOrderNo());
+        commands.add(command);
+      }
     }
-    return tasks;
+    return commands;
+  }
+
+  private String buildVirtualSubOrderNo(
+      CreateMainOrderRequest request, Long merchantId, Long skuId) {
+    return request.getUserId() + ":" + merchantId + ":" + skuId;
   }
 
   private OrderAggregateResponse requireAggregate(OrderAggregateResponse aggregate) {
@@ -138,34 +181,10 @@ public class OrderPlacementServiceImpl implements OrderPlacementService {
     return prefix + trimmed;
   }
 
-  private static final class StockReservationTask {
-    private final String mainOrderNo;
-    private final String subOrderNo;
-    private final Long skuId;
-    private final Integer quantity;
-
-    private StockReservationTask(
-        String mainOrderNo, String subOrderNo, Long skuId, Integer quantity) {
-      this.mainOrderNo = mainOrderNo;
-      this.subOrderNo = subOrderNo;
-      this.skuId = skuId;
-      this.quantity = quantity;
+  private String normalizeClientOrderId(String clientOrderId) {
+    if (StrUtil.isBlank(clientOrderId)) {
+      throw new BizException("clientOrderId is required");
     }
-
-    private String getMainOrderNo() {
-      return mainOrderNo;
-    }
-
-    private String getSubOrderNo() {
-      return subOrderNo;
-    }
-
-    private Long getSkuId() {
-      return skuId;
-    }
-
-    private Integer getQuantity() {
-      return quantity;
-    }
+    return clientOrderId.trim();
   }
 }

@@ -1,12 +1,13 @@
 # Cache Strategy And Implementation Notes
 
-This document describes the current cache strategy across the project, including service-level cache contents, TTL choices, key implementation points, and operational notes. The goal is to improve performance and stability without sacrificing data correctness or security.
+This document describes the current cache strategy across the project, including service-level cache contents, TTL choices, consistency rules, and operational notes. The goal is to improve performance and stability without sacrificing data correctness or security.
 
 ## Global Principles
 
 - Business correctness first: do not cache money, terminal states, or reconciliation-critical data.
 - Layered strategy: when practical, use L1 (local) + L2 (Redis) to reduce cross-network reads.
-- Consistency first: write to the database first, then invalidate or refresh caches.
+- Unified consistency rule: use Cache-Aside, write the database first, then evict cache after commit.
+- Delayed double delete: for Redis-backed business reads, perform one eviction after commit and one delayed follow-up eviction to reduce stale reads under replica lag or racing rebuilds.
 - Hotspot control: use shorter TTLs or refresh mechanisms for hot queries, and add light jitter to avoid cache avalanches.
 - Security isolation: the payment service uses Redis mainly for security and idempotency instead of raw performance.
 
@@ -26,37 +27,51 @@ Configuration location:
 
 ### `product-service`
 
-Goal: product detail reads are frequent, so L1 + L2 caching reduces database pressure.
+Goal: keep hot product reads fast while standardizing write-path consistency on post-commit eviction.
 
-- Cache type: L1 Caffeine + L2 Redis
-- Cached data: product details (`SpuDetail`)
-- TTL: 30 minutes (`1800s` by default)
-- Key: `product:detail:{spuId}`
-- Invalidation: actively invalidate on product updates or status changes
+- Product detail
+  - Cache type: L1 Caffeine + L2 Redis
+  - Cached data: product details (`SpuDetail`)
+  - TTL: 30 minutes (`1800s` by default)
+  - Key: `product:detail:{spuId}`
+  - Invalidation: `ProductDetailCacheService.evictAfterCommit(...)` plus delayed second eviction
+- Category tree
+  - Cache type: Redis
+  - Invalidation: `CategoryRedisCacheService.clearAllAfterCommit()` plus delayed second eviction
+- Shop reads and statistics
+  - Cache type: Redis
+  - Invalidation: `ShopRedisCacheService.clearAllAfterCommit()` or `evictByIdAfterCommit(...)` plus delayed second eviction
 
 Implementation:
 
 - `services/product-service/src/main/java/com/cloud/product/service/support/ProductDetailCacheService.java`
+- `services/product-service/src/main/java/com/cloud/product/service/cache/CategoryRedisCacheService.java`
+- `services/product-service/src/main/java/com/cloud/product/service/cache/ShopRedisCacheService.java`
 - `services/product-service/src/main/java/com/cloud/product/service/impl/ProductCatalogServiceImpl.java`
+- `services/product-service/src/main/java/com/cloud/product/service/impl/CategoryServiceImpl.java`
+- `services/product-service/src/main/java/com/cloud/product/service/impl/ShopServiceImpl.java`
 - Configuration: `services/product-service/src/main/resources/application.yml`
 
 ### `stock-service`
 
-Goal: stock updates must stay atomic and correct, so Redis Lua updates are preferred over TTL-driven caches.
+Goal: keep stock writes authoritative in MySQL while using Redis only as summary cache and entry-side pre-check.
 
-- Cache type: Redis hash + Lua scripts for atomic updates
+- Cache type: Redis summary cache + Lua pre-check
 - Key: `stock:ledger:{skuId}`
-- TTL: not set (persistent)
-- Write path: update the database first, then apply a Lua cache update; if that fails, rebuild from the source of truth
+- Cached data: aggregated `available`, `locked`, and `sold` totals over `stock_segment`
+- Write path: update MySQL first, then evict cache after commit and schedule delayed second eviction
+- Pre-check path: Redis Lua is used only for fast availability judgment before the command enters the heavy write path
+- Search sync: reservation, confirmation, release, and rollback also trigger product-search sync for affected SKU/SPU pairs
 
 Implementation:
 
 - `services/stock-service/src/main/java/com/cloud/stock/service/support/StockRedisCacheService.java`
 - `services/stock-service/src/main/java/com/cloud/stock/service/impl/StockLedgerServiceImpl.java`
+- `services/stock-service/src/main/java/com/cloud/stock/service/support/StockSearchSyncService.java`
 
 ### `user-service`
 
-Goal: user and merchant reads are frequent, so Redis caching with dual-key invalidation is used.
+Goal: user and merchant reads are frequent, so Redis caching with key-aware invalidation is used.
 
 - Cache type: L2 Redis
 - TTL: 10 minutes
@@ -84,18 +99,21 @@ Implementation:
 
 ### `search-service`
 
-Goal: search and recommendation traffic is hot, so use layered caches with TTLs tuned by freshness sensitivity.
+Goal: search and recommendation traffic is hot, so use Redis caches with TTLs tuned by freshness sensitivity and MQ-driven index sync for freshness.
 
-- Cache type: L1 Caffeine + L2 Redis
+- Cache type: Redis
 - L2 TTLs:
   - Search results: 10 minutes
   - Suggestions: 5 minutes
   - Hot keywords: 2 minutes
   - Recommendations: 5 minutes
+- Index freshness: product, category, and stock changes publish MQ sync events that rebuild affected Elasticsearch documents
 
 Implementation:
 
 - `services/search-service/src/main/java/com/cloud/search/service/ElasticsearchOptimizedService.java`
+- `services/search-service/src/main/java/com/cloud/search/service/ProductDocumentBuildService.java`
+- `services/search-service/src/main/java/com/cloud/search/messaging/ProductSyncConsumer.java`
 - Configuration: `services/search-service/src/main/resources/application.yml`
 
 ### `auth-service`
@@ -133,6 +151,8 @@ Implementation:
 ## Key Design Choices
 
 - Write-first policy: persist to the database before touching caches; if cache writes fail, the database remains the source of truth and can rebuild cache state.
+- Post-commit invalidation: business caches should not be updated inside the same transaction that mutates MySQL state.
+- Delayed double delete: this is the default Redis invalidation pattern for product, category, shop, and stock summary caches.
 - Lightweight result caching: payment result caches store identifiers only, not monetary data or terminal outcomes.
 - TTL layering for hot paths: hot keywords, suggestions, and result sets use different TTLs to balance freshness and hit rate.
 - Security isolation: payment caches support idempotency and rate limiting rather than business state caching.
@@ -141,4 +161,4 @@ Implementation:
 
 - Prefer configuration overrides when adjusting TTLs instead of hard-coded changes.
 - Evaluate cache avalanche risk before changing production TTLs; add jitter or staged rollouts when needed.
-- For critical paths such as payment and inventory, consider additional logs or metrics to track hit rates and cache rebuild frequency.
+- For critical paths such as payment and inventory, track hit rates, delayed-delete failures, rebuild frequency, and stale-read anomalies.

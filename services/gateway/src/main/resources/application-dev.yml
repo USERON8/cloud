@@ -1,10 +1,4 @@
 spring:
-  redis:
-    host: 127.0.0.1
-    port: 16379
-    password: root
-    database: 6
-    timeout: 5000ms
   data:
     redis:
       host: 127.0.0.1
@@ -29,11 +23,6 @@ app:
   security:
     api-docs-enabled: true
     enable-test-api: true
-knife4j:
-  enable: true
-  production: false
-  basic:
-    enable: false
 
 
 

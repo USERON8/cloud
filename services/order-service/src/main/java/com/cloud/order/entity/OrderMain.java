@@ -43,6 +43,9 @@ public class OrderMain extends BaseEntity<OrderMain> {
   @TableField("remark")
   private String remark;
 
+  @TableField("client_order_id")
+  private String clientOrderId;
+
   @TableField("idempotency_key")
   private String idempotencyKey;
 }

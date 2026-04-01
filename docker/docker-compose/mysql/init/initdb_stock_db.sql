@@ -1,103 +1,71 @@
 CREATE DATABASE IF NOT EXISTS stock_db DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE stock_db;
 
-CREATE TABLE IF NOT EXISTS stock
-(
-    id                  BIGINT UNSIGNED PRIMARY KEY,
-    product_id          BIGINT UNSIGNED NOT NULL UNIQUE,
-    product_name        VARCHAR(200)    NOT NULL,
-    stock_quantity      INT             NOT NULL DEFAULT 0,
-    frozen_quantity     INT             NOT NULL DEFAULT 0,
-    stock_status        TINYINT         NOT NULL DEFAULT 1,
-    low_stock_threshold INT             NOT NULL DEFAULT 0,
-    created_at          DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at          DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    deleted             TINYINT         NOT NULL DEFAULT 0,
-    version             INT             NOT NULL DEFAULT 0,
-    INDEX idx_stock_status (stock_status)
-) ENGINE = InnoDB
-  DEFAULT CHARSET = utf8mb4
-  COLLATE = utf8mb4_unicode_ci;
-
-CREATE TABLE IF NOT EXISTS stock_in
-(
-    id         BIGINT UNSIGNED PRIMARY KEY,
-    product_id BIGINT UNSIGNED NOT NULL,
-    quantity   INT             NOT NULL,
-    created_at DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    deleted    TINYINT         NOT NULL DEFAULT 0,
-    version    INT             NOT NULL DEFAULT 0,
-    INDEX idx_stock_in_product (product_id)
-) ENGINE = InnoDB
-  DEFAULT CHARSET = utf8mb4
-  COLLATE = utf8mb4_unicode_ci;
-
-CREATE TABLE IF NOT EXISTS stock_out
-(
-    id         BIGINT UNSIGNED PRIMARY KEY,
-    product_id BIGINT UNSIGNED NOT NULL,
-    order_id   BIGINT UNSIGNED NOT NULL,
-    quantity   INT             NOT NULL,
-    created_at DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    deleted    TINYINT         NOT NULL DEFAULT 0,
-    version    INT             NOT NULL DEFAULT 0,
-    INDEX idx_stock_out_product (product_id),
-    INDEX idx_stock_out_order (order_id)
-) ENGINE = InnoDB
-  DEFAULT CHARSET = utf8mb4
-  COLLATE = utf8mb4_unicode_ci;
-
-CREATE TABLE IF NOT EXISTS stock_log
-(
-    id              BIGINT UNSIGNED PRIMARY KEY,
-    product_id      BIGINT UNSIGNED NOT NULL,
-    product_name    VARCHAR(200)    NULL,
-    operation_type  VARCHAR(20)     NOT NULL,
-    quantity_before INT             NOT NULL,
-    quantity_after  INT             NOT NULL,
-    quantity_change INT             NOT NULL,
-    order_id        BIGINT UNSIGNED NULL,
-    order_no        VARCHAR(64)     NULL,
-    operator_id     BIGINT UNSIGNED NULL,
-    operator_name   VARCHAR(100)    NULL,
-    remark          VARCHAR(500)    NULL,
-    operate_time    DATETIME        NULL,
-    ip_address      VARCHAR(50)     NULL,
-    created_at      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    deleted         TINYINT         NOT NULL DEFAULT 0,
-    version         INT             NOT NULL DEFAULT 0,
-    INDEX idx_stock_log_product_time (product_id, operate_time),
-    INDEX idx_stock_log_order (order_id)
-) ENGINE = InnoDB
-  DEFAULT CHARSET = utf8mb4
-  COLLATE = utf8mb4_unicode_ci;
-
-CREATE TABLE IF NOT EXISTS stock_count
+CREATE TABLE IF NOT EXISTS stock_segment
 (
     id                BIGINT UNSIGNED PRIMARY KEY,
-    count_no          VARCHAR(50)     NOT NULL UNIQUE,
-    product_id        BIGINT UNSIGNED NOT NULL,
-    product_name      VARCHAR(200)    NULL,
-    expected_quantity INT             NOT NULL,
-    actual_quantity   INT             NOT NULL,
-    difference        INT             NOT NULL,
-    status            VARCHAR(20)     NOT NULL DEFAULT 'PENDING',
-    operator_id       BIGINT UNSIGNED NULL,
-    operator_name     VARCHAR(100)    NULL,
-    confirm_user_id   BIGINT UNSIGNED NULL,
-    confirm_user_name VARCHAR(100)    NULL,
-    count_time        DATETIME        NULL,
-    confirm_time      DATETIME        NULL,
-    remark            VARCHAR(500)    NULL,
+    sku_id            BIGINT UNSIGNED NOT NULL,
+    segment_id        INT             NOT NULL,
+    available_qty     INT             NOT NULL DEFAULT 0,
+    locked_qty        INT             NOT NULL DEFAULT 0,
+    sold_qty          INT             NOT NULL DEFAULT 0,
+    alert_threshold   INT             NOT NULL DEFAULT 0,
+    status            TINYINT         NOT NULL DEFAULT 1,
     created_at        DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at        DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted           TINYINT         NOT NULL DEFAULT 0,
     version           INT             NOT NULL DEFAULT 0,
-    INDEX idx_stock_count_product_time (product_id, count_time),
-    INDEX idx_stock_count_status (status)
+    UNIQUE KEY uk_stock_segment_sku_segment (sku_id, segment_id),
+    INDEX idx_stock_segment_sku_deleted (sku_id, deleted),
+    INDEX idx_stock_segment_sku_available (sku_id, available_qty, deleted),
+    INDEX idx_stock_segment_status_deleted (status, deleted)
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS stock_reservation
+(
+    id                BIGINT UNSIGNED PRIMARY KEY,
+    main_order_no     VARCHAR(64)     NULL,
+    sub_order_no      VARCHAR(64)     NOT NULL,
+    sku_id            BIGINT UNSIGNED NOT NULL,
+    segment_id        INT             NOT NULL,
+    quantity          INT             NOT NULL,
+    status            VARCHAR(32)     NOT NULL,
+    idempotency_key   VARCHAR(128)    NOT NULL,
+    created_at        DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at        DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted           TINYINT         NOT NULL DEFAULT 0,
+    version           INT             NOT NULL DEFAULT 0,
+    UNIQUE KEY uk_stock_reservation_sub_sku_segment (sub_order_no, sku_id, segment_id),
+    UNIQUE KEY uk_stock_reservation_idempotency (idempotency_key),
+    INDEX idx_stock_reservation_sub_sku_deleted (sub_order_no, sku_id, deleted),
+    INDEX idx_stock_reservation_sku_status_deleted (sku_id, status, deleted)
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS stock_txn
+(
+    id                BIGINT UNSIGNED PRIMARY KEY,
+    sku_id            BIGINT UNSIGNED NOT NULL,
+    segment_id        INT             NULL,
+    sub_order_no      VARCHAR(64)     NULL,
+    txn_type          VARCHAR(32)     NOT NULL,
+    quantity          INT             NOT NULL,
+    before_available  INT             NULL,
+    after_available   INT             NULL,
+    before_locked     INT             NULL,
+    after_locked      INT             NULL,
+    before_sold       INT             NULL,
+    after_sold        INT             NULL,
+    remark            VARCHAR(1000)   NULL,
+    created_at        DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at        DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted           TINYINT         NOT NULL DEFAULT 0,
+    version           INT             NOT NULL DEFAULT 0,
+    INDEX idx_stock_txn_sku_type_deleted (sku_id, txn_type, deleted),
+    INDEX idx_stock_txn_sub_deleted (sub_order_no, deleted)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci;

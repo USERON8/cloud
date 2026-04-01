@@ -6,24 +6,42 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import org.slf4j.MDC;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 @Component
 public class TraceHeaderFilter extends OncePerRequestFilter {
 
-  private static final String TRACE_HEADER = "X-Trace-Id";
-
   @Override
   protected void doFilterInternal(
       HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
       throws ServletException, IOException {
-    if (!response.containsHeader(TRACE_HEADER)) {
-      String traceId = TraceIdUtil.currentTraceId();
-      if (traceId != null && !traceId.isBlank()) {
-        response.setHeader(TRACE_HEADER, traceId);
+    String traceId = resolveTraceId(request);
+    request.setAttribute(TraceIdUtil.TRACE_ID_KEY, traceId);
+    MDC.put(TraceIdUtil.TRACE_ID_KEY, traceId);
+    try {
+      filterChain.doFilter(request, response);
+    } finally {
+      if (!response.containsHeader(TraceIdUtil.TRACE_HEADER)) {
+        response.setHeader(TraceIdUtil.TRACE_HEADER, traceId);
       }
+      MDC.remove(TraceIdUtil.TRACE_ID_KEY);
     }
-    filterChain.doFilter(request, response);
+  }
+
+  private String resolveTraceId(HttpServletRequest request) {
+    String traceId = TraceIdUtil.normalizeTraceId(request.getHeader(TraceIdUtil.TRACE_HEADER));
+    if (traceId.isBlank()) {
+      traceId = TraceIdUtil.normalizeTraceId(request.getHeader(TraceIdUtil.B3_TRACE_HEADER));
+    }
+    if (traceId.isBlank()) {
+      traceId = TraceIdUtil.normalizeTraceId(request.getHeader(TraceIdUtil.LEGACY_TRACE_HEADER));
+    }
+    if (traceId.isBlank()) {
+      Object attribute = request.getAttribute(TraceIdUtil.TRACE_ID_KEY);
+      traceId = TraceIdUtil.normalizeTraceId(attribute == null ? null : attribute.toString());
+    }
+    return traceId.isBlank() ? TraceIdUtil.generateTraceId() : traceId;
   }
 }

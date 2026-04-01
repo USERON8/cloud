@@ -23,6 +23,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -251,11 +252,17 @@ public class ProductSearchServiceImpl implements ProductSearchService {
   @Transactional(readOnly = true)
   public SearchResultDTO<ProductDocument> getRecommendedProducts(Integer page, Integer size) {
     long start = System.currentTimeMillis();
-    Pageable pageable =
-        PageRequest.of(
-            normalizePage(page), normalizeSize(size), Sort.by(Sort.Direction.DESC, "hotScore"));
-    Page<ProductDocument> resultPage =
-        productDocumentRepository.findByRecommendedTrueAndStatus(ACTIVE_STATUS, pageable);
+    int pageNum = normalizePage(page);
+    int pageSize = normalizeSize(size);
+    Pageable pageable = PageRequest.of(pageNum, pageSize, Sort.by(Sort.Direction.DESC, "hotScore"));
+    Page<ProductDocument> resultPage;
+    try {
+      resultPage =
+          productDocumentRepository.findByRecommendedTrueAndStatus(ACTIVE_STATUS, pageable);
+    } catch (Exception ex) {
+      log.warn("Recommended query fallback triggered", ex);
+      resultPage = loadActiveProductFallback(pageNum, pageSize, "createdAt");
+    }
     long took = System.currentTimeMillis() - start;
     return SearchResultDTO.of(
         resultPage.getContent(),
@@ -269,11 +276,17 @@ public class ProductSearchServiceImpl implements ProductSearchService {
   @Transactional(readOnly = true)
   public SearchResultDTO<ProductDocument> getNewProducts(Integer page, Integer size) {
     long start = System.currentTimeMillis();
+    int pageNum = normalizePage(page);
+    int pageSize = normalizeSize(size);
     Pageable pageable =
-        PageRequest.of(
-            normalizePage(page), normalizeSize(size), Sort.by(Sort.Direction.DESC, "createdAt"));
-    Page<ProductDocument> resultPage =
-        productDocumentRepository.findByIsNewTrueAndStatus(ACTIVE_STATUS, pageable);
+        PageRequest.of(pageNum, pageSize, Sort.by(Sort.Direction.DESC, "createdAt"));
+    Page<ProductDocument> resultPage;
+    try {
+      resultPage = productDocumentRepository.findByIsNewTrueAndStatus(ACTIVE_STATUS, pageable);
+    } catch (Exception ex) {
+      log.warn("New products query fallback triggered", ex);
+      resultPage = loadActiveProductFallback(pageNum, pageSize, "createdAt");
+    }
     long took = System.currentTimeMillis() - start;
     return SearchResultDTO.of(
         resultPage.getContent(),
@@ -287,11 +300,16 @@ public class ProductSearchServiceImpl implements ProductSearchService {
   @Transactional(readOnly = true)
   public SearchResultDTO<ProductDocument> getHotProducts(Integer page, Integer size) {
     long start = System.currentTimeMillis();
-    Pageable pageable =
-        PageRequest.of(
-            normalizePage(page), normalizeSize(size), Sort.by(Sort.Direction.DESC, "hotScore"));
-    Page<ProductDocument> resultPage =
-        productDocumentRepository.findByIsHotTrueAndStatus(ACTIVE_STATUS, pageable);
+    int pageNum = normalizePage(page);
+    int pageSize = normalizeSize(size);
+    Pageable pageable = PageRequest.of(pageNum, pageSize, Sort.by(Sort.Direction.DESC, "hotScore"));
+    Page<ProductDocument> resultPage;
+    try {
+      resultPage = productDocumentRepository.findByIsHotTrueAndStatus(ACTIVE_STATUS, pageable);
+    } catch (Exception ex) {
+      log.warn("Hot products query fallback triggered", ex);
+      resultPage = loadActiveProductFallback(pageNum, pageSize, "createdAt");
+    }
     long took = System.currentTimeMillis() - start;
     return SearchResultDTO.of(
         resultPage.getContent(),
@@ -455,6 +473,41 @@ public class ProductSearchServiceImpl implements ProductSearchService {
         .highlights(esResult == null ? Map.of() : esResult.getHighlights())
         .searchAfter(esResult == null ? List.of() : esResult.getSearchAfter())
         .build();
+  }
+
+  private Page<ProductDocument> loadActiveProductFallback(int page, int size, String sortField) {
+    Pageable fallbackPageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, sortField));
+    Page<ProductDocument> sourcePage =
+        productDocumentRepository.findByStatus(ACTIVE_STATUS, fallbackPageable);
+    List<ProductDocument> normalized =
+        sourcePage.getContent().stream().map(this::normalizeDerivedFlags).toList();
+    return new PageImpl<>(normalized, fallbackPageable, sourcePage.getTotalElements());
+  }
+
+  private ProductDocument normalizeDerivedFlags(ProductDocument document) {
+    if (document == null) {
+      return null;
+    }
+    int salesCount = document.getSalesCount() == null ? 0 : Math.max(document.getSalesCount(), 0);
+    boolean isNew =
+        document.getCreatedAt() != null
+            && document.getCreatedAt().isAfter(java.time.LocalDateTime.now().minusDays(30));
+    boolean isHot = salesCount > 0;
+    boolean recommended = Boolean.TRUE.equals(document.getRecommended()) || isHot || isNew;
+    double hotScore = salesCount > 0 ? Math.log1p(salesCount) * 25D : 0D;
+    if (recommended) {
+      hotScore += 30D;
+    }
+    if (isNew) {
+      hotScore += 15D;
+    }
+    document.setSalesCount(salesCount);
+    document.setIsNew(isNew);
+    document.setIsHot(isHot);
+    document.setRecommended(recommended);
+    document.setHotScore(hotScore);
+    document.setSearchWeight(hotScore + (document.getProductName() == null ? 0D : 10D));
+    return document;
   }
 
   private Map<String, Object> normalizeProductAggregations(Map<String, Object> rawAggregations) {

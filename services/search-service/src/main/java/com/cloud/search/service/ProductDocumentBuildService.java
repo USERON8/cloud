@@ -123,7 +123,7 @@ public class ProductDocumentBuildService {
       if (productId == null) {
         continue;
       }
-      quantityByProductId.merge(productId, toSafeLong(ledger.getSalableQty()), Long::sum);
+      quantityByProductId.merge(productId, toSafeLong(ledger.getAvailableQty()), Long::sum);
     }
 
     return quantityByProductId.entrySet().stream()

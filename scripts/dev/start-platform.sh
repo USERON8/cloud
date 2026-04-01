@@ -49,7 +49,6 @@ wait_infrastructure() {
     "rocketmq-namesrv|$(docker_port_value "$ROOT_DIR" PORT_RMQ_NAMESRV 20011)"
     "elasticsearch|$(docker_port_value "$ROOT_DIR" PORT_ES_HTTP 19200)"
     "minio|$(docker_port_value "$ROOT_DIR" PORT_MINIO_API 19000)"
-    "seata-server|$(docker_port_value "$ROOT_DIR" PORT_SEATA_SERVER 18091)"
   )
 
   if [ "$wait_skywalking" = "1" ]; then

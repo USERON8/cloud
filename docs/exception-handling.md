@@ -6,9 +6,9 @@ This document describes the current exception model and handling strategy across
 
 - Unify exception types and error codes to avoid scattered handling and magic strings
 - Keep controllers free from `try-catch` and let global `@RestControllerAdvice` handle fallback behavior
-- Translate exception semantics explicitly across RPC, MQ, TCC, and Outbox boundaries
+- Translate exception semantics explicitly across RPC, MQ, and Outbox boundaries
 - Always include `X-Trace-Id` in response headers, but include `traceId` in the body only for error responses
-- Use service-layer AOP as the final fallback while excluding infrastructure-heavy packages such as `infrastructure`, `cache`, `tcc`, `task`, `outbox`, `search.messaging`, `common.messaging`, `payment.service.support`, `gateway.config`, `gateway.controller`, and `gateway.cache`
+- Use service-layer AOP as the final fallback while excluding infrastructure-heavy packages such as `infrastructure`, `cache`, `task`, `outbox`, `search.messaging`, `common.messaging`, `payment.service.support`, `gateway.config`, `gateway.controller`, and `gateway.cache`
 
 ## Exception Hierarchy
 
@@ -111,10 +111,10 @@ Rules:
 - `BizException`: log and ACK without retry
 - `SystemException` / `RemoteException`: throw to trigger retry (NACK)
 
-### Seata TCC
+### Outbox Command Chain
 
-- Exceptions in the `try` phase must bubble upward to trigger Seata rollback
-- Exceptions in the `rollback` phase must be swallowed and return `true` to avoid infinite retries
+- Command-side write failures must bubble upward so the local transaction rolls back and no outbox event is emitted
+- Post-commit MQ dispatch failures must stay inside relay retry loops instead of leaking back into the committed business transaction
 
 ### Outbox Relay
 
@@ -130,6 +130,6 @@ Rules:
 ## Development Guidelines
 
 - New exception types should extend `BizException` or `SystemException`
-- RPC boundaries must catch and translate `RpcException`
+- RPC boundaries must use the shared remote-call support to translate `RpcException`
 - Controllers must remain free from `try-catch`
 - Service methods should not add fallback `try-catch` unless they are converting semantics explicitly; `ServiceExceptionAspect` remains the shared fallback layer

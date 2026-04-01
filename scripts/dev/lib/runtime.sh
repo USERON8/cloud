@@ -68,13 +68,12 @@ open_local_url() {
 
 export_service_runtime_env() {
   local root="$1"
-  local nacos_port nacos_grpc_port nacos_grpc_offset rocketmq_namesrv_port seata_port minio_port
+  local nacos_port nacos_grpc_port nacos_grpc_offset rocketmq_namesrv_port minio_port
   local nacos_server_addr nacos_username nacos_password nacos_namespace nacos_group
   nacos_port="$(docker_port_value "$root" PORT_NACOS_HTTP 18848)"
   nacos_grpc_port="$(docker_port_value "$root" PORT_NACOS_GRPC $((nacos_port + 1000)))"
   nacos_grpc_offset="$((nacos_grpc_port - nacos_port))"
   rocketmq_namesrv_port="$(docker_port_value "$root" PORT_RMQ_NAMESRV 20011)"
-  seata_port="$(docker_port_value "$root" PORT_SEATA_SERVER 18091)"
   minio_port="$(docker_port_value "$root" PORT_MINIO_API 19000)"
   nacos_server_addr="127.0.0.1:${nacos_port}"
   nacos_username="${NACOS_USERNAME:-nacos}"
@@ -126,15 +125,6 @@ export_service_runtime_env() {
     export DUBBO_APPLICATION_QOS_ENABLE="false"
   fi
 
-  export SEATA_SERVER_ADDR="127.0.0.1:${seata_port}"
-  export SEATA_REGISTRY_TYPE="file"
-  export SEATA_TX_SERVICE_GROUP="${SEATA_TX_SERVICE_GROUP:-default_tx_group}"
-  export SEATA_TX_CLUSTER="${SEATA_TX_CLUSTER:-default}"
-  export SEATA_SERVICE_VGROUP_MAPPING_DEFAULT_TX_GROUP="${SEATA_TX_CLUSTER}"
-  export SEATA_SERVICE_GROUPLIST_DEFAULT="${SEATA_SERVER_ADDR}"
-  if [ -z "${SEATA_SAGA_ENABLED:-}" ]; then
-    export SEATA_SAGA_ENABLED="false"
-  fi
   if [ -z "${XXL_JOB_ENABLED:-}" ]; then
     export XXL_JOB_ENABLED="false"
   fi
@@ -153,5 +143,5 @@ export_service_runtime_env() {
   export GITHUB_CLIENT_ID="${GITHUB_CLIENT_ID:-cloud-github-client-dev}"
   export GITHUB_CLIENT_SECRET="${GITHUB_CLIENT_SECRET:-cloud-github-secret-dev}"
 
-  echo "SERVICE_ENV nacos=${NACOS_SERVER_ADDR} rocketmq=${ROCKETMQ_NAME_SERVER} seata=${SEATA_SERVER_ADDR} gatewaySignature=configured authSecrets=configured"
+  echo "SERVICE_ENV nacos=${NACOS_SERVER_ADDR} rocketmq=${ROCKETMQ_NAME_SERVER} gatewaySignature=configured authSecrets=configured"
 }

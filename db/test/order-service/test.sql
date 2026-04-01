@@ -22,8 +22,8 @@ ALTER TABLE after_sale
 ALTER TABLE cart_item
     ADD INDEX idx_cart_item_cart_user_selected_checked_deleted (cart_id, user_id, selected, checked_out, deleted);
 
-INSERT INTO order_main (id, main_order_no, user_id, order_status, total_amount, payable_amount, idempotency_key, deleted, version)
-VALUES (10001, 'M2026000001', 20001, 'CREATED', 199.00, 199.00, 'idem-main-10001', 0, 0);
+INSERT INTO order_main (id, main_order_no, user_id, order_status, total_amount, payable_amount, client_order_id, idempotency_key, deleted, version)
+VALUES (10001, 'M2026000001', 20001, 'CREATED', 199.00, 199.00, 'client-order-10001', 'idem-main-10001', 0, 0);
 
 INSERT INTO order_sub (id, sub_order_no, main_order_id, merchant_id, order_status, shipping_status, after_sale_status,
                        item_amount, shipping_fee, discount_amount, payable_amount, receiver_name, receiver_phone, receiver_address, deleted, version)

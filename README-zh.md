@@ -12,7 +12,14 @@ Version: 1.1.0
 - 支付成功使用 RocketMQ 事务消息（`payment-service`）。
 - 消费端使用 Redis 幂等处理，避免重复。
 - 用户通知改为 RocketMQ 异步投递（`user-notification`），失败会重试。
-- Seata TCC（下单）和 Seata SAGA（退款）在 `order-service` 中启用；`payment-service` 保持禁用。
+- 当前不再依赖 Seata 协调器，跨服务一致性统一采用本地事务、Outbox、RocketMQ 和消费端幂等。
+
+## 当前平台治理
+
+- `gateway` 负责公开 JWT 校验、内部身份头签名转发，以及路由级和用户级 Sentinel 双层限流。
+- 共享远程调用统一走 `RemoteCallSupport`，收口超时、fallback 和异常语义。
+- MQ 治理已经补上消费者拓扑发现、lag 阈值、死信运维端点和 outbox 积压指标。
+- 商品/分类/店铺/库存缓存统一采用 Cache-Aside + 事务提交后延迟双删。
 
 ## 模块与端口
 
@@ -61,7 +68,7 @@ Version: 1.1.0
   - 预占、释放、确认、回滚等库存变更，跨请求一致性仍以 Redis Lua 更新结果为准。
 - `order-service`
   - 已完成主单的订单聚合查询现在采用务实的多级缓存：超短 TTL 的本地 L1 + Redis 聚合缓存。
-  - 子单状态流转、发货、售后、退款 Saga、TCC 预占/取消等链路已经显式接入聚合缓存失效。
+- 子单状态流转、发货、售后、退款更新、库存命令链路已经显式接入聚合缓存失效。
 - `payment-service`
   - 支付安全和防重路径已经使用显式 Redis 单级缓存，覆盖幂等键、结果复用、短 TTL 状态查询、checkout ticket 和限流计数。
   - 这里没有引入本地 L1，因为这层缓存的目标是正确性支撑和滥用控制，不是业务读加速。

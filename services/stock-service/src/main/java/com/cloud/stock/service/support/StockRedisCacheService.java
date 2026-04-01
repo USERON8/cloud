@@ -1,41 +1,45 @@
 package com.cloud.stock.service.support;
 
+import com.cloud.common.domain.dto.stock.StockOperateCommandDTO;
 import com.cloud.common.domain.vo.stock.StockLedgerVO;
-import com.cloud.stock.mapper.StockLedgerMapper;
-import com.cloud.stock.module.entity.StockLedger;
+import com.cloud.stock.mapper.StockSegmentMapper;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import jakarta.annotation.PostConstruct;
 import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.Consumer;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
+import org.springframework.scheduling.TaskScheduler;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @Slf4j
 @Service
 public class StockRedisCacheService {
 
   private static final int ACTIVE_STATUS = 1;
-  private static final String KEY_PREFIX = "stock:ledger:";
-  private static final String FIELD_ID = "id";
+  private static final String KEY_PREFIX = "stock:summary:";
   private static final String FIELD_SKU_ID = "skuId";
-  private static final String FIELD_ON_HAND = "onhand";
-  private static final String FIELD_RESERVED = "reserved";
-  private static final String FIELD_SALABLE = "salable";
+  private static final String FIELD_AVAILABLE = "available";
+  private static final String FIELD_LOCKED = "locked";
+  private static final String FIELD_SOLD = "sold";
+  private static final String FIELD_SEGMENT_COUNT = "segmentCount";
   private static final String FIELD_ALERT = "alert";
   private static final String FIELD_STATUS = "status";
   private static final String FIELD_CREATED = "createdAt";
   private static final String FIELD_UPDATED = "updatedAt";
-
   private static final Long CACHE_MISS = -1L;
-  private static final Long INSUFFICIENT = 0L;
+  private static final Long CACHE_FAIL = 0L;
   private static final Long CACHE_OK = 1L;
 
   @Value("${stock.cache.ledger.l1-max-size:2000}")
@@ -44,74 +48,33 @@ public class StockRedisCacheService {
   @Value("${stock.cache.ledger.l1-ttl-seconds:3}")
   private long l1TtlSeconds;
 
-  private final StringRedisTemplate stringRedisTemplate;
-  private final StockLedgerMapper stockLedgerMapper;
+  @Value("${stock.cache.ledger.delayed-double-delete-ms:500}")
+  private long delayedDoubleDeleteMs;
 
-  private final DefaultRedisScript<Long> reserveScript;
-  private final DefaultRedisScript<Long> releaseScript;
-  private final DefaultRedisScript<Long> confirmScript;
-  private final DefaultRedisScript<Long> rollbackConfirmScript;
+  private final StringRedisTemplate stringRedisTemplate;
+  private final StockSegmentMapper stockSegmentMapper;
+  private final TaskScheduler taskScheduler;
+  private final DefaultRedisScript<Long> preCheckScript;
   private Cache<Long, StockLedgerVO> localLedgerCache;
 
   public StockRedisCacheService(
-      StringRedisTemplate stringRedisTemplate, StockLedgerMapper stockLedgerMapper) {
+      StringRedisTemplate stringRedisTemplate,
+      StockSegmentMapper stockSegmentMapper,
+      TaskScheduler taskScheduler) {
     this.stringRedisTemplate = stringRedisTemplate;
-    this.stockLedgerMapper = stockLedgerMapper;
-    this.reserveScript =
+    this.stockSegmentMapper = stockSegmentMapper;
+    this.taskScheduler = taskScheduler;
+    this.preCheckScript =
         buildScript(
             """
                 if redis.call('EXISTS', KEYS[1]) == 0 then
                     return -1
                 end
                 local qty = tonumber(ARGV[1])
-                local salable = tonumber(redis.call('HGET', KEYS[1], 'salable') or '-1')
-                if salable < qty then
+                local available = tonumber(redis.call('HGET', KEYS[1], 'available') or '-1')
+                if available < qty then
                     return 0
                 end
-                redis.call('HINCRBY', KEYS[1], 'salable', -qty)
-                redis.call('HINCRBY', KEYS[1], 'reserved', qty)
-                return 1
-                """);
-    this.releaseScript =
-        buildScript(
-            """
-                if redis.call('EXISTS', KEYS[1]) == 0 then
-                    return -1
-                end
-                local qty = tonumber(ARGV[1])
-                local reserved = tonumber(redis.call('HGET', KEYS[1], 'reserved') or '-1')
-                if reserved < qty then
-                    return 0
-                end
-                redis.call('HINCRBY', KEYS[1], 'reserved', -qty)
-                redis.call('HINCRBY', KEYS[1], 'salable', qty)
-                return 1
-                """);
-    this.confirmScript =
-        buildScript(
-            """
-                if redis.call('EXISTS', KEYS[1]) == 0 then
-                    return -1
-                end
-                local qty = tonumber(ARGV[1])
-                local reserved = tonumber(redis.call('HGET', KEYS[1], 'reserved') or '-1')
-                local onhand = tonumber(redis.call('HGET', KEYS[1], 'onhand') or '-1')
-                if reserved < qty or onhand < qty then
-                    return 0
-                end
-                redis.call('HINCRBY', KEYS[1], 'reserved', -qty)
-                redis.call('HINCRBY', KEYS[1], 'onhand', -qty)
-                return 1
-                """);
-    this.rollbackConfirmScript =
-        buildScript(
-            """
-                if redis.call('EXISTS', KEYS[1]) == 0 then
-                    return -1
-                end
-                local qty = tonumber(ARGV[1])
-                redis.call('HINCRBY', KEYS[1], 'onhand', qty)
-                redis.call('HINCRBY', KEYS[1], 'salable', qty)
                 return 1
                 """);
     this.localLedgerCache =
@@ -136,12 +99,12 @@ public class StockRedisCacheService {
     if (cached != null) {
       return cached;
     }
-    StockLedger ledger = stockLedgerMapper.selectActiveBySkuId(skuId);
+    StockLedgerVO ledger = stockSegmentMapper.selectLedgerBySkuId(skuId);
     if (ledger == null) {
       return null;
     }
     cacheLedger(ledger);
-    return toVO(ledger);
+    return copyVo(ledger);
   }
 
   public StockLedgerVO getLedgerFromCache(Long skuId) {
@@ -152,63 +115,57 @@ public class StockRedisCacheService {
     if (local != null) {
       return local;
     }
-    String key = buildKey(skuId);
-    Map<Object, Object> entries = stringRedisTemplate.opsForHash().entries(key);
+    Map<Object, Object> entries = stringRedisTemplate.opsForHash().entries(buildKey(skuId));
     if (entries == null || entries.isEmpty()) {
       return null;
     }
     StockLedgerVO vo = new StockLedgerVO();
-    vo.setId(parseLong(entries.get(FIELD_ID)));
     vo.setSkuId(parseLong(entries.getOrDefault(FIELD_SKU_ID, skuId)));
-    vo.setOnHandQty(parseInteger(entries.get(FIELD_ON_HAND)));
-    vo.setReservedQty(parseInteger(entries.get(FIELD_RESERVED)));
-    vo.setSalableQty(parseInteger(entries.get(FIELD_SALABLE)));
+    vo.setAvailableQty(parseInteger(entries.get(FIELD_AVAILABLE)));
+    vo.setLockedQty(parseInteger(entries.get(FIELD_LOCKED)));
+    vo.setSoldQty(parseInteger(entries.get(FIELD_SOLD)));
+    vo.setSegmentCount(parseInteger(entries.get(FIELD_SEGMENT_COUNT)));
     vo.setAlertThreshold(parseInteger(entries.get(FIELD_ALERT)));
     vo.setStatus(parseInteger(entries.get(FIELD_STATUS)));
     vo.setCreatedAt(parseDateTime(entries.get(FIELD_CREATED)));
     vo.setUpdatedAt(parseDateTime(entries.get(FIELD_UPDATED)));
     if (!isActive(vo.getStatus())) {
       localLedgerCache.invalidate(skuId);
-      stringRedisTemplate.delete(key);
+      stringRedisTemplate.delete(buildKey(skuId));
       return null;
     }
     putLocalLedger(vo);
     return copyVo(vo);
   }
 
-  public void cacheLedger(StockLedger ledger) {
+  public void cacheLedger(StockLedgerVO ledger) {
     if (ledger == null || ledger.getSkuId() == null) {
       return;
     }
-    String key = buildKey(ledger.getSkuId());
     if (!isActive(ledger.getStatus())) {
       localLedgerCache.invalidate(ledger.getSkuId());
-      stringRedisTemplate.delete(key);
+      stringRedisTemplate.delete(buildKey(ledger.getSkuId()));
       return;
     }
-    putLocalLedger(toVO(ledger));
+    putLocalLedger(ledger);
     Map<String, String> map = new HashMap<>();
-    map.put(FIELD_ID, stringify(ledger.getId()));
     map.put(FIELD_SKU_ID, stringify(ledger.getSkuId()));
-    map.put(FIELD_ON_HAND, stringify(ledger.getOnHandQty()));
-    map.put(FIELD_RESERVED, stringify(ledger.getReservedQty()));
-    map.put(FIELD_SALABLE, stringify(ledger.getSalableQty()));
+    map.put(FIELD_AVAILABLE, stringify(ledger.getAvailableQty()));
+    map.put(FIELD_LOCKED, stringify(ledger.getLockedQty()));
+    map.put(FIELD_SOLD, stringify(ledger.getSoldQty()));
+    map.put(FIELD_SEGMENT_COUNT, stringify(ledger.getSegmentCount()));
     map.put(FIELD_ALERT, stringify(ledger.getAlertThreshold()));
     map.put(FIELD_STATUS, stringify(ledger.getStatus()));
     map.put(FIELD_CREATED, stringify(ledger.getCreatedAt()));
     map.put(FIELD_UPDATED, stringify(ledger.getUpdatedAt()));
-    try {
-      stringRedisTemplate.opsForHash().putAll(key, map);
-    } catch (Exception ex) {
-      log.warn("Cache stock ledger failed: skuId={}", ledger.getSkuId(), ex);
-    }
+    stringRedisTemplate.opsForHash().putAll(buildKey(ledger.getSkuId()), map);
   }
 
   public void refreshFromDb(Long skuId) {
     if (skuId == null) {
       return;
     }
-    StockLedger ledger = stockLedgerMapper.selectActiveBySkuId(skuId);
+    StockLedgerVO ledger = stockSegmentMapper.selectLedgerBySkuId(skuId);
     if (ledger == null) {
       localLedgerCache.invalidate(skuId);
       stringRedisTemplate.delete(buildKey(skuId));
@@ -217,79 +174,58 @@ public class StockRedisCacheService {
     cacheLedger(ledger);
   }
 
-  public CacheResult applyReserveIfCached(Long skuId, Integer qty) {
-    CacheResult result = execute(reserveScript, skuId, qty);
-    if (result == CacheResult.OK) {
-      mutateLocalLedger(
-          skuId,
-          ledger -> {
-            ledger.setSalableQty(ledger.getSalableQty() - qty);
-            ledger.setReservedQty(ledger.getReservedQty() + qty);
-          });
+  public void evictLedgerAfterCommit(Long skuId) {
+    if (skuId == null) {
+      return;
     }
-    return result;
+    runAfterCommit(
+        () -> {
+          deleteLedgerNow(skuId);
+          scheduleDelayedDelete(skuId);
+        });
   }
 
-  public CacheResult applyReleaseIfCached(Long skuId, Integer qty) {
-    CacheResult result = execute(releaseScript, skuId, qty);
-    if (result == CacheResult.OK) {
-      mutateLocalLedger(
-          skuId,
-          ledger -> {
-            ledger.setReservedQty(ledger.getReservedQty() - qty);
-            ledger.setSalableQty(ledger.getSalableQty() + qty);
-          });
+  public void evictLedgersAfterCommit(Collection<Long> skuIds) {
+    if (skuIds == null || skuIds.isEmpty()) {
+      return;
     }
-    return result;
+    skuIds.stream().filter(Objects::nonNull).distinct().forEach(this::evictLedgerAfterCommit);
   }
 
-  public CacheResult applyConfirmIfCached(Long skuId, Integer qty) {
-    CacheResult result = execute(confirmScript, skuId, qty);
-    if (result == CacheResult.OK) {
-      mutateLocalLedger(
-          skuId,
-          ledger -> {
-            ledger.setReservedQty(ledger.getReservedQty() - qty);
-            ledger.setOnHandQty(ledger.getOnHandQty() - qty);
-          });
+  public boolean preCheck(List<StockOperateCommandDTO> commands) {
+    if (commands == null || commands.isEmpty()) {
+      return true;
     }
-    return result;
-  }
-
-  public CacheResult applyRollbackAfterConfirmIfCached(Long skuId, Integer qty) {
-    CacheResult result = execute(rollbackConfirmScript, skuId, qty);
-    if (result == CacheResult.OK) {
-      mutateLocalLedger(
-          skuId,
-          ledger -> {
-            ledger.setOnHandQty(ledger.getOnHandQty() + qty);
-            ledger.setSalableQty(ledger.getSalableQty() + qty);
-          });
-    }
-    return result;
-  }
-
-  private CacheResult execute(DefaultRedisScript<Long> script, Long skuId, Integer qty) {
-    if (skuId == null || qty == null || qty <= 0) {
-      return CacheResult.MISS;
-    }
-    try {
-      Long result =
-          stringRedisTemplate.execute(
-              script, java.util.List.of(buildKey(skuId)), String.valueOf(qty));
-      if (Objects.equals(result, CACHE_OK)) {
-        return CacheResult.OK;
+    for (StockOperateCommandDTO command : commands) {
+      if (!preCheck(command)) {
+        return false;
       }
-      if (Objects.equals(result, INSUFFICIENT)) {
-        return CacheResult.INSUFFICIENT;
-      }
-      localLedgerCache.invalidate(skuId);
-      return CacheResult.MISS;
-    } catch (Exception ex) {
-      localLedgerCache.invalidate(skuId);
-      log.warn("Apply stock cache script failed: skuId={}, qty={}", skuId, qty, ex);
-      return CacheResult.MISS;
     }
+    return true;
+  }
+
+  public boolean preCheck(StockOperateCommandDTO command) {
+    if (command == null || command.getSkuId() == null || command.getQuantity() == null) {
+      return false;
+    }
+    Long result =
+        stringRedisTemplate.execute(
+            preCheckScript,
+            List.of(buildKey(command.getSkuId())),
+            String.valueOf(command.getQuantity()));
+    if (Objects.equals(result, CACHE_OK)) {
+      return true;
+    }
+    if (Objects.equals(result, CACHE_FAIL)) {
+      return false;
+    }
+    refreshFromDb(command.getSkuId());
+    result =
+        stringRedisTemplate.execute(
+            preCheckScript,
+            List.of(buildKey(command.getSkuId())),
+            String.valueOf(command.getQuantity()));
+    return Objects.equals(result, CACHE_OK);
   }
 
   private DefaultRedisScript<Long> buildScript(String scriptText) {
@@ -312,38 +248,14 @@ public class StockRedisCacheService {
       return null;
     }
     StockLedgerVO cached = localLedgerCache.getIfPresent(skuId);
-    if (cached == null) {
-      return null;
-    }
-    if (!isActive(cached.getStatus())) {
-      localLedgerCache.invalidate(skuId);
+    if (cached == null || !isActive(cached.getStatus())) {
       return null;
     }
     return copyVo(cached);
   }
 
   private void putLocalLedger(StockLedgerVO ledger) {
-    if (ledger == null || ledger.getSkuId() == null || !isActive(ledger.getStatus())) {
-      return;
-    }
     localLedgerCache.put(ledger.getSkuId(), copyVo(ledger));
-  }
-
-  private void mutateLocalLedger(Long skuId, Consumer<StockLedgerVO> mutator) {
-    if (skuId == null || mutator == null) {
-      return;
-    }
-    StockLedgerVO cached = localLedgerCache.getIfPresent(skuId);
-    if (cached == null) {
-      return;
-    }
-    try {
-      mutator.accept(cached);
-      localLedgerCache.put(skuId, copyVo(cached));
-    } catch (Exception ex) {
-      localLedgerCache.invalidate(skuId);
-      log.warn("Mutate local stock ledger cache failed: skuId={}", skuId, ex);
-    }
   }
 
   private String stringify(Object value) {
@@ -351,71 +263,33 @@ public class StockRedisCacheService {
   }
 
   private Long parseLong(Object value) {
-    if (value == null) {
+    if (value == null || value.toString().isBlank()) {
       return null;
     }
-    String raw = value.toString();
-    if (raw.isBlank()) {
-      return null;
-    }
-    try {
-      return Long.parseLong(raw);
-    } catch (Exception ex) {
-      return null;
-    }
+    return Long.parseLong(String.valueOf(value));
   }
 
   private Integer parseInteger(Object value) {
-    if (value == null) {
+    if (value == null || value.toString().isBlank()) {
       return null;
     }
-    String raw = value.toString();
-    if (raw.isBlank()) {
-      return null;
-    }
-    try {
-      return Integer.parseInt(raw);
-    } catch (Exception ex) {
-      return null;
-    }
+    return Integer.parseInt(String.valueOf(value));
   }
 
   private LocalDateTime parseDateTime(Object value) {
-    if (value == null) {
+    if (value == null || value.toString().isBlank()) {
       return null;
     }
-    String raw = value.toString();
-    if (raw.isBlank()) {
-      return null;
-    }
-    try {
-      return LocalDateTime.parse(raw);
-    } catch (Exception ex) {
-      return null;
-    }
-  }
-
-  private StockLedgerVO toVO(StockLedger ledger) {
-    StockLedgerVO vo = new StockLedgerVO();
-    vo.setId(ledger.getId());
-    vo.setSkuId(ledger.getSkuId());
-    vo.setOnHandQty(ledger.getOnHandQty());
-    vo.setReservedQty(ledger.getReservedQty());
-    vo.setSalableQty(ledger.getSalableQty());
-    vo.setAlertThreshold(ledger.getAlertThreshold());
-    vo.setStatus(ledger.getStatus());
-    vo.setCreatedAt(ledger.getCreatedAt());
-    vo.setUpdatedAt(ledger.getUpdatedAt());
-    return vo;
+    return LocalDateTime.parse(String.valueOf(value));
   }
 
   private StockLedgerVO copyVo(StockLedgerVO source) {
     StockLedgerVO copy = new StockLedgerVO();
-    copy.setId(source.getId());
     copy.setSkuId(source.getSkuId());
-    copy.setOnHandQty(source.getOnHandQty());
-    copy.setReservedQty(source.getReservedQty());
-    copy.setSalableQty(source.getSalableQty());
+    copy.setAvailableQty(source.getAvailableQty());
+    copy.setLockedQty(source.getLockedQty());
+    copy.setSoldQty(source.getSoldQty());
+    copy.setSegmentCount(source.getSegmentCount());
     copy.setAlertThreshold(source.getAlertThreshold());
     copy.setStatus(source.getStatus());
     copy.setCreatedAt(source.getCreatedAt());
@@ -423,9 +297,34 @@ public class StockRedisCacheService {
     return copy;
   }
 
-  public enum CacheResult {
-    OK,
-    INSUFFICIENT,
-    MISS
+  private void deleteLedgerNow(Long skuId) {
+    localLedgerCache.invalidate(skuId);
+    try {
+      stringRedisTemplate.delete(buildKey(skuId));
+    } catch (Exception ex) {
+      log.warn("Delete stock ledger cache failed: skuId={}", skuId, ex);
+    }
+  }
+
+  private void runAfterCommit(Runnable task) {
+    if (TransactionSynchronizationManager.isSynchronizationActive()) {
+      TransactionSynchronizationManager.registerSynchronization(
+          new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+              task.run();
+            }
+          });
+      return;
+    }
+    task.run();
+  }
+
+  private void scheduleDelayedDelete(Long skuId) {
+    long delayMs = Math.max(0L, delayedDoubleDeleteMs);
+    if (delayMs <= 0L) {
+      return;
+    }
+    taskScheduler.schedule(() -> deleteLedgerNow(skuId), Instant.now().plusMillis(delayMs));
   }
 }

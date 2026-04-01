@@ -10,9 +10,9 @@ public interface StockLedgerService {
 
   List<StockLedgerVO> listLedgersBySkuIds(List<Long> skuIds);
 
-  Boolean reserve(StockOperateCommandDTO command);
+  Boolean preCheck(List<StockOperateCommandDTO> commands);
 
-  Boolean confirmReservation(StockOperateCommandDTO command);
+  Boolean reserve(StockOperateCommandDTO command);
 
   Boolean confirm(StockOperateCommandDTO command);
 

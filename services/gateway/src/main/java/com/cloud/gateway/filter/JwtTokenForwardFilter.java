@@ -1,7 +1,13 @@
 package com.cloud.gateway.filter;
 
 import cn.hutool.core.util.StrUtil;
+import com.cloud.common.security.GatewayIdentityHeaders;
+import com.cloud.common.security.GatewayIdentitySignatureSupport;
+import com.cloud.gateway.support.GatewayTraceSupport;
+import java.time.Instant;
+import java.util.Collection;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
@@ -19,15 +25,25 @@ import reactor.core.publisher.Mono;
 public class JwtTokenForwardFilter implements GlobalFilter, Ordered {
 
   private static final String[] FORWARDED_IDENTITY_HEADERS = {
-    "X-User-Name",
-    "X-User-Id",
-    "X-User-Nickname",
-    "X-User-Status",
-    "X-Client-Id",
-    "X-User-Scopes",
-    "X-User-Roles",
-    "X-Auth-Token"
+    "Authorization",
+    "X-Auth-Token",
+    GatewayIdentityHeaders.USERNAME,
+    GatewayIdentityHeaders.USER_ID,
+    GatewayIdentityHeaders.USER_NICKNAME,
+    GatewayIdentityHeaders.USER_STATUS,
+    GatewayIdentityHeaders.CLIENT_ID,
+    GatewayIdentityHeaders.USER_SCOPES,
+    GatewayIdentityHeaders.USER_ROLES,
+    GatewayIdentityHeaders.USER_PERMISSIONS,
+    GatewayIdentityHeaders.USER_AUTHORITIES,
+    GatewayIdentityHeaders.SUBJECT,
+    GatewayIdentityHeaders.TRACE_ID,
+    GatewayIdentityHeaders.SIGNATURE,
+    GatewayIdentityHeaders.TIMESTAMP
   };
+
+  @Value("${app.security.internal-identity.secret:${GATEWAY_INTERNAL_IDENTITY_SECRET:}}")
+  private String internalIdentitySecret;
 
   @Override
   public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
@@ -38,9 +54,8 @@ public class JwtTokenForwardFilter implements GlobalFilter, Ordered {
         .map(
             jwtAuth -> {
               Jwt jwt = jwtAuth.getToken();
-              String token = jwt.getTokenValue();
 
-              log.debug("Forward JWT token and user claims to downstream services");
+              log.debug("Forward trusted identity headers to downstream services");
 
               ServerHttpRequest.Builder requestBuilder =
                   exchange
@@ -51,45 +66,65 @@ public class JwtTokenForwardFilter implements GlobalFilter, Ordered {
                             for (String header : FORWARDED_IDENTITY_HEADERS) {
                               headers.remove(header);
                             }
-                            headers.set("Authorization", "Bearer " + token);
-                            headers.set("X-Auth-Token", token);
                           });
 
-              addUserInfoHeaders(requestBuilder, jwt);
+              addUserInfoHeaders(requestBuilder, jwt, exchange);
 
               ServerHttpRequest request = requestBuilder.build();
 
               log.debug(
-                  "Successfully forwarded token and user claims for user {}", jwtAuth.getName());
+                  "Successfully forwarded trusted identity headers for user {}", jwtAuth.getName());
               return exchange.mutate().request(request).build();
             })
         .defaultIfEmpty(exchange)
         .flatMap(chain::filter);
   }
 
-  private void addUserInfoHeaders(ServerHttpRequest.Builder requestBuilder, Jwt jwt) {
+  private void addUserInfoHeaders(
+      ServerHttpRequest.Builder requestBuilder, Jwt jwt, ServerWebExchange exchange) {
     try {
+      String userId = getUserIdClaim(jwt);
+      String username = jwt.getClaimAsString("username");
+      String nickname = jwt.getClaimAsString("nickname");
+      String status = getClaimAsString(jwt, "status");
+      String clientId = jwt.getClaimAsString("client_id");
+      String scopes = trim(jwt.getClaimAsString("scope"));
+      String roles = joinClaim(jwt.getClaim("roles"));
+      String permissions = joinClaim(jwt.getClaim("permissions"));
+      String authorities = joinClaim(jwt.getClaim("authorities"));
+      String traceId = GatewayTraceSupport.resolveTraceId(exchange);
+      String subject = trim(jwt.getSubject());
+      String timestamp = String.valueOf(Instant.now().getEpochSecond());
 
-      addHeaderIfPresent(requestBuilder, "X-User-Name", jwt.getClaimAsString("username"));
-      addHeaderIfPresent(requestBuilder, "X-User-Id", getUserIdClaim(jwt));
-      addHeaderIfPresent(requestBuilder, "X-User-Nickname", jwt.getClaimAsString("nickname"));
-      addHeaderIfPresent(requestBuilder, "X-User-Status", getClaimAsString(jwt, "status"));
-
-      addHeaderIfPresent(requestBuilder, "X-Client-Id", jwt.getClaimAsString("client_id"));
-
-      if (jwt.getClaimAsString("scope") != null) {
-        addHeaderIfPresent(requestBuilder, "X-User-Scopes", jwt.getClaimAsString("scope"));
-      }
-
-      Object roles = jwt.getClaim("roles");
-      if (roles instanceof java.util.Collection<?> roleCollection && !roleCollection.isEmpty()) {
-        addHeaderIfPresent(
-            requestBuilder,
-            "X-User-Roles",
-            roleCollection.stream()
-                .map(Object::toString)
-                .collect(java.util.stream.Collectors.joining(" ")));
-      }
+      addHeaderIfPresent(requestBuilder, GatewayIdentityHeaders.USERNAME, username);
+      addHeaderIfPresent(requestBuilder, GatewayIdentityHeaders.USER_ID, userId);
+      addHeaderIfPresent(requestBuilder, GatewayIdentityHeaders.USER_NICKNAME, nickname);
+      addHeaderIfPresent(requestBuilder, GatewayIdentityHeaders.USER_STATUS, status);
+      addHeaderIfPresent(requestBuilder, GatewayIdentityHeaders.CLIENT_ID, clientId);
+      addHeaderIfPresent(requestBuilder, GatewayIdentityHeaders.USER_SCOPES, scopes);
+      addHeaderIfPresent(requestBuilder, GatewayIdentityHeaders.USER_ROLES, roles);
+      addHeaderIfPresent(requestBuilder, GatewayIdentityHeaders.USER_PERMISSIONS, permissions);
+      addHeaderIfPresent(requestBuilder, GatewayIdentityHeaders.USER_AUTHORITIES, authorities);
+      addHeaderIfPresent(requestBuilder, GatewayIdentityHeaders.TRACE_ID, traceId);
+      addHeaderIfPresent(requestBuilder, GatewayIdentityHeaders.SUBJECT, subject);
+      requestBuilder.header(GatewayIdentityHeaders.TIMESTAMP, timestamp);
+      requestBuilder.header(
+          GatewayIdentityHeaders.SIGNATURE,
+          GatewayIdentitySignatureSupport.sign(
+              GatewayIdentitySignatureSupport.canonicalPayload(
+                  userId,
+                  username,
+                  nickname,
+                  status,
+                  clientId,
+                  scopes,
+                  roles,
+                  permissions,
+                  authorities,
+                  traceId,
+                  subject,
+                  timestamp),
+              internalIdentitySecret));
 
       log.debug("Added user claim headers for user {}", jwt.getClaimAsString("username"));
 
@@ -116,6 +151,19 @@ public class JwtTokenForwardFilter implements GlobalFilter, Ordered {
       userId = getClaimAsString(jwt, "userId");
     }
     return userId;
+  }
+
+  private String joinClaim(Object claim) {
+    if (claim instanceof Collection<?> collection && !collection.isEmpty()) {
+      return collection.stream()
+          .map(Object::toString)
+          .collect(java.util.stream.Collectors.joining(" "));
+    }
+    return claim == null ? "" : claim.toString().trim();
+  }
+
+  private String trim(String value) {
+    return value == null ? "" : value.trim();
   }
 
   @Override

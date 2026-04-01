@@ -13,6 +13,8 @@ import com.cloud.common.exception.ValidationException;
 import com.cloud.common.result.Result;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
@@ -37,6 +39,14 @@ import org.springframework.web.bind.annotation.RestController;
 @Validated
 @RequestMapping("/auth")
 @Tag(name = "Authentication API", description = "Authentication, login and token management APIs")
+@ApiResponses({
+  @ApiResponse(responseCode = "400", description = "Invalid authentication request"),
+  @ApiResponse(responseCode = "401", description = "Authentication required or token invalid"),
+  @ApiResponse(responseCode = "403", description = "Insufficient permissions"),
+  @ApiResponse(responseCode = "404", description = "Authentication target resource not found"),
+  @ApiResponse(responseCode = "409", description = "Authentication state conflict"),
+  @ApiResponse(responseCode = "500", description = "Internal authentication service error")
+})
 public class AuthController {
 
   private final OAuth2TokenManagementService tokenManagementService;

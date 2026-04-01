@@ -386,16 +386,3 @@ ON DUPLICATE KEY UPDATE
     token_owner = VALUES(token_owner),
     expires_at = VALUES(expires_at),
     is_active = VALUES(is_active);
-
-CREATE TABLE undo_log (
-  branch_id BIGINT NOT NULL,
-  xid VARCHAR(128) NOT NULL,
-  context VARCHAR(128) NOT NULL,
-  rollback_info LONGBLOB NOT NULL,
-  log_status INT NOT NULL,
-  log_created DATETIME NOT NULL,
-  log_modified DATETIME NOT NULL,
-  UNIQUE KEY ux_undo_log (xid,branch_id),
-  INDEX idx_undo_log_xid (xid),
-  INDEX idx_undo_log_branch (branch_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

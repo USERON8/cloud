@@ -1,41 +1,39 @@
 # Transaction Strategy
 
-Updated on: 2026-03-13
+Updated on: 2026-03-30
 
 ## Goal
 
-Define the boundary between strong consistency and eventual consistency across order, inventory, payment, refund, and other critical flows. The strategy reduces distributed transaction complexity while keeping critical event delivery reliable and consumer handling idempotent.
+Define the eventual-consistency contract across order, inventory, payment, refund, search sync, and other critical flows. The strategy removes Seata coordination and keeps event delivery reliable through local transactions, Outbox, RocketMQ, and idempotent consumers.
 
 ## Design Principles
 
-- Strong consistency first where required: order placement inventory deduction uses Seata TCC so failures can roll back cleanly.
-- Limited strong-consistency boundary: only order placement inventory deduction is inside the strict global transaction boundary; payment success and refund completion rely on MQ-driven eventual consistency, and `payment-service` does not participate in Seata.
+- Local transaction first: each service commits its own state and persists outbound intent in `outbox_event`.
+- No distributed transaction coordinator: cross-service changes converge through MQ commands, delayed messages, and idempotent consumers.
 - Asynchronous decoupling: payment success notifications use RocketMQ transactional messages to avoid mismatches between local transactions and outgoing messages.
-- Long-running compensation: the full refund flow uses Seata SAGA and compensation actions to converge state.
+- Business compensation is explicit: timeout release, refund rollback, and payment retry use domain commands instead of Seata rollback hooks.
 - Delayed messages are sent only after the local transaction commits to avoid stray timeout events after rollback.
-- End-to-end idempotency: MQ consumers, TCC, and SAGA all provide idempotent handling, empty rollback protection, and replay prevention.
+- End-to-end idempotency: MQ consumers, delayed handlers, and remote command receivers all provide replay-safe processing.
 - No compatibility path retention: refund flows no longer use the legacy `refund-process` MQ channel.
 
 ## Scenario Mapping
 
 | Business Scenario | Strategy | Key Implementation |
 | --- | --- | --- |
-| Order placement inventory deduction | Seata TCC | `OrderPlacementServiceImpl` + `OrderCreateTccAction` + `StockReserveTccService` |
+| Order placement inventory deduction | Local transaction + Outbox + MQ command | `OrderServiceImpl` + `OrderOutboxService` + stock command consumers |
 | Payment success notification | RocketMQ transactional message | `PaymentSuccessTxProducer` + `PaymentSuccessTransactionListener` |
 | Order timeout cancellation | RocketMQ delayed message | `OrderTimeoutMessageProducer` + `OrderTimeoutConsumer` |
-| Full refund flow | Seata SAGA | `refund-saga.json` + `OrderRefundSagaCoordinator` + `OrderRefundSagaService` |
+| Refund creation and completion | Local transaction + remote command + Outbox | `OrderServiceImpl` + `PaymentOrderRemoteService` + `PaymentOutboxRelay` |
 | Intra-service state changes | Local transaction | `@Transactional` on write operations |
 
 ## Key Implementation Notes
 
-### Seata TCC (Order Placement Inventory Deduction)
+### Order Placement And Stock Reservation
 
-- Entry point: `OrderPlacementServiceImpl#createOrder` uses `@GlobalTransactional`
-- Try: `OrderCreateTccAction#prepare` creates the order aggregate and writes `order_tcc_log`
-- Confirm: `OrderCreateTccAction#commit` advances the order to `STOCK_RESERVED` and sends the `ORDER_TIMEOUT` delayed message after commit
-- Cancel: `OrderCreateTccAction#rollback` rolls back the order and order item states
-- Empty rollback / hanging prevention: `order_tcc_log` state and idempotency checks guard order-side rollback; the stock side uses reservation tokens and rollback markers
-- Stock TCC: `StockReserveTccService` implements Try/Confirm/Cancel and delegates persistence to `StockLedgerService`
+- Order creation commits local order records and writes stock command events into `outbox_event`
+- Stock reservation is consumed asynchronously by `stock-service` and updates `available`, `locked`, and `sold`
+- Reservation confirmation and release are also modeled as MQ commands, so order and stock stay loosely coupled
+- Timeout release uses a delayed RocketMQ message and re-checks order state before moving `locked -> available`
 
 ### RocketMQ Transactional Message (Payment Success Notification)
 
@@ -48,14 +46,12 @@ Define the boundary between strong consistency and eventual consistency across o
 - Producer: `OrderTimeoutMessageProducer#sendAfterCommit` sends after the local transaction commits
 - Delay level: controlled by `order.timeout.delay-level` so timeout messages are not published for rolled-back orders
 
-### Seata SAGA (Full Refund Flow)
+### Refund Flow
 
-- Definition: `services/order-service/src/main/resources/saga/refund-saga.json`
-- Entry point: `OrderRefundSagaCoordinator#startRefundSaga` uses `afterSaleNo` as the business key
-- Main flow: `orderRefundSagaService.applyRefund` -> `orderRefundSagaService.createRefund`
-- Compensation: `orderRefundSagaService.cancelRefund` restores after-sale status; if the payment-side refund already exists, it calls `cancelRefund` to mark the cancellation
-- Refund amount: must be greater than zero or the refund flow is rejected
-- Idempotency key: `after-sale:refund:{afterSaleNo}` is passed into the payment refund creation path
+- Refund initiation stays inside the order domain transaction and validates after-sale ownership plus payable amount
+- Payment refund creation uses explicit remote commands with shared timeout and exception translation rules
+- Refund completion is published through `PaymentOutboxRelay` so downstream order status updates stay replay-safe
+- Compensation is domain-specific and no longer depends on a Seata state machine
 
 ### Outbox (Reliable Delivery)
 
@@ -71,17 +67,15 @@ Define the boundary between strong consistency and eventual consistency across o
 
 ## Configuration Locations
 
-- SAGA configuration: `services/order-service/src/main/resources/application.yml`
-- SAGA definition: `services/order-service/src/main/resources/saga/refund-saga.json`
 - RocketMQ bindings (`order-service`): `services/order-service/src/main/resources/application-rocketmq.yml`
 - RocketMQ bindings (`payment-service`): `services/payment-service/src/main/resources/application-rocketmq.yml`
 - RocketMQ bindings (`stock-service`): `services/stock-service/src/main/resources/application-rocketmq.yml`
 
 ## Self-Check List
 
-- The `refund-process` MQ channel has been removed and refund handling goes through SAGA only
-- Order placement inventory deduction uses TCC, and `order_tcc_log` exists for traceability
+- The `refund-process` MQ channel has been removed and refund handling follows the unified eventual-consistency path
+- Order placement inventory deduction does not depend on Seata and uses Outbox plus MQ commands
 - Payment success notifications use RocketMQ transactional messages
-- `payment-service` keeps Seata disabled; only order and stock participate in global transactions
+- No service depends on Seata coordinator runtime or `undo_log`
 - Delayed messages are sent only after the local transaction commits
 - MQ consumers are idempotent and replay-safe

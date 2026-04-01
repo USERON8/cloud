@@ -4,12 +4,8 @@ import com.cloud.common.messaging.consumer.AbstractJsonMqConsumer;
 import com.cloud.common.messaging.event.StockFreezeFailedEvent;
 import com.cloud.common.metrics.TradeMetrics;
 import com.cloud.order.entity.OrderMain;
-import com.cloud.order.entity.OrderSub;
-import com.cloud.order.enums.OrderAction;
 import com.cloud.order.mapper.OrderMainMapper;
-import com.cloud.order.mapper.OrderSubMapper;
-import com.cloud.order.service.OrderService;
-import java.util.List;
+import com.cloud.order.service.support.OrderInventoryEventService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.rocketmq.common.message.MessageExt;
@@ -28,8 +24,7 @@ public class StockFreezeFailedConsumer extends AbstractJsonMqConsumer<StockFreez
   private static final String NS_STOCK_FREEZE_FAILED = "order:stock:freeze-failed";
 
   private final OrderMainMapper orderMainMapper;
-  private final OrderSubMapper orderSubMapper;
-  private final OrderService orderService;
+  private final OrderInventoryEventService orderInventoryEventService;
   private final TradeMetrics tradeMetrics;
 
   @Override
@@ -43,16 +38,7 @@ public class StockFreezeFailedConsumer extends AbstractJsonMqConsumer<StockFreez
       tradeMetrics.incrementMessageConsume("stock_freeze_failed", "failed");
       return;
     }
-    List<OrderSub> subOrders = orderSubMapper.listActiveByMainOrderId(mainOrder.getId());
-    for (OrderSub subOrder : subOrders) {
-      if (subOrder == null) {
-        continue;
-      }
-      String status = subOrder.getOrderStatus();
-      if (!"CANCELLED".equals(status) && !"CLOSED".equals(status)) {
-        orderService.advanceSubOrderStatus(subOrder.getId(), OrderAction.CANCEL);
-      }
-    }
+    orderInventoryEventService.handleStockFreezeFailed(event.getOrderNo());
     tradeMetrics.incrementMessageConsume("stock_freeze_failed", "success");
   }
 

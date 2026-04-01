@@ -75,7 +75,8 @@ class PaymentOrderServiceImplTest {
             orderStatusRemoteService,
             paymentOrderStateSupport,
             paymentSecurityCacheService,
-            List.of(paymentProviderGateway));
+            List.of(paymentProviderGateway),
+            tradeMetrics);
   }
 
   @Test

@@ -27,6 +27,19 @@ public interface OrderMainMapper extends BaseMapper<OrderMain> {
   @Select(
       """
             SELECT *
+            FROM order_main
+            WHERE user_id = #{userId}
+              AND client_order_id = #{clientOrderId}
+              AND deleted = 0
+            LIMIT 1
+            """)
+  OrderMain selectActiveByClientOrderId(
+      @Param("userId") Long userId, @Param("clientOrderId") String clientOrderId);
+
+  @InterceptorIgnore(illegalSql = "1")
+  @Select(
+      """
+            SELECT *
             FROM order_main FORCE INDEX (uk_order_main_no)
             WHERE main_order_no = #{mainOrderNo}
               AND deleted = 0
