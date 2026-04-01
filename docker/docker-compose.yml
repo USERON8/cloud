@@ -255,7 +255,7 @@ services:
         source: ./docker-compose/nginx/logs
         target: /var/log/nginx
       - type: bind
-        source: ../my-shop-uniapp/dist
+        source: ../my-shop-uniapp/dist/h5
         target: /usr/share/nginx/html
     command:
       - /bin/sh
