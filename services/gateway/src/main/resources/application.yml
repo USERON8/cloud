@@ -20,9 +20,13 @@ spring:
     web-application-type: reactive
   cloud:
     nacos:
+      discovery:
+        server-addr: ${NACOS_SERVER_ADDR:${NACOS_HOST:127.0.0.1}:${NACOS_PORT:15001}}
+        username: ${NACOS_USERNAME:nacos}
+        password: ${NACOS_PASSWORD:nacos}
       config:
         enabled: true
-        server-addr: ${NACOS_SERVER_ADDR:${NACOS_HOST:127.0.0.1}:${NACOS_PORT:18848}}
+        server-addr: ${NACOS_SERVER_ADDR:${NACOS_HOST:127.0.0.1}:${NACOS_PORT:15001}}
         username: ${NACOS_USERNAME:nacos}
         password: ${NACOS_PASSWORD:nacos}
         namespace: public
@@ -35,14 +39,6 @@ spring:
         import-check:
           enabled: false
     gateway:
-      httpclient:
-        http2:
-          enabled: true
-        pool:
-          max-connections: 500
-          acquire-timeout: 3000
-        connect-timeout: 2000
-        response-timeout: 10s
       server:
         webflux:
           default-filters:
@@ -51,24 +47,16 @@ spring:
             locator:
               enabled: false
               lower-case-service-id: true
-          csrf:
-            enabled: true
     sentinel:
       eager: true
       transport:
         dashboard: ${SENTINEL_DASHBOARD:127.0.0.1:18718}
         port: ${SENTINEL_TRANSPORT_PORT:18719}
-      scg:
-        fallback:
-          mode: response
-          response-status: 429
-          response-body: "{\"code\":429,\"message\":\"sentinel blocked\",\"data\":null}"
   autoconfigure:
     exclude:
       - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
       - org.springframework.boot.autoconfigure.jdbc.DataSourceTransactionManagerAutoConfiguration
       - org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration
-      - com.baomidou.mybatisplus.autoconfigure.MybatisPlusAutoConfiguration
   web:
     resources:
       static-locations: classpath:/static/
@@ -85,6 +73,7 @@ spring:
 logging:
   file:
     name: ${logging.file.path}/gateway.log
+    path: ./logs
   level:
     com.alibaba.nacos: WARN
     org.springframework.cloud.gateway: INFO
@@ -234,7 +223,6 @@ resilience4j:
         slow-call-duration-threshold: ${USER_ROUTE_TIMEOUT_MS:1200}ms
         wait-duration-in-open-state: 5s
         permitted-number-of-calls-in-half-open-state: 3
-
 knife4j:
   setting:
     enable-version: true

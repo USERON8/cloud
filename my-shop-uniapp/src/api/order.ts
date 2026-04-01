@@ -1,8 +1,22 @@
 import http from './http'
-import type { AfterSaleInfo, CreateOrderPayload, OrderItem, OrderPage, OrderQuery } from '../types/domain'
+import type {
+  AfterSaleInfo,
+  CreateOrderPayload,
+  OrderAggregateResponse,
+  OrderItem,
+  OrderPage,
+  OrderQuery
+} from '../types/domain'
 import { sessionState } from '../auth/session'
 
-export function createOrder(payload: CreateOrderPayload): Promise<unknown> {
+function buildClientOrderId(userId: number, payload: CreateOrderPayload): string {
+  if (payload.clientOrderId?.trim()) {
+    return payload.clientOrderId.trim()
+  }
+  return `cli-${userId}-${payload.spuId}-${payload.skuId}-${Date.now()}`
+}
+
+export function createOrder(payload: CreateOrderPayload): Promise<OrderAggregateResponse> {
   const userId = sessionState.user?.id
   if (typeof userId !== 'number') {
     return Promise.reject(new Error('User session is required'))
@@ -21,12 +35,13 @@ export function createOrder(payload: CreateOrderPayload): Promise<unknown> {
     quantity: payload.quantity,
     totalAmount,
     payableAmount: totalAmount,
+    clientOrderId: buildClientOrderId(userId, payload),
     receiverName: payload.receiverName.trim(),
     receiverPhone: payload.receiverPhone.trim(),
     receiverAddress: payload.receiverAddress.trim()
   }
   const idempotencyKey = `${userId}-${payload.spuId}-${payload.skuId}-${Date.now()}`
-  return http.post<unknown, unknown>('/api/orders', body, {
+  return http.post<OrderAggregateResponse, OrderAggregateResponse>('/api/orders', body, {
     headers: {
       'Idempotency-Key': idempotencyKey
     }

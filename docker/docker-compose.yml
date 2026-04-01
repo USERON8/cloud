@@ -163,7 +163,7 @@ services:
       - TCP-LISTEN:19090,fork,reuseaddr
       - TCP:nacos:9848
     ports:
-      - "${PORT_NACOS_GRPC:-19090}:19090"
+      - "${PORT_NACOS_GRPC:-16001}:19090"
     restart: unless-stopped
 
   # Compatibility note standardized. 
@@ -481,7 +481,31 @@ services:
       timeout: 5s
       retries: 8
       start_period: 45s
-
+  canal-server:
+    image: canal/canal-server:v1.1.8
+    container_name: canal-server
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      service_net:
+        ipv4_address: 172.28.0.140
+    mem_limit: 512m
+    ports:
+      - "${PORT_CANAL_SERVER:-11111}:11111"
+      - "${PORT_CANAL_ADMIN:-11110}:11110"
+    environment:
+      canal.instance.master.address: mysql:3306
+      canal.instance.dbUsername: root
+      canal.instance.dbPassword: root
+      canal.instance.filter.regex: product_db\\..*
+      canal.destinations: product
+      canal.serverMode: tcp
+    volumes:
+      - type: bind
+        source: ./docker-compose/canal/logs
+        target: /home/admin/canal-server/logs
+    restart: unless-stopped
   skywalking-oap:
     image: apache/skywalking-oap-server:10.3.0
     container_name: skywalking-oap

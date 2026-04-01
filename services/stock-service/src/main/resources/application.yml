@@ -7,6 +7,19 @@ server:
     max-connections: ${SERVER_TOMCAT_MAX_CONNECTIONS:20000}
     accept-count: ${SERVER_TOMCAT_ACCEPT_COUNT:1000}
 
+dubbo:
+  registry:
+    address: nacos://${NACOS_HOST:127.0.0.1}:${NACOS_PORT:15001}
+  protocol:
+    port: 20886
+  application:
+    qos-enable: false
+  provider:
+    executes: ${STOCK_DUBBO_PROVIDER_EXECUTES:128}
+logging:
+  file:
+    path: ./logs
+    name: ${logging.file.path}/stock-service.log
 spring:
   application:
     name: stock-service
@@ -17,9 +30,13 @@ spring:
     include: rocketmq
   cloud:
     nacos:
+      discovery:
+        server-addr: ${NACOS_SERVER_ADDR:${NACOS_HOST:127.0.0.1}:${NACOS_PORT:15001}}
+        username: ${NACOS_USERNAME:nacos}
+        password: ${NACOS_PASSWORD:nacos}
       config:
         enabled: true
-        server-addr: ${NACOS_SERVER_ADDR:${NACOS_HOST:127.0.0.1}:${NACOS_PORT:18848}}
+        server-addr: ${NACOS_SERVER_ADDR:${NACOS_HOST:127.0.0.1}:${NACOS_PORT:15001}}
         username: ${NACOS_USERNAME:nacos}
         password: ${NACOS_PASSWORD:nacos}
         namespace: public
@@ -32,9 +49,6 @@ spring:
         import-check:
           enabled: false
 
-logging:
-  file:
-    name: ${logging.file.path}/stock-service.log
 
 mybatis-plus:
   mapper-locations: classpath*:mapper/**/*.xml
@@ -99,7 +113,4 @@ knife4j:
   insight:
     service-name: ${spring.application.name}
 
-dubbo:
-  provider:
-    executes: ${STOCK_DUBBO_PROVIDER_EXECUTES:128}
 
