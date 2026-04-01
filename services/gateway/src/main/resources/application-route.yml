@@ -45,10 +45,6 @@ spring:
                     redis-rate-limiter.replenishRate: ${app.security.rate-limit.replenish-rate}
                     redis-rate-limiter.burstCapacity: ${app.security.rate-limit.burst-capacity}
                     redis-rate-limiter.requestedTokens: ${app.security.rate-limit.requested-tokens}
-                - name: CircuitBreaker
-                  args:
-                    name: user-route
-                    fallbackUri: forward:/gateway/fallback/user
 
             - id: product-service-api-v2
               uri: lb://product-service
@@ -88,10 +84,6 @@ spring:
                     redis-rate-limiter.replenishRate: ${app.security.rate-limit.replenish-rate}
                     redis-rate-limiter.burstCapacity: ${app.security.rate-limit.burst-capacity}
                     redis-rate-limiter.requestedTokens: ${app.security.rate-limit.requested-tokens}
-                - name: CircuitBreaker
-                  args:
-                    name: payment-route
-                    fallbackUri: forward:/gateway/fallback/payment
 
             - id: stock-service-api-v2
               uri: lb://stock-service
@@ -118,10 +110,6 @@ spring:
                     redis-rate-limiter.replenishRate: ${app.security.rate-limit.replenish-rate}
                     redis-rate-limiter.burstCapacity: ${app.security.rate-limit.burst-capacity}
                     redis-rate-limiter.requestedTokens: ${app.security.rate-limit.requested-tokens}
-                - name: CircuitBreaker
-                  args:
-                    name: search-route
-                    fallbackUri: forward:/gateway/fallback/search
 
           discovery:
             locator:

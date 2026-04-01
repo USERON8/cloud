@@ -163,7 +163,7 @@ function Ensure-ServiceArtifacts {
 
     Push-Location $Root
     try {
-        & $mvnCommand.Source "-DskipTests" "-T" "1C" "-pl" $requestedModules "-am" "package"
+        & $mvnCommand.Source "-Dmaven.test.skip=true" "-DskipTests" "-T" "1C" "-pl" $requestedModules "-am" "package"
         if ($LASTEXITCODE -ne 0) {
             throw ("maven package failed for services: {0}" -f $requestedServices)
         }

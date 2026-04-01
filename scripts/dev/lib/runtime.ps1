@@ -165,6 +165,9 @@ function Set-ServiceRuntimeEnvironment {
     if ([string]::IsNullOrWhiteSpace($env:GATEWAY_SIGNATURE_SECRET)) {
         $env:GATEWAY_SIGNATURE_SECRET = "cloud-gateway-signature-dev"
     }
+    if ([string]::IsNullOrWhiteSpace($env:GATEWAY_INTERNAL_IDENTITY_SECRET)) {
+        $env:GATEWAY_INTERNAL_IDENTITY_SECRET = $env:GATEWAY_SIGNATURE_SECRET
+    }
     if ([string]::IsNullOrWhiteSpace($env:CLIENT_SERVICE_SECRET)) {
         $env:CLIENT_SERVICE_SECRET = "cloud-client-service-secret-dev"
     }
@@ -183,6 +186,23 @@ function Set-ServiceRuntimeEnvironment {
     if ([string]::IsNullOrWhiteSpace($env:GITHUB_CLIENT_SECRET)) {
         $env:GITHUB_CLIENT_SECRET = "cloud-github-secret-dev"
     }
+
+    $seataAutoConfigExcludes = @(
+        "org.apache.seata.spring.boot.autoconfigure.SeataAutoConfiguration",
+        "org.apache.seata.spring.boot.autoconfigure.SeataCoreAutoConfiguration"
+    )
+    $existingAutoConfigExcludes = @()
+    if (-not [string]::IsNullOrWhiteSpace($env:SPRING_AUTOCONFIGURE_EXCLUDE)) {
+        $existingAutoConfigExcludes = $env:SPRING_AUTOCONFIGURE_EXCLUDE.Split(",") |
+            ForEach-Object { $_.Trim() } |
+            Where-Object { -not [string]::IsNullOrWhiteSpace($_) }
+    }
+    foreach ($exclude in $seataAutoConfigExcludes) {
+        if ($existingAutoConfigExcludes -notcontains $exclude) {
+            $existingAutoConfigExcludes += $exclude
+        }
+    }
+    $env:SPRING_AUTOCONFIGURE_EXCLUDE = ($existingAutoConfigExcludes -join ",")
 
     Write-Host ("SERVICE_ENV nacos={0} rocketmq={1} gatewaySignature=configured authSecrets=configured" -f $env:NACOS_SERVER_ADDR, $env:ROCKETMQ_NAME_SERVER)
 }
