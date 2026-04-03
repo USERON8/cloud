@@ -1,0 +1,1 @@
+userContext=com.cloud.common.security.DubboUserContextFilter

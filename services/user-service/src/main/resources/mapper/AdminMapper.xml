@@ -14,10 +14,11 @@
         <result property="createdAt" column="created_at"/>
         <result property="updatedAt" column="updated_at"/>
         <result property="deleted" column="deleted"/>
+        <result property="version" column="version"/>
     </resultMap>
 
     <sql id="Base_Column_List">
         id,username,real_name,phone,role,
-        status,created_at,updated_at,deleted
+        status,created_at,updated_at,deleted,version
     </sql>
 </mapper>

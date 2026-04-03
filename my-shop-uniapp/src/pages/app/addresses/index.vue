@@ -1,331 +1,552 @@
 <script setup lang="ts">
-import { computed, reactive, ref } from 'vue'
-import { onShow } from '@dcloudio/uni-app'
-import AppShell from '../../../components/AppShell.vue'
-import { addUserAddress, deleteUserAddress, listUserAddresses, updateUserAddress } from '../../../api/address'
-import type { UserAddress } from '../../../types/domain'
-import { sessionState } from '../../../auth/session'
-import { confirm, toast } from '../../../utils/ui'
+import { computed, reactive, ref } from "vue";
+import { onShow } from "@dcloudio/uni-app";
+import AppShell from "../../../components/AppShell.vue";
+import {
+    addUserAddress,
+    deleteUserAddress,
+    listUserAddresses,
+    updateUserAddress,
+} from "../../../api/address";
+import type { UserAddress } from "../../../types/domain";
+import { sessionState } from "../../../auth/session";
+import { confirm, toast } from "../../../utils/ui";
 
-const rows = ref<UserAddress[]>([])
-const loading = ref(false)
-const saving = ref(false)
-const editingAddressId = ref<number | null>(null)
-const userId = computed(() => sessionState.user?.id)
+const rows = ref<UserAddress[]>([]);
+const loading = ref(false);
+const saving = ref(false);
+const editingAddressId = ref<number | null>(null);
+const userId = computed(() => sessionState.user?.id);
 
 const form = reactive<UserAddress>({
-  consignee: '',
-  phone: '',
-  province: '',
-  city: '',
-  district: '',
-  street: '',
-  detailAddress: '',
-  isDefault: 1
-})
+    receiverName: "",
+    receiverPhone: "",
+    province: "",
+    city: "",
+    district: "",
+    street: "",
+    detailAddress: "",
+    isDefault: 1,
+});
 
 function resetForm(): void {
-  editingAddressId.value = null
-  form.consignee = ''
-  form.phone = ''
-  form.province = ''
-  form.city = ''
-  form.district = ''
-  form.street = ''
-  form.detailAddress = ''
-  form.isDefault = rows.value.length === 0 ? 1 : 0
+    editingAddressId.value = null;
+    form.receiverName = "";
+    form.receiverPhone = "";
+    form.province = "";
+    form.city = "";
+    form.district = "";
+    form.street = "";
+    form.detailAddress = "";
+    form.isDefault = rows.value.length === 0 ? 1 : 0;
 }
 
 function toAddressPayload(address: UserAddress): UserAddress {
-  return {
-    consignee: address.consignee.trim(),
-    phone: address.phone.trim(),
-    province: address.province.trim(),
-    city: address.city.trim(),
-    district: address.district.trim(),
-    street: address.street.trim(),
-    detailAddress: address.detailAddress.trim(),
-    isDefault: address.isDefault === 1 ? 1 : 0
-  }
+    return {
+        receiverName: address.receiverName.trim(),
+        receiverPhone: address.receiverPhone.trim(),
+        province: address.province.trim(),
+        city: address.city.trim(),
+        district: address.district.trim(),
+        street: address.street.trim(),
+        detailAddress: address.detailAddress.trim(),
+        isDefault: address.isDefault === 1 ? 1 : 0,
+    };
 }
 
 function validateForm(): boolean {
-  if (!form.consignee.trim()) {
-    toast('Consignee is required')
-    return false
-  }
-  if (!/^1[3-9]\d{9}$/.test(form.phone.trim())) {
-    toast('Phone must use a mainland China mobile format')
-    return false
-  }
-  if (!form.province.trim() || !form.city.trim() || !form.district.trim()) {
-    toast('Province, city, and district are required')
-    return false
-  }
-  if (!form.street.trim() || !form.detailAddress.trim()) {
-    toast('Street and detail address are required')
-    return false
-  }
-  return true
+    if (!form.receiverName.trim()) {
+        toast("Consignee is required");
+        return false;
+    }
+    if (!/^1[3-9]\d{9}$/.test(form.receiverPhone.trim())) {
+        toast("Phone must use a mainland China mobile format");
+        return false;
+    }
+    if (!form.province.trim() || !form.city.trim() || !form.district.trim()) {
+        toast("Province, city, and district are required");
+        return false;
+    }
+    if (!form.street.trim() || !form.detailAddress.trim()) {
+        toast("Street and detail address are required");
+        return false;
+    }
+    return true;
 }
 
 async function loadAddresses(): Promise<void> {
-  if (loading.value) return
-  if (typeof userId.value !== 'number') {
-    toast('Missing user session')
-    return
-  }
-  loading.value = true
-  try {
-    rows.value = await listUserAddresses(userId.value)
-    if (editingAddressId.value == null && rows.value.length > 0 && form.consignee.trim().length === 0) {
-      form.isDefault = 0
+    if (loading.value) return;
+    if (typeof userId.value !== "number") {
+        toast("Missing user session");
+        return;
     }
-  } catch (error) {
-    toast(error instanceof Error ? error.message : 'Failed to load addresses')
-  } finally {
-    loading.value = false
-  }
+    loading.value = true;
+    try {
+        rows.value = await listUserAddresses(userId.value);
+        if (
+            editingAddressId.value == null &&
+            rows.value.length > 0 &&
+            form.receiverName.trim().length === 0
+        ) {
+            form.isDefault = 0;
+        }
+    } catch (error) {
+        toast(
+            error instanceof Error ? error.message : "Failed to load addresses",
+        );
+    } finally {
+        loading.value = false;
+    }
 }
 
 async function saveAddress(): Promise<void> {
-  if (saving.value) {
-    return
-  }
-  if (typeof userId.value !== 'number') {
-    toast('Missing user session')
-    return
-  }
-  if (!validateForm()) {
-    return
-  }
-
-  saving.value = true
-  try {
-    const payload = toAddressPayload(form)
-    if (editingAddressId.value != null) {
-      await updateUserAddress(editingAddressId.value, payload)
-      toast('Address updated', 'success')
-    } else {
-      await addUserAddress(userId.value, payload)
-      toast('Address created', 'success')
+    if (saving.value) {
+        return;
     }
-    resetForm()
-    await loadAddresses()
-  } catch (error) {
-    toast(error instanceof Error ? error.message : 'Failed to save the address')
-  } finally {
-    saving.value = false
-  }
+    if (typeof userId.value !== "number") {
+        toast("Missing user session");
+        return;
+    }
+    if (!validateForm()) {
+        return;
+    }
+
+    saving.value = true;
+    try {
+        const payload = toAddressPayload(form);
+        if (editingAddressId.value != null) {
+            await updateUserAddress(editingAddressId.value, payload);
+            toast("Address updated", "success");
+        } else {
+            await addUserAddress(userId.value, payload);
+            toast("Address created", "success");
+        }
+        resetForm();
+        await loadAddresses();
+    } catch (error) {
+        toast(
+            error instanceof Error
+                ? error.message
+                : "Failed to save the address",
+        );
+    } finally {
+        saving.value = false;
+    }
 }
 
 function startEdit(item: UserAddress): void {
-  editingAddressId.value = typeof item.id === 'number' ? item.id : null
-  form.consignee = item.consignee
-  form.phone = item.phone
-  form.province = item.province
-  form.city = item.city
-  form.district = item.district
-  form.street = item.street
-  form.detailAddress = item.detailAddress
-  form.isDefault = item.isDefault === 1 ? 1 : 0
+    editingAddressId.value = typeof item.id === "number" ? item.id : null;
+    form.receiverName = item.receiverName;
+    form.receiverPhone = item.receiverPhone;
+    form.province = item.province;
+    form.city = item.city;
+    form.district = item.district;
+    form.street = item.street;
+    form.detailAddress = item.detailAddress;
+    form.isDefault = item.isDefault === 1 ? 1 : 0;
 }
 
 async function markAsDefault(item: UserAddress): Promise<void> {
-  if (typeof item.id !== 'number' || item.isDefault === 1) {
-    return
-  }
-  try {
-    await updateUserAddress(item.id, {
-      ...toAddressPayload(item),
-      isDefault: 1
-    })
-    toast('Default address updated', 'success')
-    await loadAddresses()
-  } catch (error) {
-    toast(error instanceof Error ? error.message : 'Failed to update the default address')
-  }
+    if (typeof item.id !== "number" || item.isDefault === 1) {
+        return;
+    }
+    try {
+        await updateUserAddress(item.id, {
+            ...toAddressPayload(item),
+            isDefault: 1,
+        });
+        toast("Default address updated", "success");
+        await loadAddresses();
+    } catch (error) {
+        toast(
+            error instanceof Error
+                ? error.message
+                : "Failed to update the default address",
+        );
+    }
 }
 
 async function removeAddress(item: UserAddress): Promise<void> {
-  if (typeof item.id !== 'number') {
-    return
-  }
-  const ok = await confirm(`Delete the address for ${item.consignee}?`)
-  if (!ok) {
-    return
-  }
-  try {
-    await deleteUserAddress(item.id)
-    toast('Address deleted', 'success')
-    if (editingAddressId.value === item.id) {
-      resetForm()
+    if (typeof item.id !== "number") {
+        return;
     }
-    await loadAddresses()
-  } catch (error) {
-    toast(error instanceof Error ? error.message : 'Failed to delete the address')
-  }
+    const ok = await confirm(`Delete the address for ${item.receiverName}?`);
+    if (!ok) {
+        return;
+    }
+    try {
+        await deleteUserAddress(item.id);
+        toast("Address deleted", "success");
+        if (editingAddressId.value === item.id) {
+            resetForm();
+        }
+        await loadAddresses();
+    } catch (error) {
+        toast(
+            error instanceof Error
+                ? error.message
+                : "Failed to delete the address",
+        );
+    }
 }
 
-resetForm()
+resetForm();
 onShow(() => {
-  void loadAddresses()
-})
+    void loadAddresses();
+});
 </script>
 
 <template>
-  <AppShell title="Addresses">
-    <view class="page">
-      <view class="panel glass-card">
-        <view class="header">
-          <text class="section-title">{{ editingAddressId ? 'Edit address' : 'New address' }}</text>
-          <button class="btn-outline" @click="resetForm">Reset</button>
-        </view>
+    <AppShell title="Addresses">
+        <view class="addresses-layout">
+            <view class="hero-card display-panel">
+                <view class="hero-copy">
+                    <text class="hero-eyebrow">Addresses</text>
+                    <text class="hero-title"
+                        >Create, edit, and organize delivery destinations in a
+                        calmer address book.</text
+                    >
+                    <text class="hero-subtitle">
+                        Keep a reliable default address ready so checkout stays
+                        fast, clear, and consistent across future orders.
+                    </text>
+                </view>
 
-        <view class="form-grid">
-          <input v-model="form.consignee" class="input" placeholder="Consignee" />
-          <input v-model="form.phone" class="input" placeholder="Phone" />
-          <input v-model="form.province" class="input" placeholder="Province" />
-          <input v-model="form.city" class="input" placeholder="City" />
-          <input v-model="form.district" class="input" placeholder="District" />
-          <input v-model="form.street" class="input" placeholder="Street" />
-        </view>
-
-        <textarea v-model="form.detailAddress" class="textarea" placeholder="Detail address" />
-
-        <label class="default-row">
-          <switch :checked="form.isDefault === 1" @change="form.isDefault = $event.detail.value ? 1 : 0" />
-          <text class="default-text">Set as default address</text>
-        </label>
-
-        <button class="btn-primary" :loading="saving" @click="saveAddress">
-          {{ editingAddressId ? 'Update address' : 'Create address' }}
-        </button>
-      </view>
-
-      <view class="panel glass-card">
-        <view class="header">
-          <text class="section-title">Address book</text>
-          <button class="btn-outline" @click="loadAddresses">Refresh</button>
-        </view>
-
-        <view v-if="rows.length === 0" class="empty">
-          <text class="text-muted">No address is available</text>
-        </view>
-
-        <view v-else class="list">
-          <view v-for="item in rows" :key="item.id" class="row">
-            <view class="row-copy">
-              <text class="name">{{ item.consignee }} · {{ item.phone }}</text>
-              <text class="meta">
-                {{ item.province }} {{ item.city }} {{ item.district }} {{ item.street }} {{ item.detailAddress }}
-              </text>
-              <text class="meta" v-if="item.isDefault === 1">Default address</text>
+                <view class="hero-stats">
+                    <view class="info-card">
+                        <text class="info-label">Saved addresses</text>
+                        <text class="info-value">{{ rows.length }}</text>
+                    </view>
+                    <view class="info-card">
+                        <text class="info-label">Default ready</text>
+                        <text class="info-value">{{
+                            rows.some((item) => item.isDefault === 1)
+                                ? "Yes"
+                                : "No"
+                        }}</text>
+                    </view>
+                </view>
             </view>
-            <view class="row-actions">
-              <button class="btn-outline" @click="startEdit(item)">Edit</button>
-              <button v-if="item.isDefault !== 1" class="btn-outline" @click="markAsDefault(item)">Set default</button>
-              <button class="btn-outline" @click="removeAddress(item)">Delete</button>
+
+            <view class="content-grid">
+                <view class="surface-card panel editor-panel">
+                    <view class="header">
+                        <view class="section-block compact-block">
+                            <text class="section-title">{{
+                                editingAddressId
+                                    ? "Edit address"
+                                    : "New address"
+                            }}</text>
+                            <text class="section-subtitle"
+                                >Capture recipient, region, street, and detailed
+                                delivery information.</text
+                            >
+                        </view>
+                        <button class="btn-outline" @click="resetForm">
+                            Reset
+                        </button>
+                    </view>
+
+                    <view class="form-grid">
+                        <input
+                            v-model="form.receiverName"
+                            class="input"
+                            placeholder="Consignee"
+                        />
+                        <input
+                            v-model="form.receiverPhone"
+                            class="input"
+                            placeholder="Phone"
+                        />
+                        <input
+                            v-model="form.province"
+                            class="input"
+                            placeholder="Province"
+                        />
+                        <input
+                            v-model="form.city"
+                            class="input"
+                            placeholder="City"
+                        />
+                        <input
+                            v-model="form.district"
+                            class="input"
+                            placeholder="District"
+                        />
+                        <input
+                            v-model="form.street"
+                            class="input"
+                            placeholder="Street"
+                        />
+                    </view>
+
+                    <textarea
+                        v-model="form.detailAddress"
+                        class="textarea"
+                        placeholder="Detail address"
+                    />
+
+                    <label class="default-row">
+                        <switch
+                            :checked="form.isDefault === 1"
+                            @change="
+                                form.isDefault = $event.detail.value ? 1 : 0
+                            "
+                        />
+                        <text class="default-text">Set as default address</text>
+                    </label>
+
+                    <button
+                        class="btn-primary submit-button"
+                        :loading="saving"
+                        @click="saveAddress"
+                    >
+                        {{
+                            editingAddressId
+                                ? "Update address"
+                                : "Create address"
+                        }}
+                    </button>
+                </view>
+
+                <view class="surface-card panel book-panel">
+                    <view class="header">
+                        <view class="section-block compact-block">
+                            <text class="section-title">Address book</text>
+                            <text class="section-subtitle"
+                                >Choose the default destination or refine saved
+                                delivery records.</text
+                            >
+                        </view>
+                        <button class="btn-outline" @click="loadAddresses">
+                            Refresh
+                        </button>
+                    </view>
+
+                    <view v-if="rows.length === 0" class="empty-state"
+                        >No address is available</view
+                    >
+
+                    <view v-else class="list">
+                        <view
+                            v-for="item in rows"
+                            :key="item.id"
+                            class="row-card"
+                        >
+                            <view class="row-head">
+                                <view class="row-copy">
+                                    <text class="name"
+                                        >{{ item.receiverName }} ·
+                                        {{ item.receiverPhone }}</text
+                                    >
+                                    <text class="meta">
+                                        {{ item.province }} {{ item.city }}
+                                        {{ item.district }} {{ item.street }}
+                                        {{ item.detailAddress }}
+                                    </text>
+                                </view>
+                                <text
+                                    v-if="item.isDefault === 1"
+                                    class="status-chip default-chip"
+                                    >Default</text
+                                >
+                            </view>
+
+                            <view class="row-actions">
+                                <button
+                                    class="btn-outline"
+                                    @click="startEdit(item)"
+                                >
+                                    Edit
+                                </button>
+                                <button
+                                    v-if="item.isDefault !== 1"
+                                    class="btn-outline"
+                                    @click="markAsDefault(item)"
+                                >
+                                    Set default
+                                </button>
+                                <button
+                                    class="btn-secondary"
+                                    @click="removeAddress(item)"
+                                >
+                                    Delete
+                                </button>
+                            </view>
+                        </view>
+                    </view>
+                </view>
             </view>
-          </view>
         </view>
-      </view>
-    </view>
-  </AppShell>
+    </AppShell>
 </template>
 
 <style scoped>
-.page {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+.addresses-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.hero-card {
+    padding: 36px;
+    display: grid;
+    grid-template-columns: minmax(0, 1.45fr) 300px;
+    gap: 24px;
+    align-items: stretch;
+}
+
+.hero-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    justify-content: center;
+    min-height: 320px;
+}
+
+.hero-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    justify-content: flex-end;
+}
+
+.content-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+    gap: 18px;
 }
 
 .panel {
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.compact-block {
+    gap: 6px;
 }
 
 .header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
 }
 
 .form-grid {
-  display: grid;
-  gap: 10px;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
 }
 
-.input {
-  width: 100%;
-  background: #fff;
-  border-radius: 14px;
-  padding: 10px 12px;
-  font-size: 14px;
+.input,
+.textarea {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.96);
+    border-radius: 16px;
+    padding: 13px 16px;
+    font-size: 14px;
+    border: 1px solid rgba(15, 23, 42, 0.08);
 }
 
 .textarea {
-  width: 100%;
-  min-height: 88px;
-  background: #fff;
-  border-radius: 14px;
-  padding: 10px 12px;
-  font-size: 14px;
+    min-height: 120px;
 }
 
 .default-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 
 .default-text {
-  font-size: 13px;
-  color: var(--text-muted);
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+.submit-button {
+    width: 100%;
 }
 
 .list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
 }
 
-.row {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 10px 0;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+.row-card {
+    padding: 18px;
+    border-radius: var(--radius-lg);
+    background: var(--panel-muted);
+    border: 1px solid rgba(15, 23, 42, 0.05);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.row-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
 }
 
 .row-copy {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
 }
 
 .row-actions {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
 }
 
 .name {
-  font-size: 14px;
-  font-weight: 600;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
 }
 
 .meta {
-  font-size: 12px;
-  color: var(--text-muted);
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.7;
 }
 
-.empty {
-  padding: 16px 0;
-  text-align: center;
+.default-chip {
+    background: rgba(0, 113, 227, 0.1);
+    color: var(--accent);
+}
+
+.empty-state {
+    padding: 28px 0;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 13px;
+}
+
+@media (max-width: 900px) {
+    .hero-card,
+    .content-grid,
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .hero-card {
+        padding: 26px;
+    }
+
+    .hero-copy {
+        min-height: auto;
+    }
+
+    .header {
+        flex-direction: column;
+    }
 }
 </style>

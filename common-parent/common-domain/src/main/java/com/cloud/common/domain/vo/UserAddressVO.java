@@ -1,5 +1,6 @@
 package com.cloud.common.domain.vo;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import lombok.Data;
 
@@ -10,9 +11,13 @@ public class UserAddressVO {
 
   private Long userId;
 
-  private String consignee;
+  private String addressTag;
 
-  private String phone;
+  private String receiverName;
+
+  private String receiverPhone;
+
+  private String country;
 
   private String province;
 
@@ -23,6 +28,12 @@ public class UserAddressVO {
   private String street;
 
   private String detailAddress;
+
+  private String postalCode;
+
+  private BigDecimal longitude;
+
+  private BigDecimal latitude;
 
   private Integer isDefault;
 

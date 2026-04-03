@@ -1,11 +1,10 @@
 import http, { requestRaw } from './http'
-import type { RegisterRequest, OAuthTokenResponse, UserInfo } from '../types/domain'
+import type { RegisterRequest, RegisterResponse, OAuthTokenResponse, UserInfo } from '../types/domain'
 import { getStorage, removeStorage, setStorage } from '../utils/storage'
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || ''
 const oauthClientId = import.meta.env.VITE_OAUTH_CLIENT_ID || 'web-client'
-const oauthScope =
-  import.meta.env.VITE_OAUTH_SCOPE || 'openid profile read write user:read user:write order:read order:write'
+const oauthScope = import.meta.env.VITE_OAUTH_SCOPE || 'openid user.read order.write'
 const defaultRedirectUri =
   typeof window !== 'undefined' && window.location
     ? `${window.location.origin}/#/pages/oauth/success`
@@ -172,8 +171,8 @@ export function clearPendingAuthorizationState(): void {
   clearPendingAuthorization()
 }
 
-export function register(payload: RegisterRequest): Promise<unknown> {
-  return http.post<unknown, unknown>('/auth/users/register', payload)
+export function register(payload: RegisterRequest): Promise<RegisterResponse> {
+  return http.post<RegisterResponse, RegisterResponse>('/auth/users/register', payload)
 }
 
 export function logout(): Promise<void> {

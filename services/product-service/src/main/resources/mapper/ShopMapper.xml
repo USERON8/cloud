@@ -16,10 +16,11 @@
         <result property="createdAt" column="created_at"/>
         <result property="updatedAt" column="updated_at"/>
         <result property="deleted" column="deleted"/>
+        <result property="version" column="version"/>
     </resultMap>
 
     <sql id="Base_Column_List">
         id,merchant_id,shop_name,avatar_url,description,contact_phone,
-        address,status,created_at,updated_at,deleted
+        address,status,created_at,updated_at,deleted,version
     </sql>
 </mapper>

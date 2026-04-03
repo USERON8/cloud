@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cloud.product.mapper.ProductReviewMapper">
+
+    <resultMap id="BaseResultMap" type="com.cloud.product.module.entity.ProductReview">
+        <id property="id" column="id"/>
+        <result property="spuId" column="spu_id"/>
+        <result property="skuId" column="sku_id"/>
+        <result property="orderSubNo" column="order_sub_no"/>
+        <result property="userId" column="user_id"/>
+        <result property="rating" column="rating"/>
+        <result property="content" column="content"/>
+        <result property="images" column="images"/>
+        <result property="tags" column="tags"/>
+        <result property="isAnonymous" column="is_anonymous"/>
+        <result property="auditStatus" column="audit_status"/>
+        <result property="merchantReply" column="merchant_reply"/>
+        <result property="replyTime" column="reply_time"/>
+        <result property="likeCount" column="like_count"/>
+        <result property="isVisible" column="is_visible"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+        <result property="deleted" column="deleted"/>
+        <result property="version" column="version"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,spu_id,sku_id,order_sub_no,user_id,rating,content,images,tags,is_anonymous,
+        audit_status,merchant_reply,reply_time,like_count,is_visible,created_at,updated_at,deleted,version
+    </sql>
+</mapper>

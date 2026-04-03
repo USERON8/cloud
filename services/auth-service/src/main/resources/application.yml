@@ -1,175 +1,152 @@
 server:
-  port: ${SERVER_PORT:8081}
-  tomcat:
-    threads:
-      max: ${SERVER_TOMCAT_THREADS_MAX:400}
-      min-spare: ${SERVER_TOMCAT_THREADS_MIN_SPARE:20}
-    max-connections: ${SERVER_TOMCAT_MAX_CONNECTIONS:20000}
-    accept-count: ${SERVER_TOMCAT_ACCEPT_COUNT:1000}
+    port: ${SERVER_PORT:8081}
+
 dubbo:
-  registry:
-    address: nacos://${NACOS_HOST:127.0.0.1}:${NACOS_PORT:15001}
-  protocol:
-    port: 20881
-  application:
-    qos-enable: false
+    protocol:
+        port: 20881
 spring:
-  application:
-    name: auth-service
-  config:
-    import: "optional:nacos:common.yaml"
-  profiles:
-    active: dev
-    include: rocketmq
-  main:
-    allow-circular-references: true
-  cloud:
-    nacos:
-      discovery:
-        server-addr: ${NACOS_SERVER_ADDR:${NACOS_HOST:127.0.0.1}:${NACOS_PORT:15001}}
-        username: ${NACOS_USERNAME:nacos}
-        password: ${NACOS_PASSWORD:nacos}
-      config:
-        enabled: true
-        server-addr: ${NACOS_SERVER_ADDR:${NACOS_HOST:127.0.0.1}:${NACOS_PORT:15001}}
-        username: ${NACOS_USERNAME:nacos}
-        password: ${NACOS_PASSWORD:nacos}
-        namespace: public
-        group: DEFAULT_GROUP
-        file-extension: yaml
-        shared-configs:
-          - data-id: common.yaml
-            group: DEFAULT_GROUP
-            refresh: true
-        import-check:
-          enabled: false
-  security:
-    oauth2:
-      client:
-        registration:
-          github:
-            client-id: ${GITHUB_CLIENT_ID:}
-            client-secret: ${GITHUB_CLIENT_SECRET:}
-            redirect-uri: ${GITHUB_REDIRECT_URI:http://127.0.0.1:18080/login/oauth2/code/github}
-          client-service:
-            provider: custom-authorization-server
-            client-id: client-service
-            client-secret: ${CLIENT_SERVICE_SECRET}
-            authorization-grant-type: client_credentials
-            scope: internal
-        provider:
-          custom-authorization-server:
-            token-uri: ${AUTH_TOKEN_URI:http://${AUTH_HOST:127.0.0.1}:${AUTH_PORT:8081}/oauth2/token}
+    application:
+        name: auth-service
+    config:
+        import: "optional:nacos:common.yaml"
+    profiles:
+        active: dev
+        include: rocketmq
+    main:
+        allow-circular-references: true
+    cloud:
+        nacos:
+            discovery:
+                server-addr: ${NACOS_SERVER_ADDR:${NACOS_HOST:127.0.0.1}:${NACOS_PORT:18848}}
+            config:
+                server-addr: ${NACOS_SERVER_ADDR:${NACOS_HOST:127.0.0.1}:${NACOS_PORT:18848}}
+    security:
+        oauth2:
+            client:
+                registration:
+                    github:
+                        client-id: ${GITHUB_CLIENT_ID:}
+                        client-secret: ${GITHUB_CLIENT_SECRET:}
+                        redirect-uri: ${GITHUB_REDIRECT_URI:http://127.0.0.1:18080/login/oauth2/code/github}
+                    client-service:
+                        provider: custom-authorization-server
+                        client-id: client-service
+                        client-secret: ${CLIENT_SERVICE_SECRET}
+                        authorization-grant-type: client_credentials
+                        scope: internal
+                provider:
+                    custom-authorization-server:
+                        token-uri: ${AUTH_TOKEN_URI:http://${AUTH_HOST:127.0.0.1}:${AUTH_PORT:8081}/oauth2/token}
 
 logging:
-  file:
-    name: ${logging.file.path}/auth-service.log
-    path: ./logs
-  level:
-    root: info
-    com.cloud.auth: info
+    file:
+        name: ${logging.file.path}/auth-service.log
+        path: ./logs
+    level:
+        root: info
+        com.cloud.auth: info
 
 app:
-  doc:
-    title: Auth Service API
-    description: Authentication and OAuth2 endpoints
-    version: 1.1.0
-  async:
-    executors:
-      authAsyncExecutor:
-        core-pool-size: 3
-        max-pool-size: 8
-        queue-capacity: 300
-        keep-alive-seconds: 60
-        thread-name-prefix: auth-async-
-        rejected-execution-handler: CALLER_RUNS
-      authTokenExecutor:
-        core-pool-size: 4
-        max-pool-size: 16
-        queue-capacity: 500
-        keep-alive-seconds: 60
-        thread-name-prefix: auth-token-
-        rejected-execution-handler: CALLER_RUNS
-      authSecurityLogExecutor:
-        core-pool-size: 2
-        max-pool-size: 6
-        queue-capacity: 500
-        keep-alive-seconds: 60
-        thread-name-prefix: auth-security-log-
-        rejected-execution-handler: CALLER_RUNS
-      authOAuth2Executor:
-        enabled: ${auth.oauth2.enabled:true}
-        core-pool-size: 8
-        max-pool-size: 16
-        queue-capacity: 300
-        keep-alive-seconds: 60
-        thread-name-prefix: auth-oauth2-
-        rejected-execution-handler: CALLER_RUNS
-      authSessionExecutor:
-        core-pool-size: 2
-        max-pool-size: 5
-        queue-capacity: 200
-        keep-alive-seconds: 60
-        thread-name-prefix: auth-session-
-        rejected-execution-handler: CALLER_RUNS
-      authCommonAsyncExecutor:
-        core-pool-size: 2
-        max-pool-size: 8
-        queue-capacity: 200
-        keep-alive-seconds: 60
-        thread-name-prefix: common-async-
-        rejected-execution-handler: CALLER_RUNS
-  jwt:
-    test-mode: true
-    access-token-validity: PT15M
-    service-access-token-validity: PT15M
-    refresh-token-validity: P7D
-    authorization-code-validity: PT5M
-    test-token-validity: P365D
-    keys:
-      private-key-base64: ${APP_JWT_PRIVATE_KEY_BASE64:}
-      public-key-base64: ${APP_JWT_PUBLIC_KEY_BASE64:}
-      key-id: ${APP_JWT_KEY_ID:auth-service-key}
-      allow-generated-keypair: ${APP_JWT_ALLOW_GENERATED_KEYPAIR:false}
-  oauth2:
-    github:
-      redirect:
-        error-url: ${APP_OAUTH2_GITHUB_ERROR_URL:http://127.0.0.1:18080/auth/error}
-    clients:
-      web:
-        id: ${APP_OAUTH2_WEB_CLIENT_ID:web-client}
-        secret: ${APP_OAUTH2_WEB_CLIENT_SECRET:cloud-shop-secret}
-        redirect-uris: ${APP_OAUTH2_WEB_REDIRECT_URIS:http://127.0.0.1:${PORT_NGINX_HTTP:18080}/callback,http://127.0.0.1:3000/callback}
-      mobile:
-        id: ${APP_OAUTH2_MOBILE_CLIENT_ID:mobile-client}
-        secret: ${APP_OAUTH2_MOBILE_CLIENT_SECRET:cloud-mini-secret}
-        redirect-uris: ${APP_OAUTH2_MOBILE_REDIRECT_URIS:com.example.app://callback}
-      internal:
-        id: ${APP_OAUTH2_INTERNAL_CLIENT_ID:client-service}
-        secret: ${APP_OAUTH2_INTERNAL_CLIENT_SECRET:${CLIENT_SERVICE_SECRET}}
-  security:
+    doc:
+        title: Auth Service API
+        description: Authentication and OAuth2 endpoints
+        version: 1.1.0
+    async:
+        executors:
+            authAsyncExecutor:
+                core-pool-size: 3
+                max-pool-size: 8
+                queue-capacity: 300
+                keep-alive-seconds: 60
+                thread-name-prefix: auth-async-
+                rejected-execution-handler: CALLER_RUNS
+            authTokenExecutor:
+                core-pool-size: 4
+                max-pool-size: 16
+                queue-capacity: 500
+                keep-alive-seconds: 60
+                thread-name-prefix: auth-token-
+                rejected-execution-handler: CALLER_RUNS
+            authSecurityLogExecutor:
+                core-pool-size: 2
+                max-pool-size: 6
+                queue-capacity: 500
+                keep-alive-seconds: 60
+                thread-name-prefix: auth-security-log-
+                rejected-execution-handler: CALLER_RUNS
+            authOAuth2Executor:
+                enabled: ${auth.oauth2.enabled:true}
+                core-pool-size: 8
+                max-pool-size: 16
+                queue-capacity: 300
+                keep-alive-seconds: 60
+                thread-name-prefix: auth-oauth2-
+                rejected-execution-handler: CALLER_RUNS
+            authSessionExecutor:
+                core-pool-size: 2
+                max-pool-size: 5
+                queue-capacity: 200
+                keep-alive-seconds: 60
+                thread-name-prefix: auth-session-
+                rejected-execution-handler: CALLER_RUNS
+            authCommonAsyncExecutor:
+                core-pool-size: 2
+                max-pool-size: 8
+                queue-capacity: 200
+                keep-alive-seconds: 60
+                thread-name-prefix: common-async-
+                rejected-execution-handler: CALLER_RUNS
     jwt:
-      blacklist-fail-closed: ${APP_SECURITY_JWT_BLACKLIST_FAIL_CLOSED:true}
-      max-fail-closed-access-token-validity: ${APP_SECURITY_JWT_MAX_FAIL_CLOSED_ACCESS_TOKEN_VALIDITY:PT15M}
+        test-mode: true
+        access-token-validity: PT15M
+        service-access-token-validity: PT15M
+        refresh-token-validity: P7D
+        authorization-code-validity: PT5M
+        test-token-validity: P365D
+        keys:
+            private-key-base64: ${APP_JWT_PRIVATE_KEY_BASE64:}
+            public-key-base64: ${APP_JWT_PUBLIC_KEY_BASE64:}
+            key-id: ${APP_JWT_KEY_ID:auth-service-key}
+            allow-generated-keypair: ${APP_JWT_ALLOW_GENERATED_KEYPAIR:false}
+    oauth2:
+        github:
+            redirect:
+                error-url: ${APP_OAUTH2_GITHUB_ERROR_URL:http://127.0.0.1:18080/auth/error}
+        clients:
+            web:
+                id: ${APP_OAUTH2_WEB_CLIENT_ID:web-client}
+                secret: ${APP_OAUTH2_WEB_CLIENT_SECRET:cloud-shop-secret}
+                redirect-uris: ${APP_OAUTH2_WEB_REDIRECT_URIS:http://127.0.0.1:${PORT_NGINX_HTTP:18080}/callback,http://127.0.0.1:3000/callback,http://127.0.0.1:5173/callback,http://localhost:5173/callback,http://127.0.0.1:5173/#/pages/oauth/success,http://localhost:5173/#/pages/oauth/success}
+            mobile:
+                id: ${APP_OAUTH2_MOBILE_CLIENT_ID:mobile-client}
+                secret: ${APP_OAUTH2_MOBILE_CLIENT_SECRET:cloud-mini-secret}
+                redirect-uris: ${APP_OAUTH2_MOBILE_REDIRECT_URIS:com.example.app://callback}
+            internal:
+                id: ${APP_OAUTH2_INTERNAL_CLIENT_ID:client-service}
+                secret: ${APP_OAUTH2_INTERNAL_CLIENT_SECRET:${CLIENT_SERVICE_SECRET}}
+    security:
+        jwt:
+            blacklist-fail-closed: ${APP_SECURITY_JWT_BLACKLIST_FAIL_CLOSED:true}
+            max-fail-closed-access-token-validity: ${APP_SECURITY_JWT_MAX_FAIL_CLOSED_ACCESS_TOKEN_VALIDITY:PT15M}
 
 xxl:
-  job:
-    executor:
-      port: ${XXL_JOB_PORT:19081}
+    job:
+        executor:
+            port: ${XXL_JOB_PORT:19081}
 
 springdoc:
-  group-configs:
-    - group: 'auth'
-      paths-to-match: '/auth/**'
-    - group: 'oauth2'
-      paths-to-match: '/oauth2/**'
-  default-flat-param-object: true
+    group-configs:
+        - group: "auth"
+          paths-to-match: "/auth/**"
+        - group: "oauth2"
+          paths-to-match: "/oauth2/**"
+    default-flat-param-object: true
 
 knife4j:
-  insight:
-    service-name: ${spring.application.name}
+    insight:
+        service-name: ${spring.application.name}
 
 management:
-  endpoint:
-    shutdown:
-      enabled: false
+    endpoint:
+        shutdown:
+            enabled: false

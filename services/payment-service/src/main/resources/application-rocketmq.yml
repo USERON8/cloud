@@ -1,36 +1,11 @@
 spring:
   cloud:
     stream:
-      default:
-        producer:
-          partition-count: ${ROCKETMQ_PRODUCER_PARTITION_COUNT:4}
-          error-channel-enabled: true
-        consumer:
-          max-attempts: 1
-      rocketmq:
-        defaults:
-          producer: &paymentProducerDefaults
-            group: payment-producer-group
-            sync: false
-            retryTimesWhenSendFailed: ${ROCKETMQ_PRODUCER_RETRY_SYNC:3}
-            retryTimesWhenSendAsyncFailed: ${ROCKETMQ_PRODUCER_RETRY_ASYNC:2}
-            sendMessageTimeout: ${ROCKETMQ_PRODUCER_SEND_TIMEOUT_MS:5000}
-          consumer: &paymentConsumerDefaults
-            orderly: false
-            maxReconsumeTimes: ${ROCKETMQ_CONSUMER_MAX_RECONSUME_TIMES:8}
-            delayLevelWhenNextConsume: ${ROCKETMQ_CONSUMER_RETRY_DELAY_LEVEL:3}
-            suspendCurrentQueueTimeMillis: ${ROCKETMQ_CONSUMER_SUSPEND_QUEUE_MS:1000}
-        binder:
-          name-server: ${ROCKETMQ_NAME_SERVER:${ROCKETMQ_NAMESRV_HOST:127.0.0.1}:${ROCKETMQ_NAMESRV_PORT:20011}}
-        bindings:
-          refundCompletedProducer-out-0:
-            producer:
-              <<: *paymentProducerDefaults
       bindings:
         refundCompletedProducer-out-0:
           destination: refund-completed
           content-type: application/json
 
-
-
-
+rocketmq:
+  producer:
+    group: ${ROCKETMQ_PRODUCER_GROUP:payment-success-tx-group}

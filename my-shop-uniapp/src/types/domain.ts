@@ -8,10 +8,21 @@ export interface UserInfo {
   email?: string
   phone?: string
   status?: number
+  enabled?: number
   roles?: string[]
   createdAt?: string
   updatedAt?: string
   deleted?: number
+}
+
+/**
+ * 用户资料更新请求（对应后端 UserProfileUpdateDTO）
+ */
+export interface UserProfileUpdatePayload {
+  nickname?: string
+  avatarUrl?: string
+  email?: string
+  phone?: string
 }
 
 export interface OAuthTokenResponse {
@@ -30,15 +41,23 @@ export interface RegisterRequest {
   nickname: string
 }
 
-export interface ProductItem {
+export interface RegisterResponse {
   id: number
-  skuId?: number
-  shopId?: number
+  username: string
+  phone: string
+  nickname: string
+  roles: string[]
+}
+
+export interface ProductItem {
+  id: number | string
+  skuId?: number | string
+  shopId?: number | string
   name: string
   price?: number
   stockQuantity?: number
-  categoryId?: number
-  brandId?: number
+  categoryId?: number | string
+  brandId?: number | string
   status?: number
   description?: string
   imageUrl?: string
@@ -84,6 +103,24 @@ export interface SmartSearchResult {
   searchAfter?: unknown[]
 }
 
+export interface OrderSummaryDTO {
+  id?: number
+  orderNo?: string
+  userId?: number
+  subOrderId?: number
+  subOrderNo?: string
+  merchantId?: number
+  afterSaleId?: number
+  afterSaleNo?: string
+  afterSaleType?: string
+  refundNo?: string
+  totalAmount?: number
+  payAmount?: number
+  status?: number
+  afterSaleStatus?: string
+  createdAt?: string
+}
+
 export interface OrderItem {
   id: number
   orderNo: string
@@ -108,8 +145,8 @@ export interface ProductQuery {
   page?: number
   size?: number
   name?: string
-  categoryId?: number
-  brandId?: number
+  categoryId?: number | string
+  brandId?: number | string
   status?: number
 }
 
@@ -137,16 +174,41 @@ export interface CreateOrderPayload {
 export interface UserAddress {
   id?: number
   userId?: number
-  consignee: string
-  phone: string
+  receiverName: string
+  receiverPhone: string
   province: string
   city: string
   district: string
   street: string
   detailAddress: string
   isDefault: number
+  addressTag?: string
+  country?: string
+  postalCode?: string
+  longitude?: number
+  latitude?: number
   createdAt?: string
   updatedAt?: string
+  deleted?: number
+}
+
+/**
+ * 地址创建/更新请求（对应后端 UserAddressRequestDTO）
+ */
+export interface UserAddressRequestPayload {
+  receiverName: string
+  receiverPhone: string
+  province: string
+  city: string
+  district: string
+  street: string
+  detailAddress: string
+  isDefault: number
+  addressTag?: string
+  country?: string
+  postalCode?: string
+  longitude?: number
+  latitude?: number
 }
 
 export interface UserSummary {
@@ -249,8 +311,8 @@ export interface MerchantAuthUploadResult {
 }
 
 export interface CategoryItem {
-  id?: number
-  parentId?: number
+  id?: number | string
+  parentId?: number | string
   name: string
   description?: string
   iconUrl?: string
@@ -361,6 +423,11 @@ export interface PaymentOrderInfo {
   updatedAt?: string
 }
 
+export interface PaymentStatusInfo {
+  paymentNo?: string
+  status?: string
+}
+
 export interface PaymentCheckoutSession {
   paymentNo?: string
   checkoutPath?: string
@@ -442,6 +509,7 @@ export interface OrderAggregateItem {
   quantity?: number
   unitPrice?: number
   totalPrice?: number
+  deleted?: number
   createdAt?: string
   updatedAt?: string
 }
@@ -452,6 +520,8 @@ export interface OrderAggregateSubOrder {
   subOrderNo?: string
   merchantId?: number
   orderStatus?: string
+  shippingStatus?: string
+  afterSaleStatus?: string
   itemAmount?: number
   shippingFee?: number
   discountAmount?: number
@@ -459,13 +529,14 @@ export interface OrderAggregateSubOrder {
   receiverName?: string
   receiverPhone?: string
   receiverAddress?: string
-  paidAt?: string
-  shippedAt?: string
-  completedAt?: string
-  cancelledAt?: string
-  cancelReason?: string
   shippingCompany?: string
   trackingNumber?: string
+  shippedAt?: string
+  estimatedArrival?: string
+  receivedAt?: string
+  doneAt?: string
+  closedAt?: string
+  closeReason?: string
   createdAt?: string
   updatedAt?: string
 }
@@ -482,6 +553,7 @@ export interface OrderAggregateMainOrder {
   cancelledAt?: string
   cancelReason?: string
   remark?: string
+  clientOrderId?: string
   idempotencyKey?: string
   createdAt?: string
   updatedAt?: string
@@ -496,11 +568,11 @@ export interface OrderAggregateResponse {
 }
 
 export interface StockLedger {
-  id?: number
   skuId?: number
-  onHandQty?: number
-  reservedQty?: number
-  salableQty?: number
+  availableQty?: number
+  lockedQty?: number
+  soldQty?: number
+  segmentCount?: number
   alertThreshold?: number
   status?: number
   createdAt?: string
@@ -592,19 +664,19 @@ export interface SpringPage<T> {
 }
 
 export interface SpuDto {
-  spuId?: number
+  spuId?: number | string
   spuName: string
   subtitle?: string
-  categoryId: number
-  brandId?: number
-  merchantId: number
+  categoryId: number | string
+  brandId?: number | string
+  merchantId: number | string
   status?: number
   description?: string
   mainImage?: string
 }
 
 export interface SkuDto {
-  skuId?: number
+  skuId?: number | string
   skuCode: string
   skuName: string
   specJson?: string
@@ -621,8 +693,8 @@ export interface SpuCreateRequest {
 }
 
 export interface SkuDetail {
-  skuId?: number
-  spuId?: number
+  skuId?: number | string
+  spuId?: number | string
   skuCode?: string
   skuName?: string
   specJson?: string
@@ -636,12 +708,12 @@ export interface SkuDetail {
 }
 
 export interface SpuDetail {
-  spuId?: number
+  spuId?: number | string
   spuName?: string
   subtitle?: string
-  categoryId?: number
-  brandId?: number
-  merchantId?: number
+  categoryId?: number | string
+  brandId?: number | string
+  merchantId?: number | string
   status?: number
   description?: string
   mainImage?: string

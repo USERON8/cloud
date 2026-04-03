@@ -75,7 +75,7 @@ scrape_configs:
         - http_2xx
     static_configs:
       - targets:
-          - "http://host.docker.internal:15001/nacos/"
+          - "http://host.docker.internal:18848/nacos/"
           - "http://host.docker.internal:38082/"
           - "http://host.docker.internal:15601/api/status"
           - "http://host.docker.internal:19600/"

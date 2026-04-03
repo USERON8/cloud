@@ -39,11 +39,6 @@ public class OrderOutboxRelay extends AbstractOutboxRelay {
     this.orderTimeoutDelayLevel = Math.max(1, orderTimeoutDelayLevel);
   }
 
-  @Scheduled(fixedDelayString = "${app.outbox.poll-interval-ms:2000}")
-  public void dispatch() {
-    dispatchDueEvents();
-  }
-
   @Override
   protected boolean relay(OutboxEvent event) throws Exception {
     String eventType = event.getEventType();

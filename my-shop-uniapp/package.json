@@ -33,8 +33,7 @@
     "dayjs": "^1.11.20",
     "pinia": "^2.1.7",
     "vue": "^3.4.21",
-    "vue-demi": "^0.14.10",
-    "vue-i18n": "^9.1.9"
+    "vue-demi": "^0.14.10"
   },
   "devDependencies": {
     "@dcloudio/types": "^3.4.8",

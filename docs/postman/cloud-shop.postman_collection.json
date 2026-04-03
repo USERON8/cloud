@@ -100,10 +100,38 @@
           }
         },
         {
+          "name": "Revoke User Sessions (Admin)",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/auth/users/{{username}}/sessions",
+            "description": "Revoke all sessions for a specific user. Requires admin role."
+          }
+        },
+        {
           "name": "Get GitHub Login URL",
           "request": {
             "method": "GET",
             "url": "{{baseUrl}}/auth/oauth2/github/login-url?redirectPath=/app/home",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Get GitHub Auth Status",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/auth/oauth2/github/status",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Get GitHub User Info",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/auth/oauth2/github/user-info",
             "auth": {
               "type": "noauth"
             }
@@ -284,6 +312,14 @@
           }
         },
         {
+          "name": "Delete Addresses In Batch",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/user/address/deleteBatch?addressIds={{addressId}}",
+            "description": "Delete multiple addresses by comma-separated IDs."
+          }
+        },
+        {
           "name": "Address Pagination",
           "request": {
             "method": "POST",
@@ -385,6 +421,34 @@
           "request": {
             "method": "GET",
             "url": "{{baseUrl}}/api/search/hot-keywords?size=10"
+          }
+        },
+        {
+          "name": "Keyword Recommendations",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/search/keyword-recommendations?keyword={{searchKeyword}}&size=10"
+          }
+        },
+        {
+          "name": "Recommended Products",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/search/recommended?page=0&size=20"
+          }
+        },
+        {
+          "name": "New Products",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/search/new?page=0&size=20"
+          }
+        },
+        {
+          "name": "Hot Selling Products",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/search/hot?page=0&size=20"
           }
         },
         {
@@ -511,6 +575,22 @@
           }
         },
         {
+          "name": "Ship Order",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/orders/{{mainOrderId}}/ship?shippingCompany=SF&trackingNumber=SF12345678",
+            "description": "Requires merchant or admin role."
+          }
+        },
+        {
+          "name": "Complete Order",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/orders/{{mainOrderId}}/complete",
+            "description": "Requires regular user (owner) or admin role."
+          }
+        },
+        {
           "name": "Apply After-Sale",
           "request": {
             "method": "POST",
@@ -611,6 +691,29 @@
           "request": {
             "method": "POST",
             "url": "{{baseUrl}}/api/payments/orders/{{paymentNo}}/checkout-session"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let body = {}; try { body = pm.response.json(); } catch (e) {}",
+                  "if (body && body.data && body.data.ticket) pm.environment.set('checkoutTicket', body.data.ticket);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Checkout HTML Page",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/payments/checkout/{{checkoutTicket}}",
+            "description": "Public ticketed checkout page.",
+            "auth": {
+              "type": "noauth"
+            }
           }
         },
         {
@@ -799,6 +902,41 @@
           "request": {
             "method": "GET",
             "url": "{{baseUrl}}/api/statistics/overview"
+          }
+        },
+        {
+          "name": "Get Registration Trend",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/statistics/registration-trend?days=7"
+          }
+        },
+        {
+          "name": "Get Role Distribution",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/statistics/role-distribution"
+          }
+        },
+        {
+          "name": "Get Status Distribution",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/statistics/status-distribution"
+          }
+        },
+        {
+          "name": "Get Growth Rate",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/statistics/growth-rate"
+          }
+        },
+        {
+          "name": "Refresh Statistics Cache",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/statistics/refresh-cache"
           }
         },
         {

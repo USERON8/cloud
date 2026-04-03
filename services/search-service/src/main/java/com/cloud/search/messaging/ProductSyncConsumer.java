@@ -4,12 +4,11 @@ import com.cloud.api.product.ProductDubboApi;
 import com.cloud.common.domain.vo.product.SpuDetailVO;
 import com.cloud.common.enums.ResultCode;
 import com.cloud.common.exception.RemoteException;
-import com.cloud.common.messaging.consumer.AbstractMqConsumer;
+import com.cloud.common.messaging.consumer.AbstractJsonMqConsumer;
 import com.cloud.common.messaging.event.ProductSyncEvent;
 import com.cloud.search.document.ProductDocument;
 import com.cloud.search.repository.ProductDocumentRepository;
 import com.cloud.search.service.ProductDocumentBuildService;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.function.Supplier;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,13 +25,12 @@ import org.springframework.stereotype.Component;
     topic = "product-sync",
     consumerGroup = "search-product-sync-group",
     selectorExpression = "PRODUCT_UPSERT||PRODUCT_DELETE")
-public class ProductSyncConsumer extends AbstractMqConsumer<ProductSyncEvent> {
+public class ProductSyncConsumer extends AbstractJsonMqConsumer<ProductSyncEvent> {
 
   private static final String NS_PRODUCT_SYNC = "search:product:sync";
 
   private final ProductDocumentBuildService productDocumentBuildService;
   private final ProductDocumentRepository productDocumentRepository;
-  private final ObjectMapper objectMapper;
 
   @DubboReference(check = false, timeout = 5000, retries = 0)
   private ProductDubboApi productDubboApi;
@@ -60,12 +58,13 @@ public class ProductSyncConsumer extends AbstractMqConsumer<ProductSyncEvent> {
   }
 
   @Override
-  protected ProductSyncEvent deserialize(byte[] body) {
-    try {
-      return body == null ? null : objectMapper.readValue(body, ProductSyncEvent.class);
-    } catch (Exception ex) {
-      throw new IllegalArgumentException("Failed to deserialize ProductSyncEvent", ex);
-    }
+  protected Class<ProductSyncEvent> payloadClass() {
+    return ProductSyncEvent.class;
+  }
+
+  @Override
+  protected String payloadDescription() {
+    return "ProductSyncEvent";
   }
 
   @Override
@@ -81,13 +80,7 @@ public class ProductSyncConsumer extends AbstractMqConsumer<ProductSyncEvent> {
   }
 
   private String resolveEventId(ProductSyncEvent event) {
-    if (event != null && event.getEventId() != null && !event.getEventId().isBlank()) {
-      return event.getEventId();
-    }
-    if (event != null && event.getSpuId() != null) {
-      return "PRODUCT_SYNC:" + event.getSpuId();
-    }
-    return "PRODUCT_SYNC:" + System.currentTimeMillis();
+    return resolveEventId("PRODUCT_SYNC", event.getEventId(), event.getSpuId());
   }
 
   private <T> T invokeProductService(String action, Supplier<T> supplier) {

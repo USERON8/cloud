@@ -13,6 +13,7 @@ import org.springframework.cloud.stream.function.StreamBridge;
 import org.springframework.lang.Nullable;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.support.MessageBuilder;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.util.StringUtils;
 
 @Slf4j
@@ -35,6 +36,13 @@ public abstract class AbstractOutboxRelay {
     this.streamBridge = streamBridge;
     this.objectMapper = objectMapper;
     this.meterRegistry = meterRegistry;
+  }
+
+  @Scheduled(fixedDelayString = "${app.outbox.poll-interval-ms:2000}")
+  public final void onScheduledDispatch() {
+    if (outboxProperties.isEnabled()) {
+      dispatchDueEvents();
+    }
   }
 
   protected final void dispatchDueEvents() {

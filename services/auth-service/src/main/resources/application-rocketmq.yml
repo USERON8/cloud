@@ -1,27 +1,8 @@
 spring:
   cloud:
     stream:
-      default:
-        producer:
-          partition-count: ${ROCKETMQ_PRODUCER_PARTITION_COUNT:4}
-          error-channel-enabled: true
-      rocketmq:
-        defaults:
-          producer: &authProducerDefaults
-            retryTimesWhenSendFailed: ${ROCKETMQ_PRODUCER_RETRY_SYNC:3}
-            retryTimesWhenSendAsyncFailed: ${ROCKETMQ_PRODUCER_RETRY_ASYNC:2}
-            sendMessageTimeout: ${ROCKETMQ_PRODUCER_SEND_TIMEOUT_MS:5000}
-        binder:
-          name-server: ${ROCKETMQ_NAME_SERVER:${ROCKETMQ_NAMESRV_HOST:127.0.0.1}:${ROCKETMQ_NAMESRV_PORT:20011}}
-        bindings:
-          userProfileSyncProducer-out-0:
-            producer:
-              <<: *authProducerDefaults
       bindings:
         userProfileSyncProducer-out-0:
           destination: user-profile-sync
           content-type: application/json
           group: auth-user-profile-sync-producer
-
-rocketmq:
-  name-server: ${ROCKETMQ_NAME_SERVER:${ROCKETMQ_NAMESRV_HOST:127.0.0.1}:${ROCKETMQ_NAMESRV_PORT:20011}}

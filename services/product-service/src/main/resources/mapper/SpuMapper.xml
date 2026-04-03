@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cloud.product.mapper.SpuMapper">
+
+    <resultMap id="BaseResultMap" type="com.cloud.product.module.entity.Spu">
+        <id property="id" column="id"/>
+        <result property="spuName" column="spu_name"/>
+        <result property="subtitle" column="subtitle"/>
+        <result property="categoryId" column="category_id"/>
+        <result property="brandId" column="brand_id"/>
+        <result property="merchantId" column="merchant_id"/>
+        <result property="status" column="status"/>
+        <result property="description" column="description"/>
+        <result property="mainImage" column="main_image"/>
+        <result property="mainImageFile" column="main_image_file"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+        <result property="deleted" column="deleted"/>
+        <result property="version" column="version"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,spu_name,subtitle,category_id,brand_id,merchant_id,status,description,
+        main_image,main_image_file,created_at,updated_at,deleted,version
+    </sql>
+</mapper>

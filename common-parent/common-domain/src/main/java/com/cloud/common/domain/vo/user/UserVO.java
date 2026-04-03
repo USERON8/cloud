@@ -21,6 +21,8 @@ public class UserVO {
 
   private Integer status;
 
+  private Integer enabled;
+
   private List<String> roles;
 
   private LocalDateTime createdAt;

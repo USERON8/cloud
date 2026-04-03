@@ -1,11 +1,11 @@
 import http from './http'
-import type { UserInfo } from '../types/domain'
+import type { UserInfo, UserProfileUpdatePayload } from '../types/domain'
 
 export function getCurrentProfile(): Promise<UserInfo> {
   return http.get<UserInfo, UserInfo>('/api/user/profile/current')
 }
 
-export function updateCurrentProfile(payload: Partial<UserInfo>): Promise<boolean> {
+export function updateCurrentProfile(payload: UserProfileUpdatePayload): Promise<boolean> {
   return http.put<boolean, boolean>('/api/user/profile/current', payload)
 }
 

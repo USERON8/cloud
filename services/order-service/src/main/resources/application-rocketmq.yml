@@ -1,103 +1,33 @@
 spring:
   cloud:
     stream:
-      default:
-        producer:
-          partition-count: ${ROCKETMQ_PRODUCER_PARTITION_COUNT:4}
-          error-channel-enabled: true
-        consumer:
-          max-attempts: 1
-          concurrency: ${ROCKETMQ_CONSUMER_CONCURRENCY:20}
-      rocketmq:
-        defaults:
-          producer: &orderProducerDefaults
-            group: order-producer-group
-            sync: false
-            retryTimesWhenSendFailed: ${ROCKETMQ_PRODUCER_RETRY_SYNC:3}
-            retryTimesWhenSendAsyncFailed: ${ROCKETMQ_PRODUCER_RETRY_ASYNC:2}
-            sendMessageTimeout: ${ROCKETMQ_PRODUCER_SEND_TIMEOUT_MS:5000}
-          consumer: &orderConsumerDefaults
-            orderly: false
-            maxReconsumeTimes: ${ROCKETMQ_CONSUMER_MAX_RECONSUME_TIMES:3}
-            delayLevelWhenNextConsume: ${ROCKETMQ_CONSUMER_RETRY_DELAY_LEVEL:3}
-            suspendCurrentQueueTimeMillis: ${ROCKETMQ_CONSUMER_SUSPEND_QUEUE_MS:1000}
-            consumeTimeout: ${ROCKETMQ_CONSUMER_TIMEOUT_MIN:30}
-        binder:
-          name-server: ${ROCKETMQ_NAME_SERVER:${ROCKETMQ_NAMESRV_HOST:127.0.0.1}:${ROCKETMQ_NAMESRV_PORT:20011}}
-        bindings:
-          orderCreatedProducer-out-0:
-            producer:
-              <<: *orderProducerDefaults
-          orderCancelledProducer-out-0:
-            producer:
-              <<: *orderProducerDefaults
-          orderTimeoutProducer-out-0:
-            producer:
-              <<: *orderProducerDefaults
-          orderAutoReceiveProducer-out-0:
-            producer:
-              <<: *orderProducerDefaults
-          orderShippedProducer-out-0:
-            producer:
-              <<: *orderProducerDefaults
-          refundCreatedProducer-out-0:
-            producer:
-              <<: *orderProducerDefaults
-          refundAuditedProducer-out-0:
-            producer:
-              <<: *orderProducerDefaults
-          refundCancelledProducer-out-0:
-            producer:
-              <<: *orderProducerDefaults
-          stockReserveRequestProducer-out-0:
-            producer:
-              <<: *orderProducerDefaults
-          stockConfirmRequestProducer-out-0:
-            producer:
-              <<: *orderProducerDefaults
-          stockReleaseRequestProducer-out-0:
-            producer:
-              <<: *orderProducerDefaults
-          stockRestoreProducer-out-0:
-            producer:
-              <<: *orderProducerDefaults
       bindings:
-        orderCreatedProducer-out-0:
-          destination: order-created
+        orderLog-out-0:
+          destination: LOG_ORDER_TOPIC
           content-type: application/json
-        orderCancelledProducer-out-0:
-          destination: order-cancelled
+          producer:
+            partition-count: 4
+        orderToPayment-out-0:
+          destination: ORDER_TO_PAYMENT_TOPIC
           content-type: application/json
-        orderTimeoutProducer-out-0:
-          destination: order-timeout
+        orderToStock-out-0:
+          destination: ORDER_TO_STOCK_TOPIC
           content-type: application/json
+        order-producer-out-0:
+          destination: order-events
+          content-type: application/json
+          group: order-producer-group
+          producer:
+            maxRequestSize: 4194304
+            sync: true
+        orderShippedConsumer-in-0:
+          destination: order-shipped
+          content-type: application/json
+          group: order-shipped-consumer-group
         orderAutoReceiveProducer-out-0:
           destination: order-auto-receive
           content-type: application/json
-        orderShippedProducer-out-0:
-          destination: order-shipped
+        orderAutoReceiveConsumer-in-0:
+          destination: order-auto-receive
           content-type: application/json
-        refundCreatedProducer-out-0:
-          destination: refund-created
-          content-type: application/json
-        refundAuditedProducer-out-0:
-          destination: refund-audited
-          content-type: application/json
-        refundCancelledProducer-out-0:
-          destination: refund-cancelled
-          content-type: application/json
-        stockReserveRequestProducer-out-0:
-          destination: stock-reserve-request
-          content-type: application/json
-        stockConfirmRequestProducer-out-0:
-          destination: stock-confirm-request
-          content-type: application/json
-        stockReleaseRequestProducer-out-0:
-          destination: stock-release-request
-          content-type: application/json
-        stockRestoreProducer-out-0:
-          destination: stock-restore
-          content-type: application/json
-
-rocketmq:
-  name-server: ${ROCKETMQ_NAME_SERVER:${ROCKETMQ_NAMESRV_HOST:127.0.0.1}:${ROCKETMQ_NAMESRV_PORT:20011}}
+          group: order-auto-receive-consumer-group

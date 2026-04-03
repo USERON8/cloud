@@ -4,6 +4,8 @@ import com.cloud.common.config.properties.DynamicAsyncProperties;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.HashMap;
 import java.util.Map;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -48,9 +50,11 @@ public class EnhancedThreadPoolMonitor extends ThreadPoolMonitor {
     allThreadPools.forEach(
         (name, info) -> {
           String statusIcon = getStatusIcon(info.getStatus());
+          String poolUsageFormatted = String.format("%.1f", info.getPoolUsageRate());
+          String queueUsageFormatted = String.format("%.1f", info.getQueueUsageRate());
           log.debug(
-              "线程池状态: {} {} poolUsage={:.1f}% queueUsage={:.1f}%",
-              name, statusIcon, info.getPoolUsageRate(), info.getQueueUsageRate());
+              "线程池状态: {} {} poolUsage={}% queueUsage={}%",
+              name, statusIcon, poolUsageFormatted, queueUsageFormatted);
         });
   }
 
@@ -103,7 +107,6 @@ public class EnhancedThreadPoolMonitor extends ThreadPoolMonitor {
         (name, currentInfo) -> {
           ThreadPoolInfo lastInfo = lastSnapshot.get(name);
           if (lastInfo != null) {
-
             if (!currentInfo.getStatus().equals(lastInfo.getStatus())) {
               logStatusChange(name, lastInfo.getStatus(), currentInfo.getStatus());
             }
@@ -111,9 +114,9 @@ public class EnhancedThreadPoolMonitor extends ThreadPoolMonitor {
             double usageDiff =
                 Math.abs(currentInfo.getPoolUsageRate() - lastInfo.getPoolUsageRate());
             if (usageDiff > 20) {
-              log.warn(
-                  "线程池使用率变化较大: {} {:.1f}% -> {:.1f}%",
-                  name, lastInfo.getPoolUsageRate(), currentInfo.getPoolUsageRate());
+              String lastUsage = String.format("%.1f", lastInfo.getPoolUsageRate());
+              String currentUsage = String.format("%.1f", currentInfo.getPoolUsageRate());
+              log.warn("线程池使用率变化较大: {} {}% -> {}%", name, lastUsage, currentUsage);
             }
           }
         });
@@ -176,6 +179,8 @@ public class EnhancedThreadPoolMonitor extends ThreadPoolMonitor {
     return stats;
   }
 
+  @Setter
+  @Getter
   public static class ThreadPoolPerformanceStats {
     private String poolName;
     private int currentPoolSize;
@@ -185,69 +190,5 @@ public class EnhancedThreadPoolMonitor extends ThreadPoolMonitor {
     private double queueUsageRate;
     private double tasksPerSecond;
     private long timestamp;
-
-    public String getPoolName() {
-      return poolName;
-    }
-
-    public void setPoolName(String poolName) {
-      this.poolName = poolName;
-    }
-
-    public int getCurrentPoolSize() {
-      return currentPoolSize;
-    }
-
-    public void setCurrentPoolSize(int currentPoolSize) {
-      this.currentPoolSize = currentPoolSize;
-    }
-
-    public int getActiveThreadCount() {
-      return activeThreadCount;
-    }
-
-    public void setActiveThreadCount(int activeThreadCount) {
-      this.activeThreadCount = activeThreadCount;
-    }
-
-    public int getQueueSize() {
-      return queueSize;
-    }
-
-    public void setQueueSize(int queueSize) {
-      this.queueSize = queueSize;
-    }
-
-    public double getPoolUsageRate() {
-      return poolUsageRate;
-    }
-
-    public void setPoolUsageRate(double poolUsageRate) {
-      this.poolUsageRate = poolUsageRate;
-    }
-
-    public double getQueueUsageRate() {
-      return queueUsageRate;
-    }
-
-    public void setQueueUsageRate(double queueUsageRate) {
-      this.queueUsageRate = queueUsageRate;
-    }
-
-    public double getTasksPerSecond() {
-      return tasksPerSecond;
-    }
-
-    public void setTasksPerSecond(double tasksPerSecond) {
-      this.tasksPerSecond = tasksPerSecond;
-    }
-
-    public long getTimestamp() {
-      return timestamp;
-    }
-
-    public void setTimestamp(long timestamp) {
-      this.timestamp = timestamp;
-    }
   }
 }

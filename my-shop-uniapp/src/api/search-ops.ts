@@ -42,27 +42,27 @@ function setCachedValue<T>(cache: Map<string, CacheEntry<T>>, key: string, value
 
 function withTimeout<T>(promise: Promise<T>, timeoutMs = SEARCH_FALLBACK_TIMEOUT_MS): Promise<T> {
   return new Promise<T>((resolve, reject) => {
-    const timer = window.setTimeout(() => {
+    const timer = setTimeout(() => {
       reject(new Error(`Search service timeout after ${timeoutMs}ms`))
     }, timeoutMs)
     promise
       .then((result) => resolve(result))
       .catch((error) => reject(error))
       .finally(() => {
-        window.clearTimeout(timer)
+        clearTimeout(timer)
       })
   })
 }
 
 function toSearchDocument(item: ProductItem): SearchProductDocument {
   return {
-    productId: item.id,
-    shopId: item.shopId,
+    productId: Number(item.id),
+    shopId: item.shopId != null ? Number(item.shopId) : undefined,
     productName: item.name,
     price: item.price,
     stockQuantity: item.stockQuantity,
-    categoryId: item.categoryId,
-    brandId: item.brandId,
+    categoryId: item.categoryId != null ? Number(item.categoryId) : undefined,
+    brandId: item.brandId != null ? Number(item.brandId) : undefined,
     status: item.status,
     description: item.description,
     imageUrl: item.imageUrl

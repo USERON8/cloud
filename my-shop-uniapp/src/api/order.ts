@@ -3,7 +3,7 @@ import type {
   AfterSaleInfo,
   CreateOrderPayload,
   OrderAggregateResponse,
-  OrderItem,
+  OrderSummaryDTO,
   OrderPage,
   OrderQuery
 } from '../types/domain'
@@ -58,8 +58,8 @@ export function listOrders(params: OrderQuery = {}): Promise<OrderPage> {
   })
 }
 
-export function getOrderById(id: number): Promise<OrderItem> {
-  return http.get<OrderItem, OrderItem>(`/api/orders/${id}`)
+export function getOrderById(id: number): Promise<OrderSummaryDTO> {
+  return http.get<OrderSummaryDTO, OrderSummaryDTO>(`/api/orders/${id}`)
 }
 
 export function cancelOrder(id: number, reason?: string): Promise<boolean> {
@@ -92,6 +92,14 @@ export function batchShipOrders(ids: number[], shippingCompany: string, tracking
 
 export function batchCompleteOrders(ids: number[]): Promise<number> {
   return http.post<number, number>('/api/orders/batch/complete', ids)
+}
+
+export function payOrder(id: number): Promise<boolean> {
+  return http.post<boolean, boolean>(`/api/orders/${id}/pay`)
+}
+
+export function batchPayOrders(ids: number[]): Promise<number> {
+  return http.post<number, number>('/api/orders/batch/pay', ids)
 }
 
 export function applyAfterSale(payload: AfterSaleInfo): Promise<AfterSaleInfo> {

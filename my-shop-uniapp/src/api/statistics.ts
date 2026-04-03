@@ -37,8 +37,8 @@ export function getGrowthRate(days = 7): Promise<number> {
   return http.get<number, number>('/api/statistics/growth-rate', { params: { days } })
 }
 
-export function getActivityRanking(limit = 10, days = 30): Promise<Record<string, number>> {
-  return http.get<Record<string, number>, Record<string, number>>('/api/statistics/activity-ranking', {
+export function getActivityRanking(limit = 10, days = 30): Promise<Record<number, number>> {
+  return http.get<Record<number, number>, Record<number, number>>('/api/statistics/activity-ranking', {
     params: { limit, days }
   })
 }

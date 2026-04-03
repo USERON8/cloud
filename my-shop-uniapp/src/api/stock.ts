@@ -9,6 +9,10 @@ export function reserveStock(payload: StockOperatePayload): Promise<boolean> {
   return http.post<boolean, boolean>('/api/stocks/reserve', payload)
 }
 
+export function preCheckStock(payloads: StockOperatePayload[]): Promise<boolean> {
+  return http.post<boolean, boolean>('/api/stocks/pre-check', payloads)
+}
+
 export function confirmStock(payload: StockOperatePayload): Promise<boolean> {
   return http.post<boolean, boolean>('/api/stocks/confirm', payload)
 }

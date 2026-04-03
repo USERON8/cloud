@@ -1,6 +1,6 @@
 # Cloud Shop API Guide
 
-Generated on: 2026-03-30
+Generated on: 2026-04-02
 Source of truth: `services/**/controller/*.java`, gateway security rules, and current frontend integration under `my-shop-uniapp/src/api/*.ts`.
 
 ## Base URLs
@@ -195,11 +195,14 @@ Important behavior:
 1. Inventory
    - `GET /api/stocks/ledger/{skuId}`
    - `POST /api/stocks/reserve`
+   - `POST /api/stocks/pre-check`
    - `POST /api/stocks/confirm`
    - `POST /api/stocks/release`
    - `POST /api/stocks/rollback`
-2. Gateway search fallback
+2. Gateway fallback
    - `GET /gateway/fallback/search`
+   - `/gateway/fallback/payment`
+   - `/gateway/fallback/user`
 3. MQ governance and dead-letter utilities
    - `GET /internal/mq/governance/consumers`
    - `GET /internal/mq/dead-letters/pending`
@@ -411,6 +414,7 @@ Notes:
 | --- | --- | --- |
 | GET | `/api/stocks/ledger/{skuId}` | Admin |
 | POST | `/api/stocks/reserve` | Internal |
+| POST | `/api/stocks/pre-check` | Internal |
 | POST | `/api/stocks/confirm` | Internal |
 | POST | `/api/stocks/release` | Internal |
 | POST | `/api/stocks/rollback` | Internal |

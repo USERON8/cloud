@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cloud.product.mapper.BrandMapper">
+
+    <resultMap id="BaseResultMap" type="com.cloud.product.module.entity.Brand">
+        <id property="id" column="id"/>
+        <result property="brandName" column="brand_name"/>
+        <result property="brandNameEn" column="brand_name_en"/>
+        <result property="logoUrl" column="logo_url"/>
+        <result property="description" column="description"/>
+        <result property="brandStory" column="brand_story"/>
+        <result property="officialWebsite" column="official_website"/>
+        <result property="country" column="country"/>
+        <result property="foundedYear" column="founded_year"/>
+        <result property="status" column="status"/>
+        <result property="isHot" column="is_hot"/>
+        <result property="isRecommended" column="is_recommended"/>
+        <result property="productCount" column="product_count"/>
+        <result property="sortOrder" column="sort_order"/>
+        <result property="seoKeywords" column="seo_keywords"/>
+        <result property="seoDescription" column="seo_description"/>
+        <result property="createBy" column="create_by"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+        <result property="deleted" column="deleted"/>
+        <result property="version" column="version"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,brand_name,brand_name_en,logo_url,description,brand_story,official_website,country,founded_year,
+        status,is_hot,is_recommended,product_count,sort_order,seo_keywords,seo_description,
+        create_by,update_by,created_at,updated_at,deleted,version
+    </sql>
+</mapper>

@@ -7,22 +7,28 @@
     <resultMap id="BaseResultMap" type="com.cloud.user.module.entity.UserAddress">
         <id property="id" column="id"/>
         <result property="userId" column="user_id"/>
-        <result property="consignee" column="consignee"/>
-        <result property="phone" column="phone"/>
+        <result property="addressTag" column="address_tag"/>
+        <result property="receiverName" column="receiver_name"/>
+        <result property="receiverPhone" column="receiver_phone"/>
+        <result property="country" column="country"/>
         <result property="province" column="province"/>
         <result property="city" column="city"/>
         <result property="district" column="district"/>
         <result property="street" column="street"/>
         <result property="detailAddress" column="detail_address"/>
+        <result property="postalCode" column="postal_code"/>
+        <result property="longitude" column="longitude"/>
+        <result property="latitude" column="latitude"/>
         <result property="isDefault" column="is_default"/>
         <result property="createdAt" column="created_at"/>
         <result property="updatedAt" column="updated_at"/>
         <result property="deleted" column="deleted"/>
+        <result property="version" column="version"/>
     </resultMap>
 
     <sql id="Base_Column_List">
-        id,user_id,consignee,phone,province,city,
-        district,street,detail_address,is_default,created_at,
-        updated_at,deleted
+        id,user_id,address_tag,receiver_name,receiver_phone,country,province,city,
+        district,street,detail_address,postal_code,longitude,latitude,is_default,created_at,
+        updated_at,deleted,version
     </sql>
 </mapper>

@@ -200,7 +200,7 @@ public class BaseResourceServerConfig {
               .AuthorizationManagerRequestMatcherRegistry
           authz) {
     if (publicActuatorEnabled) {
-      authz.requestMatchers("/actuator/**").permitAll();
+      authz.requestMatchers("/actuator/**", "/actuator/prometheus").permitAll();
     }
     authz.requestMatchers("/webjars/**", "/favicon.ico", "/error").permitAll();
     if (apiDocsEnabled) {

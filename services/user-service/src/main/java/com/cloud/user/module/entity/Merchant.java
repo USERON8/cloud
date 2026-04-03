@@ -20,6 +20,9 @@ public class Merchant extends BaseEntity<Merchant> {
   @TableField(value = "phone")
   private String phone;
 
+  @TableField(value = "email")
+  private String email;
+
   @TableField(value = "status")
   private Integer status;
 

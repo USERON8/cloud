@@ -1,20 +1,12 @@
 server:
   port: ${SERVER_PORT:8083}
-  tomcat:
-    threads:
-      max: ${SERVER_TOMCAT_THREADS_MAX:400}
-      min-spare: ${SERVER_TOMCAT_THREADS_MIN_SPARE:20}
-    max-connections: ${SERVER_TOMCAT_MAX_CONNECTIONS:20000}
-    accept-count: ${SERVER_TOMCAT_ACCEPT_COUNT:1000}
+
 dubbo:
-  registry:
-    address: nacos://${NACOS_HOST:127.0.0.1}:${NACOS_PORT:15001}
   protocol:
     port: 20883
-  application:
-    qos-enable: false
   consumer:
     actives: ${ORDER_DUBBO_CONSUMER_ACTIVES:64}
+
 spring:
   application:
     name: order-service
@@ -23,45 +15,13 @@ spring:
   profiles:
     active: dev
     include: rocketmq
-  datasource:
-    type: ${SPRING_DATASOURCE_TYPE:com.alibaba.druid.pool.DruidDataSource}
-    druid:
-      initial-size: ${ORDER_DB_POOL_INITIAL_SIZE:8}
-      min-idle: ${ORDER_DB_POOL_MIN_IDLE:8}
-      max-active: ${ORDER_DB_POOL_MAX_ACTIVE:32}
-      max-wait: ${ORDER_DB_POOL_MAX_WAIT:5000}
-      keep-alive: true
-      async-init: true
-      test-while-idle: true
-      test-on-borrow: false
-      test-on-return: false
-      validation-query: SELECT 1
-      time-between-eviction-runs-millis: 60000
-      min-evictable-idle-time-millis: 300000
   cloud:
     nacos:
       discovery:
-        server-addr: ${NACOS_SERVER_ADDR:${NACOS_HOST:127.0.0.1}:${NACOS_PORT:15001}}
-        username: ${NACOS_USERNAME:nacos}
-        password: ${NACOS_PASSWORD:nacos}
+        server-addr: ${NACOS_SERVER_ADDR:${NACOS_HOST:127.0.0.1}:${NACOS_PORT:18848}}
       config:
-        enabled: true
-        server-addr: ${NACOS_SERVER_ADDR:${NACOS_HOST:127.0.0.1}:${NACOS_PORT:15001}}
-        username: ${NACOS_USERNAME:nacos}
-        password: ${NACOS_PASSWORD:nacos}
-        namespace: public
-        group: DEFAULT_GROUP
-        file-extension: yaml
-        shared-configs:
-          - data-id: common.yaml
-            group: DEFAULT_GROUP
-            refresh: true
-        import-check:
-          enabled: false
+        server-addr: ${NACOS_SERVER_ADDR:${NACOS_HOST:127.0.0.1}:${NACOS_PORT:18848}}
     stream:
-      rocketmq:
-        binder:
-          name-server: ${ROCKETMQ_NAME_SERVER:${ROCKETMQ_NAMESRV_HOST:127.0.0.1}:${ROCKETMQ_NAMESRV_PORT:20011}}
       bindings:
         orderLog-out-0:
           destination: LOG_ORDER_TOPIC

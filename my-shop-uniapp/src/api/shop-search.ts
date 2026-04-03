@@ -16,6 +16,7 @@ export interface ShopSearchRequest {
   sortOrder?: 'asc' | 'desc'
   highlight?: boolean
   includeAggregations?: boolean
+  searchAfter?: string
 }
 
 export function searchShops(request: ShopSearchRequest): Promise<SearchResult<ShopDocument>> {

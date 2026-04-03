@@ -3,6 +3,7 @@ package com.cloud.common.aspect;
 import cn.hutool.core.util.StrUtil;
 import com.cloud.common.annotation.DistributedLock;
 import com.cloud.common.exception.LockException;
+import com.xxl.job.core.context.XxlJobHelper;
 import java.lang.reflect.Method;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -128,6 +129,11 @@ public class DistributedLockAspect {
   private Object handleLockFailure(
       ProceedingJoinPoint joinPoint, DistributedLock distributedLock, String lockKey) {
     String failMessage = distributedLock.failMessage();
+
+    // Log to XXL-JOB if applicable
+    if (XxlJobHelper.getJobId() > 0) {
+      XxlJobHelper.log("[DistributedLock] Failed to acquire lock, skipping job: key={}", lockKey);
+    }
 
     return switch (distributedLock.failStrategy()) {
       case THROW_EXCEPTION -> {

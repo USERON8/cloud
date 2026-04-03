@@ -3,6 +3,23 @@ import relativeTime from 'dayjs/plugin/relativeTime'
 
 dayjs.extend(relativeTime)
 
+/** Shared order status label used by orders and orders-manage pages */
+export function formatOrderStatus(status?: number): string {
+  if (status === 0) return 'Awaiting payment'
+  if (status === 1) return 'Paid'
+  if (status === 2) return 'Shipped'
+  if (status === 3) return 'Completed'
+  if (status === 4) return 'Cancelled'
+  return status != null ? String(status) : 'Unknown'
+}
+
+/** Product publish/unpublish status label */
+export function formatProductStatus(status?: number): string {
+  if (status === 1) return 'Published'
+  if (status === 0) return 'Unpublished'
+  return 'Unknown'
+}
+
 export function formatPrice(price?: number, currency = 'CNY'): string {
   if (typeof price !== 'number' || !Number.isFinite(price)) {
     return '--'

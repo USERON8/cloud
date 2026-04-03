@@ -26,11 +26,7 @@ import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.core.OAuth2TokenValidator;
-import org.springframework.security.oauth2.jwt.BadJwtException;
-import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.security.oauth2.jwt.JwtValidators;
-import org.springframework.security.oauth2.jwt.NimbusReactiveJwtDecoder;
-import org.springframework.security.oauth2.jwt.ReactiveJwtDecoder;
+import org.springframework.security.oauth2.jwt.*;
 import org.springframework.security.oauth2.server.resource.authentication.ReactiveJwtAuthenticationConverter;
 import org.springframework.security.web.server.SecurityWebFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
@@ -105,6 +101,8 @@ public class ResourceServerConfig {
                   exchanges
                       .pathMatchers(HttpMethod.OPTIONS, "/**")
                       .permitAll()
+                      .pathMatchers("/actuator/health", "/actuator/prometheus", "/nacos/**")
+                      .permitAll()
                       .pathMatchers("/auth/**")
                       .permitAll()
                       .pathMatchers("/oauth2/**", "/.well-known/**", "/userinfo")
@@ -141,7 +139,8 @@ public class ResourceServerConfig {
                       .permitAll();
 
               if (publicActuatorEnabled) {
-                authExchanges = authExchanges.pathMatchers("/actuator/**").permitAll();
+                authExchanges =
+                    authExchanges.pathMatchers("/actuator/**", "/actuator/prometheus").permitAll();
               }
 
               if (apiDocsEnabled) {
@@ -235,7 +234,9 @@ public class ResourceServerConfig {
                                 .jwtAuthenticationConverter(jwtAuthenticationConverter()))
                     .authenticationEntryPoint(
                         (exchange, ex) -> {
-                          log.warn("OAuth2 authentication failed: {}", ex.getMessage());
+                          String path = exchange.getRequest().getURI().getPath();
+                          log.warn(
+                              "OAuth2 authentication failed for {}: {}", path, ex.getMessage());
                           return gatewayResponseWriter.writeError(
                               exchange,
                               HttpStatus.UNAUTHORIZED,

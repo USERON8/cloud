@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cloud.product.mapper.ProductAttributeMapper">
+
+    <resultMap id="BaseResultMap" type="com.cloud.product.module.entity.ProductAttribute">
+        <id property="id" column="id"/>
+        <result property="productId" column="product_id"/>
+        <result property="attrName" column="attr_name"/>
+        <result property="attrValue" column="attr_value"/>
+        <result property="attrGroup" column="attr_group"/>
+        <result property="attrType" column="attr_type"/>
+        <result property="isFilterable" column="is_filterable"/>
+        <result property="isListVisible" column="is_list_visible"/>
+        <result property="isDetailVisible" column="is_detail_visible"/>
+        <result property="sortOrder" column="sort_order"/>
+        <result property="unit" column="unit"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+        <result property="deleted" column="deleted"/>
+        <result property="version" column="version"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,product_id,attr_name,attr_value,attr_group,attr_type,is_filterable,is_list_visible,
+        is_detail_visible,sort_order,unit,created_at,updated_at,deleted,version
+    </sql>
+</mapper>

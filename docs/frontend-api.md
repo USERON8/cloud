@@ -1,6 +1,6 @@
 # UniApp API Guide
 
-Generated on: 2026-03-21
+Generated on: 2026-04-02
 Source of truth: `my-shop-uniapp/src/api/*.ts`
 
 ## Runtime Notes
@@ -95,15 +95,17 @@ Primary APIs:
 - `POST /api/orders/{orderId}/cancel`
 - `POST /api/orders/{orderId}/ship`
 - `POST /api/orders/{orderId}/complete`
+- `POST /api/orders/{orderId}/pay`
 - `POST /api/orders/batch/cancel`
 - `POST /api/orders/batch/ship`
 - `POST /api/orders/batch/complete`
+- `POST /api/orders/batch/pay`
 - `POST /api/orders/after-sales`
 - `POST /api/orders/after-sales/{afterSaleId}/actions/{action}`
 
 Notes:
 - Real payment starts from the payment module after order creation.
-- The frontend order module no longer exposes direct order pay helpers because the backend intentionally rejects direct pay state transitions.
+- The frontend order module now exposes `payOrder` and `batchPayOrders` helpers for direct order payment.
 
 ### 5. Payment And Checkout
 
@@ -151,6 +153,7 @@ Primary APIs:
 Notes:
 - Stock ledger view is admin-only in current backend policy.
 - Stock mutation APIs are internal-scope APIs and are not part of normal frontend user flows.
+- Stock pre-check API (`POST /api/stocks/pre-check`) is available for batch stock validation before order creation.
 
 ## Request And Behavior Notes
 
@@ -192,5 +195,5 @@ The admin UI now depends on:
 
 ## Postman Alignment
 
-The backend reference is maintained in `docs/api.md`.
+The backend reference is maintained in `docs/backend-api.md`.
 The Postman collection under `docs/postman/cloud-shop.postman_collection.json` follows the same chain order used here.

@@ -7,19 +7,22 @@
     <resultMap id="BaseResultMap" type="com.cloud.user.module.entity.User">
         <id property="id" column="id"/>
         <result property="username" column="username"/>
+        <result property="password" column="password"/>
         <result property="phone" column="phone"/>
         <result property="nickname" column="nickname"/>
         <result property="avatarUrl" column="avatar_url"/>
         <result property="email" column="email"/>
         <result property="status" column="status"/>
+        <result property="enabled" column="enabled"/>
         <result property="createdAt" column="created_at"/>
         <result property="updatedAt" column="updated_at"/>
         <result property="deleted" column="deleted"/>
+        <result property="version" column="version"/>
     </resultMap>
 
     <sql id="Base_Column_List">
-        id,username,phone,nickname,avatar_url,email,
-        status,created_at,updated_at,deleted
+        id,username,password,phone,nickname,avatar_url,email,
+        status,enabled,created_at,updated_at,deleted,version
     </sql>
     <update id="updateDeletedByIds">
         update users set deleted = 1 where id in

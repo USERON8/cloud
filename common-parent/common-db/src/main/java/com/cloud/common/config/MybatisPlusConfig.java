@@ -9,6 +9,7 @@ import com.baomidou.mybatisplus.extension.plugins.inner.BlockAttackInnerIntercep
 import com.baomidou.mybatisplus.extension.plugins.inner.IllegalSQLInnerInterceptor;
 import com.baomidou.mybatisplus.extension.plugins.inner.OptimisticLockerInnerInterceptor;
 import com.baomidou.mybatisplus.extension.plugins.inner.PaginationInnerInterceptor;
+import com.cloud.common.context.UserContextHolder;
 import java.time.LocalDateTime;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
@@ -175,8 +176,15 @@ public class MybatisPlusConfig {
 
     private Long getCurrentUserId() {
       try {
+        // Try UserContextHolder first (populated from headers)
+        Long userIdFromContext = UserContextHolder.getUserId();
+        if (userIdFromContext != null) {
+          return userIdFromContext;
+        }
+
+        // Fallback to SecurityContextHolder (populated from JWT)
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null) {
+        if (authentication == null || !authentication.isAuthenticated()) {
           return 0L;
         }
 

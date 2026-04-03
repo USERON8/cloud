@@ -9,6 +9,7 @@
         <result property="parentId" column="parent_id"/>
         <result property="name" column="name"/>
         <result property="level" column="level"/>
+        <result property="path" column="path"/>
         <result property="sortOrder" column="sort_order"/>
         <result property="status" column="status"/>
         <result property="createdAt" column="created_at"/>
@@ -16,10 +17,11 @@
         <result property="createBy" column="create_by"/>
         <result property="updateBy" column="update_by"/>
         <result property="deleted" column="deleted"/>
+        <result property="version" column="version"/>
     </resultMap>
 
     <sql id="Base_Column_List">
-        id,parent_id,name,level,sort_order,status,created_at,
-        updated_at,create_by,update_by,deleted
+        id,parent_id,name,level,path,sort_order,status,created_at,
+        updated_at,create_by,update_by,deleted,version
     </sql>
 </mapper>

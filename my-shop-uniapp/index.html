@@ -4,6 +4,16 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>My Shop</title>
+    <script>
+      (function () {
+        var pathname = window.location.pathname || "";
+        if (pathname === "/callback") {
+          var search = window.location.search || "";
+          var hashTarget = "/#/pages/oauth/success" + search;
+          window.location.replace(hashTarget);
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="app"></div>

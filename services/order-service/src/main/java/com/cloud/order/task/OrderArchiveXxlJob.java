@@ -73,11 +73,11 @@ public class OrderArchiveXxlJob {
             """
                 INSERT IGNORE INTO order_main_archive (
                     id, main_order_no, user_id, order_status, total_amount, payable_amount, pay_channel,
-                    paid_at, cancelled_at, cancel_reason, remark, idempotency_key, created_at, updated_at,
+                    paid_at, cancelled_at, cancel_reason, remark, client_order_id, idempotency_key, created_at, updated_at,
                     deleted, version, archived_at
                 )
                 SELECT id, main_order_no, user_id, order_status, total_amount, payable_amount, pay_channel,
-                       paid_at, cancelled_at, cancel_reason, remark, idempotency_key, created_at, updated_at,
+                       paid_at, cancelled_at, cancel_reason, remark, client_order_id, idempotency_key, created_at, updated_at,
                        deleted, version, NOW()
                 FROM order_main
                 WHERE id IN ("""

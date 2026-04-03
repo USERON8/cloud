@@ -1,15 +1,5 @@
 server:
   port: ${SERVER_PORT:8084}
-  tomcat:
-    threads:
-      max: ${SERVER_TOMCAT_THREADS_MAX:400}
-      min-spare: ${SERVER_TOMCAT_THREADS_MIN_SPARE:20}
-    max-connections: ${SERVER_TOMCAT_MAX_CONNECTIONS:20000}
-    accept-count: ${SERVER_TOMCAT_ACCEPT_COUNT:1000}
-logging:
-  file:
-    path: ./logs
-    name: ${logging.file.path}/product-service.log
 
 spring:
   application:
@@ -19,37 +9,17 @@ spring:
   profiles:
     active: dev
     include: rocketmq
-  datasource:
-    type: ${SPRING_DATASOURCE_TYPE:com.alibaba.druid.pool.DruidDataSource}
   cloud:
     nacos:
       discovery:
-        server-addr: ${NACOS_SERVER_ADDR:${NACOS_HOST:127.0.0.1}:${NACOS_PORT:15001}}
-        username: ${NACOS_USERNAME:nacos}
-        password: ${NACOS_PASSWORD:nacos}
+        server-addr: ${NACOS_SERVER_ADDR:${NACOS_HOST:127.0.0.1}:${NACOS_PORT:18848}}
       config:
-        enabled: true
-        server-addr: ${NACOS_SERVER_ADDR:${NACOS_HOST:127.0.0.1}:${NACOS_PORT:15001}}
-        username: ${NACOS_USERNAME:nacos}
-        password: ${NACOS_PASSWORD:nacos}
-        namespace: public
-        group: DEFAULT_GROUP
-        file-extension: yaml
-        shared-configs:
-          - data-id: common.yaml
-            group: DEFAULT_GROUP
-            refresh: true
-        import-check:
-          enabled: false
+        server-addr: ${NACOS_SERVER_ADDR:${NACOS_HOST:127.0.0.1}:${NACOS_PORT:18848}}
+
 dubbo:
-  registry:
-    address: nacos://${NACOS_HOST:127.0.0.1}:${NACOS_PORT:15001}
-    username: ${NACOS_USERNAME:nacos}
-    password: ${NACOS_PASSWORD:nacos}
   protocol:
     port: 20884
-  application:
-    qos-enable: false
+
 mybatis-plus:
   mapper-locations: classpath*:/mapper/**/*.xml
   type-aliases-package: com.cloud.product.module.entity

@@ -45,7 +45,7 @@ export function deleteMerchantsBatch(ids: number[]): Promise<boolean> {
 export function updateMerchantStatusBatch(ids: number[], status: number): Promise<boolean> {
   return http.patch<boolean, boolean>('/api/merchant/batch/status', null, {
     params: {
-      ids: ids.join(','),
+      ids,
       status
     }
   })

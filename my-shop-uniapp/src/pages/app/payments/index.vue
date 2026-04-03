@@ -1,299 +1,653 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { onHide, onLoad, onShow, onUnload } from '@dcloudio/uni-app'
-import { useTimeoutPoll } from '@vueuse/core'
-import AppShell from '../../../components/AppShell.vue'
-import { resolveApiUrl } from '../../../api/http'
+import { computed, ref } from "vue";
+import { onHide, onLoad, onShow, onUnload } from "@dcloudio/uni-app";
+import { useTimeoutPoll } from "@vueuse/core";
+import AppShell from "../../../components/AppShell.vue";
+import { resolveApiUrl } from "../../../api/http";
 import {
-  createPaymentCheckoutSession,
-  getPaymentOrderByNo,
-  getPaymentStatus,
-  getRefundByNo
-} from '../../../api/payment'
-import { navigateTo } from '../../../router/navigation'
-import { Routes } from '../../../router/routes'
-import type { PaymentOrderInfo, PaymentRefundInfo, PaymentStatusInfo } from '../../../types/domain'
-import { formatDate, formatPrice, formatRelativeDate } from '../../../utils/format'
-import { toast } from '../../../utils/ui'
+    createPaymentCheckoutSession,
+    getPaymentOrderByNo,
+    getPaymentStatus,
+    getRefundByNo,
+} from "../../../api/payment";
+import { navigateTo } from "../../../router/navigation";
+import { Routes } from "../../../router/routes";
+import type {
+    PaymentOrderInfo,
+    PaymentRefundInfo,
+    PaymentStatusInfo,
+} from "../../../types/domain";
+import {
+    formatDate,
+    formatPrice,
+    formatRelativeDate,
+} from "../../../utils/format";
+import { toast } from "../../../utils/ui";
 
-const paymentNo = ref('')
-const refundNo = ref('')
-const paymentInfo = ref<PaymentOrderInfo | null>(null)
-const refundInfo = ref<PaymentRefundInfo | null>(null)
-const checkoutLoading = ref(false)
-const pollAttempts = ref(0)
-const isPolling = ref(false)
+const paymentNo = ref("");
+const refundNo = ref("");
+const paymentInfo = ref<PaymentOrderInfo | null>(null);
+const refundInfo = ref<PaymentRefundInfo | null>(null);
+const checkoutLoading = ref(false);
+const pollAttempts = ref(0);
+const isPolling = ref(false);
 
-const FINAL_PAYMENT_STATUSES = new Set(['PAID', 'FAILED'])
-const MAX_POLL_ATTEMPTS = 15
-const POLL_INTERVAL_MS = 2000
+const FINAL_PAYMENT_STATUSES = new Set(["PAID", "FAILED"]);
+const MAX_POLL_ATTEMPTS = 15;
+const POLL_INTERVAL_MS = 2000;
 
 function canOpenCheckout(): boolean {
-  return paymentInfo.value?.status === 'CREATED' && !!paymentInfo.value?.paymentNo
+    return (
+        paymentInfo.value?.status === "CREATED" &&
+        !!paymentInfo.value?.paymentNo
+    );
 }
 
 const paymentStatusHint = computed(() => {
-  if (isPolling.value) {
-    return 'Checking the latest payment status...'
-  }
-  if (paymentInfo.value?.status === 'CREATED') {
-    return 'Payment is still pending.'
-  }
-  return ''
-})
+    if (isPolling.value) {
+        return "Checking the latest payment status...";
+    }
+    if (paymentInfo.value?.status === "CREATED") {
+        return "Payment is still pending.";
+    }
+    return "";
+});
 
 function openCheckout(url: string): void {
-  navigateTo(
-    Routes.webview,
-    { url, paymentNo: paymentNo.value.trim() },
-    {
-      requiresAuth: true,
-      roles: ['USER', 'MERCHANT', 'ADMIN']
-    }
-  )
+    navigateTo(
+        Routes.webview,
+        { url, paymentNo: paymentNo.value.trim() },
+        {
+            requiresAuth: true,
+            roles: ["USER", "MERCHANT", "ADMIN"],
+        },
+    );
 }
 
 function shouldKeepPolling(status?: string): boolean {
-  return !!status && !FINAL_PAYMENT_STATUSES.has(status)
+    return !!status && !FINAL_PAYMENT_STATUSES.has(status);
 }
 
 function applyPaymentStatus(statusPayload: PaymentStatusInfo | null): void {
-  if (!statusPayload?.status) {
-    return
-  }
-  paymentInfo.value = {
-    ...(paymentInfo.value ?? {}),
-    paymentNo: statusPayload.paymentNo ?? paymentInfo.value?.paymentNo ?? paymentNo.value.trim(),
-    status: statusPayload.status
-  }
+    if (!statusPayload?.status) {
+        return;
+    }
+    paymentInfo.value = {
+        ...(paymentInfo.value ?? {}),
+        paymentNo:
+            statusPayload.paymentNo ??
+            paymentInfo.value?.paymentNo ??
+            paymentNo.value.trim(),
+        status: statusPayload.status,
+    };
 }
 
 async function queryPayment(showError = true): Promise<void> {
-  const targetPaymentNo = paymentNo.value.trim()
-  if (!targetPaymentNo) {
-    if (showError) {
-      toast('Enter a payment number')
+    const targetPaymentNo = paymentNo.value.trim();
+    if (!targetPaymentNo) {
+        if (showError) {
+            toast("Enter a payment number");
+        }
+        return;
     }
-    return
-  }
-  try {
-    paymentInfo.value = await getPaymentOrderByNo(targetPaymentNo)
-  } catch (error) {
-    if (showError) {
-      toast(error instanceof Error ? error.message : 'Failed to query the payment order')
+    try {
+        paymentInfo.value = await getPaymentOrderByNo(targetPaymentNo);
+    } catch (error) {
+        if (showError) {
+            toast(
+                error instanceof Error
+                    ? error.message
+                    : "Failed to query the payment order",
+            );
+        }
     }
-  }
 }
 
 async function pollPaymentStatus(): Promise<void> {
-  const targetPaymentNo = paymentNo.value.trim()
-  if (!targetPaymentNo || pollAttempts.value >= MAX_POLL_ATTEMPTS) {
-    isPolling.value = false
-    paymentPoller.pause()
-    return
-  }
-  isPolling.value = true
-  pollAttempts.value += 1
-  try {
-    const statusPayload = await getPaymentStatus(targetPaymentNo)
-    applyPaymentStatus(statusPayload)
-    if (!shouldKeepPolling(statusPayload.status)) {
-      isPolling.value = false
-      paymentPoller.pause()
-      await queryPayment(false)
+    const targetPaymentNo = paymentNo.value.trim();
+    if (!targetPaymentNo || pollAttempts.value >= MAX_POLL_ATTEMPTS) {
+        isPolling.value = false;
+        paymentPoller.pause();
+        return;
     }
-  } catch (error) {
-    isPolling.value = false
-    paymentPoller.pause()
-    toast(error instanceof Error ? error.message : 'Failed to refresh payment status')
-  }
+    isPolling.value = true;
+    pollAttempts.value += 1;
+    try {
+        const statusPayload = await getPaymentStatus(targetPaymentNo);
+        applyPaymentStatus(statusPayload);
+        if (!shouldKeepPolling(statusPayload.status)) {
+            isPolling.value = false;
+            paymentPoller.pause();
+            await queryPayment(false);
+        }
+    } catch (error) {
+        isPolling.value = false;
+        paymentPoller.pause();
+        toast(
+            error instanceof Error
+                ? error.message
+                : "Failed to refresh payment status",
+        );
+    }
 }
 
-const paymentPoller = useTimeoutPoll(() => {
-  void pollPaymentStatus()
-}, POLL_INTERVAL_MS, { immediate: false })
+const paymentPoller = useTimeoutPoll(
+    () => {
+        void pollPaymentStatus();
+    },
+    POLL_INTERVAL_MS,
+    { immediate: false },
+);
 
 async function startPaymentPolling(): Promise<void> {
-  paymentPoller.pause()
-  pollAttempts.value = 0
-  isPolling.value = false
-  await queryPayment(false)
-  if (!shouldKeepPolling(paymentInfo.value?.status)) {
-    return
-  }
-  paymentPoller.resume()
+    paymentPoller.pause();
+    pollAttempts.value = 0;
+    isPolling.value = false;
+    await queryPayment(false);
+    if (!shouldKeepPolling(paymentInfo.value?.status)) {
+        return;
+    }
+    paymentPoller.resume();
 }
 
 async function queryRefund(): Promise<void> {
-  if (!refundNo.value.trim()) {
-    toast('Enter a refund number')
-    return
-  }
-  try {
-    refundInfo.value = await getRefundByNo(refundNo.value.trim())
-  } catch (error) {
-    toast(error instanceof Error ? error.message : 'Failed to query the refund order')
-  }
+    if (!refundNo.value.trim()) {
+        toast("Enter a refund number");
+        return;
+    }
+    try {
+        refundInfo.value = await getRefundByNo(refundNo.value.trim());
+    } catch (error) {
+        toast(
+            error instanceof Error
+                ? error.message
+                : "Failed to query the refund order",
+        );
+    }
 }
 
 async function openPaymentCheckout(): Promise<void> {
-  const targetPaymentNo = paymentInfo.value?.paymentNo || paymentNo.value.trim()
-  if (!targetPaymentNo) {
-    toast('Enter a payment number')
-    return
-  }
-  checkoutLoading.value = true
-  try {
-    const session = await createPaymentCheckoutSession(targetPaymentNo)
-    if (!session.checkoutPath) {
-      throw new Error('Checkout session is missing checkoutPath')
+    const targetPaymentNo =
+        paymentInfo.value?.paymentNo || paymentNo.value.trim();
+    if (!targetPaymentNo) {
+        toast("Enter a payment number");
+        return;
     }
-    openCheckout(resolveApiUrl(session.checkoutPath))
-    void startPaymentPolling()
-  } catch (error) {
-    toast(error instanceof Error ? error.message : 'Failed to open checkout')
-  } finally {
-    checkoutLoading.value = false
-  }
+    checkoutLoading.value = true;
+    try {
+        const session = await createPaymentCheckoutSession(targetPaymentNo);
+        if (!session.checkoutPath) {
+            throw new Error("Checkout session is missing checkoutPath");
+        }
+        openCheckout(resolveApiUrl(session.checkoutPath));
+        void startPaymentPolling();
+    } catch (error) {
+        toast(
+            error instanceof Error ? error.message : "Failed to open checkout",
+        );
+    } finally {
+        checkoutLoading.value = false;
+    }
 }
 
 onLoad((query) => {
-  const queryPaymentNo =
-    typeof query.paymentNo === 'string' && query.paymentNo.trim()
-      ? query.paymentNo.trim()
-      : typeof query.out_trade_no === 'string' && query.out_trade_no.trim()
-        ? query.out_trade_no.trim()
-        : ''
-  const shouldAutoPoll = query.autoPoll === '1' || query.payment_return === '1'
+    const queryPaymentNo =
+        typeof query.paymentNo === "string" && query.paymentNo.trim()
+            ? query.paymentNo.trim()
+            : typeof query.out_trade_no === "string" &&
+                query.out_trade_no.trim()
+              ? query.out_trade_no.trim()
+              : "";
+    const shouldAutoPoll =
+        query.autoPoll === "1" || query.payment_return === "1";
 
-  if (queryPaymentNo) {
-    paymentNo.value = queryPaymentNo
-    if (shouldAutoPoll) {
-      void startPaymentPolling()
-    } else {
-      void queryPayment(false)
+    if (queryPaymentNo) {
+        paymentNo.value = queryPaymentNo;
+        if (shouldAutoPoll) {
+            void startPaymentPolling();
+        } else {
+            void queryPayment(false);
+        }
     }
-  }
-  if (typeof query.refundNo === 'string' && query.refundNo.trim()) {
-    refundNo.value = query.refundNo.trim()
-    void queryRefund()
-  }
-})
+    if (typeof query.refundNo === "string" && query.refundNo.trim()) {
+        refundNo.value = query.refundNo.trim();
+        void queryRefund();
+    }
+});
 
 onShow(() => {
-  if (paymentNo.value.trim() && shouldKeepPolling(paymentInfo.value?.status)) {
-    void startPaymentPolling()
-  }
-})
+    if (
+        paymentNo.value.trim() &&
+        shouldKeepPolling(paymentInfo.value?.status)
+    ) {
+        void startPaymentPolling();
+    }
+});
 
 onHide(() => {
-  paymentPoller.pause()
-  isPolling.value = false
-})
+    paymentPoller.pause();
+    isPolling.value = false;
+});
 
 onUnload(() => {
-  paymentPoller.pause()
-})
+    paymentPoller.pause();
+});
 </script>
 
 <template>
-  <AppShell title="Payments">
-    <view class="panel glass-card">
-      <text class="section-title">Payment lookup</text>
-      <view class="search-row">
-        <input v-model="paymentNo" class="search-input" placeholder="Payment number" />
-        <button class="btn-primary" @click="queryPayment">Search</button>
-      </view>
+    <AppShell title="Payments">
+        <view class="payments-layout">
+            <view class="hero-card display-panel">
+                <view class="hero-copy">
+                    <text class="hero-eyebrow">Payments</text>
+                    <text class="hero-title"
+                        >Follow payment and refund progress from one cleaner
+                        workspace.</text
+                    >
+                    <text class="hero-subtitle">
+                        Query payment numbers, reopen checkout when required,
+                        and monitor refund completion without leaving the app.
+                    </text>
+                </view>
 
-      <view v-if="paymentInfo" class="result">
-        <text class="name">Payment number: {{ paymentInfo.paymentNo }}</text>
-        <text class="meta">Main order: {{ paymentInfo.mainOrderNo || '--' }}</text>
-        <text class="meta">Sub order: {{ paymentInfo.subOrderNo || '--' }}</text>
-        <text class="meta">Amount: {{ formatPrice(paymentInfo.amount) }}</text>
-        <text class="meta">Status: {{ paymentInfo.status || '--' }}</text>
-        <text class="meta">Channel: {{ paymentInfo.channel || '--' }}</text>
-        <text class="meta">Paid at: {{ formatDate(paymentInfo.paidAt) }}</text>
-        <text v-if="paymentInfo.paidAt" class="meta">Paid: {{ formatRelativeDate(paymentInfo.paidAt) }}</text>
-        <text v-if="paymentStatusHint" class="meta status-hint">{{ paymentStatusHint }}</text>
-        <button
-          v-if="paymentInfo.status === 'CREATED'"
-          class="btn-outline"
-          :loading="isPolling"
-          @click="startPaymentPolling"
-        >
-          {{ isPolling ? 'Checking status...' : 'Refresh status' }}
-        </button>
-        <button
-          v-if="canOpenCheckout()"
-          class="btn-outline"
-          :loading="checkoutLoading"
-          @click="openPaymentCheckout"
-        >
-          Open checkout
-        </button>
-      </view>
-    </view>
+                <view class="hero-stats">
+                    <view class="info-card">
+                        <text class="info-label">Polling state</text>
+                        <text class="info-value">{{
+                            isPolling ? "Running" : "Idle"
+                        }}</text>
+                    </view>
+                    <view class="info-card">
+                        <text class="info-label">Attempts</text>
+                        <text class="info-value"
+                            >{{ pollAttempts }} / {{ MAX_POLL_ATTEMPTS }}</text
+                        >
+                    </view>
+                </view>
+            </view>
 
-    <view class="panel glass-card">
-      <text class="section-title">Refund lookup</text>
-      <view class="search-row">
-        <input v-model="refundNo" class="search-input" placeholder="Refund number" />
-        <button class="btn-primary" @click="queryRefund">Search</button>
-      </view>
+            <view class="content-grid">
+                <view class="surface-card panel">
+                    <view class="section-block compact-block">
+                        <text class="section-title">Payment lookup</text>
+                        <text class="section-subtitle"
+                            >Search a payment record and continue checkout if it
+                            is still awaiting completion.</text
+                        >
+                    </view>
 
-      <view v-if="refundInfo" class="result">
-        <text class="name">Refund number: {{ refundInfo.refundNo }}</text>
-        <text class="meta">Payment number: {{ refundInfo.paymentNo || '--' }}</text>
-        <text class="meta">After-sale number: {{ refundInfo.afterSaleNo || '--' }}</text>
-        <text class="meta">Amount: {{ formatPrice(refundInfo.refundAmount) }}</text>
-        <text class="meta">Status: {{ refundInfo.status || '--' }}</text>
-        <text class="meta">Refunded at: {{ formatDate(refundInfo.refundedAt) }}</text>
-        <text v-if="refundInfo.refundedAt" class="meta">Refunded: {{ formatRelativeDate(refundInfo.refundedAt) }}</text>
-      </view>
-    </view>
-  </AppShell>
+                    <view class="search-row">
+                        <input
+                            v-model="paymentNo"
+                            class="search-input"
+                            placeholder="Payment number"
+                        />
+                        <button class="btn-primary" @click="queryPayment">
+                            Search
+                        </button>
+                    </view>
+
+                    <view v-if="paymentInfo" class="result-card">
+                        <view class="result-head">
+                            <view>
+                                <text class="name"
+                                    >Payment {{ paymentInfo.paymentNo }}</text
+                                >
+                                <text class="meta"
+                                    >Main order
+                                    {{ paymentInfo.mainOrderNo || "--" }}</text
+                                >
+                            </view>
+                            <text
+                                class="status-chip"
+                                :class="`status-${(paymentInfo.status || 'unknown').toLowerCase()}`"
+                            >
+                                {{ paymentInfo.status || "--" }}
+                            </text>
+                        </view>
+
+                        <view class="metric-grid">
+                            <view class="metric-item">
+                                <text class="metric-label">Amount</text>
+                                <text class="metric-value">{{
+                                    formatPrice(paymentInfo.amount)
+                                }}</text>
+                            </view>
+                            <view class="metric-item">
+                                <text class="metric-label">Channel</text>
+                                <text class="metric-value">{{
+                                    paymentInfo.channel || "--"
+                                }}</text>
+                            </view>
+                        </view>
+
+                        <view class="meta-list">
+                            <text class="meta"
+                                >Sub order:
+                                {{ paymentInfo.subOrderNo || "--" }}</text
+                            >
+                            <text class="meta"
+                                >Paid at:
+                                {{ formatDate(paymentInfo.paidAt) }}</text
+                            >
+                            <text v-if="paymentInfo.paidAt" class="meta"
+                                >Paid:
+                                {{
+                                    formatRelativeDate(paymentInfo.paidAt)
+                                }}</text
+                            >
+                            <text
+                                v-if="paymentStatusHint"
+                                class="meta status-hint"
+                                >{{ paymentStatusHint }}</text
+                            >
+                        </view>
+
+                        <view class="actions">
+                            <button
+                                v-if="paymentInfo.status === 'CREATED'"
+                                class="btn-outline action-button"
+                                :loading="isPolling"
+                                @click="startPaymentPolling"
+                            >
+                                {{
+                                    isPolling
+                                        ? "Checking status..."
+                                        : "Refresh status"
+                                }}
+                            </button>
+                            <button
+                                v-if="canOpenCheckout()"
+                                class="btn-primary action-button"
+                                :loading="checkoutLoading"
+                                @click="openPaymentCheckout"
+                            >
+                                Open checkout
+                            </button>
+                        </view>
+                    </view>
+
+                    <view v-else class="empty-state"
+                        >No payment record selected yet.</view
+                    >
+                </view>
+
+                <view class="surface-card panel">
+                    <view class="section-block compact-block">
+                        <text class="section-title">Refund lookup</text>
+                        <text class="section-subtitle"
+                            >Review refund records linked to payment and
+                            after-sale workflows.</text
+                        >
+                    </view>
+
+                    <view class="search-row">
+                        <input
+                            v-model="refundNo"
+                            class="search-input"
+                            placeholder="Refund number"
+                        />
+                        <button class="btn-primary" @click="queryRefund">
+                            Search
+                        </button>
+                    </view>
+
+                    <view v-if="refundInfo" class="result-card">
+                        <view class="result-head">
+                            <view>
+                                <text class="name"
+                                    >Refund {{ refundInfo.refundNo }}</text
+                                >
+                                <text class="meta"
+                                    >Payment
+                                    {{ refundInfo.paymentNo || "--" }}</text
+                                >
+                            </view>
+                            <text
+                                class="status-chip"
+                                :class="`status-${(refundInfo.status || 'unknown').toLowerCase()}`"
+                            >
+                                {{ refundInfo.status || "--" }}
+                            </text>
+                        </view>
+
+                        <view class="metric-grid">
+                            <view class="metric-item">
+                                <text class="metric-label">Amount</text>
+                                <text class="metric-value">{{
+                                    formatPrice(refundInfo.refundAmount)
+                                }}</text>
+                            </view>
+                            <view class="metric-item">
+                                <text class="metric-label">After-sale</text>
+                                <text class="metric-value">{{
+                                    refundInfo.afterSaleNo || "--"
+                                }}</text>
+                            </view>
+                        </view>
+
+                        <view class="meta-list">
+                            <text class="meta"
+                                >Refunded at:
+                                {{ formatDate(refundInfo.refundedAt) }}</text
+                            >
+                            <text v-if="refundInfo.refundedAt" class="meta"
+                                >Refunded:
+                                {{
+                                    formatRelativeDate(refundInfo.refundedAt)
+                                }}</text
+                            >
+                        </view>
+                    </view>
+
+                    <view v-else class="empty-state"
+                        >No refund record selected yet.</view
+                    >
+                </view>
+            </view>
+        </view>
+    </AppShell>
 </template>
 
 <style scoped>
+.payments-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.hero-card {
+    padding: 36px;
+    display: grid;
+    grid-template-columns: minmax(0, 1.45fr) 300px;
+    gap: 24px;
+    align-items: stretch;
+}
+
+.hero-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    justify-content: center;
+    min-height: 320px;
+}
+
+.hero-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    justify-content: flex-end;
+}
+
+.content-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
+}
+
 .panel {
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-bottom: 12px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.compact-block {
+    gap: 6px;
 }
 
 .search-row {
-  display: flex;
-  gap: 8px;
-  align-items: center;
+    display: flex;
+    gap: 10px;
+    align-items: center;
 }
 
 .search-input {
-  flex: 1;
-  background: #fff;
-  border-radius: 999px;
-  padding: 8px 12px;
-  font-size: 14px;
+    flex: 1;
+    min-height: 48px;
+    background: #fff;
+    border-radius: 999px;
+    padding: 12px 16px;
+    font-size: 14px;
+    border: 1px solid rgba(15, 23, 42, 0.08);
 }
 
-.result {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+.result-card {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 18px;
+    border-radius: var(--radius-lg);
+    background: var(--panel-muted);
+    border: 1px solid rgba(15, 23, 42, 0.05);
+}
+
+.result-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
 }
 
 .name {
-  font-size: 14px;
-  font-weight: 600;
+    display: block;
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 6px;
+    letter-spacing: -0.02em;
+}
+
+.status-chip {
+    padding: 8px 13px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+    background: rgba(15, 23, 42, 0.06);
+    color: var(--text-main);
+    white-space: nowrap;
+}
+
+.status-created {
+    background: rgba(255, 159, 10, 0.16);
+    color: #a16207;
+}
+
+.status-paid,
+.status-success {
+    background: rgba(52, 199, 89, 0.14);
+    color: #167c3a;
+}
+
+.status-failed,
+.status-closed {
+    background: rgba(255, 69, 58, 0.12);
+    color: #b42318;
+}
+
+.status-refunding {
+    background: rgba(0, 113, 227, 0.1);
+    color: var(--accent);
+}
+
+.status-refunded {
+    background: rgba(90, 200, 250, 0.16);
+    color: #0c7492;
+}
+
+.metric-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.metric-item {
+    padding: 14px;
+    border-radius: var(--radius-md);
+    background: rgba(255, 255, 255, 0.96);
+    border: 1px solid rgba(15, 23, 42, 0.05);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.metric-label {
+    font-size: 12px;
+    color: var(--text-muted);
+    letter-spacing: 0.01em;
+}
+
+.metric-value {
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+}
+
+.meta-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
 }
 
 .meta {
-  font-size: 12px;
-  color: var(--text-muted);
+    font-size: 13px;
+    color: var(--text-muted);
+    word-break: break-all;
+    line-height: 1.7;
 }
 
 .status-hint {
-  color: #1f6feb;
+    color: var(--accent);
+}
+
+.actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.action-button {
+    flex: 1 1 180px;
+}
+
+.empty-state {
+    padding: 28px 0;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 13px;
+}
+
+@media (max-width: 900px) {
+    .hero-card,
+    .content-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .hero-card {
+        padding: 26px;
+    }
+
+    .hero-copy {
+        min-height: auto;
+    }
 }
 </style>

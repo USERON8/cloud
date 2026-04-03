@@ -3,18 +3,15 @@ import { onMounted, ref } from 'vue'
 import AppShell from '../../../components/AppShell.vue'
 import { listProducts, updateProductStatus } from '../../../api/product'
 import type { ProductItem } from '../../../types/domain'
-import { formatPrice } from '../../../utils/format'
+import { formatPrice, formatProductStatus } from '../../../utils/format'
 import { confirm, toast } from '../../../utils/ui'
 
 const keyword = ref('')
 const loading = ref(false)
 const rows = ref<ProductItem[]>([])
 
-function statusText(status?: number): string {
-  if (status === 1) return 'Published'
-  if (status === 0) return 'Unpublished'
-  return 'Unknown'
-}
+const publishedCount = () => rows.value.filter(r => r.status === 1).length
+const unpublishedCount = () => rows.value.filter(r => r.status !== 1).length
 
 async function loadProducts(): Promise<void> {
   if (loading.value) return
@@ -51,27 +48,57 @@ onMounted(() => {
 
 <template>
   <AppShell title="Product Admin">
-    <view class="panel glass-card">
-      <view class="header">
-        <text class="section-title">Product management</text>
-        <button class="btn-outline" @click="loadProducts">Refresh</button>
+    <view class="page-wrap">
+      <!-- Hero -->
+      <view class="hero surface-card">
+        <view class="hero-left">
+          <text class="hero-eyebrow">MERCHANT</text>
+          <text class="hero-title">Product Catalog</text>
+          <text class="hero-subtitle">Publish, unpublish and monitor your product listings.</text>
+        </view>
+        <view class="hero-stats">
+          <view class="info-card">
+            <text class="info-label">Published</text>
+            <text class="info-value">{{ publishedCount() }}</text>
+          </view>
+          <view class="info-card">
+            <text class="info-label">Unpublished</text>
+            <text class="info-value">{{ unpublishedCount() }}</text>
+          </view>
+          <view class="info-card">
+            <text class="info-label">Total</text>
+            <text class="info-value">{{ rows.length }}</text>
+          </view>
+        </view>
       </view>
 
-      <view class="search-row">
-        <input v-model="keyword" class="search-input" placeholder="Search products" @confirm="loadProducts" />
-        <button class="btn-primary" @click="loadProducts">Search</button>
+      <!-- Toolbar -->
+      <view class="toolbar surface-card">
+        <view class="search-row">
+          <input
+            v-model="keyword"
+            class="std-input"
+            placeholder="Search products…"
+            @confirm="loadProducts"
+          />
+          <button class="btn-primary" :loading="loading" @click="loadProducts">Search</button>
+        </view>
+        <button class="btn-outline" :loading="loading" @click="loadProducts">Refresh</button>
       </view>
 
-      <view v-if="rows.length === 0" class="empty">
-        <text class="text-muted">No products found</text>
+      <!-- List -->
+      <view v-if="rows.length === 0" class="empty-state">
+        <text class="empty-state-text">No products found</text>
       </view>
 
       <view v-else class="list">
-        <view v-for="item in rows" :key="item.id" class="row">
-          <view class="info">
-            <text class="name">{{ item.name }}</text>
-            <text class="meta">{{ formatPrice(item.price) }}</text>
-            <text class="meta">Status: {{ statusText(item.status) }}</text>
+        <view v-for="item in rows" :key="item.id" class="row surface-card">
+          <view class="row-info">
+            <text class="row-name">{{ item.name }}</text>
+            <text class="row-meta">{{ formatPrice(item.price) }}</text>
+            <view class="chip" :class="item.status === 1 ? 'chip-success' : 'chip-muted'">
+              <text>{{ formatProductStatus(item.status) }}</text>
+            </view>
           </view>
           <button class="btn-outline" @click="toggleStatus(item)">
             {{ item.status === 1 ? 'Unpublish' : 'Publish' }}
@@ -83,32 +110,83 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.panel {
-  padding: 16px;
+.page-wrap {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
+  padding: 24px;
+  max-width: 960px;
+  margin: 0 auto;
 }
 
-.header {
+.hero {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 32px 36px;
+  border-radius: var(--radius-lg);
+  flex-wrap: wrap;
+}
+
+.hero-left {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.hero-eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--accent);
+  text-transform: uppercase;
+}
+
+.hero-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-main);
+  letter-spacing: -0.02em;
+}
+
+.hero-subtitle {
+  font-size: 14px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.hero-stats {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.toolbar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
+  gap: 12px;
+  padding: 16px 20px;
+  border-radius: var(--radius-md);
+  flex-wrap: wrap;
 }
 
 .search-row {
+  flex: 1;
   display: flex;
   gap: 8px;
   align-items: center;
+  min-width: 200px;
 }
 
-.search-input {
+.std-input {
   flex: 1;
-  background: #fff;
-  border-radius: 999px;
-  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid var(--panel-border);
+  border-radius: 16px;
+  padding: 13px 16px;
   font-size: 14px;
+  color: var(--text-main);
 }
 
 .list {
@@ -118,32 +196,45 @@ onMounted(() => {
 }
 
 .row {
-  padding: 10px 0;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
   display: flex;
   align-items: center;
-  gap: 12px;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 20px;
+  border-radius: var(--radius-md);
 }
 
-.info {
+.row-info {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
 }
 
-.name {
-  font-size: 14px;
+.row-name {
+  font-size: 15px;
   font-weight: 600;
+  color: var(--text-main);
 }
 
-.meta {
-  font-size: 12px;
+.row-meta {
+  font-size: 13px;
   color: var(--text-muted);
 }
 
-.empty {
-  padding: 16px 0;
-  text-align: center;
+.chip-success {
+  background: var(--success-soft);
+  color: #34c759;
+}
+
+.chip-muted {
+  background: rgba(142, 142, 147, 0.12);
+  color: var(--text-soft);
+}
+
+@media (max-width: 600px) {
+  .page-wrap { padding: 16px; }
+  .hero { padding: 24px 20px; }
+  .row { flex-direction: column; align-items: flex-start; }
 }
 </style>

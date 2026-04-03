@@ -1,48 +1,17 @@
 spring:
   cloud:
     stream:
-      default:
-        producer:
-          partition-count: ${ROCKETMQ_PRODUCER_PARTITION_COUNT:4}
-          error-channel-enabled: true
-        consumer:
-          max-attempts: 1
-          concurrency: ${ROCKETMQ_CONSUMER_CONCURRENCY:20}
       rocketmq:
-        defaults:
-          producer: &stockProducerDefaults
-            group: stock-producer-group
-            sync: false
-            retryTimesWhenSendFailed: ${ROCKETMQ_PRODUCER_RETRY_SYNC:3}
-            retryTimesWhenSendAsyncFailed: ${ROCKETMQ_PRODUCER_RETRY_ASYNC:2}
-            sendMessageTimeout: ${ROCKETMQ_PRODUCER_SEND_TIMEOUT_MS:5000}
-          consumer: &stockConsumerDefaults
-            orderly: false
-            maxReconsumeTimes: ${ROCKETMQ_CONSUMER_MAX_RECONSUME_TIMES:3}
-            delayLevelWhenNextConsume: ${ROCKETMQ_CONSUMER_RETRY_DELAY_LEVEL:3}
-            suspendCurrentQueueTimeMillis: ${ROCKETMQ_CONSUMER_SUSPEND_QUEUE_MS:1000}
-            consumeTimeout: ${ROCKETMQ_CONSUMER_TIMEOUT_MIN:30}
-        binder:
-          name-server: ${ROCKETMQ_NAME_SERVER:${ROCKETMQ_NAMESRV_HOST:127.0.0.1}:${ROCKETMQ_NAMESRV_PORT:20011}}
         bindings:
           stockReserveRequestConsumer-in-0:
             consumer:
-              <<: *stockConsumerDefaults
+              group: stock-reserve-request-consumer-group
           stockReleaseRequestConsumer-in-0:
             consumer:
-              <<: *stockConsumerDefaults
+              group: stock-release-request-consumer-group
           stockConfirmRequestConsumer-in-0:
             consumer:
-              <<: *stockConsumerDefaults
-          stockFreezeFailedProducer-out-0:
-            producer:
-              <<: *stockProducerDefaults
-          stockAlertProducer-out-0:
-            producer:
-              <<: *stockProducerDefaults
-          productSyncProducer-out-0:
-            producer:
-              <<: *stockProducerDefaults
+              group: stock-confirm-request-consumer-group
       bindings:
         stockReserveRequestConsumer-in-0:
           destination: stock-reserve-request
@@ -65,6 +34,3 @@ spring:
         productSyncProducer-out-0:
           destination: product-sync
           content-type: application/json
-
-rocketmq:
-  name-server: ${ROCKETMQ_NAME_SERVER:${ROCKETMQ_NAMESRV_HOST:127.0.0.1}:${ROCKETMQ_NAMESRV_PORT:20011}}

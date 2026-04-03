@@ -3,7 +3,7 @@ import { onMounted, reactive, ref } from 'vue'
 import AppShell from '../../../components/AppShell.vue'
 import { advanceAfterSaleStatus, completeOrder, listOrders, shipOrder } from '../../../api/order'
 import type { OrderItem } from '../../../types/domain'
-import { formatDate, formatPrice, formatRelativeDate } from '../../../utils/format'
+import { formatDate, formatOrderStatus, formatPrice, formatRelativeDate } from '../../../utils/format'
 import { confirm, toast } from '../../../utils/ui'
 
 const rows = ref<OrderItem[]>([])
@@ -16,15 +16,6 @@ const shippingForm = reactive({
 const afterSaleForm = reactive({
   remark: ''
 })
-
-function statusText(status?: number): string {
-  if (status === 0) return 'Pending payment'
-  if (status === 1) return 'Paid'
-  if (status === 2) return 'Shipped'
-  if (status === 3) return 'Completed'
-  if (status === 4) return 'Cancelled'
-  return status != null ? String(status) : 'Unknown'
-}
 
 async function loadOrders(): Promise<void> {
   if (loading.value) return
@@ -155,36 +146,59 @@ onMounted(() => {
 
 <template>
   <AppShell title="Order Admin">
-    <view class="panel glass-card">
-      <view class="header">
-        <text class="section-title">Order Management</text>
-        <button class="btn-outline" @click="loadOrders">Refresh</button>
+    <view class="page-wrap">
+      <!-- Hero -->
+      <view class="hero surface-card">
+        <view class="hero-left">
+          <text class="hero-eyebrow">MERCHANT</text>
+          <text class="hero-title">Order Management</text>
+          <text class="hero-subtitle">Ship orders and handle after-sale requests.</text>
+        </view>
+        <view class="hero-stats">
+          <view class="info-card">
+            <text class="info-label">Total</text>
+            <text class="info-value">{{ rows.length }}</text>
+          </view>
+        </view>
       </view>
 
-      <view class="shipping-bar">
-        <input v-model="shippingForm.shippingCompany" class="input" placeholder="Shipping company" />
-        <input v-model="shippingForm.trackingNumber" class="input" placeholder="Tracking number" />
+      <!-- Shipping fields (shared across rows) -->
+      <view class="toolbar surface-card">
+        <view class="field-group">
+          <text class="field-label">Shipping company</text>
+          <input v-model="shippingForm.shippingCompany" class="std-input" placeholder="e.g. FedEx" />
+        </view>
+        <view class="field-group">
+          <text class="field-label">Tracking number</text>
+          <input v-model="shippingForm.trackingNumber" class="std-input" placeholder="Enter tracking no." />
+        </view>
+        <view class="field-group">
+          <text class="field-label">After-sale remark</text>
+          <input v-model="afterSaleForm.remark" class="std-input" placeholder="Optional remark" />
+        </view>
+        <button class="btn-outline" :loading="loading" @click="loadOrders">Refresh</button>
       </view>
 
-      <input v-model="afterSaleForm.remark" class="input" placeholder="After-sale remark" />
-
-      <view v-if="rows.length === 0" class="empty">
-        <text class="text-muted">No orders</text>
+      <!-- Empty -->
+      <view v-if="rows.length === 0" class="empty-state">
+        <text class="empty-state-text">No orders found</text>
       </view>
 
+      <!-- Order list -->
       <view v-else class="list">
-        <view v-for="item in rows" :key="item.id" class="row">
-          <view class="info">
-            <text class="name">Order No: {{ item.orderNo }}</text>
-            <text class="meta">Amount: {{ formatPrice(item.payAmount ?? item.totalAmount) }}</text>
-            <text class="meta">Status: {{ statusText(item.status) }}</text>
-            <text class="meta">Created At: {{ formatDate(item.createdAt) }}</text>
-            <text class="meta">Age: {{ formatRelativeDate(item.createdAt) }}</text>
-            <text v-if="item.afterSaleStatus && item.afterSaleStatus !== 'NONE'" class="meta">
+        <view v-for="item in rows" :key="item.id" class="row surface-card">
+          <view class="row-info">
+            <text class="row-name">{{ item.orderNo }}</text>
+            <text class="row-meta">{{ formatPrice(item.payAmount ?? item.totalAmount) }}</text>
+            <view class="row-meta-row">
+              <view class="chip chip-muted"><text>{{ formatOrderStatus(item.status) }}</text></view>
+              <text class="row-date">{{ formatDate(item.createdAt) }} · {{ formatRelativeDate(item.createdAt) }}</text>
+            </view>
+            <text v-if="item.afterSaleStatus && item.afterSaleStatus !== 'NONE'" class="row-aftersale">
               After-sale: {{ item.afterSaleStatus }}{{ item.afterSaleNo ? ` (${item.afterSaleNo})` : '' }}
             </text>
           </view>
-          <view class="actions">
+          <view class="row-actions">
             <button class="btn-outline" @click="onShip(item)">Ship</button>
             <button class="btn-outline" @click="onComplete(item)">Complete</button>
             <button
@@ -192,57 +206,43 @@ onMounted(() => {
               class="btn-outline"
               :loading="afterSaleActingOrderId === item.id"
               @click="onAdvanceAfterSale(item, 'AUDIT')"
-            >
-              Start review
-            </button>
+            >Start review</button>
             <button
               v-if="canApproveAfterSale(item)"
               class="btn-outline"
               :loading="afterSaleActingOrderId === item.id"
               @click="onAdvanceAfterSale(item, 'APPROVE')"
-            >
-              Approve
-            </button>
+            >Approve</button>
             <button
               v-if="canRejectAfterSale(item)"
               class="btn-outline"
               :loading="afterSaleActingOrderId === item.id"
               @click="onAdvanceAfterSale(item, 'REJECT')"
-            >
-              Reject
-            </button>
+            >Reject</button>
             <button
               v-if="canWaitReturn(item)"
               class="btn-outline"
               :loading="afterSaleActingOrderId === item.id"
               @click="onAdvanceAfterSale(item, 'WAIT_RETURN')"
-            >
-              Wait return
-            </button>
+            >Wait return</button>
             <button
               v-if="canMarkReturned(item)"
               class="btn-outline"
               :loading="afterSaleActingOrderId === item.id"
               @click="onAdvanceAfterSale(item, 'RETURN')"
-            >
-              Mark returned
-            </button>
+            >Mark returned</button>
             <button
               v-if="canMarkReceived(item)"
               class="btn-outline"
               :loading="afterSaleActingOrderId === item.id"
               @click="onAdvanceAfterSale(item, 'RECEIVE')"
-            >
-              Mark received
-            </button>
+            >Mark received</button>
             <button
               v-if="canProcessRefund(item)"
               class="btn-outline"
               :loading="afterSaleActingOrderId === item.id"
               @click="onAdvanceAfterSale(item, 'PROCESS')"
-            >
-              Start refund
-            </button>
+            >Start refund</button>
           </view>
         </view>
       </view>
@@ -251,24 +251,89 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.panel {
-  padding: 16px;
+.page-wrap {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
+  padding: 24px;
+  max-width: 960px;
+  margin: 0 auto;
 }
 
-.header {
+.hero {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-  gap: 8px;
+  gap: 24px;
+  padding: 32px 36px;
+  border-radius: var(--radius-lg);
+  flex-wrap: wrap;
 }
 
-.shipping-bar {
+.hero-left {
   display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.hero-eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--accent);
+  text-transform: uppercase;
+}
+
+.hero-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-main);
+  letter-spacing: -0.02em;
+}
+
+.hero-subtitle {
+  font-size: 14px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.hero-stats {
+  display: flex;
+  gap: 12px;
   flex-wrap: wrap;
-  gap: 8px;
+}
+
+.toolbar {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  padding: 20px 24px;
+  border-radius: var(--radius-md);
+  flex-wrap: wrap;
+}
+
+.field-group {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 160px;
+}
+
+.field-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: 0.02em;
+}
+
+.std-input {
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid var(--panel-border);
+  border-radius: 16px;
+  padding: 13px 16px;
+  font-size: 14px;
+  color: var(--text-main);
 }
 
 .list {
@@ -280,42 +345,59 @@ onMounted(() => {
 .row {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 12px 0;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  gap: 12px;
+  padding: 20px 24px;
+  border-radius: var(--radius-md);
 }
 
-.info {
+.row-info {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
 }
 
-.name {
-  font-size: 14px;
+.row-name {
+  font-size: 15px;
   font-weight: 600;
+  color: var(--text-main);
 }
 
-.meta {
-  font-size: 12px;
+.row-meta {
+  font-size: 13px;
   color: var(--text-muted);
 }
 
-.actions {
+.row-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.row-date {
+  font-size: 12px;
+  color: var(--text-soft);
+}
+
+.row-aftersale {
+  font-size: 12px;
+  color: var(--accent);
+}
+
+.chip-muted {
+  background: rgba(142, 142, 147, 0.12);
+  color: var(--text-soft);
+}
+
+.row-actions {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
 }
 
-.input {
-  background: #fff;
-  border-radius: 10px;
-  padding: 6px 10px;
-  font-size: 12px;
-}
-
-.empty {
-  padding: 16px 0;
-  text-align: center;
+@media (max-width: 600px) {
+  .page-wrap { padding: 16px; }
+  .hero { padding: 24px 20px; }
+  .toolbar { flex-direction: column; align-items: stretch; }
 }
 </style>

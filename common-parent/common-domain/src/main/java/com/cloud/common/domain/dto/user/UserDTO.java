@@ -41,6 +41,10 @@ public class UserDTO implements Serializable {
   @Max(value = 1, message = "Status must be less than or equal to 1")
   private Integer status;
 
+  @Min(value = 0, message = "Enabled must be greater than or equal to 0")
+  @Max(value = 1, message = "Enabled must be less than or equal to 1")
+  private Integer enabled;
+
   private List<String> roles;
 
   private LocalDateTime createdAt;

@@ -130,7 +130,8 @@ services:
     mem_limit: 768m
     ports:
       - "${PORT_NACOS_HTTP:-18848}:8848"
-      - "${PORT_NACOS_RAFT:-19848}:9849"
+      - "${PORT_NACOS_GRPC_INTERNAL:-19848}:9848"
+      - "${PORT_NACOS_RAFT:-19849}:9849"
     volumes:
       - type: bind
         source: ./docker-compose/nacos/logs

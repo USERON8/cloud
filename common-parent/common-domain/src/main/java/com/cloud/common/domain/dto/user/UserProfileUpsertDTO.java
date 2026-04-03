@@ -35,4 +35,8 @@ public class UserProfileUpsertDTO implements Serializable {
   @Min(value = 0, message = "status must be greater than or equal to 0")
   @Max(value = 1, message = "status must be less than or equal to 1")
   private Integer status;
+
+  @Min(value = 0, message = "enabled must be greater than or equal to 0")
+  @Max(value = 1, message = "enabled must be less than or equal to 1")
+  private Integer enabled;
 }

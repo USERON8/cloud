@@ -18,11 +18,12 @@
         <result property="createdAt" column="created_at"/>
         <result property="updatedAt" column="updated_at"/>
         <result property="deleted" column="deleted"/>
+        <result property="version" column="version"/>
     </resultMap>
 
     <sql id="Base_Column_List">
         id,merchant_id,business_license_number,business_license_url,id_card_front_url,id_card_back_url,
         contact_phone,contact_address,auth_status,auth_remark,created_at,
-        updated_at,deleted
+        updated_at,deleted,version
     </sql>
 </mapper>

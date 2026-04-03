@@ -1,18 +1,10 @@
 server:
   port: ${SERVER_PORT:8086}
-  tomcat:
-    threads:
-      max: ${SERVER_TOMCAT_THREADS_MAX:400}
-      min-spare: ${SERVER_TOMCAT_THREADS_MIN_SPARE:20}
-    max-connections: ${SERVER_TOMCAT_MAX_CONNECTIONS:20000}
-    accept-count: ${SERVER_TOMCAT_ACCEPT_COUNT:1000}
+
 dubbo:
-  registry:
-    address: nacos://${NACOS_HOST:127.0.0.1}:${NACOS_PORT:15001}
   protocol:
     port: 20885
-  application:
-    qos-enable: false
+
 spring:
   application:
     name: payment-service
@@ -21,29 +13,14 @@ spring:
   profiles:
     active: dev
     include: rocketmq
-  datasource:
-    type: ${SPRING_DATASOURCE_TYPE:com.alibaba.druid.pool.DruidDataSource}
   cloud:
     nacos:
       discovery:
-        server-addr: ${NACOS_SERVER_ADDR:${NACOS_HOST:127.0.0.1}:${NACOS_PORT:15001}}
-        username: ${NACOS_USERNAME:nacos}
-        password: ${NACOS_PASSWORD:nacos}
+        server-addr: ${NACOS_SERVER_ADDR:${NACOS_HOST:127.0.0.1}:${NACOS_PORT:18848}}
       config:
-        enabled: true
-        server-addr: ${NACOS_SERVER_ADDR:${NACOS_HOST:127.0.0.1}:${NACOS_PORT:15001}}
-        namespace: public
-        group: DEFAULT_GROUP
-        file-extension: yaml
-        shared-configs:
-          - data-id: common.yaml
-            group: DEFAULT_GROUP
-            refresh: true
-        import-check:
-          enabled: false
+        server-addr: ${NACOS_SERVER_ADDR:${NACOS_HOST:127.0.0.1}:${NACOS_PORT:18848}}
 
 rocketmq:
-  name-server: ${ROCKETMQ_NAME_SERVER:${ROCKETMQ_NAMESRV_HOST:127.0.0.1}:${ROCKETMQ_NAMESRV_PORT:20011}}
   producer:
     group: ${ROCKETMQ_PRODUCER_GROUP:payment-success-tx-group}
 
