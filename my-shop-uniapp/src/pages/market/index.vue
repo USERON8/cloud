@@ -14,6 +14,7 @@ import { isAuthenticated } from "../../auth/session";
 import { navigateTo } from "../../router/navigation";
 import { Routes } from "../../router/routes";
 import { formatPrice } from "../../utils/format";
+import { resolveProductImageUrl } from "../../utils/image";
 import { toast } from "../../utils/ui";
 import { mapSearchDocumentToProduct, resolveCartSkuId } from "../../utils/product";
 
@@ -29,6 +30,7 @@ const skuIdCache = new Map<number | string, number | null>();
 const skuLookupCache = new Map<number | string, Promise<number | null>>();
 const initialized = ref(false);
 const latestLoadRequestId = ref(0);
+const failedImageIds = ref<Record<string, boolean>>({});
 
 const loggedIn = computed(() => isAuthenticated());
 const activeKeyword = computed(() => keyword.value.trim());
@@ -40,7 +42,6 @@ const resultsHint = computed(() =>
         ? `Keyword: ${activeKeyword.value}`
         : "Ranked by completed sales today",
 );
-
 
 async function refreshKeywords(seed = ""): Promise<void> {
     const [hotResult, recResult] = await Promise.allSettled([
@@ -97,6 +98,9 @@ async function loadProducts(reset = false): Promise<void> {
             return;
         }
         const items = result.documents.map(mapSearchDocumentToProduct);
+        if (reset) {
+            failedImageIds.value = {};
+        }
         rows.value = reset ? items : rows.value.concat(items);
         hasMore.value = rows.value.length < result.total;
         await refreshKeywords(activeKeyword.value);
@@ -112,6 +116,21 @@ async function loadProducts(reset = false): Promise<void> {
             loading.value = false;
         }
     }
+}
+
+function productImageSrc(item: ProductItem): string {
+    return resolveProductImageUrl(
+        item.imageUrl,
+        item.name,
+        !!failedImageIds.value[String(item.id)],
+    );
+}
+
+function markImageFailed(id: number | string): void {
+    failedImageIds.value = {
+        ...failedImageIds.value,
+        [String(id)]: true,
+    };
 }
 
 function onSearch(): void {
@@ -317,14 +336,11 @@ onShow(() => {
                     class="product-card surface-card"
                 >
                     <image
-                        v-if="item.imageUrl"
-                        :src="item.imageUrl"
+                        :src="productImageSrc(item)"
                         class="product-image"
                         mode="aspectFill"
+                        @error="markImageFailed(item.id)"
                     />
-                    <view v-else class="product-image placeholder"
-                        >No image</view
-                    >
 
                     <view class="product-main">
                         <text class="product-name">{{ item.name }}</text>
@@ -506,14 +522,6 @@ onShow(() => {
     border-radius: 18px;
     background: linear-gradient(180deg, #f7f7f9, #f1f1f4);
     border: 1px solid rgba(20, 20, 20, 0.08);
-}
-
-.product-image.placeholder {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 12px;
-    color: var(--text-muted);
 }
 
 .product-main {
