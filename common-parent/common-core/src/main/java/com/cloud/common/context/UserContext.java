@@ -14,10 +14,7 @@ public class UserContext {
   private Integer status;
   private String clientId;
   private String subject;
-  @Builder.Default
-  private Set<String> roles = Collections.emptySet();
-  @Builder.Default
-  private Set<String> permissions = Collections.emptySet();
-  @Builder.Default
-  private Set<String> scopes = Collections.emptySet();
+  @Builder.Default private Set<String> roles = Collections.emptySet();
+  @Builder.Default private Set<String> permissions = Collections.emptySet();
+  @Builder.Default private Set<String> scopes = Collections.emptySet();
 }

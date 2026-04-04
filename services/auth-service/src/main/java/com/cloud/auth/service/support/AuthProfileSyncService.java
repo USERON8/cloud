@@ -2,6 +2,7 @@ package com.cloud.auth.service.support;
 
 import cn.hutool.core.util.IdUtil;
 import com.cloud.api.user.UserDubboApi;
+import com.cloud.auth.converter.AuthUserConverter;
 import com.cloud.auth.messaging.UserProfileSyncMessageProducer;
 import com.cloud.common.domain.dto.auth.AuthPrincipalDTO;
 import com.cloud.common.domain.dto.auth.RegisterRequestDTO;
@@ -24,6 +25,7 @@ public class AuthProfileSyncService {
   @DubboReference(check = false, timeout = 5000, retries = 0)
   private UserDubboApi userDubboApi;
 
+  private final AuthUserConverter authUserConverter;
   private final UserProfileSyncMessageProducer userProfileSyncMessageProducer;
   private final RemoteCallSupport remoteCallSupport;
 
@@ -45,30 +47,19 @@ public class AuthProfileSyncService {
     if (principal == null) {
       return null;
     }
-    UserProfileUpsertDTO profile = new UserProfileUpsertDTO();
-    profile.setId(principal.getId());
-    profile.setUsername(principal.getUsername());
-    profile.setPhone(request.getPhone());
-    profile.setNickname(request.getNickname());
-    profile.setStatus(principal.getStatus());
+    UserProfileUpsertDTO profile = authUserConverter.toProfileUpsertDTO(principal, request);
     publishUpsert(profile);
-    return toProfileDTO(profile);
+    return authUserConverter.toProfileDTO(profile);
   }
 
   public UserProfileDTO syncGitHubProfile(AuthPrincipalDTO principal, GitHubUserDTO githubUserDTO) {
     if (principal == null) {
       return null;
     }
-    UserProfileUpsertDTO profile = new UserProfileUpsertDTO();
-    profile.setId(principal.getId());
-    profile.setUsername(principal.getUsername());
-    profile.setNickname(githubUserDTO.getDisplayName());
-    profile.setEmail(githubUserDTO.getEmail());
-    profile.setAvatarUrl(githubUserDTO.getAvatarUrl());
-    profile.setStatus(principal.getStatus());
+    UserProfileUpsertDTO profile = authUserConverter.toProfileUpsertDTO(principal, githubUserDTO);
 
     publishUpsert(profile);
-    return toProfileDTO(profile);
+    return authUserConverter.toProfileDTO(profile);
   }
 
   private <T> T invokeUserService(String action, Supplier<T> supplier) {
@@ -97,17 +88,5 @@ public class AuthProfileSyncService {
             .avatarUrl(profileUpsertDTO.getAvatarUrl())
             .status(profileUpsertDTO.getStatus())
             .build());
-  }
-
-  private UserProfileDTO toProfileDTO(UserProfileUpsertDTO profileUpsertDTO) {
-    UserProfileDTO profile = new UserProfileDTO();
-    profile.setId(profileUpsertDTO.getId());
-    profile.setUsername(profileUpsertDTO.getUsername());
-    profile.setPhone(profileUpsertDTO.getPhone());
-    profile.setNickname(profileUpsertDTO.getNickname());
-    profile.setEmail(profileUpsertDTO.getEmail());
-    profile.setAvatarUrl(profileUpsertDTO.getAvatarUrl());
-    profile.setStatus(profileUpsertDTO.getStatus());
-    return profile;
   }
 }

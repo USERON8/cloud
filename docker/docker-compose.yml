@@ -245,6 +245,7 @@ services:
         ipv4_address: 172.28.0.70
     environment:
       NGINX_GATEWAY_UPSTREAM: ${NGINX_GATEWAY_UPSTREAM:-host.docker.internal:8080}
+      NGINX_AUTH_UPSTREAM: ${NGINX_AUTH_UPSTREAM:-host.docker.internal:8081}
     ports:
       - "${PORT_NGINX_HTTP:-18080}:80"      # Compatibility note standardized.
       - "${PORT_NGINX_HTTPS:-18443}:443"    # Compatibility note standardized.
@@ -261,7 +262,7 @@ services:
     command:
       - /bin/sh
       - -lc
-      - envsubst '$$NGINX_GATEWAY_UPSTREAM' < /etc/nginx/nginx.conf > /tmp/nginx-runtime.conf && exec nginx -c /tmp/nginx-runtime.conf -g 'daemon off;'
+      - envsubst '$$NGINX_GATEWAY_UPSTREAM $$NGINX_AUTH_UPSTREAM' < /etc/nginx/nginx.conf > /tmp/nginx-runtime.conf && exec nginx -c /tmp/nginx-runtime.conf -g 'daemon off;'
     depends_on:
       - nacos
 

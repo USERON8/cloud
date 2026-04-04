@@ -7,6 +7,7 @@ import com.cloud.common.enums.ResultCode;
 import com.cloud.common.exception.BizException;
 import com.cloud.common.result.Result;
 import com.cloud.common.security.SecurityPermissionUtils;
+import com.cloud.user.converter.UserProfileCommandConverter;
 import com.cloud.user.module.dto.UserProfilePasswordChangeDTO;
 import com.cloud.user.module.dto.UserProfileUpdateDTO;
 import com.cloud.user.service.MinioService;
@@ -35,6 +36,7 @@ public class UserProfileController {
 
   private final UserService userService;
   private final MinioService minioService;
+  private final UserProfileCommandConverter userProfileCommandConverter;
 
   @GetMapping("/current")
   @PreAuthorize("isAuthenticated()")
@@ -65,20 +67,8 @@ public class UserProfileController {
       throw new BizException(ResultCode.BAD_REQUEST, "at least one profile field is required");
     }
 
-    UserProfileUpsertDTO profileUpsertDTO = new UserProfileUpsertDTO();
+    UserProfileUpsertDTO profileUpsertDTO = userProfileCommandConverter.toUpsertDTO(updateDTO);
     profileUpsertDTO.setId(currentUserId);
-    if (StrUtil.isNotBlank(updateDTO.getNickname())) {
-      profileUpsertDTO.setNickname(updateDTO.getNickname());
-    }
-    if (StrUtil.isNotBlank(updateDTO.getAvatarUrl())) {
-      profileUpsertDTO.setAvatarUrl(updateDTO.getAvatarUrl());
-    }
-    if (StrUtil.isNotBlank(updateDTO.getEmail())) {
-      profileUpsertDTO.setEmail(updateDTO.getEmail());
-    }
-    if (StrUtil.isNotBlank(updateDTO.getPhone())) {
-      profileUpsertDTO.setPhone(updateDTO.getPhone());
-    }
 
     boolean updated = userService.updateProfile(profileUpsertDTO);
     return Result.success("profile updated", updated);

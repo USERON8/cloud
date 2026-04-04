@@ -210,8 +210,8 @@ public class UserAddressServiceImpl extends ServiceImpl<UserAddressMapper, UserA
     if (pageDTO.getUserId() != null) {
       queryWrapper.eq(UserAddress::getUserId, pageDTO.getUserId());
     }
-    if (pageDTO.getConsignee() != null && !pageDTO.getConsignee().isEmpty()) {
-      queryWrapper.like(UserAddress::getConsignee, pageDTO.getConsignee());
+    if (pageDTO.getReceiverName() != null && !pageDTO.getReceiverName().isEmpty()) {
+      queryWrapper.like(UserAddress::getReceiverName, pageDTO.getReceiverName());
     }
     queryWrapper.orderByDesc(UserAddress::getCreatedAt);
 
@@ -346,34 +346,10 @@ public class UserAddressServiceImpl extends ServiceImpl<UserAddressMapper, UserA
   }
 
   private UserAddressDTO toDto(TransactionalUserAddressCacheService.UserAddressCache cached) {
-    UserAddressDTO dto = new UserAddressDTO();
-    dto.setId(cached.id());
-    dto.setUserId(cached.userId());
-    dto.setConsignee(cached.consignee());
-    dto.setPhone(cached.phone());
-    dto.setProvince(cached.province());
-    dto.setCity(cached.city());
-    dto.setDistrict(cached.district());
-    dto.setStreet(cached.street());
-    dto.setDetailAddress(cached.detailAddress());
-    dto.setIsDefault(cached.isDefault());
-    return dto;
+    return userAddressConverter.toDTO(cached);
   }
 
   private UserAddressVO toVo(UserAddressDTO dto) {
-    UserAddressVO vo = new UserAddressVO();
-    vo.setId(dto.getId());
-    vo.setUserId(dto.getUserId());
-    vo.setConsignee(dto.getConsignee());
-    vo.setPhone(dto.getPhone());
-    vo.setProvince(dto.getProvince());
-    vo.setCity(dto.getCity());
-    vo.setDistrict(dto.getDistrict());
-    vo.setStreet(dto.getStreet());
-    vo.setDetailAddress(dto.getDetailAddress());
-    vo.setIsDefault(dto.getIsDefault());
-    vo.setCreatedAt(dto.getCreatedAt());
-    vo.setUpdatedAt(dto.getUpdatedAt());
-    return vo;
+    return userAddressConverter.toVO(dto);
   }
 }

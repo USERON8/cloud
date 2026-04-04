@@ -8,6 +8,7 @@ import com.cloud.common.domain.dto.auth.AuthPrincipalDTO;
 import com.cloud.common.domain.dto.user.AdminDTO;
 import com.cloud.common.domain.dto.user.AdminUpsertRequestDTO;
 import com.cloud.user.converter.AdminConverter;
+import com.cloud.user.converter.AuthPrincipalConverter;
 import com.cloud.user.exception.AdminException;
 import com.cloud.user.mapper.AdminMapper;
 import com.cloud.user.module.entity.Admin;
@@ -33,6 +34,7 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
 
   private final AdminMapper adminMapper;
   private final AdminConverter adminConverter;
+  private final AuthPrincipalConverter authPrincipalConverter;
   private final AuthPrincipalService authPrincipalService;
   private final TransactionalAdminCacheService adminCacheService;
 
@@ -338,13 +340,7 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
   }
 
   private Admin toAdminEntity(AdminUpsertRequestDTO requestDTO) {
-    Admin admin = new Admin();
-    admin.setUsername(requestDTO.getUsername());
-    admin.setRealName(requestDTO.getRealName());
-    admin.setPhone(requestDTO.getPhone());
-    admin.setRole(requestDTO.getRole());
-    admin.setStatus(requestDTO.getStatus());
-    return admin;
+    return adminConverter.toEntity(requestDTO);
   }
 
   private Admin resolveCurrentAdmin(AdminUpsertRequestDTO requestDTO, Admin existingAdmin) {
@@ -363,13 +359,9 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
   }
 
   private AuthPrincipalDTO toAuthPrincipalDTO(Admin admin, String password) {
-    AuthPrincipalDTO authPrincipalDTO = new AuthPrincipalDTO();
-    authPrincipalDTO.setId(admin.getId());
-    authPrincipalDTO.setUsername(admin.getUsername());
+    AuthPrincipalDTO authPrincipalDTO = authPrincipalConverter.toDTO(admin);
     authPrincipalDTO.setPassword(password);
     authPrincipalDTO.setNickname(admin.getRealName());
-    authPrincipalDTO.setPhone(admin.getPhone());
-    authPrincipalDTO.setStatus(admin.getStatus());
     authPrincipalDTO.setRoles(resolveAdminRoles(admin.getRole()));
     return authPrincipalDTO;
   }
@@ -389,13 +381,6 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
   }
 
   private AdminDTO toDTO(TransactionalAdminCacheService.AdminCache cached) {
-    AdminDTO dto = new AdminDTO();
-    dto.setId(cached.id());
-    dto.setUsername(cached.username());
-    dto.setRealName(cached.realName());
-    dto.setPhone(cached.phone());
-    dto.setRole(cached.role());
-    dto.setStatus(cached.status());
-    return dto;
+    return adminConverter.toDTO(cached);
   }
 }

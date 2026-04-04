@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.cloud.common.domain.dto.product.CategoryDTO;
+import com.cloud.product.converter.CategoryConverter;
 import com.cloud.product.mapper.CategoryMapper;
 import com.cloud.product.messaging.ProductSyncMessageProducer;
 import com.cloud.product.module.entity.Category;
@@ -17,7 +18,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
@@ -28,6 +28,7 @@ import org.springframework.util.CollectionUtils;
 public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category>
     implements CategoryService {
 
+  private final CategoryConverter categoryConverter;
   private final CategoryRedisCacheService categoryRedisCacheService;
   private final ProductCatalogService productCatalogService;
   private final ProductSyncMessageProducer productSyncMessageProducer;
@@ -213,19 +214,16 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category>
   @Transactional(rollbackFor = Exception.class)
   public CategoryDTO createCategory(CategoryDTO categoryDTO) {
 
-    Category category = new Category();
-    BeanUtils.copyProperties(categoryDTO, category);
+    Category category = categoryConverter.toEntity(categoryDTO);
     this.save(category);
-    categoryDTO.setId(category.getId());
-    return categoryDTO;
+    return convertToDTO(category);
   }
 
   @Override
   @Transactional(rollbackFor = Exception.class)
   public Boolean updateCategory(CategoryDTO categoryDTO) {
 
-    Category category = new Category();
-    BeanUtils.copyProperties(categoryDTO, category);
+    Category category = categoryConverter.toEntity(categoryDTO);
     boolean updated = this.updateById(category);
     if (updated) {
       syncProductsByCategoryIds(List.of(category.getId()));
@@ -340,8 +338,7 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category>
         continue;
       }
       try {
-        Category category = new Category();
-        BeanUtils.copyProperties(categoryDTO, category);
+        Category category = categoryConverter.toEntity(categoryDTO);
         if (super.save(category)) {
           successCount++;
         }
@@ -356,8 +353,7 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category>
     if (category == null) {
       return null;
     }
-    CategoryDTO dto = new CategoryDTO();
-    BeanUtils.copyProperties(category, dto);
+    CategoryDTO dto = categoryConverter.toDTO(category);
     if (!CollectionUtils.isEmpty(category.getChildren())) {
       dto.setChildren(convertToDTO(category.getChildren()));
     }

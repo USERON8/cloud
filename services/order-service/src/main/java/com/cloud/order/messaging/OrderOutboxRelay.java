@@ -19,7 +19,6 @@ import org.apache.rocketmq.common.message.MessageConst;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.stream.function.StreamBridge;
 import org.springframework.lang.Nullable;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 @Slf4j
@@ -37,6 +36,10 @@ public class OrderOutboxRelay extends AbstractOutboxRelay {
       @Value("${order.timeout.delay-level:16}") int orderTimeoutDelayLevel) {
     super(outboxEventService, outboxProperties, streamBridge, objectMapper, meterRegistry);
     this.orderTimeoutDelayLevel = Math.max(1, orderTimeoutDelayLevel);
+  }
+
+  public void dispatch() {
+    dispatchDueEvents();
   }
 
   @Override

@@ -216,19 +216,6 @@ public class MerchantAuthServiceImpl extends ServiceImpl<MerchantAuthMapper, Mer
   }
 
   private MerchantAuthDTO toDTO(TransactionalMerchantAuthCacheService.MerchantAuthCache cached) {
-    MerchantAuthDTO dto = new MerchantAuthDTO();
-    dto.setId(cached.id());
-    dto.setMerchantId(cached.merchantId());
-    dto.setBusinessLicenseNumber(cached.businessLicenseNumber());
-    dto.setBusinessLicenseUrl(cached.businessLicenseUrl());
-    dto.setIdCardFrontUrl(cached.idCardFrontUrl());
-    dto.setIdCardBackUrl(cached.idCardBackUrl());
-    dto.setContactPhone(cached.contactPhone());
-    dto.setContactAddress(cached.contactAddress());
-    dto.setAuthStatus(cached.authStatus());
-    dto.setAuthRemark(cached.authRemark());
-    dto.setCreatedAt(cached.createdAt());
-    dto.setUpdatedAt(cached.updatedAt());
-    return dto;
+    return merchantAuthConverter.toDTO(cached);
   }
 }

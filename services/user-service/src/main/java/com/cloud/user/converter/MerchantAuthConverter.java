@@ -4,6 +4,7 @@ import com.cloud.common.domain.dto.user.MerchantAuthDTO;
 import com.cloud.common.domain.dto.user.MerchantAuthRequestDTO;
 import com.cloud.common.domain.vo.user.MerchantAuthVO;
 import com.cloud.user.module.entity.MerchantAuth;
+import com.cloud.user.service.cache.TransactionalMerchantAuthCacheService;
 import java.util.List;
 import org.mapstruct.Mapper;
 import org.mapstruct.ReportingPolicy;
@@ -18,6 +19,8 @@ public interface MerchantAuthConverter {
       org.mapstruct.factory.Mappers.getMapper(MerchantAuthConverter.class);
 
   MerchantAuthDTO toDTO(MerchantAuth merchantAuth);
+
+  MerchantAuthDTO toDTO(TransactionalMerchantAuthCacheService.MerchantAuthCache cache);
 
   MerchantAuth toEntity(MerchantAuthDTO merchantAuthDTO);
 

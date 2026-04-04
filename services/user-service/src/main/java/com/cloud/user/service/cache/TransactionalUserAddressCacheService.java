@@ -25,8 +25,8 @@ public class TransactionalUserAddressCacheService {
 
   private static final String FIELD_ID = "id";
   private static final String FIELD_USER_ID = "userId";
-  private static final String FIELD_CONSIGNEE = "consignee";
-  private static final String FIELD_PHONE = "phone";
+  private static final String FIELD_RECEIVER_NAME = "receiver_name";
+  private static final String FIELD_RECEIVER_PHONE = "receiver_phone";
   private static final String FIELD_PROVINCE = "province";
   private static final String FIELD_CITY = "city";
   private static final String FIELD_DISTRICT = "district";
@@ -188,8 +188,8 @@ public class TransactionalUserAddressCacheService {
     if (address.getUserId() != null) {
       fields.put(FIELD_USER_ID, String.valueOf(address.getUserId()));
     }
-    putIfNotBlank(fields, FIELD_CONSIGNEE, address.getConsignee());
-    putIfNotBlank(fields, FIELD_PHONE, address.getPhone());
+    putIfNotBlank(fields, FIELD_RECEIVER_NAME, address.getReceiverName());
+    putIfNotBlank(fields, FIELD_RECEIVER_PHONE, address.getReceiverPhone());
     putIfNotBlank(fields, FIELD_PROVINCE, address.getProvince());
     putIfNotBlank(fields, FIELD_CITY, address.getCity());
     putIfNotBlank(fields, FIELD_DISTRICT, address.getDistrict());
@@ -216,8 +216,8 @@ public class TransactionalUserAddressCacheService {
     return new UserAddressCache(
         id,
         userId,
-        parseString(map.get(FIELD_CONSIGNEE)),
-        parseString(map.get(FIELD_PHONE)),
+        parseString(map.get(FIELD_RECEIVER_NAME)),
+        parseString(map.get(FIELD_RECEIVER_PHONE)),
         parseString(map.get(FIELD_PROVINCE)),
         parseString(map.get(FIELD_CITY)),
         parseString(map.get(FIELD_DISTRICT)),
@@ -267,8 +267,8 @@ public class TransactionalUserAddressCacheService {
   public record UserAddressCache(
       Long id,
       Long userId,
-      String consignee,
-      String phone,
+      String receiverName,
+      String receiverPhone,
       String province,
       String city,
       String district,

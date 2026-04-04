@@ -3,6 +3,7 @@ package com.cloud.auth.service.support;
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.StrUtil;
 import com.cloud.api.auth.AuthDubboApi;
+import com.cloud.auth.converter.AuthUserConverter;
 import com.cloud.auth.module.model.OAuthAccountRecord;
 import com.cloud.common.domain.dto.auth.AuthPrincipalDTO;
 import com.cloud.common.domain.dto.auth.RegisterRequestDTO;
@@ -28,6 +29,7 @@ public class AuthIdentityService {
   @DubboReference(check = false, timeout = 5000, retries = 0)
   private AuthDubboApi authDubboApi;
 
+  private final AuthUserConverter authUserConverter;
   private final AuthProfileSyncService authProfileSyncService;
   private final OAuthAccountCacheService oauthAccountCacheService;
   private final RemoteCallSupport remoteCallSupport;
@@ -142,11 +144,9 @@ public class AuthIdentityService {
       throw new BizException("username already exists");
     }
 
-    AuthPrincipalDTO principal = new AuthPrincipalDTO();
+    AuthPrincipalDTO principal = authUserConverter.toPrincipalDTO(registerRequest);
     principal.setUsername(username);
     principal.setPassword(StrUtil.trim(registerRequest.getPassword()));
-    principal.setPhone(registerRequest.getPhone());
-    principal.setNickname(registerRequest.getNickname());
     principal.setStatus(1);
     principal.setEnabled(1);
     principal.setRoles(List.of("ROLE_USER"));
@@ -227,11 +227,8 @@ public class AuthIdentityService {
   }
 
   private AuthPrincipalDTO createGitHubPrincipal(GitHubUserDTO githubUserDTO) {
-    AuthPrincipalDTO principal = new AuthPrincipalDTO();
+    AuthPrincipalDTO principal = authUserConverter.toPrincipalDTO(githubUserDTO);
     principal.setUsername(buildUniqueGithubUsername(githubUserDTO.getLogin()));
-    principal.setNickname(
-        StrUtil.blankToDefault(githubUserDTO.getDisplayName(), githubUserDTO.getLogin()));
-    principal.setEmail(githubUserDTO.getEmail());
     principal.setPassword(
         "github_oauth2_" + githubUserDTO.getGithubId() + "_" + IdUtil.fastSimpleUUID());
     principal.setStatus(1);
@@ -254,13 +251,7 @@ public class AuthIdentityService {
       String nickname,
       String email,
       String avatarUrl) {
-    UserDTO result = new UserDTO();
-    if (profile != null) {
-      result.setPhone(profile.getPhone());
-      result.setNickname(profile.getNickname());
-      result.setEmail(profile.getEmail());
-      result.setAvatarUrl(profile.getAvatarUrl());
-    }
+    UserDTO result = profile == null ? new UserDTO() : authUserConverter.toUserDTO(profile);
     result.setId(principal.getId());
     result.setUsername(principal.getUsername());
     result.setStatus(principal.getStatus());

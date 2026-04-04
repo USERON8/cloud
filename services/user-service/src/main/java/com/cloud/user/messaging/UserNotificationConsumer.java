@@ -53,12 +53,10 @@ public class UserNotificationConsumer extends AbstractJsonMqConsumer<UserNotific
           case UserNotificationEvent.TYPE_ACTIVATION -> {
             if (event.getUserId() == null || event.getToken() == null) {
               log.warn(
-                  "Notification event missing activation payload: eventId={}",
-                  event.getEventId());
+                  "Notification event missing activation payload: eventId={}", event.getEventId());
               yield true;
             }
-            yield userNotificationService.sendActivationEmail(
-                event.getUserId(), event.getToken());
+            yield userNotificationService.sendActivationEmail(event.getUserId(), event.getToken());
           }
           case UserNotificationEvent.TYPE_STATUS_CHANGE -> {
             if (event.getUserId() == null) {
@@ -72,8 +70,7 @@ public class UserNotificationConsumer extends AbstractJsonMqConsumer<UserNotific
           }
           case UserNotificationEvent.TYPE_BATCH -> {
             if (event.getUserIds() == null || event.getUserIds().isEmpty()) {
-              log.warn(
-                  "Notification event missing batch payload: eventId={}", event.getEventId());
+              log.warn("Notification event missing batch payload: eventId={}", event.getEventId());
               yield true;
             }
             yield userNotificationService.sendBatchNotification(
@@ -81,8 +78,7 @@ public class UserNotificationConsumer extends AbstractJsonMqConsumer<UserNotific
           }
           case UserNotificationEvent.TYPE_SYSTEM -> {
             if (event.getTitle() == null || event.getContent() == null) {
-              log.warn(
-                  "Notification event missing system payload: eventId={}", event.getEventId());
+              log.warn("Notification event missing system payload: eventId={}", event.getEventId());
               yield true;
             }
             yield userNotificationService.sendSystemAnnouncement(

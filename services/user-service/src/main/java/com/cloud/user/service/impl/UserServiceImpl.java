@@ -12,6 +12,7 @@ import com.cloud.common.exception.BizException;
 import com.cloud.common.exception.EntityNotFoundException;
 import com.cloud.common.result.PageResult;
 import com.cloud.common.utils.PageUtils;
+import com.cloud.user.converter.AuthPrincipalConverter;
 import com.cloud.user.converter.UserConverter;
 import com.cloud.user.mapper.UserMapper;
 import com.cloud.user.module.entity.User;
@@ -28,6 +29,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements UserService {
 
   private final UserConverter userConverter;
+  private final AuthPrincipalConverter authPrincipalConverter;
   private final AuthPrincipalService authPrincipalService;
   private final TransactionalUserCacheService userInfoCacheService;
 
@@ -240,13 +242,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
     User existing = getById(profileUpsertDTO.getId());
     if (existing == null) {
-      AuthPrincipalDTO authPrincipalDTO = new AuthPrincipalDTO();
+      AuthPrincipalDTO authPrincipalDTO = authPrincipalConverter.toDTO(profileUpsertDTO);
       authPrincipalDTO.setId(profileUpsertDTO.getId());
-      authPrincipalDTO.setUsername(profileUpsertDTO.getUsername());
-      authPrincipalDTO.setNickname(profileUpsertDTO.getNickname());
-      authPrincipalDTO.setEmail(profileUpsertDTO.getEmail());
-      authPrincipalDTO.setPhone(profileUpsertDTO.getPhone());
-      authPrincipalDTO.setStatus(profileUpsertDTO.getStatus());
       authPrincipalDTO.setPassword(
           "Tmp#" + UUID.randomUUID().toString().replace("-", "").substring(0, 12));
       authPrincipalDTO.setRoles(List.of("ROLE_USER"));
@@ -566,14 +563,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     if (cached == null || cached.id() == null) {
       return null;
     }
-    UserDTO dto = new UserDTO();
-    dto.setId(cached.id());
-    dto.setUsername(cached.username());
-    dto.setPhone(cached.phone());
-    dto.setNickname(cached.nickname());
-    dto.setAvatarUrl(cached.avatarUrl());
-    dto.setEmail(cached.email());
-    dto.setStatus(cached.status());
+    UserDTO dto = userConverter.toDTO(cached);
     dto.setRoles(authPrincipalService.getRoleCodesByUserId(cached.id()));
     return dto;
   }
@@ -601,80 +591,40 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
   }
 
   private User toUserEntity(UserUpsertRequestDTO requestDTO) {
-    User user = new User();
-    user.setUsername(requestDTO.getUsername());
-    user.setPhone(requestDTO.getPhone());
-    user.setNickname(requestDTO.getNickname());
-    user.setAvatarUrl(requestDTO.getAvatarUrl());
-    user.setEmail(requestDTO.getEmail());
-    user.setStatus(requestDTO.getStatus());
-    return user;
+    return userConverter.toEntity(requestDTO);
   }
 
   private User toUserEntity(UserProfileUpsertDTO profileUpsertDTO) {
-    User user = new User();
-    user.setId(profileUpsertDTO.getId());
-    user.setUsername(profileUpsertDTO.getUsername());
-    user.setPhone(profileUpsertDTO.getPhone());
-    user.setNickname(profileUpsertDTO.getNickname());
-    user.setAvatarUrl(profileUpsertDTO.getAvatarUrl());
-    user.setEmail(profileUpsertDTO.getEmail());
-    user.setStatus(profileUpsertDTO.getStatus());
-    return user;
+    return userConverter.toEntity(profileUpsertDTO);
   }
 
   private UserProfileDTO toProfileDTO(User user) {
-    if (user == null) {
-      return null;
-    }
-    UserProfileDTO profile = new UserProfileDTO();
-    profile.setId(user.getId());
-    profile.setUsername(user.getUsername());
-    profile.setPhone(user.getPhone());
-    profile.setNickname(user.getNickname());
-    profile.setAvatarUrl(user.getAvatarUrl());
-    profile.setEmail(user.getEmail());
-    profile.setStatus(user.getStatus());
-    return profile;
+    return userConverter.toProfileDTO(user);
   }
 
   private UserProfileDTO toProfileDTO(TransactionalUserCacheService.UserCache cached) {
     if (cached == null || cached.id() == null) {
       return null;
     }
-    UserProfileDTO profile = new UserProfileDTO();
-    profile.setId(cached.id());
-    profile.setUsername(cached.username());
-    profile.setPhone(cached.phone());
-    profile.setNickname(cached.nickname());
-    profile.setAvatarUrl(cached.avatarUrl());
-    profile.setEmail(cached.email());
-    profile.setStatus(cached.status());
-    return profile;
+    return userConverter.toProfileDTO(cached);
   }
 
   private AuthPrincipalDTO toCreatePrincipalDTO(
       UserUpsertRequestDTO requestDTO, Long userId, List<String> roles) {
-    AuthPrincipalDTO authPrincipalDTO = new AuthPrincipalDTO();
+    AuthPrincipalDTO authPrincipalDTO = authPrincipalConverter.toDTO(requestDTO);
     authPrincipalDTO.setId(userId);
-    authPrincipalDTO.setUsername(requestDTO.getUsername());
-    authPrincipalDTO.setPassword(requestDTO.getPassword());
-    authPrincipalDTO.setNickname(requestDTO.getNickname());
-    authPrincipalDTO.setEmail(requestDTO.getEmail());
-    authPrincipalDTO.setPhone(requestDTO.getPhone());
-    authPrincipalDTO.setStatus(requestDTO.getStatus());
     List<String> safeRoles = roles == null || roles.isEmpty() ? List.of("ROLE_USER") : roles;
+    authPrincipalDTO.setPassword(requestDTO.getPassword());
     authPrincipalDTO.setRoles(safeRoles);
     return authPrincipalDTO;
   }
 
   private AuthPrincipalDTO toAuthPrincipalDTO(
       Long userId, UserUpsertRequestDTO requestDTO, User existingUser) {
-    AuthPrincipalDTO authPrincipalDTO = new AuthPrincipalDTO();
+    AuthPrincipalDTO authPrincipalDTO = authPrincipalConverter.toDTO(requestDTO);
     authPrincipalDTO.setId(userId);
     authPrincipalDTO.setUsername(
         StrUtil.blankToDefault(requestDTO.getUsername(), existingUser.getUsername()));
-    authPrincipalDTO.setPassword(requestDTO.getPassword());
     authPrincipalDTO.setNickname(
         StrUtil.blankToDefault(requestDTO.getNickname(), existingUser.getNickname()));
     authPrincipalDTO.setEmail(
@@ -683,6 +633,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         requestDTO.getPhone() == null ? existingUser.getPhone() : requestDTO.getPhone());
     authPrincipalDTO.setStatus(
         requestDTO.getStatus() == null ? existingUser.getStatus() : requestDTO.getStatus());
+    authPrincipalDTO.setPassword(requestDTO.getPassword());
     authPrincipalDTO.setRoles(requestDTO.getRoles());
     return authPrincipalDTO;
   }

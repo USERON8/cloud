@@ -7,6 +7,7 @@ import com.cloud.common.annotation.DistributedLock;
 import com.cloud.common.domain.dto.auth.AuthPrincipalDTO;
 import com.cloud.common.domain.dto.user.MerchantDTO;
 import com.cloud.common.domain.dto.user.MerchantUpsertRequestDTO;
+import com.cloud.user.converter.AuthPrincipalConverter;
 import com.cloud.user.converter.MerchantConverter;
 import com.cloud.user.exception.MerchantException;
 import com.cloud.user.mapper.MerchantAuthMapper;
@@ -45,6 +46,7 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant>
 
   private final MerchantAuthMapper merchantAuthMapper;
   private final UserMapper userMapper;
+  private final AuthPrincipalConverter authPrincipalConverter;
   private final MerchantConverter merchantConverter;
   private final AuthPrincipalService authPrincipalService;
   private final TransactionalMerchantCacheService merchantCacheService;
@@ -501,14 +503,7 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant>
   }
 
   private MerchantDTO toEnrichedDTO(TransactionalMerchantCacheService.MerchantCache cached) {
-    Merchant merchant = new Merchant();
-    merchant.setId(cached.id());
-    merchant.setUsername(cached.username());
-    merchant.setMerchantName(cached.merchantName());
-    merchant.setPhone(cached.phone());
-    merchant.setStatus(cached.status());
-    merchant.setAuditStatus(cached.auditStatus());
-    return toEnrichedDTO(merchant);
+    return toEnrichedDTO(merchantConverter.toDTO(cached));
   }
 
   private List<MerchantDTO> toEnrichedDTOList(List<Merchant> merchants) {
@@ -577,12 +572,28 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant>
   }
 
   private Merchant toMerchantEntity(MerchantUpsertRequestDTO requestDTO) {
-    Merchant merchant = new Merchant();
-    merchant.setUsername(requestDTO.getUsername());
-    merchant.setMerchantName(requestDTO.getMerchantName());
-    merchant.setPhone(requestDTO.getPhone());
-    merchant.setStatus(requestDTO.getStatus());
-    return merchant;
+    return merchantConverter.toEntity(requestDTO);
+  }
+
+  private MerchantDTO toEnrichedDTO(MerchantDTO merchantDTO) {
+    if (merchantDTO == null || merchantDTO.getId() == null) {
+      return merchantDTO;
+    }
+
+    MerchantAuth merchantAuth =
+        merchantAuthMapper.selectOne(
+            new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<MerchantAuth>()
+                .eq(MerchantAuth::getMerchantId, merchantDTO.getId()));
+    if (merchantAuth != null) {
+      merchantDTO.setAuthStatus(merchantAuth.getAuthStatus());
+    }
+
+    User user = userMapper.selectById(merchantDTO.getId());
+    if (user != null) {
+      merchantDTO.setEmail(user.getEmail());
+    }
+    merchantDTO.setRoles(authPrincipalService.getRoleCodesByUserId(merchantDTO.getId()));
+    return merchantDTO;
   }
 
   private Merchant resolveCurrentMerchant(MerchantUpsertRequestDTO requestDTO, Merchant existing) {
@@ -614,14 +625,10 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant>
   }
 
   private AuthPrincipalDTO toAuthPrincipalDTO(Merchant merchant, String email, String password) {
-    AuthPrincipalDTO authPrincipalDTO = new AuthPrincipalDTO();
-    authPrincipalDTO.setId(merchant.getId());
-    authPrincipalDTO.setUsername(merchant.getUsername());
+    AuthPrincipalDTO authPrincipalDTO = authPrincipalConverter.toDTO(merchant);
     authPrincipalDTO.setPassword(password);
     authPrincipalDTO.setNickname(merchant.getMerchantName());
     authPrincipalDTO.setEmail(email);
-    authPrincipalDTO.setPhone(merchant.getPhone());
-    authPrincipalDTO.setStatus(merchant.getStatus());
     authPrincipalDTO.setRoles(List.of("ROLE_USER", "ROLE_MERCHANT"));
     return authPrincipalDTO;
   }
