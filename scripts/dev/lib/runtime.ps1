@@ -1,5 +1,133 @@
 $ErrorActionPreference = "Stop"
 
+function Read-EnvFile {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Path
+    )
+
+    $values = [ordered]@{}
+    if (-not (Test-Path $Path)) {
+        return $values
+    }
+
+    foreach ($line in Get-Content $Path) {
+        $trimmed = $line.Trim()
+        if ([string]::IsNullOrWhiteSpace($trimmed) -or $trimmed.StartsWith("#")) {
+            continue
+        }
+        $parts = $trimmed -split "=", 2
+        if ($parts.Count -ne 2) {
+            continue
+        }
+        $values[$parts[0].Trim()] = $parts[1]
+    }
+
+    return $values
+}
+
+function Write-EnvFile {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Path,
+        [Parameter(Mandatory = $true)]
+        [hashtable]$Values
+    )
+
+    $content = foreach ($key in $Values.Keys) {
+        "{0}={1}" -f $key, $Values[$key]
+    }
+    Set-Content -Path $Path -Value $content -Encoding UTF8
+}
+
+function Set-EnvValueIfMissing {
+    param(
+        [Parameter(Mandatory = $true)]
+        [hashtable]$Values,
+        [Parameter(Mandatory = $true)]
+        [string]$Name,
+        [string]$Value = ""
+    )
+
+    if (-not $Values.Contains($Name) -or [string]::IsNullOrWhiteSpace([string]$Values[$Name])) {
+        $Values[$Name] = $Value
+    }
+}
+
+function Import-EnvMap {
+    param(
+        [Parameter(Mandatory = $true)]
+        [hashtable]$Values
+    )
+
+    foreach ($key in $Values.Keys) {
+        Set-Item -Path ("Env:{0}" -f $key) -Value ([string]$Values[$key])
+    }
+}
+
+function Sync-EnvironmentFiles {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Root,
+        [switch]$ImportProcessEnvironment
+    )
+
+    $rootEnvPath = Join-Path $Root ".env"
+    $dockerEnvPath = Join-Path $Root "docker\.env"
+    $frontendDevEnvPath = Join-Path $Root "my-shop-uniapp\.env.development"
+    $frontendProdEnvPath = Join-Path $Root "my-shop-uniapp\.env.production"
+
+    $rootEnv = Read-EnvFile -Path $rootEnvPath
+    $dockerEnv = Read-EnvFile -Path $dockerEnvPath
+
+    foreach ($key in $rootEnv.Keys) {
+        $dockerEnv[$key] = $rootEnv[$key]
+    }
+
+    $cpolarDomain = [string]($rootEnv["CPOLAR_DOMAIN"])
+    $nginxHttpPort = if ($dockerEnv.Contains("PORT_NGINX_HTTP")) { [string]$dockerEnv["PORT_NGINX_HTTP"] } else { "18080" }
+    $localGatewayBaseUrl = "http://127.0.0.1:{0}" -f $nginxHttpPort
+
+    Set-EnvValueIfMissing -Values $dockerEnv -Name "NGINX_GATEWAY_UPSTREAM" -Value "host.docker.internal:8080"
+    Set-EnvValueIfMissing -Values $dockerEnv -Name "NGINX_AUTH_UPSTREAM" -Value "host.docker.internal:8081"
+
+    if (-not [string]::IsNullOrWhiteSpace($cpolarDomain)) {
+        Set-EnvValueIfMissing -Values $dockerEnv -Name "CPOLAR_PUBLIC_BASE_URL" -Value $cpolarDomain
+        Set-EnvValueIfMissing -Values $dockerEnv -Name "CPOLAR_FRONTEND_BASE_URL" -Value $cpolarDomain
+        Set-EnvValueIfMissing -Values $dockerEnv -Name "ALIPAY_NOTIFY_URL" -Value ("{0}/api/v1/payment/alipay/notify" -f $dockerEnv["CPOLAR_PUBLIC_BASE_URL"])
+        Set-EnvValueIfMissing -Values $dockerEnv -Name "ALIPAY_RETURN_URL" -Value ("{0}/#/pages/app/payments/index" -f $dockerEnv["CPOLAR_FRONTEND_BASE_URL"])
+        Set-EnvValueIfMissing -Values $dockerEnv -Name "GITHUB_REDIRECT_URI" -Value ("{0}/login/oauth2/code/github" -f $dockerEnv["CPOLAR_PUBLIC_BASE_URL"])
+        Set-EnvValueIfMissing -Values $dockerEnv -Name "APP_OAUTH2_GITHUB_ERROR_URL" -Value ("{0}/auth/error" -f $dockerEnv["CPOLAR_FRONTEND_BASE_URL"])
+        Set-EnvValueIfMissing -Values $dockerEnv -Name "APP_OAUTH2_WEB_REDIRECT_URIS" -Value (
+            "{0}/callback,http://127.0.0.1:{1}/callback,http://127.0.0.1:3000/callback,http://127.0.0.1:5173/callback,http://localhost:5173/callback" -f
+            $dockerEnv["CPOLAR_PUBLIC_BASE_URL"],
+            $nginxHttpPort
+        )
+    }
+
+    Write-EnvFile -Path $dockerEnvPath -Values $dockerEnv
+
+    $frontendEnv = [ordered]@{
+        VITE_API_BASE_URL       = if (-not [string]::IsNullOrWhiteSpace([string]$dockerEnv["CPOLAR_PUBLIC_BASE_URL"])) { [string]$dockerEnv["CPOLAR_PUBLIC_BASE_URL"] } else { $localGatewayBaseUrl }
+        VITE_DEV_PROXY_TARGET   = $localGatewayBaseUrl
+        VITE_CPOLAR_DOMAIN      = [string]$dockerEnv["CPOLAR_PUBLIC_BASE_URL"]
+        VITE_OAUTH_CLIENT_ID    = "web-client"
+        VITE_OAUTH_REDIRECT_URI = if (-not [string]::IsNullOrWhiteSpace([string]$dockerEnv["CPOLAR_PUBLIC_BASE_URL"])) { "{0}/callback" -f $dockerEnv["CPOLAR_PUBLIC_BASE_URL"] } else { "{0}/callback" -f $localGatewayBaseUrl }
+        VITE_SEARCH_FALLBACK_TIMEOUT = "5000"
+    }
+
+    Write-EnvFile -Path $frontendDevEnvPath -Values $frontendEnv
+    Write-EnvFile -Path $frontendProdEnvPath -Values $frontendEnv
+
+    if ($ImportProcessEnvironment) {
+        Import-EnvMap -Values $dockerEnv
+        Import-EnvMap -Values $frontendEnv
+    }
+
+    Write-Host ("ENV_SYNC root={0} docker={1} frontend={2}" -f $rootEnvPath, $dockerEnvPath, $frontendDevEnvPath)
+    return $dockerEnv
+}
+
 function Get-DockerEnvValue {
     param(
         [Parameter(Mandatory = $true)]
@@ -87,6 +215,8 @@ function Set-ServiceRuntimeEnvironment {
         [Parameter(Mandatory = $true)]
         [string]$Root
     )
+
+    $repoEnv = Sync-EnvironmentFiles -Root $Root -ImportProcessEnvironment
 
     $nacosPort = Get-DockerPortValue -Root $Root -Name "PORT_NACOS_HTTP" -DefaultValue 18848
     $nacosGrpcPort = Get-DockerPortValue -Root $Root -Name "PORT_NACOS_GRPC" -DefaultValue ($nacosPort + 1000)

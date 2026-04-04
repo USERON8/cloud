@@ -2,6 +2,7 @@ package com.cloud.product.service.support;
 
 import com.cloud.common.domain.vo.product.SkuDetailVO;
 import com.cloud.common.domain.vo.product.SpuDetailVO;
+import com.cloud.product.converter.ProductDetailConverter;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import jakarta.annotation.PostConstruct;
@@ -31,6 +32,7 @@ public class ProductDetailCacheService {
   private static final String HASH_FIELD_SKUS = "skus";
 
   private final RedisTemplate<String, Object> redisTemplate;
+  private final ProductDetailConverter productDetailConverter;
 
   @Value("${product.cache.guard.detail-ttl-seconds:1800}")
   private long detailTtlSeconds;
@@ -48,9 +50,12 @@ public class ProductDetailCacheService {
   private final TaskScheduler taskScheduler;
 
   public ProductDetailCacheService(
-      RedisTemplate<String, Object> redisTemplate, TaskScheduler taskScheduler) {
+      RedisTemplate<String, Object> redisTemplate,
+      TaskScheduler taskScheduler,
+      ProductDetailConverter productDetailConverter) {
     this.redisTemplate = redisTemplate;
     this.taskScheduler = taskScheduler;
+    this.productDetailConverter = productDetailConverter;
   }
 
   @PostConstruct
@@ -168,28 +173,7 @@ public class ProductDetailCacheService {
   }
 
   private SpuDetailVO copyBase(SpuDetailVO source) {
-    SpuDetailVO target = new SpuDetailVO();
-    target.setSpuId(source.getSpuId());
-    target.setSpuName(source.getSpuName());
-    target.setSubtitle(source.getSubtitle());
-    target.setCategoryId(source.getCategoryId());
-    target.setCategoryName(source.getCategoryName());
-    target.setBrandId(source.getBrandId());
-    target.setBrandName(source.getBrandName());
-    target.setMerchantId(source.getMerchantId());
-    target.setShopName(source.getShopName());
-    target.setStatus(source.getStatus());
-    target.setDescription(source.getDescription());
-    target.setMainImage(source.getMainImage());
-    target.setTags(source.getTags());
-    target.setRating(source.getRating());
-    target.setReviewCount(source.getReviewCount());
-    target.setRecommended(source.getRecommended());
-    target.setIsHot(source.getIsHot());
-    target.setCreatedAt(source.getCreatedAt());
-    target.setUpdatedAt(source.getUpdatedAt());
-    target.setSkus(null);
-    return target;
+    return productDetailConverter.copyBase(source);
   }
 
   private long addJitter(long baseSeconds, long jitterSeconds) {

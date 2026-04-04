@@ -4,6 +4,7 @@ import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cloud.common.result.PageResult;
+import com.cloud.product.converter.ProductItemConverter;
 import com.cloud.product.dto.ProductItemDTO;
 import com.cloud.product.mapper.SkuMapper;
 import com.cloud.product.mapper.SpuMapper;
@@ -26,6 +27,7 @@ public class ProductQueryServiceImpl implements ProductQueryService {
 
   private static final Integer ACTIVE_STATUS = 1;
 
+  private final ProductItemConverter productItemConverter;
   private final SpuMapper spuMapper;
   private final SkuMapper skuMapper;
 
@@ -115,17 +117,7 @@ public class ProductQueryServiceImpl implements ProductQueryService {
       if (sku == null) {
         continue;
       }
-      ProductItemDTO item = new ProductItemDTO();
-      item.setId(spu.getId());
-      item.setShopId(spu.getMerchantId());
-      item.setName(spu.getSpuName());
-      item.setCategoryId(spu.getCategoryId());
-      item.setBrandId(spu.getBrandId());
-      item.setStatus(spu.getStatus());
-      item.setDescription(spu.getDescription());
-
-      item.setPrice(sku.getSalePrice());
-      item.setImageUrl(sku.getImageUrl());
+      ProductItemDTO item = productItemConverter.toDTO(spu, sku);
       if (item.getImageUrl() == null) {
         item.setImageUrl(spu.getMainImage());
       }

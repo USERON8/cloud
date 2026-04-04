@@ -4,6 +4,7 @@ import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.cloud.common.domain.dto.auth.AuthPrincipalDTO;
 import com.cloud.common.exception.BusinessException;
+import com.cloud.user.converter.AuthPrincipalConverter;
 import com.cloud.user.mapper.UserMapper;
 import com.cloud.user.module.entity.User;
 import java.util.Collection;
@@ -22,6 +23,7 @@ public class AuthPrincipalService {
   private final RoleAssignmentService roleAssignmentService;
   private final PermissionQueryService permissionQueryService;
   private final PasswordEncoder passwordEncoder;
+  private final AuthPrincipalConverter authPrincipalConverter;
 
   @Transactional(readOnly = true)
   public void assertUsernameAvailable(String username, Long currentUserId) {
@@ -214,15 +216,7 @@ public class AuthPrincipalService {
     if (user == null) {
       return null;
     }
-    AuthPrincipalDTO dto = new AuthPrincipalDTO();
-    dto.setId(user.getId());
-    dto.setUsername(user.getUsername());
-    dto.setPassword(user.getPassword());
-    dto.setNickname(user.getNickname());
-    dto.setEmail(user.getEmail());
-    dto.setPhone(user.getPhone());
-    dto.setStatus(user.getStatus());
-    dto.setEnabled(user.getEnabled());
+    AuthPrincipalDTO dto = authPrincipalConverter.toDTO(user);
     dto.setRoles(roleAssignmentService.getRoleCodesByUserId(user.getId()));
     dto.setPermissions(permissionQueryService.getPermissionCodesByUserId(user.getId()));
     return dto;

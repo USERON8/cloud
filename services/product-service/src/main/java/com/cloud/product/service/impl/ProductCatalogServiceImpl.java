@@ -8,6 +8,7 @@ import com.cloud.common.domain.dto.product.SpuDTO;
 import com.cloud.common.domain.vo.product.SkuDetailVO;
 import com.cloud.common.domain.vo.product.SpuDetailVO;
 import com.cloud.common.exception.BusinessException;
+import com.cloud.product.converter.ProductDetailConverter;
 import com.cloud.product.mapper.BrandMapper;
 import com.cloud.product.mapper.CategoryMapper;
 import com.cloud.product.mapper.ProductReviewMapper;
@@ -45,6 +46,7 @@ public class ProductCatalogServiceImpl implements ProductCatalogService {
 
   private final SpuMapper spuMapper;
   private final SkuMapper skuMapper;
+  private final ProductDetailConverter productDetailConverter;
   private final CategoryMapper categoryMapper;
   private final BrandMapper brandMapper;
   private final ShopMapper shopMapper;
@@ -246,37 +248,12 @@ public class ProductCatalogServiceImpl implements ProductCatalogService {
   }
 
   private Spu toSpuEntity(SpuDTO dto) {
-    Spu spu = new Spu();
-    if (dto.getSpuId() != null) {
-      spu.setId(dto.getSpuId());
-    }
-    spu.setSpuName(dto.getSpuName());
-    spu.setSubtitle(dto.getSubtitle());
-    spu.setCategoryId(dto.getCategoryId());
-    spu.setBrandId(dto.getBrandId());
-    spu.setMerchantId(dto.getMerchantId());
-    spu.setStatus(dto.getStatus());
-    spu.setDescription(dto.getDescription());
-    spu.setMainImage(dto.getMainImage());
-    spu.setMainImageFile(dto.getMainImageFile());
-    return spu;
+    return productDetailConverter.toEntity(dto);
   }
 
   private Sku toSkuEntity(Long spuId, SkuDTO dto) {
-    Sku sku = new Sku();
-    if (dto.getSkuId() != null) {
-      sku.setId(dto.getSkuId());
-    }
+    Sku sku = productDetailConverter.toEntity(dto);
     sku.setSpuId(spuId);
-    sku.setSkuCode(dto.getSkuCode());
-    sku.setSkuName(dto.getSkuName());
-    sku.setSpecJson(dto.getSpecJson());
-    sku.setSalePrice(dto.getSalePrice());
-    sku.setMarketPrice(dto.getMarketPrice());
-    sku.setCostPrice(dto.getCostPrice());
-    sku.setStatus(dto.getStatus());
-    sku.setImageUrl(dto.getImageUrl());
-    sku.setImageFile(dto.getImageFile());
     return sku;
   }
 
@@ -287,20 +264,10 @@ public class ProductCatalogServiceImpl implements ProductCatalogService {
       Map<Long, Brand> brandById,
       Map<Long, Shop> shopByMerchantId,
       Map<Long, ReviewAggregate> reviewAggregateBySpuId) {
-    SpuDetailVO vo = new SpuDetailVO();
-    vo.setSpuId(spu.getId());
-    vo.setSpuName(spu.getSpuName());
-    vo.setSubtitle(spu.getSubtitle());
-    vo.setCategoryId(spu.getCategoryId());
+    SpuDetailVO vo = productDetailConverter.toSpuDetailVO(spu);
     vo.setCategoryName(resolveCategoryName(spu.getCategoryId(), categoryById));
-    vo.setBrandId(spu.getBrandId());
     vo.setBrandName(resolveBrandName(spu.getBrandId(), brandById));
-    vo.setMerchantId(spu.getMerchantId());
     vo.setShopName(resolveShopName(spu.getMerchantId(), shopByMerchantId));
-    vo.setStatus(spu.getStatus());
-    vo.setDescription(spu.getDescription());
-    vo.setMainImage(spu.getMainImage());
-    vo.setMainImageFile(spu.getMainImageFile());
     ReviewAggregate reviewAggregate =
         reviewAggregateBySpuId == null ? null : reviewAggregateBySpuId.get(spu.getId());
     vo.setTags(reviewAggregate == null ? null : reviewAggregate.tags());
@@ -308,8 +275,6 @@ public class ProductCatalogServiceImpl implements ProductCatalogService {
     vo.setReviewCount(reviewAggregate == null ? 0 : reviewAggregate.reviewCount());
     vo.setRecommended(resolveBrandFlag(spu.getBrandId(), brandById, Brand::getIsRecommended));
     vo.setIsHot(resolveBrandFlag(spu.getBrandId(), brandById, Brand::getIsHot));
-    vo.setCreatedAt(spu.getCreatedAt());
-    vo.setUpdatedAt(spu.getUpdatedAt());
 
     List<SkuDetailVO> skuDetails = new ArrayList<>();
     for (Sku sku : skus) {
@@ -538,20 +503,6 @@ public class ProductCatalogServiceImpl implements ProductCatalogService {
   }
 
   private SkuDetailVO toSkuDetail(Sku sku) {
-    SkuDetailVO vo = new SkuDetailVO();
-    vo.setSkuId(sku.getId());
-    vo.setSpuId(sku.getSpuId());
-    vo.setSkuCode(sku.getSkuCode());
-    vo.setSkuName(sku.getSkuName());
-    vo.setSpecJson(sku.getSpecJson());
-    vo.setSalePrice(sku.getSalePrice());
-    vo.setMarketPrice(sku.getMarketPrice());
-    vo.setCostPrice(sku.getCostPrice());
-    vo.setStatus(sku.getStatus());
-    vo.setImageUrl(sku.getImageUrl());
-    vo.setImageFile(sku.getImageFile());
-    vo.setCreatedAt(sku.getCreatedAt());
-    vo.setUpdatedAt(sku.getUpdatedAt());
-    return vo;
+    return productDetailConverter.toSkuDetailVO(sku);
   }
 }

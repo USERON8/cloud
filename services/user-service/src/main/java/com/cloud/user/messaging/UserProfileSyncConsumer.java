@@ -4,6 +4,7 @@ import com.cloud.common.domain.dto.user.UserProfileUpsertDTO;
 import com.cloud.common.messaging.consumer.AbstractJsonMqConsumer;
 import com.cloud.common.messaging.event.UserProfileSyncEvent;
 import com.cloud.common.metrics.TradeMetrics;
+import com.cloud.user.converter.UserProfileCommandConverter;
 import com.cloud.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,6 +24,7 @@ public class UserProfileSyncConsumer extends AbstractJsonMqConsumer<UserProfileS
 
   private final UserService userService;
   private final TradeMetrics tradeMetrics;
+  private final UserProfileCommandConverter userProfileCommandConverter;
 
   @Override
   protected void doConsume(UserProfileSyncEvent event, MessageExt msgExt) {
@@ -30,14 +32,8 @@ public class UserProfileSyncConsumer extends AbstractJsonMqConsumer<UserProfileS
       tradeMetrics.incrementMessageConsume("user_profile_sync", "failed");
       return;
     }
-    UserProfileUpsertDTO command = new UserProfileUpsertDTO();
+    UserProfileUpsertDTO command = userProfileCommandConverter.toUpsertDTO(event);
     command.setId(event.getUserId());
-    command.setUsername(event.getUsername());
-    command.setPhone(event.getPhone());
-    command.setNickname(event.getNickname());
-    command.setEmail(event.getEmail());
-    command.setAvatarUrl(event.getAvatarUrl());
-    command.setStatus(event.getStatus());
     userService.createProfile(command);
   }
 

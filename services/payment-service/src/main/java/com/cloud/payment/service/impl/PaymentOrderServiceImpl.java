@@ -10,6 +10,7 @@ import com.cloud.common.domain.vo.payment.PaymentRefundVO;
 import com.cloud.common.enums.ResultCode;
 import com.cloud.common.exception.BusinessException;
 import com.cloud.common.metrics.TradeMetrics;
+import com.cloud.payment.converter.PaymentOrderConverter;
 import com.cloud.payment.mapper.PaymentCallbackLogMapper;
 import com.cloud.payment.mapper.PaymentOrderMapper;
 import com.cloud.payment.mapper.PaymentRefundMapper;
@@ -42,6 +43,7 @@ public class PaymentOrderServiceImpl implements PaymentOrderService {
   private final PaymentOrderMapper paymentOrderMapper;
   private final PaymentRefundMapper paymentRefundMapper;
   private final PaymentCallbackLogMapper paymentCallbackLogMapper;
+  private final PaymentOrderConverter paymentOrderConverter;
   private final PaymentCompensationService paymentCompensationService;
   private final OrderStatusRemoteService orderStatusRemoteService;
   private final PaymentOrderStateSupport paymentOrderStateSupport;
@@ -107,15 +109,8 @@ public class PaymentOrderServiceImpl implements PaymentOrderService {
       throw new BusinessException("duplicate payment request");
     }
 
-    PaymentOrderEntity entity = new PaymentOrderEntity();
-    entity.setPaymentNo(command.getPaymentNo());
-    entity.setMainOrderNo(command.getMainOrderNo());
-    entity.setSubOrderNo(command.getSubOrderNo());
-    entity.setUserId(command.getUserId());
-    entity.setAmount(command.getAmount());
-    entity.setChannel(command.getChannel());
+    PaymentOrderEntity entity = paymentOrderConverter.toEntity(command);
     entity.setStatus("CREATED");
-    entity.setIdempotencyKey(command.getIdempotencyKey());
     paymentCompensationService.initializePaymentOrderCompensation(entity);
     paymentOrderMapper.insert(entity);
     paymentSecurityCacheService.markIdempotent(orderKey, command.getIdempotencyKey());
@@ -303,14 +298,8 @@ public class PaymentOrderServiceImpl implements PaymentOrderService {
     }
     validateRefundRequest(command, paymentOrder);
 
-    PaymentRefundEntity entity = new PaymentRefundEntity();
-    entity.setRefundNo(command.getRefundNo());
-    entity.setPaymentNo(command.getPaymentNo());
-    entity.setAfterSaleNo(command.getAfterSaleNo());
-    entity.setRefundAmount(command.getRefundAmount());
-    entity.setReason(command.getReason());
+    PaymentRefundEntity entity = paymentOrderConverter.toEntity(command);
     entity.setStatus("REFUNDING");
-    entity.setIdempotencyKey(command.getIdempotencyKey());
     entity.setRetryCount(0);
     entity.setNextRetryAt(LocalDateTime.now());
     paymentRefundMapper.insert(entity);
@@ -439,37 +428,11 @@ public class PaymentOrderServiceImpl implements PaymentOrderService {
   }
 
   private PaymentOrderVO toOrderVO(PaymentOrderEntity entity) {
-    PaymentOrderVO vo = new PaymentOrderVO();
-    vo.setId(entity.getId());
-    vo.setPaymentNo(entity.getPaymentNo());
-    vo.setMainOrderNo(entity.getMainOrderNo());
-    vo.setSubOrderNo(entity.getSubOrderNo());
-    vo.setUserId(entity.getUserId());
-    vo.setAmount(entity.getAmount());
-    vo.setChannel(entity.getChannel());
-    vo.setStatus(entity.getStatus());
-    vo.setProviderTxnNo(entity.getProviderTxnNo());
-    vo.setIdempotencyKey(entity.getIdempotencyKey());
-    vo.setPaidAt(entity.getPaidAt());
-    vo.setCreatedAt(entity.getCreatedAt());
-    vo.setUpdatedAt(entity.getUpdatedAt());
-    return vo;
+    return paymentOrderConverter.toVO(entity);
   }
 
   private PaymentRefundVO toRefundVO(PaymentRefundEntity entity) {
-    PaymentRefundVO vo = new PaymentRefundVO();
-    vo.setId(entity.getId());
-    vo.setRefundNo(entity.getRefundNo());
-    vo.setPaymentNo(entity.getPaymentNo());
-    vo.setAfterSaleNo(entity.getAfterSaleNo());
-    vo.setRefundAmount(entity.getRefundAmount());
-    vo.setStatus(entity.getStatus());
-    vo.setReason(entity.getReason());
-    vo.setIdempotencyKey(entity.getIdempotencyKey());
-    vo.setRefundedAt(entity.getRefundedAt());
-    vo.setCreatedAt(entity.getCreatedAt());
-    vo.setUpdatedAt(entity.getUpdatedAt());
-    return vo;
+    return paymentOrderConverter.toVO(entity);
   }
 
   private String buildOrderKey(PaymentOrderCommandDTO command) {

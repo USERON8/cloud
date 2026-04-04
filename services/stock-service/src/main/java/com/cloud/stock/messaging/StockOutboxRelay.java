@@ -12,7 +12,6 @@ import io.micrometer.core.instrument.MeterRegistry;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.stream.function.StreamBridge;
 import org.springframework.lang.Nullable;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 @Slf4j
@@ -26,6 +25,10 @@ public class StockOutboxRelay extends AbstractOutboxRelay {
       ObjectMapper objectMapper,
       @Nullable MeterRegistry meterRegistry) {
     super(outboxEventService, outboxProperties, streamBridge, objectMapper, meterRegistry);
+  }
+
+  public void dispatch() {
+    dispatchDueEvents();
   }
 
   @Override

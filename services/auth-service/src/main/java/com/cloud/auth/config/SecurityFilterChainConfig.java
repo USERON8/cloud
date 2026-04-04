@@ -150,6 +150,7 @@ public class SecurityFilterChainConfig {
                   .requestMatchers(
                       "/health/**",
                       "/favicon.ico",
+                      "/default-ui.css",
                       "/error",
                       "/login",
                       "/oauth2/authorization/**",

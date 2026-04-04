@@ -10,5 +10,5 @@ public class UserAddressPageDTO extends PageQuery {
 
   private Long userId;
 
-  private String consignee;
+  private String receiverName;
 }

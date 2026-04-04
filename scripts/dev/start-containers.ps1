@@ -16,6 +16,7 @@ foreach ($arg in $args) {
 $killPorts = -not $NoKillPorts
 $root = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
 . (Join-Path $PSScriptRoot "lib\port-guard.ps1")
+. (Join-Path $PSScriptRoot "lib\runtime.ps1")
 
 function Assert-DockerDaemonReady {
     docker version | Out-Null
@@ -28,6 +29,8 @@ $envPath = Join-Path $root "docker\.env"
 if (-not (Test-Path $envPath)) {
     throw "docker/.env not found"
 }
+
+Sync-EnvironmentFiles -Root $root -ImportProcessEnvironment | Out-Null
 
 $portVars = Get-Content $envPath |
         Where-Object { $_ -match "^PORT_[A-Z0-9_]+=([0-9]+)$" } |

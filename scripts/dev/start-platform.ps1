@@ -59,6 +59,7 @@ for ($index = 0; $index -lt $CliArgs.Count; $index++) {
 
 $root = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
 . (Join-Path $PSScriptRoot "lib\runtime.ps1")
+Sync-EnvironmentFiles -Root $root -ImportProcessEnvironment | Out-Null
 
 function Invoke-Step {
     param(

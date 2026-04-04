@@ -19,7 +19,7 @@ const roleLabel = computed(
 <template>
     <AppShell title="Dashboard">
         <view class="dashboard-layout">
-            <view class="hero-card display-panel">
+            <view class="hero-card display-panel fade-in-up">
                 <view class="hero-copy">
                     <text class="hero-eyebrow">Dashboard</text>
                     <text class="hero-title"
@@ -67,7 +67,7 @@ const roleLabel = computed(
                 </view>
             </view>
 
-            <view class="feature-grid">
+            <view class="feature-grid fade-in-up">
                 <view class="feature-card surface-card primary-card">
                     <text class="feature-kicker">Start shopping</text>
                     <text class="feature-title"
@@ -136,7 +136,7 @@ const roleLabel = computed(
                 </view>
             </view>
 
-            <view class="section-block editorial-section">
+            <view class="section-block editorial-section fade-in-up">
                 <view class="section-head">
                     <text class="section-title">Your essentials</text>
                     <text class="section-subtitle"
@@ -267,17 +267,22 @@ const roleLabel = computed(
     gap: 14px;
     min-height: 300px;
     justify-content: flex-end;
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease,
+        border-color 0.2s ease;
 }
 
 .primary-card {
-    background: linear-gradient(180deg, #ffffff 0%, #f7f7f9 100%);
+    background: linear-gradient(180deg, #ffffff 0%, #f6f1e8 100%);
+    border-color: rgba(11, 107, 95, 0.16);
 }
 
 .feature-kicker {
     font-size: 12px;
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    color: var(--text-soft);
+    color: var(--accent);
     font-weight: 700;
 }
 
@@ -321,6 +326,10 @@ const roleLabel = computed(
     gap: 12px;
     min-height: 220px;
     justify-content: flex-end;
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease,
+        border-color 0.2s ease;
 }
 
 .quick-title {
@@ -337,6 +346,15 @@ const roleLabel = computed(
 
 .quick-button {
     align-self: flex-start;
+}
+
+@media (hover: hover) {
+    .feature-card:hover,
+    .quick-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 16px 30px rgba(20, 20, 20, 0.12);
+        border-color: rgba(20, 20, 20, 0.12);
+    }
 }
 
 @media (max-width: 900px) {

@@ -2,9 +2,11 @@ package com.cloud.user.converter;
 
 import com.cloud.common.domain.dto.user.MerchantAuthDTO;
 import com.cloud.common.domain.dto.user.MerchantDTO;
+import com.cloud.common.domain.dto.user.MerchantUpsertRequestDTO;
 import com.cloud.common.domain.vo.MerchantVO;
 import com.cloud.user.module.entity.Merchant;
 import com.cloud.user.module.entity.MerchantAuth;
+import com.cloud.user.service.cache.TransactionalMerchantCacheService;
 import java.util.List;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -21,7 +23,11 @@ public interface MerchantConverter {
   @Mapping(target = "id", source = "id")
   MerchantDTO toDTO(Merchant merchant);
 
+  MerchantDTO toDTO(TransactionalMerchantCacheService.MerchantCache cache);
+
   List<MerchantDTO> toDTOList(List<Merchant> merchants);
+
+  Merchant toEntity(MerchantUpsertRequestDTO requestDTO);
 
   @Mapping(target = "id", source = "id")
   MerchantAuthDTO toAuthDTO(MerchantAuth merchantAuth);

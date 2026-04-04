@@ -20,6 +20,9 @@ spring:
       config:
         server-addr: ${NACOS_SERVER_ADDR:${NACOS_HOST:127.0.0.1}:${NACOS_PORT:18848}}
     gateway:
+      httpclient:
+        connect-timeout: ${GATEWAY_HTTPCLIENT_CONNECT_TIMEOUT_MS:5000}
+        response-timeout: ${GATEWAY_HTTPCLIENT_RESPONSE_TIMEOUT:20s}
       server:
         webflux:
           default-filters:
@@ -135,7 +138,7 @@ app:
       requested-tokens: ${APP_SECURITY_AUTH_RATE_LIMIT_REQUESTED_TOKENS:1}
   search:
     fallback:
-      timeout-ms: ${SEARCH_FALLBACK_TIMEOUT_MS:700}
+      timeout-ms: ${SEARCH_FALLBACK_TIMEOUT_MS:2000}
       product-service-base-url: ${SEARCH_FALLBACK_PRODUCT_BASE_URL:http://product-service}
       routes:
         search-path: ${SEARCH_FALLBACK_SEARCH_PATH:/api/product/search}
@@ -160,16 +163,16 @@ app:
     http:
       max-connections: ${APP_REMOTE_HTTP_MAX_CONNECTIONS:200}
       pending-acquire-timeout-ms: ${APP_REMOTE_HTTP_PENDING_ACQUIRE_TIMEOUT_MS:3000}
-      connect-timeout-ms: ${APP_REMOTE_HTTP_CONNECT_TIMEOUT_MS:2000}
-      response-timeout-ms: ${APP_REMOTE_HTTP_RESPONSE_TIMEOUT_MS:3000}
-      read-timeout-ms: ${APP_REMOTE_HTTP_READ_TIMEOUT_MS:3000}
-      write-timeout-ms: ${APP_REMOTE_HTTP_WRITE_TIMEOUT_MS:3000}
+      connect-timeout-ms: ${APP_REMOTE_HTTP_CONNECT_TIMEOUT_MS:5000}
+      response-timeout-ms: ${APP_REMOTE_HTTP_RESPONSE_TIMEOUT_MS:8000}
+      read-timeout-ms: ${APP_REMOTE_HTTP_READ_TIMEOUT_MS:8000}
+      write-timeout-ms: ${APP_REMOTE_HTTP_WRITE_TIMEOUT_MS:8000}
 
 resilience4j:
   timelimiter:
     instances:
       search-route:
-        timeout-duration: ${SEARCH_FALLBACK_TIMEOUT_MS:700}ms
+        timeout-duration: ${SEARCH_FALLBACK_TIMEOUT_MS:2000}ms
         cancel-running-future: true
       payment-route:
         timeout-duration: ${PAYMENT_ROUTE_TIMEOUT_MS:1500}ms
