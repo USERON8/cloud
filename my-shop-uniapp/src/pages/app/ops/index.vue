@@ -1396,7 +1396,7 @@ async function refreshStatsCache(): Promise<void> {
       </view>
     </view>
 
-    <view v-if="activeTab === 'tokens'" class="panel glass-card">
+    <view v-if="activeTab === 'tokens'" class="panel glass-card fade-in-up">
       <text class="section-title">Token statistics</text>
       <view class="row-inline">
         <button class="btn-outline" @click="loadTokenStats">Load statistics</button>
@@ -1450,7 +1450,7 @@ async function refreshStatsCache(): Promise<void> {
         <button class="btn-outline" @click="logoutAll">Trigger logout</button>
       </view>
     </view>
-    <view v-if="activeTab === 'system'" class="panel glass-card">
+    <view v-if="activeTab === 'system'" class="panel glass-card fade-in-up">
       <text class="section-title">Thread pools</text>
       <view class="row-inline">
         <button class="btn-outline" @click="loadThreadPools">Load thread pools</button>
@@ -1465,7 +1465,7 @@ async function refreshStatsCache(): Promise<void> {
       </view>
     </view>
 
-    <view v-if="activeTab === 'category'" class="panel glass-card">
+    <view v-if="activeTab === 'category'" class="panel glass-card fade-in-up">
       <text class="section-title">Category operations</text>
       <input v-model="categoryIdInput" class="input" placeholder="Category ID" />
       <input v-model="categorySortInput" class="input" placeholder="Sort value" />
@@ -1494,7 +1494,7 @@ async function refreshStatsCache(): Promise<void> {
         <text class="code-block">{{ formatJson(categoryBatchResult) }}</text>
       </view>
     </view>
-    <view v-if="activeTab === 'catalog'" class="panel glass-card">
+    <view v-if="activeTab === 'catalog'" class="panel glass-card fade-in-up">
       <text class="section-title">Product catalog</text>
       <input v-model="spuId" class="input" placeholder="SPU ID" />
       <input v-model="spuStatus" class="input" placeholder="Status" />
@@ -1515,7 +1515,7 @@ async function refreshStatsCache(): Promise<void> {
       <text class="code-block">{{ formatJson(skuList) }}</text>
     </view>
 
-    <view v-if="activeTab === 'search'" class="panel glass-card">
+    <view v-if="activeTab === 'search'" class="panel glass-card fade-in-up">
       <text class="section-title">Search operations</text>
       <input v-model="searchKeyword" class="input" placeholder="Keyword" />
       <input v-model="searchPage" class="input" placeholder="Page" />
@@ -1566,7 +1566,7 @@ async function refreshStatsCache(): Promise<void> {
       <text class="code-block">{{ formatJson(searchResult) }}</text>
     </view>
 
-    <view v-if="activeTab === 'shops'" class="panel glass-card">
+    <view v-if="activeTab === 'shops'" class="panel glass-card fade-in-up">
       <text class="section-title">Shop search</text>
       <input v-model="shopId" class="input" placeholder="Shop ID" />
       <input v-model="shopLocation" class="input" placeholder="Location keyword" />
@@ -1598,7 +1598,7 @@ async function refreshStatsCache(): Promise<void> {
       </view>
       <text class="code-block">{{ formatJson(shopResult) }}</text>
     </view>
-    <view v-if="activeTab === 'batch'" class="panel glass-card">
+    <view v-if="activeTab === 'batch'" class="panel glass-card fade-in-up">
       <text class="section-title">Batch operations</text>
       <input v-model="userFindUsername" class="input" placeholder="Username" />
       <button class="btn-outline" @click="findUser">Load user</button>
@@ -1624,7 +1624,7 @@ async function refreshStatsCache(): Promise<void> {
       <text class="code-block">{{ formatJson(batchResult) }}</text>
     </view>
 
-    <view v-if="activeTab === 'payments'" class="panel glass-card">
+    <view v-if="activeTab === 'payments'" class="panel glass-card fade-in-up">
       <text class="section-title">Payment operations</text>
       <input v-model="paymentNoInput" class="input" placeholder="Payment number" />
       <input v-model="paymentMainOrderNo" class="input" placeholder="Main order number" />
@@ -1642,7 +1642,7 @@ async function refreshStatsCache(): Promise<void> {
       <text class="code-block">{{ formatJson(paymentResult) }}</text>
     </view>
 
-    <view v-if="activeTab === 'stats'" class="panel glass-card">
+    <view v-if="activeTab === 'stats'" class="panel glass-card fade-in-up">
       <text class="section-title">Statistics operations</text>
       <view class="row-inline">
         <button class="btn-outline" @click="loadStatsOverviewAsync">Async overview</button>
@@ -1663,29 +1663,38 @@ async function refreshStatsCache(): Promise<void> {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
-  padding: 8px 12px;
-  background: rgba(255, 255, 255, 0.6);
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.7);
   border-radius: 16px;
+  border: 1px solid rgba(20, 20, 20, 0.08);
   margin-bottom: 12px;
 }
 
 .tab {
-  padding: 6px 12px;
+  padding: 8px 14px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.85);
   font-size: 12px;
+  font-weight: 600;
+  color: var(--text-main);
+  border: 1px solid rgba(20, 20, 20, 0.08);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
 .tab.active {
-  background: rgba(255, 255, 255, 0.95);
-  box-shadow: 0 8px 18px rgba(32, 40, 53, 0.08);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(248, 245, 240, 0.95));
+  border-color: rgba(20, 20, 20, 0.12);
+  box-shadow: 0 10px 22px rgba(20, 20, 20, 0.12);
+  color: var(--accent);
 }
 
 .panel {
-  padding: 16px;
+  padding: 18px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
+  border: 1px solid rgba(20, 20, 20, 0.08);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
 .section {
@@ -1696,7 +1705,8 @@ async function refreshStatsCache(): Promise<void> {
 
 .section-title {
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 700;
+  letter-spacing: -0.01em;
 }
 
 .row-inline {
@@ -1706,28 +1716,51 @@ async function refreshStatsCache(): Promise<void> {
 }
 
 .input {
-  background: #fff;
-  border-radius: 10px;
-  padding: 6px 10px;
+  background: rgba(255, 255, 255, 0.96);
+  border-radius: 12px;
+  padding: 10px 12px;
   font-size: 12px;
+  border: 1px solid rgba(20, 20, 20, 0.12);
 }
 
 .textarea {
-  background: #fff;
-  border-radius: 10px;
-  padding: 8px 10px;
+  background: rgba(255, 255, 255, 0.96);
+  border-radius: 12px;
+  padding: 10px 12px;
   font-size: 12px;
-  min-height: 90px;
+  min-height: 110px;
+  border: 1px solid rgba(20, 20, 20, 0.12);
 }
 
 .code-block {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
   font-size: 11px;
   white-space: pre-wrap;
-  background: rgba(255, 255, 255, 0.8);
-  border-radius: 10px;
-  padding: 10px;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 12px;
+  padding: 12px;
+  border: 1px solid rgba(20, 20, 20, 0.08);
+  max-height: 240px;
+  overflow: auto;
 }
+
+.input:focus,
+.textarea:focus {
+  border-color: rgba(11, 107, 95, 0.4);
+  box-shadow: 0 0 0 3px rgba(11, 107, 95, 0.12);
+}
+
+@media (hover: hover) {
+  .tab:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 20px rgba(20, 20, 20, 0.1);
+    border-color: rgba(20, 20, 20, 0.12);
+  }
+  .panel:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 16px 30px rgba(20, 20, 20, 0.12);
+    border-color: rgba(20, 20, 20, 0.12);
+  }
+}
+
 </style>
-
-

@@ -50,7 +50,7 @@ onMounted(() => {
   <AppShell title="Product Admin">
     <view class="page-wrap">
       <!-- Hero -->
-      <view class="hero surface-card">
+      <view class="hero surface-card fade-in-up">
         <view class="hero-left">
           <text class="hero-eyebrow">MERCHANT</text>
           <text class="hero-title">Product Catalog</text>
@@ -73,12 +73,12 @@ onMounted(() => {
       </view>
 
       <!-- Toolbar -->
-      <view class="toolbar surface-card">
+      <view class="toolbar surface-card fade-in-up">
         <view class="search-row">
           <input
             v-model="keyword"
             class="std-input"
-            placeholder="Search products…"
+            placeholder="Search products"
             @confirm="loadProducts"
           />
           <button class="btn-primary" :loading="loading" @click="loadProducts">Search</button>
@@ -91,7 +91,7 @@ onMounted(() => {
         <text class="empty-state-text">No products found</text>
       </view>
 
-      <view v-else class="list">
+      <view v-else class="list fade-in-up">
         <view v-for="item in rows" :key="item.id" class="row surface-card">
           <view class="row-info">
             <text class="row-name">{{ item.name }}</text>
@@ -169,8 +169,8 @@ onMounted(() => {
   padding: 16px 20px;
   border-radius: var(--radius-md);
   flex-wrap: wrap;
+  border: 1px solid rgba(20, 20, 20, 0.08);
 }
-
 .search-row {
   flex: 1;
   display: flex;
@@ -182,11 +182,16 @@ onMounted(() => {
 .std-input {
   flex: 1;
   background: rgba(255, 255, 255, 0.96);
-  border: 1px solid var(--panel-border);
+  border: 1px solid rgba(20, 20, 20, 0.12);
   border-radius: 16px;
   padding: 13px 16px;
   font-size: 14px;
   color: var(--text-main);
+}
+
+.std-input:focus {
+  border-color: rgba(11, 107, 95, 0.4);
+  box-shadow: 0 0 0 3px rgba(11, 107, 95, 0.12);
 }
 
 .list {
@@ -202,8 +207,12 @@ onMounted(() => {
   gap: 16px;
   padding: 16px 20px;
   border-radius: var(--radius-md);
+  border: 1px solid rgba(20, 20, 20, 0.08);
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
 }
-
 .row-info {
   flex: 1;
   display: flex;
@@ -223,13 +232,22 @@ onMounted(() => {
 }
 
 .chip-success {
-  background: var(--success-soft);
-  color: #34c759;
+  background: rgba(11, 107, 95, 0.16);
+  color: var(--accent);
 }
 
 .chip-muted {
-  background: rgba(142, 142, 147, 0.12);
-  color: var(--text-soft);
+  background: rgba(20, 20, 20, 0.08);
+  color: var(--text-muted);
+}
+
+@media (hover: hover) {
+  .row:hover,
+  .toolbar:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 16px 30px rgba(20, 20, 20, 0.12);
+    border-color: rgba(20, 20, 20, 0.12);
+  }
 }
 
 @media (max-width: 600px) {

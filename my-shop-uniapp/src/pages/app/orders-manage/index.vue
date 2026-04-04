@@ -148,7 +148,7 @@ onMounted(() => {
   <AppShell title="Order Admin">
     <view class="page-wrap">
       <!-- Hero -->
-      <view class="hero surface-card">
+      <view class="hero surface-card fade-in-up">
         <view class="hero-left">
           <text class="hero-eyebrow">MERCHANT</text>
           <text class="hero-title">Order Management</text>
@@ -163,7 +163,7 @@ onMounted(() => {
       </view>
 
       <!-- Shipping fields (shared across rows) -->
-      <view class="toolbar surface-card">
+      <view class="toolbar surface-card fade-in-up">
         <view class="field-group">
           <text class="field-label">Shipping company</text>
           <input v-model="shippingForm.shippingCompany" class="std-input" placeholder="e.g. FedEx" />
@@ -185,14 +185,14 @@ onMounted(() => {
       </view>
 
       <!-- Order list -->
-      <view v-else class="list">
+      <view v-else class="list fade-in-up">
         <view v-for="item in rows" :key="item.id" class="row surface-card">
           <view class="row-info">
             <text class="row-name">{{ item.orderNo }}</text>
             <text class="row-meta">{{ formatPrice(item.payAmount ?? item.totalAmount) }}</text>
             <view class="row-meta-row">
               <view class="chip chip-muted"><text>{{ formatOrderStatus(item.status) }}</text></view>
-              <text class="row-date">{{ formatDate(item.createdAt) }} · {{ formatRelativeDate(item.createdAt) }}</text>
+              <text class="row-date">{{ formatDate(item.createdAt) }} | {{ formatRelativeDate(item.createdAt) }}</text>
             </view>
             <text v-if="item.afterSaleStatus && item.afterSaleStatus !== 'NONE'" class="row-aftersale">
               After-sale: {{ item.afterSaleStatus }}{{ item.afterSaleNo ? ` (${item.afterSaleNo})` : '' }}
@@ -310,8 +310,8 @@ onMounted(() => {
   padding: 20px 24px;
   border-radius: var(--radius-md);
   flex-wrap: wrap;
+  border: 1px solid rgba(20, 20, 20, 0.08);
 }
-
 .field-group {
   flex: 1;
   display: flex;
@@ -329,11 +329,16 @@ onMounted(() => {
 
 .std-input {
   background: rgba(255, 255, 255, 0.96);
-  border: 1px solid var(--panel-border);
+  border: 1px solid rgba(20, 20, 20, 0.12);
   border-radius: 16px;
   padding: 13px 16px;
   font-size: 14px;
   color: var(--text-main);
+}
+
+.std-input:focus {
+  border-color: rgba(11, 107, 95, 0.4);
+  box-shadow: 0 0 0 3px rgba(11, 107, 95, 0.12);
 }
 
 .list {
@@ -348,8 +353,12 @@ onMounted(() => {
   gap: 12px;
   padding: 20px 24px;
   border-radius: var(--radius-md);
+  border: 1px solid rgba(20, 20, 20, 0.08);
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
 }
-
 .row-info {
   display: flex;
   flex-direction: column;
@@ -385,14 +394,24 @@ onMounted(() => {
 }
 
 .chip-muted {
-  background: rgba(142, 142, 147, 0.12);
-  color: var(--text-soft);
+  background: rgba(20, 20, 20, 0.08);
+  color: var(--text-muted);
 }
 
 .row-actions {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
+  padding-top: 10px;
+  border-top: 1px solid rgba(20, 20, 20, 0.08);
+}
+@media (hover: hover) {
+  .row:hover,
+  .toolbar:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 16px 30px rgba(20, 20, 20, 0.12);
+    border-color: rgba(20, 20, 20, 0.12);
+  }
 }
 
 @media (max-width: 600px) {

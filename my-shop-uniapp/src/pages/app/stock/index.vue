@@ -54,7 +54,7 @@ onShow(() => {
   <AppShell title="Stock Ledger">
     <view class="page-wrap">
       <!-- Hero -->
-      <view class="hero surface-card">
+      <view class="hero surface-card fade-in-up">
         <view class="hero-left">
           <text class="hero-eyebrow">ADMIN</text>
           <text class="hero-title">Stock Ledger</text>
@@ -77,11 +77,11 @@ onShow(() => {
       </view>
 
       <!-- Query bar -->
-      <view class="toolbar surface-card">
+      <view class="toolbar surface-card fade-in-up">
         <input
           v-model="skuId"
           class="std-input"
-          placeholder="Enter SKU ID…"
+          placeholder="Enter SKU ID"
           type="number"
           @confirm="queryLedger"
         />
@@ -89,7 +89,7 @@ onShow(() => {
       </view>
 
       <!-- Result card -->
-      <view v-if="ledger" class="result surface-card">
+      <view v-if="ledger" class="result surface-card fade-in-up">
         <text class="result-title">Ledger Detail</text>
         <view class="result-grid">
           <view class="result-item">
@@ -198,11 +198,16 @@ onShow(() => {
 .std-input {
   flex: 1;
   background: rgba(255, 255, 255, 0.96);
-  border: 1px solid var(--panel-border);
+  border: 1px solid rgba(20, 20, 20, 0.12);
   border-radius: 16px;
   padding: 13px 16px;
   font-size: 14px;
   color: var(--text-main);
+}
+
+.std-input:focus {
+  border-color: rgba(11, 107, 95, 0.4);
+  box-shadow: 0 0 0 3px rgba(11, 107, 95, 0.12);
 }
 
 .result {
@@ -229,7 +234,13 @@ onShow(() => {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: var(--panel-muted);
+  border: 1px solid rgba(20, 20, 20, 0.08);
 }
+
+
 
 .result-label {
   font-size: 11px;
@@ -245,6 +256,17 @@ onShow(() => {
   color: var(--text-main);
   letter-spacing: -0.01em;
 }
+
+@media (hover: hover) {
+  .hero:hover,
+  .toolbar:hover,
+  .result:hover {
+    box-shadow: 0 16px 30px rgba(20, 20, 20, 0.12);
+    border-color: rgba(20, 20, 20, 0.12);
+    transform: translateY(-1px);
+  }
+}
+
 
 @media (max-width: 600px) {
   .page-wrap { padding: 16px; }
