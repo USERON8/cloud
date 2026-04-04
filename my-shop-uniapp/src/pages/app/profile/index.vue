@@ -9,7 +9,7 @@ const user = computed(() => sessionState.user);
 <template>
     <AppShell title="Profile">
         <view class="profile-layout">
-            <view class="hero-card glass-card">
+            <view class="hero-card glass-card fade-in-up">
                 <view class="hero-main">
                     <view class="avatar">{{
                         (user?.nickname || user?.username || "U")
@@ -44,7 +44,7 @@ const user = computed(() => sessionState.user);
                 </view>
             </view>
 
-            <view class="details-grid">
+            <view class="details-grid fade-in-up">
                 <view class="surface-card details-card">
                     <text class="section-title">Profile details</text>
                     <view class="detail-list">
@@ -128,7 +128,7 @@ const user = computed(() => sessionState.user);
     color: #fff;
     font-size: 28px;
     font-weight: 700;
-    box-shadow: 0 14px 30px rgba(36, 107, 255, 0.24);
+    box-shadow: 0 14px 30px rgba(11, 107, 95, 0.24);
     flex-shrink: 0;
 }
 
@@ -187,7 +187,7 @@ const user = computed(() => sessionState.user);
     justify-content: space-between;
     gap: 12px;
     padding-bottom: 12px;
-    border-bottom: 1px solid rgba(226, 232, 240, 0.9);
+    border-bottom: 1px solid rgba(20, 20, 20, 0.08);
 }
 
 .detail-row:last-child {
@@ -215,14 +215,14 @@ const user = computed(() => sessionState.user);
 .role-chip {
     background: var(--accent-soft);
     color: var(--accent);
-    border-color: rgba(36, 107, 255, 0.08);
+    border-color: rgba(11, 107, 95, 0.16);
 }
 
 .summary-box {
     padding: 16px;
     border-radius: var(--radius-md);
-    background: rgba(36, 107, 255, 0.06);
-    border: 1px solid rgba(36, 107, 255, 0.1);
+    background: rgba(11, 107, 95, 0.08);
+    border: 1px solid rgba(11, 107, 95, 0.16);
     display: flex;
     flex-direction: column;
     gap: 8px;

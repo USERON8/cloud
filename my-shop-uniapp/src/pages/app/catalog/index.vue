@@ -11,6 +11,7 @@ import {
 import type { ProductItem } from "../../../types/domain";
 import { addToCart } from "../../../store/cart";
 import { formatPrice } from "../../../utils/format";
+import { resolveProductImageUrl } from "../../../utils/image";
 import { toast } from "../../../utils/ui";
 import { useRole } from "../../../auth/permission";
 import { navigateTo } from "../../../router/navigation";
@@ -29,6 +30,7 @@ const skuIdCache = new Map<number | string, number | null>();
 const skuLookupCache = new Map<number | string, Promise<number | null>>();
 const initialized = ref(false);
 const latestLoadRequestId = ref(0);
+const failedImageIds = ref<Record<string, boolean>>({});
 
 const { isAdmin, isMerchant } = useRole();
 const canManage = computed(() => isAdmin.value || isMerchant.value);
@@ -67,6 +69,9 @@ async function loadProducts(reset = false): Promise<void> {
             return;
         }
         const items = result.documents.map(mapSearchDocumentToProduct);
+        if (reset) {
+            failedImageIds.value = {};
+        }
         rows.value = reset ? items : rows.value.concat(items);
         hasMore.value = rows.value.length < result.total;
         await refreshKeywords(keyword.value);
@@ -157,7 +162,7 @@ onShow(() => {
 <template>
     <AppShell title="Products">
         <view class="catalog-layout">
-            <view class="hero-card display-panel">
+            <view class="hero-card display-panel fade-in-up">
                 <view class="hero-copy">
                     <text class="hero-eyebrow">Products</text>
                     <text class="hero-title"
@@ -189,7 +194,7 @@ onShow(() => {
                 </view>
             </view>
 
-            <view class="surface-card search-card">
+            <view class="surface-card search-card fade-in-up">
                 <view class="section-block compact-block">
                     <text class="section-title">Search the catalog</text>
                     <text class="section-subtitle">
@@ -241,7 +246,7 @@ onShow(() => {
                 </view>
             </view>
 
-            <view class="section-head">
+            <view class="section-head fade-in-up">
                 <text class="section-title">Catalog results</text>
                 <text class="section-subtitle"
                     >Browse the latest search results and add eligible items to
@@ -249,21 +254,18 @@ onShow(() => {
                 >
             </view>
 
-            <view v-if="rows.length" class="product-grid">
+            <view v-if="rows.length" class="product-grid fade-in-up">
                 <view
                     v-for="item in rows"
                     :key="item.id"
                     class="product-card surface-card"
                 >
                     <image
-                        v-if="item.imageUrl"
-                        :src="item.imageUrl"
+                        :src="productImageSrc(item)"
                         class="product-image"
                         mode="aspectFill"
+                        @error="markImageFailed(item.id)"
                     />
-                    <view v-else class="product-image placeholder"
-                        >No image</view
-                    >
                     <view class="product-main">
                         <text class="product-name">{{ item.name }}</text>
                         <text class="product-price">{{
@@ -353,7 +355,27 @@ onShow(() => {
     border-radius: 999px;
     padding: 12px 16px;
     font-size: 14px;
-    border: 1px solid rgba(15, 23, 42, 0.08);
+    border: 1px solid rgba(20, 20, 20, 0.12);
+}
+
+function productImageSrc(item: ProductItem): string {
+    return resolveProductImageUrl(
+        item.imageUrl,
+        item.name,
+        !!failedImageIds.value[String(item.id)],
+    );
+}
+
+function markImageFailed(id: number | string): void {
+    failedImageIds.value = {
+        ...failedImageIds.value,
+        [String(id)]: true,
+    };
+}
+
+.search-input:focus {
+    border-color: rgba(11, 107, 95, 0.4);
+    box-shadow: 0 0 0 3px rgba(11, 107, 95, 0.12);
 }
 
 .keyword-grid {
@@ -387,7 +409,13 @@ onShow(() => {
     border-radius: 999px;
     background: rgba(255, 255, 255, 0.95);
     font-size: 12px;
-    border: 1px solid rgba(15, 23, 42, 0.06);
+    border: 1px solid rgba(20, 20, 20, 0.08);
+    color: var(--text-main);
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease,
+        border-color 0.2s ease,
+        color 0.2s ease;
 }
 
 .section-head {
@@ -407,6 +435,10 @@ onShow(() => {
     display: flex;
     flex-direction: column;
     gap: 14px;
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease,
+        border-color 0.2s ease;
 }
 
 .product-image {
@@ -414,6 +446,7 @@ onShow(() => {
     aspect-ratio: 1.7 / 1;
     border-radius: 18px;
     background: linear-gradient(180deg, #f7f7f9, #f1f1f4);
+    border: 1px solid rgba(20, 20, 20, 0.08);
 }
 
 .product-image.placeholder {
@@ -457,6 +490,21 @@ onShow(() => {
     display: flex;
     justify-content: center;
     padding: 4px 0 8px;
+}
+
+@media (hover: hover) {
+    .keyword-chip:hover {
+        transform: translateY(-1px);
+        border-color: rgba(11, 107, 95, 0.2);
+        box-shadow: 0 10px 20px rgba(20, 20, 20, 0.08);
+        color: var(--accent);
+    }
+
+    .product-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 16px 30px rgba(20, 20, 20, 0.12);
+        border-color: rgba(20, 20, 20, 0.12);
+    }
 }
 
 @media (max-width: 900px) {

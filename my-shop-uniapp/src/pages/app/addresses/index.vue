@@ -199,7 +199,7 @@ onShow(() => {
 <template>
     <AppShell title="Addresses">
         <view class="addresses-layout">
-            <view class="hero-card display-panel">
+            <view class="hero-card display-panel fade-in-up">
                 <view class="hero-copy">
                     <text class="hero-eyebrow">Addresses</text>
                     <text class="hero-title"
@@ -229,7 +229,7 @@ onShow(() => {
             </view>
 
             <view class="content-grid">
-                <view class="surface-card panel editor-panel">
+                <view class="surface-card panel editor-panel fade-in-up">
                     <view class="header">
                         <view class="section-block compact-block">
                             <text class="section-title">{{
@@ -309,7 +309,7 @@ onShow(() => {
                     </button>
                 </view>
 
-                <view class="surface-card panel book-panel">
+                <view class="surface-card panel book-panel fade-in-up">
                     <view class="header">
                         <view class="section-block compact-block">
                             <text class="section-title">Address book</text>
@@ -336,7 +336,7 @@ onShow(() => {
                             <view class="row-head">
                                 <view class="row-copy">
                                     <text class="name"
-                                        >{{ item.receiverName }} ·
+                                        >{{ item.receiverName }} |
                                         {{ item.receiverPhone }}</text
                                     >
                                     <text class="meta">
@@ -449,7 +449,13 @@ onShow(() => {
     border-radius: 16px;
     padding: 13px 16px;
     font-size: 14px;
-    border: 1px solid rgba(15, 23, 42, 0.08);
+    border: 1px solid rgba(20, 20, 20, 0.12);
+}
+
+.input:focus,
+.textarea:focus {
+    border-color: rgba(11, 107, 95, 0.4);
+    box-shadow: 0 0 0 3px rgba(11, 107, 95, 0.12);
 }
 
 .textarea {
@@ -481,10 +487,14 @@ onShow(() => {
     padding: 18px;
     border-radius: var(--radius-lg);
     background: var(--panel-muted);
-    border: 1px solid rgba(15, 23, 42, 0.05);
+    border: 1px solid rgba(20, 20, 20, 0.08);
     display: flex;
     flex-direction: column;
     gap: 14px;
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease,
+        border-color 0.2s ease;
 }
 
 .row-head {
@@ -519,7 +529,7 @@ onShow(() => {
 }
 
 .default-chip {
-    background: rgba(0, 113, 227, 0.1);
+    background: rgba(11, 107, 95, 0.16);
     color: var(--accent);
 }
 
@@ -528,6 +538,15 @@ onShow(() => {
     text-align: center;
     color: var(--text-muted);
     font-size: 13px;
+}
+
+@media (hover: hover) {
+    .row-card:hover,
+    .panel:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 16px 30px rgba(20, 20, 20, 0.12);
+        border-color: rgba(20, 20, 20, 0.12);
+    }
 }
 
 @media (max-width: 900px) {

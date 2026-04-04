@@ -350,7 +350,7 @@ onShow(() => {
 <template>
     <AppShell title="Orders">
         <view class="orders-layout">
-            <view class="hero-card display-panel">
+            <view class="hero-card display-panel fade-in-up">
                 <view class="hero-copy">
                     <text class="hero-eyebrow">Orders</text>
                     <text class="hero-title"
@@ -378,7 +378,7 @@ onShow(() => {
                 </view>
             </view>
 
-            <view class="surface-card panel">
+            <view class="surface-card panel fade-in-up">
                 <view class="header">
                     <view class="section-block compact-block">
                         <text class="section-title">Order history</text>
@@ -515,7 +515,7 @@ onShow(() => {
 
             <view
                 v-if="afterSaleDraft.orderId"
-                class="surface-card aftersale-panel"
+                class="surface-card aftersale-panel fade-in-up"
             >
                 <view class="header">
                     <view class="section-block compact-block">
@@ -638,6 +638,10 @@ onShow(() => {
     display: flex;
     flex-direction: column;
     gap: 16px;
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease,
+        border-color 0.2s ease;
 }
 
 .order-head {
@@ -669,24 +673,24 @@ onShow(() => {
     border-radius: 999px;
     font-size: 12px;
     font-weight: 700;
-    background: rgba(15, 23, 42, 0.06);
+    background: rgba(20, 20, 20, 0.08);
     color: var(--text-main);
     white-space: nowrap;
 }
 
 .status-0 {
-    background: rgba(255, 159, 10, 0.16);
-    color: #a16207;
+    background: var(--highlight-soft);
+    color: #8a6a1d;
 }
 
 .status-1 {
-    background: rgba(0, 113, 227, 0.1);
+    background: rgba(11, 107, 95, 0.16);
     color: var(--accent);
 }
 
 .status-2 {
-    background: rgba(90, 200, 250, 0.16);
-    color: #0c7492;
+    background: rgba(15, 118, 110, 0.18);
+    color: #0b5d54;
 }
 
 .status-3 {
@@ -709,7 +713,7 @@ onShow(() => {
     padding: 14px;
     border-radius: var(--radius-md);
     background: var(--panel-muted);
-    border: 1px solid rgba(15, 23, 42, 0.05);
+    border: 1px solid rgba(20, 20, 20, 0.08);
     display: flex;
     flex-direction: column;
     gap: 8px;
@@ -758,7 +762,14 @@ onShow(() => {
     border-radius: 16px;
     padding: 13px 16px;
     font-size: 14px;
-    border: 1px solid rgba(15, 23, 42, 0.08);
+    border: 1px solid rgba(20, 20, 20, 0.12);
+}
+
+.picker-field:focus,
+.input:focus,
+.textarea:focus {
+    border-color: rgba(11, 107, 95, 0.4);
+    box-shadow: 0 0 0 3px rgba(11, 107, 95, 0.12);
 }
 
 .textarea {
@@ -767,6 +778,14 @@ onShow(() => {
 
 .submit-button {
     width: 100%;
+}
+
+@media (hover: hover) {
+    .order-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 16px 30px rgba(20, 20, 20, 0.12);
+        border-color: rgba(20, 20, 20, 0.12);
+    }
 }
 
 @media (max-width: 900px) {

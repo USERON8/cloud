@@ -237,7 +237,7 @@ onUnload(() => {
 <template>
     <AppShell title="Payments">
         <view class="payments-layout">
-            <view class="hero-card display-panel">
+            <view class="hero-card display-panel fade-in-up">
                 <view class="hero-copy">
                     <text class="hero-eyebrow">Payments</text>
                     <text class="hero-title"
@@ -267,7 +267,7 @@ onUnload(() => {
             </view>
 
             <view class="content-grid">
-                <view class="surface-card panel">
+                <view class="surface-card panel fade-in-up">
                     <view class="section-block compact-block">
                         <text class="section-title">Payment lookup</text>
                         <text class="section-subtitle"
@@ -372,7 +372,7 @@ onUnload(() => {
                     >
                 </view>
 
-                <view class="surface-card panel">
+                <view class="surface-card panel fade-in-up">
                     <view class="section-block compact-block">
                         <text class="section-title">Refund lookup</text>
                         <text class="section-subtitle"
@@ -509,7 +509,12 @@ onUnload(() => {
     border-radius: 999px;
     padding: 12px 16px;
     font-size: 14px;
-    border: 1px solid rgba(15, 23, 42, 0.08);
+    border: 1px solid rgba(20, 20, 20, 0.12);
+}
+
+.search-input:focus {
+    border-color: rgba(11, 107, 95, 0.4);
+    box-shadow: 0 0 0 3px rgba(11, 107, 95, 0.12);
 }
 
 .result-card {
@@ -519,7 +524,11 @@ onUnload(() => {
     padding: 18px;
     border-radius: var(--radius-lg);
     background: var(--panel-muted);
-    border: 1px solid rgba(15, 23, 42, 0.05);
+    border: 1px solid rgba(20, 20, 20, 0.08);
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease,
+        border-color 0.2s ease;
 }
 
 .result-head {
@@ -542,14 +551,14 @@ onUnload(() => {
     border-radius: 999px;
     font-size: 12px;
     font-weight: 700;
-    background: rgba(15, 23, 42, 0.06);
+    background: rgba(20, 20, 20, 0.08);
     color: var(--text-main);
     white-space: nowrap;
 }
 
 .status-created {
-    background: rgba(255, 159, 10, 0.16);
-    color: #a16207;
+    background: var(--highlight-soft);
+    color: #8a6a1d;
 }
 
 .status-paid,
@@ -565,13 +574,13 @@ onUnload(() => {
 }
 
 .status-refunding {
-    background: rgba(0, 113, 227, 0.1);
+    background: rgba(11, 107, 95, 0.16);
     color: var(--accent);
 }
 
 .status-refunded {
-    background: rgba(90, 200, 250, 0.16);
-    color: #0c7492;
+    background: rgba(15, 118, 110, 0.18);
+    color: #0b5d54;
 }
 
 .metric-grid {
@@ -584,7 +593,7 @@ onUnload(() => {
     padding: 14px;
     border-radius: var(--radius-md);
     background: rgba(255, 255, 255, 0.96);
-    border: 1px solid rgba(15, 23, 42, 0.05);
+    border: 1px solid rgba(20, 20, 20, 0.08);
     display: flex;
     flex-direction: column;
     gap: 8px;
@@ -627,6 +636,22 @@ onUnload(() => {
 
 .action-button {
     flex: 1 1 180px;
+}
+
+.panel {
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease,
+        border-color 0.2s ease;
+}
+
+@media (hover: hover) {
+    .panel:hover,
+    .result-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 16px 30px rgba(20, 20, 20, 0.12);
+        border-color: rgba(20, 20, 20, 0.12);
+    }
 }
 
 .empty-state {

@@ -210,7 +210,7 @@ onShow(() => {
 <template>
     <AppShell title="Cart">
         <view class="cart-layout">
-            <view class="hero-card display-panel">
+            <view class="hero-card display-panel fade-in-up">
                 <view class="hero-copy">
                     <text class="hero-eyebrow">Cart</text>
                     <text class="hero-title"
@@ -237,7 +237,7 @@ onShow(() => {
 
             <view class="content-grid">
                 <view class="main-column">
-                    <view class="surface-card panel">
+                    <view class="surface-card panel fade-in-up">
                         <view class="header">
                             <view class="section-block compact-block">
                                 <text class="section-title"
@@ -263,7 +263,7 @@ onShow(() => {
                         <view class="address-card">
                             <template v-if="selectedAddress">
                                 <text class="address-name"
-                                    >{{ selectedAddress.receiverName }} ·
+                                    >{{ selectedAddress.receiverName }} |
                                     {{ selectedAddress.receiverPhone }}</text
                                 >
                                 <text class="address-text">{{
@@ -282,7 +282,7 @@ onShow(() => {
                         </view>
                     </view>
 
-                    <view class="surface-card panel">
+                    <view class="surface-card panel fade-in-up">
                         <view class="header">
                             <view class="section-block compact-block">
                                 <text class="section-title">Cart items</text>
@@ -356,8 +356,7 @@ onShow(() => {
                                             class="btn-outline mini-button"
                                             @click="changeQuantity(item, -1)"
                                         >
-                                            −
-                                        </button>
+                                            -                                        </button>
                                         <text class="qty">{{
                                             item.quantity
                                         }}</text>
@@ -381,7 +380,7 @@ onShow(() => {
                 </view>
 
                 <view class="side-column">
-                    <view class="surface-card panel summary-card">
+                    <view class="surface-card panel summary-card fade-in-up">
                         <view class="section-block compact-block">
                             <text class="section-title">Order summary</text>
                             <text class="section-subtitle"
@@ -505,7 +504,7 @@ onShow(() => {
     padding: 18px;
     border-radius: var(--radius-lg);
     background: var(--panel-muted);
-    border: 1px solid rgba(15, 23, 42, 0.05);
+    border: 1px solid rgba(20, 20, 20, 0.08);
     display: flex;
     flex-direction: column;
     gap: 8px;
@@ -533,10 +532,14 @@ onShow(() => {
     padding: 18px;
     border-radius: var(--radius-lg);
     background: var(--panel-muted);
-    border: 1px solid rgba(15, 23, 42, 0.05);
+    border: 1px solid rgba(20, 20, 20, 0.08);
     display: flex;
     flex-direction: column;
     gap: 14px;
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease,
+        border-color 0.2s ease;
 }
 
 .shop-head {
@@ -564,7 +567,7 @@ onShow(() => {
     justify-content: space-between;
     gap: 12px;
     padding-top: 14px;
-    border-top: 1px solid rgba(15, 23, 42, 0.06);
+    border-top: 1px solid rgba(20, 20, 20, 0.08);
     flex-wrap: wrap;
 }
 
@@ -623,7 +626,7 @@ onShow(() => {
     padding: 14px;
     border-radius: var(--radius-md);
     background: var(--panel-muted);
-    border: 1px solid rgba(15, 23, 42, 0.05);
+    border: 1px solid rgba(20, 20, 20, 0.08);
     display: flex;
     flex-direction: column;
     gap: 8px;
@@ -647,8 +650,8 @@ onShow(() => {
     justify-content: space-between;
     gap: 12px;
     padding: 16px 0;
-    border-top: 1px solid rgba(15, 23, 42, 0.06);
-    border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+    border-top: 1px solid rgba(20, 20, 20, 0.08);
+    border-bottom: 1px solid rgba(20, 20, 20, 0.08);
 }
 
 .summary-label {
@@ -671,6 +674,22 @@ onShow(() => {
 
 .submit-button {
     width: 100%;
+}
+
+.panel {
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease,
+        border-color 0.2s ease;
+}
+
+@media (hover: hover) {
+    .panel:hover,
+    .shop-group:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 16px 30px rgba(20, 20, 20, 0.12);
+        border-color: rgba(20, 20, 20, 0.12);
+    }
 }
 
 .empty-state {
