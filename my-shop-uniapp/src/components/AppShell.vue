@@ -185,13 +185,15 @@ async function handleLogout(): Promise<void> {
     align-items: flex-start;
     justify-content: space-between;
     gap: 20px;
-    padding: 14px 4px 2px;
+    padding: 14px 4px 12px;
+    border-bottom: 1px solid rgba(20, 20, 20, 0.08);
 }
 
 .top-main {
     display: flex;
     flex-direction: column;
     gap: 8px;
+    max-width: 720px;
 }
 
 .brand {
@@ -202,6 +204,9 @@ async function handleLogout(): Promise<void> {
     font-weight: 700;
     letter-spacing: 0.08em;
     text-transform: uppercase;
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: var(--accent-soft);
 }
 
 .title {
@@ -230,11 +235,11 @@ async function handleLogout(): Promise<void> {
 
 .role-chip {
     font-size: 12px;
-    border: 1px solid rgba(29, 29, 31, 0.08);
+    border: 1px solid rgba(11, 107, 95, 0.2);
     border-radius: 999px;
     color: var(--text-main);
     padding: 7px 12px;
-    background: rgba(255, 255, 255, 0.72);
+    background: var(--accent-soft);
     font-weight: 600;
 }
 
@@ -248,7 +253,10 @@ async function handleLogout(): Promise<void> {
 }
 
 .nav-row {
-    padding: 0 2px 4px;
+    padding: 6px 8px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.7);
+    border: 1px solid rgba(20, 20, 20, 0.08);
 }
 
 .nav-items {
@@ -260,12 +268,12 @@ async function handleLogout(): Promise<void> {
 .nav-item {
     padding: 11px 16px;
     border-radius: 999px;
-    background: rgba(255, 255, 255, 0.64);
+    background: rgba(255, 255, 255, 0.9);
     font-size: 13px;
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    border: 1px solid rgba(15, 23, 42, 0.05);
+    border: 1px solid rgba(20, 20, 20, 0.08);
     color: var(--text-main);
     font-weight: 600;
     transition:
@@ -277,14 +285,18 @@ async function handleLogout(): Promise<void> {
 }
 
 .nav-item.active {
-    background: rgba(255, 255, 255, 0.92);
-    border-color: rgba(15, 23, 42, 0.08);
-    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+    background: linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.95),
+        rgba(250, 246, 240, 0.95)
+    );
+    border-color: rgba(20, 20, 20, 0.12);
+    box-shadow: 0 14px 28px rgba(20, 20, 20, 0.1);
     color: var(--text-main);
 }
 
 .badge {
-    background: var(--text-main);
+    background: var(--accent);
     color: #fff;
     font-size: 10px;
     font-weight: 700;
@@ -299,7 +311,7 @@ async function handleLogout(): Promise<void> {
 @media (hover: hover) {
     .nav-item:hover {
         transform: translateY(-1px);
-        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
+        box-shadow: 0 12px 24px rgba(20, 20, 20, 0.08);
     }
 }
 

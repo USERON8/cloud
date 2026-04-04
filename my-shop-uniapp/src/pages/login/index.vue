@@ -49,7 +49,7 @@ function backToMarket(): void {
 <template>
     <view class="page">
         <view class="page-container auth-layout">
-            <view class="hero-panel">
+            <view class="hero-panel fade-in-up">
                 <view class="hero-badge">My Shop Cloud</view>
                 <text class="hero-title"
                     >Fast sign-in for your storefront workspace</text
@@ -78,7 +78,7 @@ function backToMarket(): void {
                 </view>
             </view>
 
-            <view class="signin-card glass-card">
+            <view class="signin-card glass-card fade-in-up">
                 <view class="header">
                     <text class="eyebrow">OAuth 2.1</text>
                     <text class="title">Sign in</text>
@@ -152,22 +152,22 @@ function backToMarket(): void {
     border-radius: var(--radius-xl);
     background: linear-gradient(
         160deg,
-        rgba(17, 24, 39, 0.92),
-        rgba(30, 64, 175, 0.86)
+        rgba(14, 27, 36, 0.96),
+        rgba(11, 107, 95, 0.9)
     );
     color: #fff;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     gap: 24px;
-    box-shadow: 0 24px 56px rgba(15, 23, 42, 0.22);
+    box-shadow: 0 28px 60px rgba(13, 24, 32, 0.28);
 }
 
 .hero-badge {
     align-self: flex-start;
     padding: 8px 14px;
     border-radius: 999px;
-    background: rgba(255, 255, 255, 0.14);
+    background: rgba(255, 255, 255, 0.16);
     font-size: 12px;
     font-weight: 700;
     letter-spacing: 0.04em;
@@ -195,8 +195,8 @@ function backToMarket(): void {
 
 .point {
     padding: 16px;
-    background: rgba(255, 255, 255, 0.14);
-    border-color: rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.18);
+    border-color: rgba(255, 255, 255, 0.16);
     box-shadow: none;
 }
 
