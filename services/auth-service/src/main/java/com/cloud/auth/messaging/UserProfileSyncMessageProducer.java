@@ -30,20 +30,33 @@ public class UserProfileSyncMessageProducer {
 
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
   public void onUserProfileSyncEvent(UserProfileSyncEvent event) {
-    Message<UserProfileSyncEvent> message =
-        MessageBuilder.withPayload(event)
-            .setHeader("eventType", event.getEventType())
-            .setHeader("eventId", event.getEventId())
-            .build();
-    boolean sent = streamBridge.send(BINDING_NAME, message);
-    if (!sent) {
-      throw new IllegalStateException(
-          "failed to enqueue user profile sync event: eventId=" + event.getEventId());
+    try {
+      Message<UserProfileSyncEvent> message =
+          MessageBuilder.withPayload(event)
+              .setHeader("eventType", event.getEventType())
+              .setHeader("eventId", event.getEventId())
+              .build();
+      boolean sent = streamBridge.send(BINDING_NAME, message);
+      if (!sent) {
+        log.error(
+            "User profile sync event enqueue returned false: eventId={}, userId={}, eventType={}",
+            event.getEventId(),
+            event.getUserId(),
+            event.getEventType());
+        return;
+      }
+      log.info(
+          "User profile sync event enqueued: eventId={}, userId={}, eventType={}",
+          event.getEventId(),
+          event.getUserId(),
+          event.getEventType());
+    } catch (Exception ex) {
+      log.error(
+          "User profile sync event enqueue failed after commit: eventId={}, userId={}, eventType={}",
+          event.getEventId(),
+          event.getUserId(),
+          event.getEventType(),
+          ex);
     }
-    log.info(
-        "User profile sync event enqueued: eventId={}, userId={}, eventType={}",
-        event.getEventId(),
-        event.getUserId(),
-        event.getEventType());
   }
 }
