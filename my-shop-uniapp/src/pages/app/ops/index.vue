@@ -4,6 +4,27 @@ import AppShell from '../../../components/AppShell.vue'
 import { resolveApiUrl } from '../../../api/http'
 import { getGitHubAuthStatus, getGitHubUserInfo, logoutAllSessions, validateToken } from '../../../api/auth'
 import {
+  addTokenToBlacklist,
+  checkBlacklist,
+  cleanupBlacklist,
+  cleanupExpiredTokens,
+  getAuthorizationDetails,
+  getBlacklistStats,
+  getStorageStructure,
+  getTokenStats,
+  revokeAuthorization
+} from '../../../api/auth-tokens'
+import {
+  createCategoriesBatch,
+  deleteCategoriesBatch,
+  getCategoryById,
+  getCategoryChildren,
+  getCategoryTree,
+  moveCategory,
+  updateCategorySort,
+  updateCategoryStatusBatch
+} from '../../../api/category'
+import {
   advancedSearch,
   basicSearch,
   combinedSearchProducts,
@@ -43,7 +64,16 @@ import {
   getPaymentOrderByOrderNo,
   getPaymentStatus
 } from '../../../api/payment'
+import {
+  createSpu,
+  getSpu,
+  listSkuByIds,
+  listSpuByCategory,
+  updateSpu,
+  updateSpuStatus
+} from '../../../api/product-catalog'
 import { getRegistrationTrendRange, getStatisticsOverviewAsync, refreshStatisticsCache } from '../../../api/statistics'
+import { getThreadPoolDetail, getThreadPools } from '../../../api/thread-pool'
 import type {
   PaymentOrderCommand,
   PaymentRefundCommand,

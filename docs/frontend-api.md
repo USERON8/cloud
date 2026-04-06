@@ -90,6 +90,7 @@ Notes:
 - Empty-keyword market landing now prefers `GET /api/search/hot/today`.
 - Search APIs are split between lightweight aliases and rich request-body operations.
 - Merchant catalog management now uses `GET /api/product/manage` so unpublished products remain visible to the merchant owner and can be published again.
+- The operations workspace now imports and executes its token, category, catalog, search, and thread-pool helpers through the current frontend API modules.
 
 ### 4. Order And After-Sale
 
@@ -167,6 +168,7 @@ Notes:
 - Stock pre-check API (`POST /api/stocks/pre-check`) is available for batch stock validation before order creation.
 - Admin workspace currently consumes `/api/admin`, `/api/query/users/search`, `/api/merchant/auth/list`, `/api/merchant/auth/review/{merchantId}`, `/api/statistics/overview`, and `/api/thread-pool/info`.
 - Token management utilities exposed in `src/api/auth-tokens.ts` are admin-only operational tools rather than normal user flows.
+- Operations workspace now closes the current admin toolchain for `/auth/tokens/**`, `/api/category/**`, `/api/product/spu/**`, `/api/search/**`, `/api/search/shops/**`, `/api/thread-pool/**`, `/api/statistics/**`, and payment admin helpers already exposed in the frontend API layer.
 
 ## Request And Behavior Notes
 

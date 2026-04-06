@@ -14,6 +14,7 @@ Scope:
 - Address book page uses the backend address CRUD endpoints and owner-scoped address access rules.
 - Merchant center uses merchant profile, merchant auth, merchant statistics, and license upload endpoints.
 - Admin center uses merchant review, merchant listing, user query, admin listing, and statistics overview endpoints.
+- Operations center now compiles against the current admin toolchain APIs for token management, category maintenance, catalog maintenance, search utilities, shop search, payment helpers, statistics, and thread-pool inspection.
 - Cart checkout, order creation, order query, payment lookup, and refund lookup remain aligned with the previously closed transaction chain audit.
 - Profile page now calls `/api/user/profile/current`, `/api/user/profile/current/password`, and `/api/user/profile/current/avatar` directly instead of rendering JWT claim snapshots only.
 
@@ -33,6 +34,11 @@ Scope:
 
 - Authentication docs now call out admin token-management endpoints under `/auth/tokens/*`.
 - Frontend docs now state that the admin workspace consumes statistics and thread-pool monitor endpoints, and that auth-token operations are admin-only tools.
+
+### 3. Operations workspace had broken API imports
+
+- Previous behavior: `my-shop-uniapp/src/pages/app/ops/index.vue` referenced token, category, product-catalog, and thread-pool helpers that were not imported from the frontend API modules, leaving the page in a compile-time broken state.
+- Current behavior: the page imports the full current helper set from `src/api/auth-tokens.ts`, `src/api/category.ts`, `src/api/product-catalog.ts`, and `src/api/thread-pool.ts`, and the H5 frontend build succeeds again.
 
 ## Current Boundary
 
