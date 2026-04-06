@@ -40,6 +40,10 @@ const userRows = ref<Record<string, any>[]>([]);
 
 const adminLoading = ref(false);
 const adminRows = ref<Record<string, any>[]>([]);
+const expandedReviewRows = reactive<Record<string, boolean>>({});
+const expandedMerchantRows = reactive<Record<string, boolean>>({});
+const expandedUserRows = reactive<Record<string, boolean>>({});
+const expandedAdminRows = reactive<Record<string, boolean>>({});
 
 const overview = reactive({
     merchantCount: 0,
@@ -68,6 +72,23 @@ function merchantStatusText(status?: number): string {
     if (status === 1) return "Enabled";
     if (status === 0) return "Disabled";
     return "Unknown";
+}
+
+function toggleExpandedRow(
+    store: Record<string, boolean>,
+    key: string | number | undefined,
+): void {
+    if (key === undefined || key === null) return;
+    const nextKey = String(key);
+    store[nextKey] = !store[nextKey];
+}
+
+function isExpandedRow(
+    store: Record<string, boolean>,
+    key: string | number | undefined,
+): boolean {
+    if (key === undefined || key === null) return false;
+    return Boolean(store[String(key)]);
 }
 
 async function loadReviewRows(): Promise<void> {
@@ -395,39 +416,86 @@ onMounted(() => {
                                 row.username ||
                                 `Merchant #${row.merchantId}`
                             }}</text>
-                            <text class="review-meta"
-                                >Merchant ID: {{ row.merchantId ?? "--" }}</text
+                            <view class="meta-inline">
+                                <text class="meta-chip">
+                                    Merchant ID: {{ row.merchantId ?? "--" }}
+                                </text>
+                                <text class="meta-chip">
+                                    {{ authStatusText(row.authStatus) }}
+                                </text>
+                                <text class="meta-chip">
+                                    {{ row.contactPhone || "No phone" }}
+                                </text>
+                            </view>
+                            <view class="summary-grid">
+                                <view class="summary-item">
+                                    <text class="summary-label">License No</text>
+                                    <text class="summary-value">{{
+                                        row.businessLicenseNumber || "--"
+                                    }}</text>
+                                </view>
+                                <view class="summary-item">
+                                    <text class="summary-label">Contact</text>
+                                    <text class="summary-value">{{
+                                        row.contactAddress || "--"
+                                    }}</text>
+                                </view>
+                            </view>
+
+                            <view
+                                v-if="
+                                    isExpandedRow(
+                                        expandedReviewRows,
+                                        row.id || row.merchantId,
+                                    )
+                                "
+                                class="detail-grid"
                             >
-                            <text class="review-meta"
-                                >Status:
-                                {{ authStatusText(row.authStatus) }}</text
-                            >
-                            <text class="review-meta"
-                                >License No:
-                                {{ row.businessLicenseNumber || "--" }}</text
-                            >
-                            <text class="review-meta"
-                                >Contact Phone:
-                                {{ row.contactPhone || "--" }}</text
-                            >
-                            <text class="review-meta"
-                                >Contact Address:
-                                {{ row.contactAddress || "--" }}</text
-                            >
-                            <text class="review-meta"
-                                >Business License URL:
-                                {{ row.businessLicenseUrl || "--" }}</text
-                            >
-                            <text class="review-meta"
-                                >Front ID URL:
-                                {{ row.idCardFrontUrl || "--" }}</text
-                            >
-                            <text class="review-meta"
-                                >Back ID URL:
-                                {{ row.idCardBackUrl || "--" }}</text
-                            >
+                                <view class="detail-item">
+                                    <text class="summary-label"
+                                        >Business License URL</text
+                                    >
+                                    <text class="review-meta">{{
+                                        row.businessLicenseUrl || "--"
+                                    }}</text>
+                                </view>
+                                <view class="detail-item">
+                                    <text class="summary-label"
+                                        >Front ID URL</text
+                                    >
+                                    <text class="review-meta">{{
+                                        row.idCardFrontUrl || "--"
+                                    }}</text>
+                                </view>
+                                <view class="detail-item">
+                                    <text class="summary-label"
+                                        >Back ID URL</text
+                                    >
+                                    <text class="review-meta">{{
+                                        row.idCardBackUrl || "--"
+                                    }}</text>
+                                </view>
+                            </view>
                         </view>
                         <view class="review-actions">
+                            <button
+                                class="btn-secondary"
+                                @click="
+                                    toggleExpandedRow(
+                                        expandedReviewRows,
+                                        row.id || row.merchantId,
+                                    )
+                                "
+                            >
+                                {{
+                                    isExpandedRow(
+                                        expandedReviewRows,
+                                        row.id || row.merchantId,
+                                    )
+                                        ? "Hide details"
+                                        : "Show details"
+                                }}
+                            </button>
                             <button
                                 class="btn-primary"
                                 @click="approveReview(row)"
@@ -480,25 +548,68 @@ onMounted(() => {
                             <text class="row-title">{{
                                 row.merchantName || row.username || "Merchant"
                             }}</text>
-                            <text class="row-meta"
-                                >Merchant ID: {{ row.id }}</text
+                            <view class="meta-inline">
+                                <text class="meta-chip">Merchant ID: {{ row.id }}</text>
+                                <text class="meta-chip">{{
+                                    merchantStatusText(row.status)
+                                }}</text>
+                                <text class="meta-chip">{{
+                                    authStatusText(row.authStatus)
+                                }}</text>
+                            </view>
+                            <view class="summary-grid">
+                                <view class="summary-item">
+                                    <text class="summary-label">Phone</text>
+                                    <text class="summary-value">{{
+                                        row.phone || "--"
+                                    }}</text>
+                                </view>
+                                <view class="summary-item">
+                                    <text class="summary-label">Email</text>
+                                    <text class="summary-value">{{
+                                        row.email || "--"
+                                    }}</text>
+                                </view>
+                            </view>
+                            <view
+                                v-if="
+                                    isExpandedRow(
+                                        expandedMerchantRows,
+                                        row.id,
+                                    )
+                                "
+                                class="detail-grid"
                             >
-                            <text class="row-meta"
-                                >Phone: {{ row.phone || "--" }}</text
-                            >
-                            <text class="row-meta"
-                                >Email: {{ row.email || "--" }}</text
-                            >
-                            <text class="row-meta"
-                                >Status:
-                                {{ merchantStatusText(row.status) }}</text
-                            >
-                            <text class="row-meta"
-                                >Auth Status:
-                                {{ authStatusText(row.authStatus) }}</text
-                            >
+                                <view class="detail-item">
+                                    <text class="summary-label">Username</text>
+                                    <text class="row-meta">{{
+                                        row.username || "--"
+                                    }}</text>
+                                </view>
+                                <view class="detail-item">
+                                    <text class="summary-label">Nickname</text>
+                                    <text class="row-meta">{{
+                                        row.nickname || "--"
+                                    }}</text>
+                                </view>
+                            </view>
                         </view>
                         <view class="row-actions">
+                            <button
+                                class="btn-secondary"
+                                @click="
+                                    toggleExpandedRow(
+                                        expandedMerchantRows,
+                                        row.id,
+                                    )
+                                "
+                            >
+                                {{
+                                    isExpandedRow(expandedMerchantRows, row.id)
+                                        ? "Hide details"
+                                        : "Show details"
+                                }}
+                            </button>
                             <button
                                 class="btn-primary"
                                 @click="approveMerchantRow(row)"
@@ -551,19 +662,55 @@ onMounted(() => {
                             <text class="row-title">{{
                                 row.username || row.nickname || "User"
                             }}</text>
-                            <text class="row-meta">User ID: {{ row.id }}</text>
-                            <text class="row-meta"
-                                >Phone: {{ row.phone || "--" }}</text
-                            >
-                            <text class="row-meta"
-                                >Email: {{ row.email || "--" }}</text
-                            >
-                            <text class="row-meta"
-                                >Status:
-                                {{
+                            <view class="meta-inline">
+                                <text class="meta-chip">User ID: {{ row.id }}</text>
+                                <text class="meta-chip">{{
                                     row.status === 1 ? "Enabled" : "Disabled"
-                                }}</text
+                                }}</text>
+                            </view>
+                            <view class="summary-grid">
+                                <view class="summary-item">
+                                    <text class="summary-label">Phone</text>
+                                    <text class="summary-value">{{
+                                        row.phone || "--"
+                                    }}</text>
+                                </view>
+                                <view class="summary-item">
+                                    <text class="summary-label">Email</text>
+                                    <text class="summary-value">{{
+                                        row.email || "--"
+                                    }}</text>
+                                </view>
+                            </view>
+                            <view
+                                v-if="isExpandedRow(expandedUserRows, row.id)"
+                                class="detail-grid"
                             >
+                                <view class="detail-item">
+                                    <text class="summary-label">Nickname</text>
+                                    <text class="row-meta">{{
+                                        row.nickname || "--"
+                                    }}</text>
+                                </view>
+                                <view class="detail-item">
+                                    <text class="summary-label">Username</text>
+                                    <text class="row-meta">{{
+                                        row.username || "--"
+                                    }}</text>
+                                </view>
+                            </view>
+                        </view>
+                        <view class="row-actions">
+                            <button
+                                class="btn-secondary"
+                                @click="toggleExpandedRow(expandedUserRows, row.id)"
+                            >
+                                {{
+                                    isExpandedRow(expandedUserRows, row.id)
+                                        ? "Hide details"
+                                        : "Show details"
+                                }}
+                            </button>
                         </view>
                     </view>
                 </view>
@@ -603,16 +750,49 @@ onMounted(() => {
                             <text class="row-title">{{
                                 row.realName || row.username || "Admin"
                             }}</text>
-                            <text class="row-meta">Admin ID: {{ row.id }}</text>
-                            <text class="row-meta"
-                                >Username: {{ row.username || "--" }}</text
+                            <view class="meta-inline">
+                                <text class="meta-chip">Admin ID: {{ row.id }}</text>
+                                <text class="meta-chip">{{
+                                    row.role || "No role"
+                                }}</text>
+                            </view>
+                            <view class="summary-grid">
+                                <view class="summary-item">
+                                    <text class="summary-label">Username</text>
+                                    <text class="summary-value">{{
+                                        row.username || "--"
+                                    }}</text>
+                                </view>
+                                <view class="summary-item">
+                                    <text class="summary-label">Phone</text>
+                                    <text class="summary-value">{{
+                                        row.phone || "--"
+                                    }}</text>
+                                </view>
+                            </view>
+                            <view
+                                v-if="isExpandedRow(expandedAdminRows, row.id)"
+                                class="detail-grid"
                             >
-                            <text class="row-meta"
-                                >Role: {{ row.role || "--" }}</text
+                                <view class="detail-item">
+                                    <text class="summary-label">Real name</text>
+                                    <text class="row-meta">{{
+                                        row.realName || "--"
+                                    }}</text>
+                                </view>
+                            </view>
+                        </view>
+                        <view class="row-actions">
+                            <button
+                                class="btn-secondary"
+                                @click="toggleExpandedRow(expandedAdminRows, row.id)"
                             >
-                            <text class="row-meta"
-                                >Phone: {{ row.phone || "--" }}</text
-                            >
+                                {{
+                                    isExpandedRow(expandedAdminRows, row.id)
+                                        ? "Hide details"
+                                        : "Show details"
+                                }}
+                            </button>
                         </view>
                     </view>
                 </view>
@@ -740,9 +920,58 @@ onMounted(() => {
 .row-main {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 10px;
     min-width: 240px;
     flex: 1;
+}
+
+.meta-inline {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.meta-chip {
+    display: inline-flex;
+    align-items: center;
+    min-height: 30px;
+    padding: 0 12px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--panel-border);
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.summary-grid,
+.detail-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.summary-item,
+.detail-item {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 12px 14px;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--panel-border);
+}
+
+.summary-label {
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text-soft);
+}
+
+.summary-value {
+    font-size: 14px;
+    line-height: 1.7;
+    color: var(--text-main);
 }
 
 .code-panel {
@@ -788,6 +1017,11 @@ onMounted(() => {
 
     .review-input {
         min-width: 100%;
+    }
+
+    .summary-grid,
+    .detail-grid {
+        grid-template-columns: 1fr;
     }
 }
 
