@@ -1,258 +1,314 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
-import AppShell from '../../../components/AppShell.vue'
-import { listProducts, updateProductStatus } from '../../../api/product'
-import type { ProductItem } from '../../../types/domain'
-import { formatPrice, formatProductStatus } from '../../../utils/format'
-import { confirm, toast } from '../../../utils/ui'
+import { computed, onMounted, ref } from "vue";
+import AppShell from "../../../components/AppShell.vue";
+import { listProducts, updateProductStatus } from "../../../api/product";
+import type { ProductItem } from "../../../types/domain";
+import { formatPrice, formatProductStatus } from "../../../utils/format";
+import { confirm, toast } from "../../../utils/ui";
 
-const keyword = ref('')
-const loading = ref(false)
-const rows = ref<ProductItem[]>([])
+const keyword = ref("");
+const loading = ref(false);
+const rows = ref<ProductItem[]>([]);
 
-const publishedCount = () => rows.value.filter(r => r.status === 1).length
-const unpublishedCount = () => rows.value.filter(r => r.status !== 1).length
+const publishedCount = computed(
+    () => rows.value.filter((row) => row.status === 1).length,
+);
+const unpublishedCount = computed(
+    () => rows.value.filter((row) => row.status !== 1).length,
+);
 
 async function loadProducts(): Promise<void> {
-  if (loading.value) return
-  loading.value = true
-  try {
-    const result = await listProducts({ page: 1, size: 50, name: keyword.value || undefined })
-    rows.value = result.records
-  } catch (error) {
-    toast(error instanceof Error ? error.message : 'Failed to load products')
-  } finally {
-    loading.value = false
-  }
+    if (loading.value) return;
+    loading.value = true;
+    try {
+        const result = await listProducts({
+            page: 1,
+            size: 50,
+            name: keyword.value || undefined,
+        });
+        rows.value = result.records;
+    } catch (error) {
+        toast(
+            error instanceof Error ? error.message : "Failed to load products",
+        );
+    } finally {
+        loading.value = false;
+    }
 }
 
 async function toggleStatus(item: ProductItem): Promise<void> {
-  if (typeof item.id !== 'number') return
-  const nextStatus: 0 | 1 = item.status === 1 ? 0 : 1
-  const action = nextStatus === 1 ? 'publish' : 'unpublish'
-  const ok = await confirm(`Set "${item.name}" to ${action}?`)
-  if (!ok) return
-  try {
-    await updateProductStatus(item.id, nextStatus)
-    toast('Status updated', 'success')
-    await loadProducts()
-  } catch (error) {
-    toast(error instanceof Error ? error.message : 'Failed to update status')
-  }
+    if (typeof item.id !== "number") return;
+    const nextStatus: 0 | 1 = item.status === 1 ? 0 : 1;
+    const action = nextStatus === 1 ? "publish" : "unpublish";
+    const ok = await confirm(`Set "${item.name}" to ${action}?`);
+    if (!ok) return;
+    try {
+        await updateProductStatus(item.id, nextStatus);
+        toast("Status updated", "success");
+        await loadProducts();
+    } catch (error) {
+        toast(
+            error instanceof Error
+                ? error.message
+                : "Failed to update status",
+        );
+    }
 }
 
 onMounted(() => {
-  void loadProducts()
-})
+    void loadProducts();
+});
 </script>
 
 <template>
-  <AppShell title="Product Admin">
-    <view class="page-wrap">
-      <!-- Hero -->
-      <view class="hero surface-card fade-in-up">
-        <view class="hero-left">
-          <text class="hero-eyebrow">MERCHANT</text>
-          <text class="hero-title">Product Catalog</text>
-          <text class="hero-subtitle">Publish, unpublish and monitor your product listings.</text>
-        </view>
-        <view class="hero-stats">
-          <view class="info-card">
-            <text class="info-label">Published</text>
-            <text class="info-value">{{ publishedCount() }}</text>
-          </view>
-          <view class="info-card">
-            <text class="info-label">Unpublished</text>
-            <text class="info-value">{{ unpublishedCount() }}</text>
-          </view>
-          <view class="info-card">
-            <text class="info-label">Total</text>
-            <text class="info-value">{{ rows.length }}</text>
-          </view>
-        </view>
-      </view>
+    <AppShell title="Product Admin">
+        <view class="catalog-page">
+            <view class="display-panel dashboard-hero fade-in-up">
+                <view class="dashboard-hero-copy">
+                    <text class="hero-eyebrow">Merchant operations</text>
+                    <text class="hero-title">Catalog control room</text>
+                    <text class="hero-subtitle">
+                        Search products, review publication state, and switch
+                        listings without leaving the merchant workflow.
+                    </text>
 
-      <!-- Toolbar -->
-      <view class="toolbar surface-card fade-in-up">
-        <view class="search-row">
-          <input
-            v-model="keyword"
-            class="std-input"
-            placeholder="Search products"
-            @confirm="loadProducts"
-          />
-          <button class="btn-primary" :loading="loading" @click="loadProducts">Search</button>
-        </view>
-        <button class="btn-outline" :loading="loading" @click="loadProducts">Refresh</button>
-      </view>
+                    <view class="action-wrap">
+                        <button
+                            class="btn-primary"
+                            :loading="loading"
+                            @click="loadProducts"
+                        >
+                            Refresh catalog
+                        </button>
+                    </view>
+                </view>
 
-      <!-- List -->
-      <view v-if="rows.length === 0" class="empty-state">
-        <text class="empty-state-text">No products found</text>
-      </view>
-
-      <view v-else class="list fade-in-up">
-        <view v-for="item in rows" :key="item.id" class="row surface-card">
-          <view class="row-info">
-            <text class="row-name">{{ item.name }}</text>
-            <text class="row-meta">{{ formatPrice(item.price) }}</text>
-            <view class="chip" :class="item.status === 1 ? 'chip-success' : 'chip-muted'">
-              <text>{{ formatProductStatus(item.status) }}</text>
+                <view class="dashboard-hero-stats">
+                    <view class="metric-card">
+                        <text class="metric-label">Published</text>
+                        <text class="metric-value">{{ publishedCount }}</text>
+                    </view>
+                    <view class="metric-card">
+                        <text class="metric-label">Unpublished</text>
+                        <text class="metric-value">{{ unpublishedCount }}</text>
+                    </view>
+                    <view class="metric-card">
+                        <text class="metric-label">Total</text>
+                        <text class="metric-value">{{ rows.length }}</text>
+                    </view>
+                </view>
             </view>
-          </view>
-          <button class="btn-outline" @click="toggleStatus(item)">
-            {{ item.status === 1 ? 'Unpublish' : 'Publish' }}
-          </button>
+
+            <view class="dashboard-grid-main fade-in-up">
+                <view class="surface-card panel-block">
+                    <view class="section-head">
+                        <text class="section-title">Search inventory</text>
+                        <text class="section-subtitle">
+                            Narrow the list by product name before taking a
+                            publication action.
+                        </text>
+                    </view>
+
+                    <view class="toolbar-grid">
+                        <input
+                            v-model="keyword"
+                            class="field-control"
+                            placeholder="Search products"
+                            @confirm="loadProducts"
+                        />
+                        <button
+                            class="btn-primary"
+                            :loading="loading"
+                            @click="loadProducts"
+                        >
+                            Search
+                        </button>
+                    </view>
+                </view>
+
+                <view class="surface-card panel-block sticky-side">
+                    <view class="section-head">
+                        <text class="section-title">Current rhythm</text>
+                        <text class="section-subtitle">
+                            Use publish for ready products and keep draft items
+                            out of the live catalog.
+                        </text>
+                    </view>
+
+                    <view class="surface-muted panel-block hint-card">
+                        <text class="metric-label">Focus</text>
+                        <text class="hint-copy">
+                            Each row shows only the core product signal first:
+                            name, price, status, and available action.
+                        </text>
+                    </view>
+                </view>
+            </view>
+
+            <view v-if="rows.length === 0" class="empty-state fade-in-up">
+                <text>No products found</text>
+            </view>
+
+            <view v-else class="catalog-list fade-in-up">
+                <view
+                    v-for="item in rows"
+                    :key="item.id"
+                    class="surface-card panel-block panel-hover catalog-row"
+                >
+                    <view class="row-main">
+                        <text class="row-title">{{ item.name }}</text>
+
+                        <view class="meta-inline">
+                            <text class="meta-chip">
+                                {{ formatProductStatus(item.status) }}
+                            </text>
+                            <text class="meta-chip">
+                                {{
+                                    typeof item.id === "number"
+                                        ? `Product ID: ${item.id}`
+                                        : "Product ID: --"
+                                }}
+                            </text>
+                        </view>
+
+                        <view class="summary-grid">
+                            <view class="summary-item">
+                                <text class="summary-label">Price</text>
+                                <text class="summary-value">{{
+                                    formatPrice(item.price)
+                                }}</text>
+                            </view>
+                            <view class="summary-item">
+                                <text class="summary-label">Status</text>
+                                <text class="summary-value">{{
+                                    formatProductStatus(item.status)
+                                }}</text>
+                            </view>
+                        </view>
+                    </view>
+
+                    <view class="action-wrap row-actions">
+                        <button class="btn-outline" @click="toggleStatus(item)">
+                            {{ item.status === 1 ? "Unpublish" : "Publish" }}
+                        </button>
+                    </view>
+                </view>
+            </view>
         </view>
-      </view>
-    </view>
-  </AppShell>
+    </AppShell>
 </template>
 
 <style scoped>
-.page-wrap {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  padding: 24px;
-  max-width: 960px;
-  margin: 0 auto;
+.catalog-page {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
 }
 
-.hero {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 24px;
-  padding: 32px 36px;
-  border-radius: var(--radius-lg);
-  flex-wrap: wrap;
+.toolbar-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 12px;
+    align-items: center;
 }
 
-.hero-left {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+.hint-card {
+    gap: 12px;
 }
 
-.hero-eyebrow {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  color: var(--accent);
-  text-transform: uppercase;
+.hint-copy {
+    font-size: 14px;
+    line-height: 1.8;
+    color: var(--text-muted);
 }
 
-.hero-title {
-  font-size: 28px;
-  font-weight: 700;
-  color: var(--text-main);
-  letter-spacing: -0.02em;
+.catalog-list {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
 }
 
-.hero-subtitle {
-  font-size: 14px;
-  color: var(--text-muted);
-  line-height: 1.5;
+.catalog-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
 }
 
-.hero-stats {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
+.row-main {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    flex: 1;
+    min-width: 260px;
 }
 
-.toolbar {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 16px 20px;
-  border-radius: var(--radius-md);
-  flex-wrap: wrap;
-  border: 1px solid rgba(20, 20, 20, 0.08);
-}
-.search-row {
-  flex: 1;
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  min-width: 200px;
+.row-title {
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    color: var(--text-main);
 }
 
-.std-input {
-  flex: 1;
-  background: rgba(255, 255, 255, 0.96);
-  border: 1px solid rgba(20, 20, 20, 0.12);
-  border-radius: 16px;
-  padding: 13px 16px;
-  font-size: 14px;
-  color: var(--text-main);
+.meta-inline {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
 }
 
-.std-input:focus {
-  border-color: rgba(11, 107, 95, 0.4);
-  box-shadow: 0 0 0 3px rgba(11, 107, 95, 0.12);
+.meta-chip {
+    display: inline-flex;
+    align-items: center;
+    min-height: 30px;
+    padding: 0 12px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--panel-border);
+    font-size: 12px;
+    color: var(--text-muted);
 }
 
-.list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+.summary-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
 }
 
-.row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 16px 20px;
-  border-radius: var(--radius-md);
-  border: 1px solid rgba(20, 20, 20, 0.08);
-  transition:
-    transform 0.2s ease,
-    box-shadow 0.2s ease,
-    border-color 0.2s ease;
-}
-.row-info {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+.summary-item {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 12px 14px;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--panel-border);
 }
 
-.row-name {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--text-main);
+.summary-label {
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text-soft);
 }
 
-.row-meta {
-  font-size: 13px;
-  color: var(--text-muted);
+.summary-value {
+    font-size: 14px;
+    line-height: 1.7;
+    color: var(--text-main);
 }
 
-.chip-success {
-  background: rgba(11, 107, 95, 0.16);
-  color: var(--accent);
+.row-actions {
+    align-items: center;
 }
 
-.chip-muted {
-  background: rgba(20, 20, 20, 0.08);
-  color: var(--text-muted);
-}
+@media (max-width: 768px) {
+    .toolbar-grid,
+    .summary-grid {
+        grid-template-columns: 1fr;
+    }
 
-@media (hover: hover) {
-  .row:hover,
-  .toolbar:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 16px 30px rgba(20, 20, 20, 0.12);
-    border-color: rgba(20, 20, 20, 0.12);
-  }
-}
-
-@media (max-width: 600px) {
-  .page-wrap { padding: 16px; }
-  .hero { padding: 24px 20px; }
-  .row { flex-direction: column; align-items: flex-start; }
+    .row-actions {
+        width: 100%;
+    }
 }
 </style>

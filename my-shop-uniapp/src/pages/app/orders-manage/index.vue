@@ -1,422 +1,592 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue'
-import AppShell from '../../../components/AppShell.vue'
-import { advanceAfterSaleStatus, completeOrder, listOrders, shipOrder } from '../../../api/order'
-import type { OrderItem } from '../../../types/domain'
-import { formatDate, formatOrderStatus, formatPrice, formatRelativeDate } from '../../../utils/format'
-import { confirm, toast } from '../../../utils/ui'
+import { computed, onMounted, reactive, ref } from "vue";
+import AppShell from "../../../components/AppShell.vue";
+import {
+    advanceAfterSaleStatus,
+    completeOrder,
+    listOrders,
+    shipOrder,
+} from "../../../api/order";
+import type { OrderItem } from "../../../types/domain";
+import {
+    formatDate,
+    formatOrderStatus,
+    formatPrice,
+    formatRelativeDate,
+} from "../../../utils/format";
+import { confirm, toast } from "../../../utils/ui";
 
-const rows = ref<OrderItem[]>([])
-const loading = ref(false)
-const afterSaleActingOrderId = ref<number | null>(null)
+const rows = ref<OrderItem[]>([]);
+const loading = ref(false);
+const afterSaleActingOrderId = ref<number | null>(null);
+const expandedRows = reactive<Record<string, boolean>>({});
 const shippingForm = reactive({
-  shippingCompany: '',
-  trackingNumber: ''
-})
+    shippingCompany: "",
+    trackingNumber: "",
+});
 const afterSaleForm = reactive({
-  remark: ''
-})
+    remark: "",
+});
+
+const activeAfterSaleCount = computed(
+    () =>
+        rows.value.filter(
+            (row) => row.afterSaleStatus && row.afterSaleStatus !== "NONE",
+        ).length,
+);
 
 async function loadOrders(): Promise<void> {
-  if (loading.value) return
-  loading.value = true
-  try {
-    const result = await listOrders({ page: 1, size: 30 })
-    rows.value = result.records
-  } catch (error) {
-    toast(error instanceof Error ? error.message : 'Failed to load orders')
-  } finally {
-    loading.value = false
-  }
+    if (loading.value) return;
+    loading.value = true;
+    try {
+        const result = await listOrders({ page: 1, size: 30 });
+        rows.value = result.records;
+    } catch (error) {
+        toast(error instanceof Error ? error.message : "Failed to load orders");
+    } finally {
+        loading.value = false;
+    }
 }
 
 function requireShippingField(value: string, label: string): string | null {
-  const trimmed = value.trim()
-  if (!trimmed) {
-    toast(`${label} is required`)
-    return null
-  }
-  return trimmed
+    const trimmed = value.trim();
+    if (!trimmed) {
+        toast(`${label} is required`);
+        return null;
+    }
+    return trimmed;
 }
 
 function canAuditAfterSale(order: OrderItem): boolean {
-  return typeof order.afterSaleId === 'number' && order.afterSaleStatus === 'APPLIED'
+    return (
+        typeof order.afterSaleId === "number" &&
+        order.afterSaleStatus === "APPLIED"
+    );
 }
 
 function canApproveAfterSale(order: OrderItem): boolean {
-  return typeof order.afterSaleId === 'number' && order.afterSaleStatus === 'AUDITING'
+    return (
+        typeof order.afterSaleId === "number" &&
+        order.afterSaleStatus === "AUDITING"
+    );
 }
 
 function canRejectAfterSale(order: OrderItem): boolean {
-  return typeof order.afterSaleId === 'number' && ['APPLIED', 'AUDITING'].includes(order.afterSaleStatus ?? '')
+    return (
+        typeof order.afterSaleId === "number" &&
+        ["APPLIED", "AUDITING"].includes(order.afterSaleStatus ?? "")
+    );
 }
 
 function canWaitReturn(order: OrderItem): boolean {
-  return (
-    typeof order.afterSaleId === 'number' &&
-    order.afterSaleStatus === 'APPROVED' &&
-    order.afterSaleType === 'RETURN_REFUND'
-  )
+    return (
+        typeof order.afterSaleId === "number" &&
+        order.afterSaleStatus === "APPROVED" &&
+        order.afterSaleType === "RETURN_REFUND"
+    );
 }
 
 function canProcessRefund(order: OrderItem): boolean {
-  return (
-    typeof order.afterSaleId === 'number' &&
-    ((order.afterSaleStatus === 'APPROVED' && order.afterSaleType === 'REFUND') ||
-      order.afterSaleStatus === 'RECEIVED')
-  )
+    return (
+        typeof order.afterSaleId === "number" &&
+        ((order.afterSaleStatus === "APPROVED" &&
+            order.afterSaleType === "REFUND") ||
+            order.afterSaleStatus === "RECEIVED")
+    );
 }
 
 function canMarkReturned(order: OrderItem): boolean {
-  return typeof order.afterSaleId === 'number' && order.afterSaleStatus === 'WAIT_RETURN'
+    return (
+        typeof order.afterSaleId === "number" &&
+        order.afterSaleStatus === "WAIT_RETURN"
+    );
 }
 
 function canMarkReceived(order: OrderItem): boolean {
-  return typeof order.afterSaleId === 'number' && order.afterSaleStatus === 'RETURNED'
+    return (
+        typeof order.afterSaleId === "number" &&
+        order.afterSaleStatus === "RETURNED"
+    );
+}
+
+function toggleExpandedRow(key: string | number | undefined): void {
+    if (key === undefined || key === null) return;
+    const nextKey = String(key);
+    expandedRows[nextKey] = !expandedRows[nextKey];
+}
+
+function isExpandedRow(key: string | number | undefined): boolean {
+    if (key === undefined || key === null) return false;
+    return Boolean(expandedRows[String(key)]);
 }
 
 async function onShip(order: OrderItem): Promise<void> {
-  if (typeof order.id !== 'number') return
-  const shippingCompany = requireShippingField(shippingForm.shippingCompany, 'Shipping company')
-  if (!shippingCompany) return
-  const trackingNumber = requireShippingField(shippingForm.trackingNumber, 'Tracking number')
-  if (!trackingNumber) return
-  const ok = await confirm(`Confirm shipment for order ${order.orderNo}?`)
-  if (!ok) return
-  try {
-    await shipOrder(order.id, shippingCompany, trackingNumber)
-    toast('Order shipped', 'success')
-    await loadOrders()
-  } catch (error) {
-    toast(error instanceof Error ? error.message : 'Failed to ship order')
-  }
+    if (typeof order.id !== "number") return;
+    const shippingCompany = requireShippingField(
+        shippingForm.shippingCompany,
+        "Shipping company",
+    );
+    if (!shippingCompany) return;
+    const trackingNumber = requireShippingField(
+        shippingForm.trackingNumber,
+        "Tracking number",
+    );
+    if (!trackingNumber) return;
+    const ok = await confirm(`Confirm shipment for order ${order.orderNo}?`);
+    if (!ok) return;
+    try {
+        await shipOrder(order.id, shippingCompany, trackingNumber);
+        toast("Order shipped", "success");
+        await loadOrders();
+    } catch (error) {
+        toast(error instanceof Error ? error.message : "Failed to ship order");
+    }
 }
 
 async function onComplete(order: OrderItem): Promise<void> {
-  if (typeof order.id !== 'number') return
-  const ok = await confirm(`Confirm completion for order ${order.orderNo}?`)
-  if (!ok) return
-  try {
-    await completeOrder(order.id)
-    toast('Order completed', 'success')
-    await loadOrders()
-  } catch (error) {
-    toast(error instanceof Error ? error.message : 'Failed to complete order')
-  }
+    if (typeof order.id !== "number") return;
+    const ok = await confirm(`Confirm completion for order ${order.orderNo}?`);
+    if (!ok) return;
+    try {
+        await completeOrder(order.id);
+        toast("Order completed", "success");
+        await loadOrders();
+    } catch (error) {
+        toast(
+            error instanceof Error ? error.message : "Failed to complete order",
+        );
+    }
 }
 
 async function onAdvanceAfterSale(
-  order: OrderItem,
-  action: 'AUDIT' | 'APPROVE' | 'REJECT' | 'WAIT_RETURN' | 'RETURN' | 'RECEIVE' | 'PROCESS'
+    order: OrderItem,
+    action:
+        | "AUDIT"
+        | "APPROVE"
+        | "REJECT"
+        | "WAIT_RETURN"
+        | "RETURN"
+        | "RECEIVE"
+        | "PROCESS",
 ): Promise<void> {
-  if (typeof order.afterSaleId !== 'number' || typeof order.id !== 'number') {
-    toast('This order is missing after-sale metadata')
-    return
-  }
-  const labels: Record<typeof action, string> = {
-    AUDIT: 'start review',
-    APPROVE: 'approve',
-    REJECT: 'reject',
-    WAIT_RETURN: 'wait for return',
-    RETURN: 'mark returned',
-    RECEIVE: 'mark received',
-    PROCESS: 'start refund'
-  }
-  const ok = await confirm(`Confirm ${labels[action]} for ${order.afterSaleNo ?? order.afterSaleId}?`)
-  if (!ok) {
-    return
-  }
-  afterSaleActingOrderId.value = order.id
-  try {
-    const remark = afterSaleForm.remark.trim() || undefined
-    await advanceAfterSaleStatus(order.afterSaleId, action, remark)
-    toast(`After-sale ${labels[action]} completed`, 'success')
-    await loadOrders()
-  } catch (error) {
-    toast(error instanceof Error ? error.message : 'Failed to update the after-sale request')
-  } finally {
-    afterSaleActingOrderId.value = null
-  }
+    if (typeof order.afterSaleId !== "number" || typeof order.id !== "number") {
+        toast("This order is missing after-sale metadata");
+        return;
+    }
+    const labels: Record<typeof action, string> = {
+        AUDIT: "start review",
+        APPROVE: "approve",
+        REJECT: "reject",
+        WAIT_RETURN: "wait for return",
+        RETURN: "mark returned",
+        RECEIVE: "mark received",
+        PROCESS: "start refund",
+    };
+    const ok = await confirm(
+        `Confirm ${labels[action]} for ${order.afterSaleNo ?? order.afterSaleId}?`,
+    );
+    if (!ok) {
+        return;
+    }
+    afterSaleActingOrderId.value = order.id;
+    try {
+        const remark = afterSaleForm.remark.trim() || undefined;
+        await advanceAfterSaleStatus(order.afterSaleId, action, remark);
+        toast(`After-sale ${labels[action]} completed`, "success");
+        await loadOrders();
+    } catch (error) {
+        toast(
+            error instanceof Error
+                ? error.message
+                : "Failed to update the after-sale request",
+        );
+    } finally {
+        afterSaleActingOrderId.value = null;
+    }
 }
 
 onMounted(() => {
-  void loadOrders()
-})
+    void loadOrders();
+});
 </script>
 
 <template>
-  <AppShell title="Order Admin">
-    <view class="page-wrap">
-      <!-- Hero -->
-      <view class="hero surface-card fade-in-up">
-        <view class="hero-left">
-          <text class="hero-eyebrow">MERCHANT</text>
-          <text class="hero-title">Order Management</text>
-          <text class="hero-subtitle">Ship orders and handle after-sale requests.</text>
-        </view>
-        <view class="hero-stats">
-          <view class="info-card">
-            <text class="info-label">Total</text>
-            <text class="info-value">{{ rows.length }}</text>
-          </view>
-        </view>
-      </view>
+    <AppShell title="Order Admin">
+        <view class="orders-page">
+            <view class="display-panel dashboard-hero fade-in-up">
+                <view class="dashboard-hero-copy">
+                    <text class="hero-eyebrow">Merchant operations</text>
+                    <text class="hero-title">Order control room</text>
+                    <text class="hero-subtitle">
+                        Ship orders, complete delivery flow, and process
+                        after-sale requests from one queue.
+                    </text>
 
-      <!-- Shipping fields (shared across rows) -->
-      <view class="toolbar surface-card fade-in-up">
-        <view class="field-group">
-          <text class="field-label">Shipping company</text>
-          <input v-model="shippingForm.shippingCompany" class="std-input" placeholder="e.g. FedEx" />
-        </view>
-        <view class="field-group">
-          <text class="field-label">Tracking number</text>
-          <input v-model="shippingForm.trackingNumber" class="std-input" placeholder="Enter tracking no." />
-        </view>
-        <view class="field-group">
-          <text class="field-label">After-sale remark</text>
-          <input v-model="afterSaleForm.remark" class="std-input" placeholder="Optional remark" />
-        </view>
-        <button class="btn-outline" :loading="loading" @click="loadOrders">Refresh</button>
-      </view>
+                    <view class="action-wrap">
+                        <button
+                            class="btn-primary"
+                            :loading="loading"
+                            @click="loadOrders"
+                        >
+                            Refresh orders
+                        </button>
+                    </view>
+                </view>
 
-      <!-- Empty -->
-      <view v-if="rows.length === 0" class="empty-state">
-        <text class="empty-state-text">No orders found</text>
-      </view>
-
-      <!-- Order list -->
-      <view v-else class="list fade-in-up">
-        <view v-for="item in rows" :key="item.id" class="row surface-card">
-          <view class="row-info">
-            <text class="row-name">{{ item.orderNo }}</text>
-            <text class="row-meta">{{ formatPrice(item.payAmount ?? item.totalAmount) }}</text>
-            <view class="row-meta-row">
-              <view class="chip chip-muted"><text>{{ formatOrderStatus(item.status) }}</text></view>
-              <text class="row-date">{{ formatDate(item.createdAt) }} | {{ formatRelativeDate(item.createdAt) }}</text>
+                <view class="dashboard-hero-stats">
+                    <view class="metric-card">
+                        <text class="metric-label">Orders</text>
+                        <text class="metric-value">{{ rows.length }}</text>
+                    </view>
+                    <view class="metric-card">
+                        <text class="metric-label">After-sale</text>
+                        <text class="metric-value">
+                            {{ activeAfterSaleCount }}
+                        </text>
+                    </view>
+                </view>
             </view>
-            <text v-if="item.afterSaleStatus && item.afterSaleStatus !== 'NONE'" class="row-aftersale">
-              After-sale: {{ item.afterSaleStatus }}{{ item.afterSaleNo ? ` (${item.afterSaleNo})` : '' }}
-            </text>
-          </view>
-          <view class="row-actions">
-            <button class="btn-outline" @click="onShip(item)">Ship</button>
-            <button class="btn-outline" @click="onComplete(item)">Complete</button>
-            <button
-              v-if="canAuditAfterSale(item)"
-              class="btn-outline"
-              :loading="afterSaleActingOrderId === item.id"
-              @click="onAdvanceAfterSale(item, 'AUDIT')"
-            >Start review</button>
-            <button
-              v-if="canApproveAfterSale(item)"
-              class="btn-outline"
-              :loading="afterSaleActingOrderId === item.id"
-              @click="onAdvanceAfterSale(item, 'APPROVE')"
-            >Approve</button>
-            <button
-              v-if="canRejectAfterSale(item)"
-              class="btn-outline"
-              :loading="afterSaleActingOrderId === item.id"
-              @click="onAdvanceAfterSale(item, 'REJECT')"
-            >Reject</button>
-            <button
-              v-if="canWaitReturn(item)"
-              class="btn-outline"
-              :loading="afterSaleActingOrderId === item.id"
-              @click="onAdvanceAfterSale(item, 'WAIT_RETURN')"
-            >Wait return</button>
-            <button
-              v-if="canMarkReturned(item)"
-              class="btn-outline"
-              :loading="afterSaleActingOrderId === item.id"
-              @click="onAdvanceAfterSale(item, 'RETURN')"
-            >Mark returned</button>
-            <button
-              v-if="canMarkReceived(item)"
-              class="btn-outline"
-              :loading="afterSaleActingOrderId === item.id"
-              @click="onAdvanceAfterSale(item, 'RECEIVE')"
-            >Mark received</button>
-            <button
-              v-if="canProcessRefund(item)"
-              class="btn-outline"
-              :loading="afterSaleActingOrderId === item.id"
-              @click="onAdvanceAfterSale(item, 'PROCESS')"
-            >Start refund</button>
-          </view>
+
+            <view class="dashboard-grid-main fade-in-up">
+                <view class="surface-card panel-block">
+                    <view class="section-head">
+                        <text class="section-title">Shared dispatch tools</text>
+                        <text class="section-subtitle">
+                            Shipping fields and after-sale remarks are reused
+                            across the current order list.
+                        </text>
+                    </view>
+
+                    <view class="form-grid">
+                        <view class="field">
+                            <text class="field-label">Shipping company</text>
+                            <input
+                                v-model="shippingForm.shippingCompany"
+                                class="field-control"
+                                placeholder="e.g. FedEx"
+                            />
+                        </view>
+                        <view class="field">
+                            <text class="field-label">Tracking number</text>
+                            <input
+                                v-model="shippingForm.trackingNumber"
+                                class="field-control"
+                                placeholder="Enter tracking no."
+                            />
+                        </view>
+                        <view class="field field-span">
+                            <text class="field-label">After-sale remark</text>
+                            <input
+                                v-model="afterSaleForm.remark"
+                                class="field-control"
+                                placeholder="Optional remark"
+                            />
+                        </view>
+                    </view>
+                </view>
+
+                <view class="surface-card panel-block sticky-side">
+                    <view class="section-head">
+                        <text class="section-title">Queue focus</text>
+                        <text class="section-subtitle">
+                            Each row surfaces order value, status, creation
+                            time, and available actions before the extra
+                            after-sale detail.
+                        </text>
+                    </view>
+                </view>
+            </view>
+
+            <view v-if="rows.length === 0" class="empty-state fade-in-up">
+                <text>No orders found</text>
+            </view>
+
+            <view v-else class="orders-list fade-in-up">
+                <view
+                    v-for="item in rows"
+                    :key="item.id"
+                    class="surface-card panel-block panel-hover order-card"
+                >
+                    <view class="order-main">
+                        <text class="row-title">{{ item.orderNo }}</text>
+
+                        <view class="meta-inline">
+                            <text class="meta-chip">
+                                {{ formatOrderStatus(item.status) }}
+                            </text>
+                            <text class="meta-chip">
+                                {{
+                                    item.afterSaleStatus &&
+                                    item.afterSaleStatus !== "NONE"
+                                        ? `After-sale: ${item.afterSaleStatus}`
+                                        : "No after-sale"
+                                }}
+                            </text>
+                        </view>
+
+                        <view class="summary-grid">
+                            <view class="summary-item">
+                                <text class="summary-label">Amount</text>
+                                <text class="summary-value">{{
+                                    formatPrice(
+                                        item.payAmount ?? item.totalAmount,
+                                    )
+                                }}</text>
+                            </view>
+                            <view class="summary-item">
+                                <text class="summary-label">Created</text>
+                                <text class="summary-value">
+                                    {{ formatDate(item.createdAt) }}
+                                </text>
+                                <text class="summary-subvalue">
+                                    {{ formatRelativeDate(item.createdAt) }}
+                                </text>
+                            </view>
+                        </view>
+
+                        <view
+                            v-if="isExpandedRow(item.id)"
+                            class="detail-grid"
+                        >
+                            <view class="detail-item">
+                                <text class="summary-label">Order ID</text>
+                                <text class="summary-value">{{
+                                    item.id ?? "--"
+                                }}</text>
+                            </view>
+                            <view class="detail-item">
+                                <text class="summary-label">After-sale no</text>
+                                <text class="summary-value">{{
+                                    item.afterSaleNo || "--"
+                                }}</text>
+                            </view>
+                            <view class="detail-item">
+                                <text class="summary-label">After-sale type</text>
+                                <text class="summary-value">{{
+                                    item.afterSaleType || "--"
+                                }}</text>
+                            </view>
+                            <view class="detail-item">
+                                <text class="summary-label"
+                                    >After-sale status</text
+                                >
+                                <text class="summary-value">{{
+                                    item.afterSaleStatus || "--"
+                                }}</text>
+                            </view>
+                        </view>
+                    </view>
+
+                    <view class="action-wrap row-actions">
+                        <button
+                            class="btn-secondary"
+                            @click="toggleExpandedRow(item.id)"
+                        >
+                            {{
+                                isExpandedRow(item.id)
+                                    ? "Hide details"
+                                    : "Show details"
+                            }}
+                        </button>
+                        <button class="btn-outline" @click="onShip(item)">
+                            Ship
+                        </button>
+                        <button class="btn-outline" @click="onComplete(item)">
+                            Complete
+                        </button>
+                        <button
+                            v-if="canAuditAfterSale(item)"
+                            class="btn-outline"
+                            :loading="afterSaleActingOrderId === item.id"
+                            @click="onAdvanceAfterSale(item, 'AUDIT')"
+                        >
+                            Start review
+                        </button>
+                        <button
+                            v-if="canApproveAfterSale(item)"
+                            class="btn-outline"
+                            :loading="afterSaleActingOrderId === item.id"
+                            @click="onAdvanceAfterSale(item, 'APPROVE')"
+                        >
+                            Approve
+                        </button>
+                        <button
+                            v-if="canRejectAfterSale(item)"
+                            class="btn-outline"
+                            :loading="afterSaleActingOrderId === item.id"
+                            @click="onAdvanceAfterSale(item, 'REJECT')"
+                        >
+                            Reject
+                        </button>
+                        <button
+                            v-if="canWaitReturn(item)"
+                            class="btn-outline"
+                            :loading="afterSaleActingOrderId === item.id"
+                            @click="onAdvanceAfterSale(item, 'WAIT_RETURN')"
+                        >
+                            Wait return
+                        </button>
+                        <button
+                            v-if="canMarkReturned(item)"
+                            class="btn-outline"
+                            :loading="afterSaleActingOrderId === item.id"
+                            @click="onAdvanceAfterSale(item, 'RETURN')"
+                        >
+                            Mark returned
+                        </button>
+                        <button
+                            v-if="canMarkReceived(item)"
+                            class="btn-outline"
+                            :loading="afterSaleActingOrderId === item.id"
+                            @click="onAdvanceAfterSale(item, 'RECEIVE')"
+                        >
+                            Mark received
+                        </button>
+                        <button
+                            v-if="canProcessRefund(item)"
+                            class="btn-outline"
+                            :loading="afterSaleActingOrderId === item.id"
+                            @click="onAdvanceAfterSale(item, 'PROCESS')"
+                        >
+                            Start refund
+                        </button>
+                    </view>
+                </view>
+            </view>
         </view>
-      </view>
-    </view>
-  </AppShell>
+    </AppShell>
 </template>
 
 <style scoped>
-.page-wrap {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  padding: 24px;
-  max-width: 960px;
-  margin: 0 auto;
+.orders-page {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
 }
 
-.hero {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 24px;
-  padding: 32px 36px;
-  border-radius: var(--radius-lg);
-  flex-wrap: wrap;
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
 }
 
-.hero-left {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
 
-.hero-eyebrow {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  color: var(--accent);
-  text-transform: uppercase;
-}
-
-.hero-title {
-  font-size: 28px;
-  font-weight: 700;
-  color: var(--text-main);
-  letter-spacing: -0.02em;
-}
-
-.hero-subtitle {
-  font-size: 14px;
-  color: var(--text-muted);
-  line-height: 1.5;
-}
-
-.hero-stats {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.toolbar {
-  display: flex;
-  align-items: flex-end;
-  gap: 12px;
-  padding: 20px 24px;
-  border-radius: var(--radius-md);
-  flex-wrap: wrap;
-  border: 1px solid rgba(20, 20, 20, 0.08);
-}
-.field-group {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  min-width: 160px;
+.field-span {
+    grid-column: span 2;
 }
 
 .field-label {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-muted);
-  letter-spacing: 0.02em;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text-soft);
 }
 
-.std-input {
-  background: rgba(255, 255, 255, 0.96);
-  border: 1px solid rgba(20, 20, 20, 0.12);
-  border-radius: 16px;
-  padding: 13px 16px;
-  font-size: 14px;
-  color: var(--text-main);
+.orders-list {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
 }
 
-.std-input:focus {
-  border-color: rgba(11, 107, 95, 0.4);
-  box-shadow: 0 0 0 3px rgba(11, 107, 95, 0.12);
+.order-card {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
 }
 
-.list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+.order-main {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    flex: 1;
+    min-width: 260px;
 }
 
-.row {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 20px 24px;
-  border-radius: var(--radius-md);
-  border: 1px solid rgba(20, 20, 20, 0.08);
-  transition:
-    transform 0.2s ease,
-    box-shadow 0.2s ease,
-    border-color 0.2s ease;
-}
-.row-info {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+.row-title {
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    color: var(--text-main);
 }
 
-.row-name {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--text-main);
+.meta-inline {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
 }
 
-.row-meta {
-  font-size: 13px;
-  color: var(--text-muted);
+.meta-chip {
+    display: inline-flex;
+    align-items: center;
+    min-height: 30px;
+    padding: 0 12px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--panel-border);
+    font-size: 12px;
+    color: var(--text-muted);
 }
 
-.row-meta-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
+.summary-grid,
+.detail-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
 }
 
-.row-date {
-  font-size: 12px;
-  color: var(--text-soft);
+.summary-item,
+.detail-item {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 12px 14px;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--panel-border);
 }
 
-.row-aftersale {
-  font-size: 12px;
-  color: var(--accent);
+.summary-label {
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text-soft);
 }
 
-.chip-muted {
-  background: rgba(20, 20, 20, 0.08);
-  color: var(--text-muted);
+.summary-value {
+    font-size: 14px;
+    line-height: 1.7;
+    color: var(--text-main);
+}
+
+.summary-subvalue {
+    font-size: 12px;
+    color: var(--text-muted);
 }
 
 .row-actions {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  padding-top: 10px;
-  border-top: 1px solid rgba(20, 20, 20, 0.08);
-}
-@media (hover: hover) {
-  .row:hover,
-  .toolbar:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 16px 30px rgba(20, 20, 20, 0.12);
-    border-color: rgba(20, 20, 20, 0.12);
-  }
+    align-items: center;
 }
 
-@media (max-width: 600px) {
-  .page-wrap { padding: 16px; }
-  .hero { padding: 24px 20px; }
-  .toolbar { flex-direction: column; align-items: stretch; }
+@media (max-width: 768px) {
+    .form-grid,
+    .summary-grid,
+    .detail-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .field-span {
+        grid-column: span 1;
+    }
+
+    .row-actions {
+        width: 100%;
+    }
 }
 </style>
