@@ -53,7 +53,7 @@ const navItems: NavItem[] = [
     {
         key: "payments",
         path: Routes.appPayments,
-        roles: ["USER", "MERCHANT", "ADMIN"],
+        roles: ["USER", "ADMIN"],
     },
     { key: "stock", path: Routes.appStock, roles: ["ADMIN"] },
     {
@@ -69,7 +69,7 @@ const navItems: NavItem[] = [
     },
     { key: "merchant", path: Routes.appMerchant, roles: ["MERCHANT"] },
     { key: "admin", path: Routes.appAdmin, roles: ["ADMIN"] },
-    { key: "ops", path: Routes.appOps, roles: ["MERCHANT", "ADMIN"] },
+    { key: "ops", path: Routes.appOps, roles: ["ADMIN"] },
     {
         key: "profile",
         path: Routes.appProfile,
@@ -108,7 +108,7 @@ const copy = computed(() => {
 
     return {
         brand: "云端商城工作台",
-        defaultTitle: "控制中枢",
+        defaultTitle: "控制中心",
         subtitle:
             "围绕商品、订单、支付与经营动作重组界面层次，让日常操作更聚焦、更稳定。",
         currentUser: "当前用户",

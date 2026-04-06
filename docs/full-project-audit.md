@@ -60,6 +60,21 @@ Scope:
 - Previous behavior: merchant auth reads only converted business-license object keys into presigned URLs. ID card attachment fields could still come back as raw object keys, which broke direct preview in the frontend.
 - Current behavior: merchant auth reads normalize all certificate attachment fields to presigned URLs when the stored value belongs to the cert bucket.
 
+### 8. Admin center could reach merchant panels but backend rejected pure admin callers
+
+- Previous behavior: the admin page loaded `/api/merchant`, `/api/merchant/auth/list`, and `/api/merchant/auth/review/{merchantId}`, but the backend guarded those endpoints with merchant-only authorities. A pure `ADMIN` account could open the page and still hit predictable `403` responses.
+- Current behavior: merchant listing and merchant-auth review endpoints now allow `admin:all`, which closes the admin-center read and review path without broadening merchant-facing access.
+
+### 9. Navigation exposed pages that the backend would reject for merchant users
+
+- Previous behavior: the app shell exposed `Payments` and `Ops` to `MERCHANT`, while the backend payment-query path is owner/admin only and the operations toolchain is admin-oriented. This created visible dead-end navigation.
+- Current behavior: the shell now keeps `Payments` for `USER` and `ADMIN`, and keeps `Ops` for `ADMIN` only, matching the current backend permission boundary.
+
+### 10. Admin pending-review overview could drift after queue filters changed
+
+- Previous behavior: the admin page overwrote `overview.pendingReviews` with the currently selected review queue length. Switching from `Pending` to `Approved` or `Rejected` made the dashboard card report the wrong pending count.
+- Current behavior: the pending-review metric is refreshed only from the pending queue path, and `init()` resets the page to the pending queue before loading the overview.
+
 ## Current Boundary
 
 - The main user-facing and operational pages present in the UniApp app now have traced backend contracts and synced documentation.

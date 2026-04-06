@@ -208,7 +208,7 @@ public class MerchantAuthController {
   }
 
   @PostMapping("/review/{merchantId}")
-  @PreAuthorize("hasAuthority('merchant:audit')")
+  @PreAuthorize("hasAuthority('admin:all') or hasAuthority('merchant:audit')")
   @Operation(
       summary = "Review merchant auth",
       description = "Review merchant auth application by merchant ID")
@@ -252,7 +252,7 @@ public class MerchantAuthController {
   }
 
   @GetMapping("/list")
-  @PreAuthorize("hasAuthority('merchant:audit')")
+  @PreAuthorize("hasAuthority('admin:all') or hasAuthority('merchant:audit')")
   @Operation(
       summary = "List merchant auth by status",
       description = "List merchant auth records by auth status")
@@ -338,7 +338,7 @@ public class MerchantAuthController {
   }
 
   @PostMapping("/review/batch")
-  @PreAuthorize("hasAuthority('merchant:audit')")
+  @PreAuthorize("hasAuthority('admin:all') or hasAuthority('merchant:audit')")
   @Operation(
       summary = "Batch review merchant auth",
       description = "Batch review merchant auth records")

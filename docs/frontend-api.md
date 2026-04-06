@@ -181,7 +181,9 @@ Notes:
 - Stock pre-check API (`POST /api/stocks/pre-check`) is available for batch stock validation before order creation.
 - Stock ledger responses expose integer `status` values from the backend. The stock page now renders `1` as `Active` and derives low-stock warnings from `availableQty` and `alertThreshold` instead of assuming string enums.
 - Admin workspace currently consumes `/api/admin`, `/api/query/users/search`, `/api/merchant/auth/list`, `/api/merchant/auth/review/{merchantId}`, `/api/statistics/overview`, and `/api/thread-pool/info`.
+- App shell navigation now hides `Payments` from `MERCHANT` and hides `Ops` from non-admin users because the current backend access policy only closes those pages for owner/admin payment reads and admin operational APIs.
 - Merchant review actions in the admin UI are now unified on `/api/merchant/auth/review/{merchantId}`. The merchant list is read-only for audit status and no longer calls `/api/merchant/{id}/approve|reject`.
+- Admin workspace merchant list and merchant-auth review queue now align with backend access by allowing pure `ADMIN` accounts to read `/api/merchant` and to use `/api/merchant/auth/list|review/*`.
 - Token management utilities exposed in `src/api/auth-tokens.ts` are admin-only operational tools rather than normal user flows.
 - Operations workspace now closes the current admin toolchain for `/auth/tokens/**`, `/api/category/**`, `/api/product/spu/**`, `/api/search/**`, `/api/search/shops/**`, `/api/thread-pool/**`, `/api/statistics/**`, and payment admin helpers already exposed in the frontend API layer.
 

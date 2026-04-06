@@ -56,7 +56,7 @@ public class MerchantController {
   private final MerchantService merchantService;
 
   @GetMapping
-  @PreAuthorize("hasAuthority('merchant:manage')")
+  @PreAuthorize("hasAuthority('admin:all') or hasAuthority('merchant:manage')")
   @Operation(
       summary = "Get merchants",
       description = "Get merchants with pagination and status filter")

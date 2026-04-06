@@ -94,7 +94,9 @@ async function loadReviewRows(): Promise<void> {
         reviewRows.value = await listMerchantAuthByStatus(
             Number(reviewStatus.value),
         );
-        overview.pendingReviews = reviewRows.value.length;
+        if (reviewStatus.value === "0") {
+            overview.pendingReviews = reviewRows.value.length;
+        }
     } catch (error) {
         toast(
             error instanceof Error
@@ -216,6 +218,7 @@ async function rejectReview(row: MerchantAuthInfo): Promise<void> {
 }
 
 async function init(): Promise<void> {
+    reviewStatus.value = "0";
     await Promise.all([
         loadOverview(),
         loadReviewRows(),

@@ -403,7 +403,7 @@ Order list and order detail now return `OrderSummaryDTO` with these stable field
 
 | Method | Path | Access |
 | --- | --- | --- |
-| GET | `/api/merchant` | `merchant:manage` |
+| GET | `/api/merchant` | `admin:all` or `merchant:manage` |
 | GET | `/api/merchant/{id}` | Admin or merchant owner |
 | POST | `/api/merchant` | `admin:all` |
 | PUT | `/api/merchant/{id}` | Admin or merchant owner |
@@ -419,9 +419,9 @@ Order list and order detail now return `OrderSummaryDTO` with these stable field
 | POST | `/api/merchant/auth/upload/license/{merchantId}` | Admin or merchant owner |
 | GET | `/api/merchant/auth/get/{merchantId}` | Admin or merchant owner |
 | DELETE | `/api/merchant/auth/revoke/{merchantId}` | Admin or merchant owner |
-| POST | `/api/merchant/auth/review/{merchantId}` | `merchant:audit` |
-| GET | `/api/merchant/auth/list` | `merchant:audit` |
-| POST | `/api/merchant/auth/review/batch` | `merchant:audit` |
+| POST | `/api/merchant/auth/review/{merchantId}` | `admin:all` or `merchant:audit` |
+| GET | `/api/merchant/auth/list` | `admin:all` or `merchant:audit` |
+| POST | `/api/merchant/auth/review/batch` | `admin:all` or `merchant:audit` |
 | GET | `/api/admin` | `admin:all` |
 | GET | `/api/admin/{id}` | `admin:all` |
 | POST | `/api/admin` | `admin:all` |
@@ -464,6 +464,7 @@ Order list and order detail now return `OrderSummaryDTO` with these stable field
 
 Notes:
 - Merchant auth reads (`/api/merchant/auth/get/{merchantId}` and `/api/merchant/auth/list`) now return presigned certificate URLs for business license and ID card attachments when the stored value is an object key in the cert bucket.
+- Admin workspace endpoints now explicitly allow pure `admin:all` callers on merchant listing and merchant-auth review APIs, which matches the current admin page behavior.
 
 ### Inventory
 
