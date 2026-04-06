@@ -3,12 +3,14 @@ package com.cloud.product.service.support;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cloud.common.domain.vo.product.SkuDetailVO;
 import com.cloud.common.domain.vo.product.SpuDetailVO;
 import com.cloud.common.exception.BusinessException;
+import com.cloud.product.converter.ProductDetailConverter;
 import com.cloud.product.mapper.BrandMapper;
 import com.cloud.product.mapper.CategoryMapper;
 import com.cloud.product.mapper.ProductReviewMapper;
@@ -37,6 +39,7 @@ class ProductCatalogServiceImplTest {
   @Mock private SpuMapper spuMapper;
 
   @Mock private SkuMapper skuMapper;
+  @Mock private ProductDetailConverter productDetailConverter;
 
   @Mock private CategoryMapper categoryMapper;
 
@@ -58,12 +61,63 @@ class ProductCatalogServiceImplTest {
         new ProductCatalogServiceImpl(
             spuMapper,
             skuMapper,
+            productDetailConverter,
             categoryMapper,
             brandMapper,
             shopMapper,
             productReviewMapper,
             productDetailCacheService,
             productSyncMessageProducer);
+    lenient()
+        .when(productDetailConverter.toSkuDetailVO(any(Sku.class)))
+        .thenAnswer(
+            invocation -> {
+              Sku source = invocation.getArgument(0);
+              SkuDetailVO target = new SkuDetailVO();
+              target.setSkuId(source.getId());
+              target.setSpuId(source.getSpuId());
+              target.setSkuCode(source.getSkuCode());
+              target.setSkuName(source.getSkuName());
+              target.setSalePrice(source.getSalePrice());
+              target.setStatus(source.getStatus());
+              return target;
+            });
+    lenient()
+        .when(productDetailConverter.toSpuDetailVO(any(Spu.class)))
+        .thenAnswer(
+            invocation -> {
+              Spu source = invocation.getArgument(0);
+              SpuDetailVO target = new SpuDetailVO();
+              target.setSpuId(source.getId());
+              target.setSpuName(source.getSpuName());
+              target.setCategoryId(source.getCategoryId());
+              target.setBrandId(source.getBrandId());
+              target.setMerchantId(source.getMerchantId());
+              target.setStatus(source.getStatus());
+              return target;
+            });
+    lenient()
+        .when(productDetailConverter.copyBase(any(SpuDetailVO.class)))
+        .thenAnswer(
+            invocation -> {
+              SpuDetailVO source = invocation.getArgument(0);
+              SpuDetailVO target = new SpuDetailVO();
+              target.setSpuId(source.getSpuId());
+              target.setSpuName(source.getSpuName());
+              target.setCategoryId(source.getCategoryId());
+              target.setBrandId(source.getBrandId());
+              target.setMerchantId(source.getMerchantId());
+              target.setStatus(source.getStatus());
+              target.setCategoryName(source.getCategoryName());
+              target.setBrandName(source.getBrandName());
+              target.setShopName(source.getShopName());
+              target.setTags(source.getTags());
+              target.setRating(source.getRating());
+              target.setReviewCount(source.getReviewCount());
+              target.setRecommended(source.getRecommended());
+              target.setIsHot(source.getIsHot());
+              return target;
+            });
   }
 
   @Test

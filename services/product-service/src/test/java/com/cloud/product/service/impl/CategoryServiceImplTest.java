@@ -2,11 +2,15 @@ package com.cloud.product.service.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
 import com.cloud.common.domain.dto.product.CategoryDTO;
+import com.cloud.product.converter.CategoryConverter;
+import com.cloud.product.messaging.ProductSyncMessageProducer;
 import com.cloud.product.module.entity.Category;
+import com.cloud.product.service.ProductCatalogService;
 import com.cloud.product.service.cache.CategoryRedisCacheService;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -18,11 +22,33 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class CategoryServiceImplTest {
 
   @Mock private CategoryRedisCacheService categoryRedisCacheService;
+  @Mock private CategoryConverter categoryConverter;
+  @Mock private ProductCatalogService productCatalogService;
+  @Mock private ProductSyncMessageProducer productSyncMessageProducer;
 
   @Test
   void getCategoryTree_buildsHierarchy() {
     when(categoryRedisCacheService.getDtoTree(true)).thenReturn(null);
-    CategoryServiceImpl service = spy(new CategoryServiceImpl(categoryRedisCacheService));
+    lenient()
+        .when(categoryConverter.toDTO(org.mockito.ArgumentMatchers.any(Category.class)))
+        .thenAnswer(
+            invocation -> {
+              Category source = invocation.getArgument(0);
+              CategoryDTO dto = new CategoryDTO();
+              dto.setId(source.getId());
+              dto.setParentId(source.getParentId());
+              dto.setLevel(source.getLevel());
+              dto.setStatus(source.getStatus());
+              dto.setName(source.getName());
+              return dto;
+            });
+    CategoryServiceImpl service =
+        spy(
+            new CategoryServiceImpl(
+                categoryConverter,
+                categoryRedisCacheService,
+                productCatalogService,
+                productSyncMessageProducer));
 
     Category level1 = new Category();
     level1.setId(1L);

@@ -1,11 +1,13 @@
 package com.cloud.product.service.support;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.cloud.common.domain.vo.product.SkuDetailVO;
 import com.cloud.common.domain.vo.product.SpuDetailVO;
+import com.cloud.product.converter.ProductDetailConverter;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.BeforeEach;
@@ -15,6 +17,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.scheduling.TaskScheduler;
 
 @ExtendWith(MockitoExtension.class)
 class ProductDetailCacheServiceTest {
@@ -22,12 +25,25 @@ class ProductDetailCacheServiceTest {
   @Mock private RedisTemplate<String, Object> redisTemplate;
 
   @Mock private HashOperations<String, Object, Object> hashOperations;
+  @Mock private TaskScheduler taskScheduler;
+  @Mock private ProductDetailConverter productDetailConverter;
 
   private ProductDetailCacheService productDetailCacheService;
 
   @BeforeEach
   void setUp() {
-    productDetailCacheService = new ProductDetailCacheService(redisTemplate);
+    lenient()
+        .when(productDetailConverter.copyBase(org.mockito.ArgumentMatchers.any(SpuDetailVO.class)))
+        .thenAnswer(
+            invocation -> {
+              SpuDetailVO source = invocation.getArgument(0);
+              SpuDetailVO target = new SpuDetailVO();
+              target.setSpuId(source.getSpuId());
+              target.setSpuName(source.getSpuName());
+              return target;
+            });
+    productDetailCacheService =
+        new ProductDetailCacheService(redisTemplate, taskScheduler, productDetailConverter);
     productDetailCacheService.init();
   }
 

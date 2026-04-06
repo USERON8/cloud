@@ -9,9 +9,11 @@ import com.cloud.common.domain.dto.product.SkuDTO;
 import com.cloud.common.domain.dto.product.SpuCreateRequestDTO;
 import com.cloud.common.domain.dto.product.SpuDTO;
 import com.cloud.common.exception.BusinessException;
+import com.cloud.product.converter.ProductDetailConverter;
 import com.cloud.product.mapper.BrandMapper;
 import com.cloud.product.mapper.CategoryMapper;
 import com.cloud.product.mapper.ProductReviewMapper;
+import com.cloud.product.mapper.ShopMapper;
 import com.cloud.product.mapper.SkuMapper;
 import com.cloud.product.mapper.SpuMapper;
 import com.cloud.product.messaging.ProductSyncMessageProducer;
@@ -35,6 +37,8 @@ class ProductCatalogServiceImplTest {
   @Mock private CategoryMapper categoryMapper;
 
   @Mock private BrandMapper brandMapper;
+  @Mock private ShopMapper shopMapper;
+  @Mock private ProductDetailConverter productDetailConverter;
 
   @Mock private ProductReviewMapper productReviewMapper;
 
@@ -51,6 +55,7 @@ class ProductCatalogServiceImplTest {
     SpuCreateRequestDTO request = new SpuCreateRequestDTO();
     request.setSpu(spuDTO);
     request.setSkus(List.of(new SkuDTO()));
+    when(productDetailConverter.toEntity(any(SpuDTO.class))).thenReturn(new Spu());
 
     when(spuMapper.insert(any(Spu.class))).thenThrow(new DuplicateKeyException("dup"));
 
@@ -69,7 +74,7 @@ class ProductCatalogServiceImplTest {
 
     productCatalogService.updateSpuStatus(10L, 1);
 
-    verify(productDetailCacheService).evict(10L);
+    verify(productDetailCacheService).evictAfterCommit(10L);
     verify(productSyncMessageProducer).sendUpsert(10L);
   }
 

@@ -16,18 +16,21 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
+import org.springframework.scheduling.TaskScheduler;
 
 @ExtendWith(MockitoExtension.class)
 class ShopRedisCacheServiceTest {
 
   @Mock private StringRedisTemplate stringRedisTemplate;
   @Mock private ValueOperations<String, String> valueOperations;
+  @Mock private TaskScheduler taskScheduler;
 
   private ShopRedisCacheService shopRedisCacheService;
 
   @BeforeEach
   void setUp() {
-    shopRedisCacheService = new ShopRedisCacheService(stringRedisTemplate, new ObjectMapper());
+    shopRedisCacheService =
+        new ShopRedisCacheService(stringRedisTemplate, new ObjectMapper(), taskScheduler);
     when(stringRedisTemplate.opsForValue()).thenReturn(valueOperations);
   }
 
