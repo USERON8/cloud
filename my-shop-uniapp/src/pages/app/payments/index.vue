@@ -503,36 +503,42 @@ onUnload(() => {
     border-radius: 999px;
     font-size: 12px;
     font-weight: 700;
-    background: rgba(20, 20, 20, 0.08);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--panel-border);
     color: var(--text-main);
     white-space: nowrap;
 }
 
 .status-created {
-    background: var(--highlight-soft);
-    color: #8a6a1d;
+    background: var(--warning-soft);
+    border-color: rgba(255, 184, 77, 0.28);
+    color: #ffd27e;
 }
 
 .status-paid,
 .status-success {
-    background: rgba(52, 199, 89, 0.14);
-    color: #167c3a;
+    background: var(--success-soft);
+    border-color: rgba(64, 201, 135, 0.28);
+    color: #8ef0bd;
 }
 
 .status-failed,
 .status-closed {
-    background: rgba(255, 69, 58, 0.12);
-    color: #b42318;
+    background: var(--danger-soft);
+    border-color: rgba(255, 107, 107, 0.28);
+    color: #ffafaf;
 }
 
 .status-refunding {
-    background: rgba(11, 107, 95, 0.16);
-    color: var(--accent);
+    background: var(--accent-soft);
+    border-color: rgba(95, 209, 194, 0.28);
+    color: var(--accent-strong);
 }
 
 .status-refunded {
-    background: rgba(15, 118, 110, 0.18);
-    color: #0b5d54;
+    background: var(--accent-soft);
+    border-color: rgba(95, 209, 194, 0.28);
+    color: var(--accent-strong);
 }
 
 .metric-grid {

@@ -1396,7 +1396,7 @@ async function refreshStatsCache(): Promise<void> {
       </view>
     </view>
 
-    <view v-if="activeTab === 'tokens'" class="panel glass-card fade-in-up">
+    <view v-if="activeTab === 'tokens'" class="panel surface-card fade-in-up">
       <text class="section-title">Token statistics</text>
       <view class="row-inline">
         <button class="btn-outline" @click="loadTokenStats">Load statistics</button>
@@ -1450,7 +1450,7 @@ async function refreshStatsCache(): Promise<void> {
         <button class="btn-outline" @click="logoutAll">Trigger logout</button>
       </view>
     </view>
-    <view v-if="activeTab === 'system'" class="panel glass-card fade-in-up">
+    <view v-if="activeTab === 'system'" class="panel surface-card fade-in-up">
       <text class="section-title">Thread pools</text>
       <view class="row-inline">
         <button class="btn-outline" @click="loadThreadPools">Load thread pools</button>
@@ -1465,7 +1465,7 @@ async function refreshStatsCache(): Promise<void> {
       </view>
     </view>
 
-    <view v-if="activeTab === 'category'" class="panel glass-card fade-in-up">
+    <view v-if="activeTab === 'category'" class="panel surface-card fade-in-up">
       <text class="section-title">Category operations</text>
       <input v-model="categoryIdInput" class="input" placeholder="Category ID" />
       <input v-model="categorySortInput" class="input" placeholder="Sort value" />
@@ -1494,7 +1494,7 @@ async function refreshStatsCache(): Promise<void> {
         <text class="code-block">{{ formatJson(categoryBatchResult) }}</text>
       </view>
     </view>
-    <view v-if="activeTab === 'catalog'" class="panel glass-card fade-in-up">
+    <view v-if="activeTab === 'catalog'" class="panel surface-card fade-in-up">
       <text class="section-title">Product catalog</text>
       <input v-model="spuId" class="input" placeholder="SPU ID" />
       <input v-model="spuStatus" class="input" placeholder="Status" />
@@ -1515,7 +1515,7 @@ async function refreshStatsCache(): Promise<void> {
       <text class="code-block">{{ formatJson(skuList) }}</text>
     </view>
 
-    <view v-if="activeTab === 'search'" class="panel glass-card fade-in-up">
+    <view v-if="activeTab === 'search'" class="panel surface-card fade-in-up">
       <text class="section-title">Search operations</text>
       <input v-model="searchKeyword" class="input" placeholder="Keyword" />
       <input v-model="searchPage" class="input" placeholder="Page" />
@@ -1566,7 +1566,7 @@ async function refreshStatsCache(): Promise<void> {
       <text class="code-block">{{ formatJson(searchResult) }}</text>
     </view>
 
-    <view v-if="activeTab === 'shops'" class="panel glass-card fade-in-up">
+    <view v-if="activeTab === 'shops'" class="panel surface-card fade-in-up">
       <text class="section-title">Shop search</text>
       <input v-model="shopId" class="input" placeholder="Shop ID" />
       <input v-model="shopLocation" class="input" placeholder="Location keyword" />
@@ -1598,7 +1598,7 @@ async function refreshStatsCache(): Promise<void> {
       </view>
       <text class="code-block">{{ formatJson(shopResult) }}</text>
     </view>
-    <view v-if="activeTab === 'batch'" class="panel glass-card fade-in-up">
+    <view v-if="activeTab === 'batch'" class="panel surface-card fade-in-up">
       <text class="section-title">Batch operations</text>
       <input v-model="userFindUsername" class="input" placeholder="Username" />
       <button class="btn-outline" @click="findUser">Load user</button>
@@ -1624,7 +1624,7 @@ async function refreshStatsCache(): Promise<void> {
       <text class="code-block">{{ formatJson(batchResult) }}</text>
     </view>
 
-    <view v-if="activeTab === 'payments'" class="panel glass-card fade-in-up">
+    <view v-if="activeTab === 'payments'" class="panel surface-card fade-in-up">
       <text class="section-title">Payment operations</text>
       <input v-model="paymentNoInput" class="input" placeholder="Payment number" />
       <input v-model="paymentMainOrderNo" class="input" placeholder="Main order number" />
@@ -1642,7 +1642,7 @@ async function refreshStatsCache(): Promise<void> {
       <text class="code-block">{{ formatJson(paymentResult) }}</text>
     </view>
 
-    <view v-if="activeTab === 'stats'" class="panel glass-card fade-in-up">
+    <view v-if="activeTab === 'stats'" class="panel surface-card fade-in-up">
       <text class="section-title">Statistics operations</text>
       <view class="row-inline">
         <button class="btn-outline" @click="loadStatsOverviewAsync">Async overview</button>

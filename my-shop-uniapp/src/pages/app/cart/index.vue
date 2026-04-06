@@ -521,7 +521,7 @@ onShow(() => {
     justify-content: space-between;
     gap: 12px;
     padding-top: 14px;
-    border-top: 1px solid rgba(20, 20, 20, 0.08);
+    border-top: 1px solid var(--panel-border);
     flex-wrap: wrap;
 }
 
@@ -587,8 +587,8 @@ onShow(() => {
     justify-content: space-between;
     gap: 12px;
     padding: 16px 0;
-    border-top: 1px solid rgba(20, 20, 20, 0.08);
-    border-bottom: 1px solid rgba(20, 20, 20, 0.08);
+    border-top: 1px solid var(--panel-border);
+    border-bottom: 1px solid var(--panel-border);
 }
 
 .summary-label {
