@@ -51,6 +51,32 @@ type ActionSpec = {
     action?: AfterSaleAction;
 };
 
+function orderStatusTone(status?: number): string {
+    if (status === 0) return "status-warning";
+    if (status === 1 || status === 2) return "status-accent";
+    if (status === 3) return "status-success";
+    if (status === 4) return "status-danger";
+    return "status-muted";
+}
+
+function afterSaleTone(status?: string): string {
+    if (!status || status === "NONE") return "status-muted";
+    if (status === "APPLIED" || status === "AUDITING") return "status-warning";
+    if (
+        status === "APPROVED" ||
+        status === "WAIT_RETURN" ||
+        status === "RETURNED" ||
+        status === "RECEIVED"
+    ) {
+        return "status-accent";
+    }
+    if (status === "REJECTED") return "status-danger";
+    if (status === "COMPLETED" || status === "PROCESSED") {
+        return "status-success";
+    }
+    return "status-muted";
+}
+
 async function loadOrders(): Promise<void> {
     if (loading.value) return;
     loading.value = true;
@@ -412,10 +438,16 @@ onMounted(() => {
                         <text class="row-title">{{ item.orderNo }}</text>
 
                         <view class="meta-inline">
-                            <text class="meta-chip">
+                            <text
+                                class="meta-chip"
+                                :class="orderStatusTone(item.status)"
+                            >
                                 {{ formatOrderStatus(item.status) }}
                             </text>
-                            <text class="meta-chip">
+                            <text
+                                class="meta-chip"
+                                :class="afterSaleTone(item.afterSaleStatus)"
+                            >
                                 {{
                                     item.afterSaleStatus &&
                                     item.afterSaleStatus !== "NONE"

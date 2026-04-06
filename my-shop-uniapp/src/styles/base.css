@@ -421,6 +421,36 @@ textarea {
     color: var(--text-muted);
 }
 
+.meta-chip.status-success {
+    background: var(--success-soft);
+    border-color: rgba(64, 201, 135, 0.28);
+    color: #8ef0bd;
+}
+
+.meta-chip.status-warning {
+    background: var(--warning-soft);
+    border-color: rgba(255, 184, 77, 0.28);
+    color: #ffd27e;
+}
+
+.meta-chip.status-danger {
+    background: var(--danger-soft);
+    border-color: rgba(255, 107, 107, 0.28);
+    color: #ffafaf;
+}
+
+.meta-chip.status-accent {
+    background: var(--accent-soft);
+    border-color: rgba(95, 209, 194, 0.28);
+    color: var(--accent-strong);
+}
+
+.meta-chip.status-muted {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: var(--panel-border);
+    color: var(--text-muted);
+}
+
 .summary-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));

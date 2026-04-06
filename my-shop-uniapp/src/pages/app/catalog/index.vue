@@ -165,6 +165,13 @@ function markImageFailed(id: number | string): void {
     };
 }
 
+function stockTone(stock?: number): string {
+    if (typeof stock !== "number") return "status-muted";
+    if (stock <= 0) return "status-danger";
+    if (stock <= 10) return "status-warning";
+    return "status-success";
+}
+
 function onSearch(): void {
     void loadProducts(true);
 }
@@ -358,9 +365,15 @@ onShow(() => {
                     <view class="product-main">
                         <text class="product-name">{{ item.name }}</text>
                         <text class="product-price">{{ formatPrice(item.price) }}</text>
-                        <text class="product-meta">
-                            {{ copy.stockPrefix }} {{ item.stockQuantity ?? "--" }}
-                        </text>
+                        <view class="meta-inline">
+                            <text
+                                class="meta-chip"
+                                :class="stockTone(item.stockQuantity)"
+                            >
+                                {{ copy.stockPrefix }}
+                                {{ item.stockQuantity ?? "--" }}
+                            </text>
+                        </view>
                     </view>
                     <button
                         class="btn-outline action-button"
@@ -488,11 +501,6 @@ onShow(() => {
     font-weight: 800;
     color: var(--text-main);
     letter-spacing: -0.04em;
-}
-
-.product-meta {
-    font-size: 13px;
-    color: var(--text-muted);
 }
 
 .action-button {

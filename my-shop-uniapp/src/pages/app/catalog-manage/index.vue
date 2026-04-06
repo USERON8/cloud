@@ -17,6 +17,12 @@ const unpublishedCount = computed(
     () => rows.value.filter((row) => row.status !== 1).length,
 );
 
+function productStatusTone(status?: number): string {
+    if (status === 1) return "status-success";
+    if (status === 0) return "status-warning";
+    return "status-muted";
+}
+
 async function loadProducts(): Promise<void> {
     if (loading.value) return;
     loading.value = true;
@@ -159,10 +165,13 @@ onMounted(() => {
                         <text class="row-title">{{ item.name }}</text>
 
                         <view class="meta-inline">
-                            <text class="meta-chip">
+                            <text
+                                class="meta-chip"
+                                :class="productStatusTone(item.status)"
+                            >
                                 {{ formatProductStatus(item.status) }}
                             </text>
-                            <text class="meta-chip">
+                            <text class="meta-chip status-muted">
                                 {{
                                     typeof item.id === "number"
                                         ? `Product ID: ${item.id}`
