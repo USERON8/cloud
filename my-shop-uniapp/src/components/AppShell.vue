@@ -3,14 +3,16 @@ import { computed } from "vue";
 import { logout } from "../api/auth";
 import { useRole, type UserRole } from "../auth/permission";
 import { clearSession, sessionState } from "../auth/session";
-import { cartCount } from "../store/cart";
+import { type Locale, useLocale } from "../i18n/locale";
 import { currentRoutePath, navigateTo, redirectTo } from "../router/navigation";
 import { Routes, type RoutePath } from "../router/routes";
+import { cartCount } from "../store/cart";
+import LocaleSwitch from "./LocaleSwitch.vue";
 
-defineProps<{ title?: string }>();
+const props = defineProps<{ title?: string }>();
 
 interface NavItem {
-    label: string;
+    key: string;
     path: RoutePath;
     roles: UserRole[];
     public?: boolean;
@@ -18,77 +20,153 @@ interface NavItem {
 }
 
 const { role } = useRole();
+const { locale } = useLocale();
 
 const navItems: NavItem[] = [
+    { key: "home", path: Routes.appHome, roles: ["USER", "MERCHANT", "ADMIN"] },
     {
-        label: "Dashboard",
-        path: Routes.appHome,
-        roles: ["USER", "MERCHANT", "ADMIN"],
-    },
-    {
-        label: "Marketplace",
+        key: "market",
         path: Routes.market,
         roles: ["USER", "MERCHANT", "ADMIN"],
         public: true,
     },
     {
-        label: "Products",
+        key: "catalog",
         path: Routes.appCatalog,
         roles: ["USER", "MERCHANT", "ADMIN"],
     },
     {
-        label: "Product Admin",
+        key: "catalogManage",
         path: Routes.appCatalogManage,
         roles: ["MERCHANT", "ADMIN"],
     },
     {
-        label: "Orders",
+        key: "orders",
         path: Routes.appOrders,
         roles: ["USER", "MERCHANT", "ADMIN"],
     },
     {
-        label: "Order Admin",
+        key: "ordersManage",
         path: Routes.appOrdersManage,
         roles: ["MERCHANT", "ADMIN"],
     },
     {
-        label: "Payments",
+        key: "payments",
         path: Routes.appPayments,
         roles: ["USER", "MERCHANT", "ADMIN"],
     },
-    { label: "Stock Ledger", path: Routes.appStock, roles: ["ADMIN"] },
+    { key: "stock", path: Routes.appStock, roles: ["ADMIN"] },
     {
-        label: "Cart",
+        key: "cart",
         path: Routes.appCart,
         roles: ["USER", "MERCHANT", "ADMIN"],
         showBadge: true,
     },
     {
-        label: "Addresses",
+        key: "addresses",
         path: Routes.appAddresses,
         roles: ["USER", "MERCHANT", "ADMIN"],
     },
-    { label: "Merchant Center", path: Routes.appMerchant, roles: ["MERCHANT"] },
-    { label: "Admin Center", path: Routes.appAdmin, roles: ["ADMIN"] },
-    { label: "Ops Center", path: Routes.appOps, roles: ["MERCHANT", "ADMIN"] },
+    { key: "merchant", path: Routes.appMerchant, roles: ["MERCHANT"] },
+    { key: "admin", path: Routes.appAdmin, roles: ["ADMIN"] },
+    { key: "ops", path: Routes.appOps, roles: ["MERCHANT", "ADMIN"] },
     {
-        label: "Profile",
+        key: "profile",
         path: Routes.appProfile,
         roles: ["USER", "MERCHANT", "ADMIN"],
     },
 ];
 
+const copy = computed(() => {
+    if (locale.value === "en-US") {
+        return {
+            brand: "My Shop Cloud",
+            defaultTitle: "Control Center",
+            subtitle:
+                "A sharper cloud console for inventory, orders, payment flow, and storefront operations.",
+            currentUser: "Current user",
+            logout: "Sign out",
+            logoutSuccess: "Signed out",
+            nav: {
+                home: "Home",
+                market: "Market",
+                catalog: "Catalog",
+                catalogManage: "Catalog Ops",
+                orders: "Orders",
+                ordersManage: "Order Ops",
+                payments: "Payments",
+                stock: "Stock",
+                cart: "Cart",
+                addresses: "Addresses",
+                merchant: "Merchant",
+                admin: "Admin",
+                ops: "Ops",
+                profile: "Profile",
+            },
+        };
+    }
+
+    return {
+        brand: "云端商城工作台",
+        defaultTitle: "控制中枢",
+        subtitle:
+            "围绕商品、订单、支付与经营动作重组界面层次，让日常操作更聚焦、更稳定。",
+        currentUser: "当前用户",
+        logout: "退出登录",
+        logoutSuccess: "已退出登录",
+        nav: {
+            home: "首页",
+            market: "商城",
+            catalog: "商品",
+            catalogManage: "商品管理",
+            orders: "订单",
+            ordersManage: "订单管理",
+            payments: "支付",
+            stock: "库存台账",
+            cart: "购物车",
+            addresses: "地址簿",
+            merchant: "商家中心",
+            admin: "管理中心",
+            ops: "运维中心",
+            profile: "我的",
+        },
+    };
+});
+
+const roleTextMap: Record<UserRole, Record<Locale, string>> = {
+    USER: {
+        "zh-CN": "用户",
+        "en-US": "User",
+    },
+    MERCHANT: {
+        "zh-CN": "商家",
+        "en-US": "Merchant",
+    },
+    ADMIN: {
+        "zh-CN": "管理员",
+        "en-US": "Admin",
+    },
+};
+
 const visibleNavItems = computed(() =>
-    navItems.filter((item) => item.public || item.roles.includes(role.value)),
+    navItems
+        .filter((item) => item.public || item.roles.includes(role.value))
+        .map((item) => ({
+            ...item,
+            label: copy.value.nav[item.key as keyof typeof copy.value.nav],
+        })),
 );
 
 const displayName = computed(
     () =>
         sessionState.user?.nickname ||
         sessionState.user?.username ||
-        "Current User",
+        copy.value.currentUser,
 );
-const roleLabel = computed(() => role.value);
+
+const roleLabel = computed(
+    () => roleTextMap[role.value]?.[locale.value] ?? role.value,
+);
 
 function isActive(path: string): boolean {
     const current = currentRoutePath();
@@ -112,7 +190,7 @@ async function handleLogout(): Promise<void> {
         // ignore
     } finally {
         clearSession();
-        uni.showToast({ title: "Signed out", icon: "success" });
+        uni.showToast({ title: copy.value.logoutSuccess, icon: "success" });
         redirectTo(Routes.login);
     }
 }
@@ -121,28 +199,31 @@ async function handleLogout(): Promise<void> {
 <template>
     <view class="app-shell">
         <view class="page-container shell-inner">
-            <view class="top-bar">
-                <view class="top-main">
-                    <text class="brand">My Shop</text>
-                    <text class="title">{{ title || "Dashboard" }}</text>
-                    <text class="subtitle"
-                        >A refined commerce experience inspired by premium
-                        product storytelling.</text
-                    >
+            <view class="masthead glass-card fade-in-up">
+                <view class="masthead-main">
+                    <view class="brand-line">
+                        <text class="brand-mark">MS</text>
+                        <text class="brand-name">{{ copy.brand }}</text>
+                    </view>
+                    <text class="title">{{ props.title || copy.defaultTitle }}</text>
+                    <text class="subtitle">{{ copy.subtitle }}</text>
                 </view>
-                <view class="user-meta">
-                    <view class="role-chip">{{ roleLabel }}</view>
-                    <text class="user-name">{{ displayName }}</text>
-                    <button
-                        class="btn-secondary logout-btn"
-                        @click="handleLogout"
-                    >
-                        Sign out
-                    </button>
+
+                <view class="masthead-side">
+                    <LocaleSwitch />
+                    <view class="profile-panel">
+                        <view class="profile-meta">
+                            <text class="role-chip">{{ roleLabel }}</text>
+                            <text class="user-name">{{ displayName }}</text>
+                        </view>
+                        <button class="btn-secondary logout-btn" @click="handleLogout">
+                            {{ copy.logout }}
+                        </button>
+                    </view>
                 </view>
             </view>
 
-            <scroll-view class="nav-row" scroll-x>
+            <scroll-view class="nav-row fade-in-up" scroll-x>
                 <view class="nav-items">
                     <view
                         v-for="item in visibleNavItems"
@@ -151,12 +232,10 @@ async function handleLogout(): Promise<void> {
                         :class="{ active: isActive(item.path) }"
                         @click="handleNav(item)"
                     >
-                        <text>{{ item.label }}</text>
-                        <text
-                            v-if="item.showBadge && cartCount > 0"
-                            class="badge"
-                            >{{ cartCount }}</text
-                        >
+                        <text class="nav-label">{{ item.label }}</text>
+                        <text v-if="item.showBadge && cartCount > 0" class="badge">
+                            {{ cartCount }}
+                        </text>
                     </view>
                 </view>
             </scroll-view>
@@ -177,130 +256,169 @@ async function handleLogout(): Promise<void> {
 .shell-inner {
     display: flex;
     flex-direction: column;
-    gap: 18px;
-}
-
-.top-bar {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
     gap: 20px;
-    padding: 14px 4px 12px;
-    border-bottom: 1px solid rgba(20, 20, 20, 0.08);
 }
 
-.top-main {
+.masthead {
+    padding: 28px;
+    display: grid;
+    grid-template-columns: minmax(0, 1.25fr) minmax(320px, 420px);
+    gap: 24px;
+    align-items: stretch;
+}
+
+.masthead-main {
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    max-width: 720px;
+    gap: 16px;
+    justify-content: center;
 }
 
-.brand {
+.brand-line {
     display: inline-flex;
-    align-self: flex-start;
+    align-items: center;
+    gap: 12px;
+}
+
+.brand-mark {
+    width: 40px;
+    height: 40px;
+    border-radius: 14px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    color: #04111c;
+    background: linear-gradient(135deg, var(--accent), var(--highlight));
+    box-shadow: 0 12px 28px rgba(95, 209, 194, 0.2);
+}
+
+.brand-name {
     font-size: 12px;
-    color: var(--accent);
-    font-weight: 700;
-    letter-spacing: 0.08em;
+    font-weight: 800;
+    letter-spacing: 0.18em;
     text-transform: uppercase;
-    padding: 6px 12px;
-    border-radius: 999px;
-    background: var(--accent-soft);
+    color: var(--text-muted);
 }
 
 .title {
     display: block;
-    font-size: clamp(28px, 4vw, 44px);
-    font-weight: 700;
-    letter-spacing: -0.04em;
-    line-height: 1.02;
+    font-size: clamp(32px, 4vw, 50px);
+    font-weight: 800;
+    letter-spacing: -0.05em;
+    line-height: 1;
 }
 
 .subtitle {
     color: var(--text-muted);
     font-size: 15px;
-    line-height: 1.65;
-    max-width: 680px;
+    line-height: 1.8;
+    max-width: 720px;
 }
 
-.user-meta {
+.masthead-side {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 18px;
+}
+
+.profile-panel {
     display: flex;
     align-items: center;
-    gap: 10px;
-    flex-wrap: wrap;
-    justify-content: flex-end;
-    padding-top: 4px;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 18px;
+    border-radius: 24px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--panel-border);
+}
+
+.profile-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
 
 .role-chip {
+    align-self: flex-start;
     font-size: 12px;
-    border: 1px solid rgba(11, 107, 95, 0.2);
+    border: 1px solid rgba(95, 209, 194, 0.24);
     border-radius: 999px;
     color: var(--text-main);
     padding: 7px 12px;
     background: var(--accent-soft);
-    font-weight: 600;
+    font-weight: 700;
 }
 
 .user-name {
-    color: var(--text-muted);
-    font-size: 13px;
+    color: var(--text-main);
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
 }
 
 .logout-btn {
-    min-width: 100px;
+    min-width: 112px;
 }
 
 .nav-row {
-    padding: 6px 8px;
+    padding: 8px;
     border-radius: 999px;
-    background: rgba(255, 255, 255, 0.7);
-    border: 1px solid rgba(20, 20, 20, 0.08);
+    background: rgba(5, 14, 23, 0.82);
+    border: 1px solid var(--panel-border);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
 }
 
 .nav-items {
     display: flex;
     gap: 10px;
-    padding: 6px 0;
+    padding: 4px 0;
 }
 
 .nav-item {
-    padding: 11px 16px;
+    padding: 12px 18px;
     border-radius: 999px;
-    background: rgba(255, 255, 255, 0.9);
+    background: rgba(255, 255, 255, 0.03);
     font-size: 13px;
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    border: 1px solid rgba(20, 20, 20, 0.08);
-    color: var(--text-main);
-    font-weight: 600;
+    gap: 8px;
+    border: 1px solid transparent;
+    color: var(--text-muted);
+    font-weight: 700;
     transition:
-        background-color 0.2s ease,
-        border-color 0.2s ease,
-        box-shadow 0.2s ease,
-        transform 0.2s ease,
-        color 0.2s ease;
+        background-color 0.22s ease,
+        border-color 0.22s ease,
+        box-shadow 0.22s ease,
+        transform 0.22s ease,
+        color 0.22s ease;
 }
 
 .nav-item.active {
     background: linear-gradient(
-        180deg,
-        rgba(255, 255, 255, 0.95),
-        rgba(250, 246, 240, 0.95)
+        135deg,
+        rgba(95, 209, 194, 0.18),
+        rgba(240, 182, 90, 0.16)
     );
-    border-color: rgba(20, 20, 20, 0.12);
-    box-shadow: 0 14px 28px rgba(20, 20, 20, 0.1);
+    border-color: rgba(95, 209, 194, 0.24);
+    box-shadow: 0 14px 28px rgba(1, 7, 14, 0.34);
     color: var(--text-main);
 }
 
+.nav-label {
+    white-space: nowrap;
+}
+
 .badge {
-    background: var(--accent);
-    color: #fff;
+    background: linear-gradient(135deg, var(--highlight), #ffd480);
+    color: #101923;
     font-size: 10px;
-    font-weight: 700;
-    padding: 2px 6px;
+    font-weight: 800;
+    padding: 3px 7px;
     border-radius: 999px;
 }
 
@@ -311,7 +429,9 @@ async function handleLogout(): Promise<void> {
 @media (hover: hover) {
     .nav-item:hover {
         transform: translateY(-1px);
-        box-shadow: 0 12px 24px rgba(20, 20, 20, 0.08);
+        color: var(--text-main);
+        border-color: var(--panel-border);
+        box-shadow: 0 12px 24px rgba(2, 8, 16, 0.24);
     }
 }
 
@@ -320,27 +440,40 @@ button {
     line-height: 1;
 }
 
+button::after {
+    border: none;
+}
+
+@media (max-width: 960px) {
+    .masthead {
+        grid-template-columns: 1fr;
+    }
+}
+
 @media (max-width: 768px) {
     .app-shell {
         padding-top: 16px;
     }
 
-    .top-bar {
-        flex-direction: column;
-        padding-top: 6px;
+    .masthead {
+        padding: 22px;
     }
 
     .title {
-        font-size: 30px;
+        font-size: 34px;
     }
 
     .subtitle {
         font-size: 14px;
     }
 
-    .user-meta {
+    .profile-panel {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .logout-btn {
         width: 100%;
-        justify-content: flex-start;
     }
 }
 </style>

@@ -8,15 +8,17 @@ import {
     listTodayHotSellingProductsWithFallback,
     smartSearchProductsWithFallback,
 } from "../../api/search-ops";
-import type { ProductItem } from "../../types/domain";
-import { addToCart } from "../../store/cart";
 import { isAuthenticated } from "../../auth/session";
+import LocaleSwitch from "../../components/LocaleSwitch.vue";
+import { useLocale } from "../../i18n/locale";
 import { navigateTo } from "../../router/navigation";
 import { Routes } from "../../router/routes";
+import { addToCart } from "../../store/cart";
+import type { ProductItem } from "../../types/domain";
 import { formatPrice } from "../../utils/format";
 import { resolveProductImageUrl } from "../../utils/image";
-import { toast } from "../../utils/ui";
 import { mapSearchDocumentToProduct, resolveCartSkuId } from "../../utils/product";
+import { toast } from "../../utils/ui";
 
 const keyword = ref("");
 const loading = ref(false);
@@ -32,15 +34,93 @@ const initialized = ref(false);
 const latestLoadRequestId = ref(0);
 const failedImageIds = ref<Record<string, boolean>>({});
 
+const { locale } = useLocale();
+
 const loggedIn = computed(() => isAuthenticated());
 const activeKeyword = computed(() => keyword.value.trim());
-const resultsTitle = computed(() =>
-    activeKeyword.value ? "Search Results" : "Today Hot Selling",
+
+const copy = computed(() =>
+    locale.value === "en-US"
+        ? {
+              eyebrow: "Storefront",
+              title: "A calmer product browser for cloud commerce.",
+              subtitle:
+                  "Search hot items, move through curated discovery, and keep the shopping path readable from first glance to checkout.",
+              login: "Sign in now",
+              workspace: "Open console",
+              catalog: "Browse catalog",
+              viewMode: "View mode",
+              searchMode: "Search mode",
+              hotMode: "Hot picks",
+              recommendedCount: "Keyword signals",
+              searchTitle: "Search the storefront",
+              searchSubtitle:
+                  "Use keywords to jump to products, categories, and brands.",
+              searchPlaceholder: "Search by product, category, or brand",
+              searchAction: "Search",
+              hotKeywords: "Trending now",
+              recommendedKeywords: "Suggested keywords",
+              resultSearch: "Search results",
+              resultToday: "Today hot picks",
+              resultHintSearch: `Keyword: ${activeKeyword.value}`,
+              resultHintToday: "Sorted by today relevance and recent demand.",
+              stockPrefix: "Stock",
+              addToCart: "Add to cart",
+              addToCartLogin: "Login to add",
+              empty: "No matching products for the current condition.",
+              loadMore: "Load more",
+              noMore: "No more products",
+              authHint: "Please sign in before adding items to cart.",
+              invalidPrice: "Product price is unavailable.",
+              invalidShop: "Shop metadata is unavailable.",
+              addCartSuccess: "Added to cart",
+              delayedStock:
+                  "Added to cart. Stock data might still be catching up.",
+              loadFailed: "Failed to load products",
+          }
+        : {
+              eyebrow: "商城",
+              title: "更安静，也更聚焦的云端商品浏览界面。",
+              subtitle:
+                  "把热销商品、搜索入口和加购动作收进更清晰的结构里，让从发现到下单的路径更顺手。",
+              login: "立即登录",
+              workspace: "进入工作台",
+              catalog: "浏览商品",
+              viewMode: "当前视图",
+              searchMode: "搜索模式",
+              hotMode: "热销榜",
+              recommendedCount: "关键词信号",
+              searchTitle: "搜索商城",
+              searchSubtitle: "通过关键词快速定位商品、类目和品牌。",
+              searchPlaceholder: "搜索商品、类目或品牌",
+              searchAction: "搜索",
+              hotKeywords: "当前热搜",
+              recommendedKeywords: "推荐关键词",
+              resultSearch: "搜索结果",
+              resultToday: "今日热销",
+              resultHintSearch: `关键词：${activeKeyword.value}`,
+              resultHintToday: "按今日热度与近时段成交关注度排序。",
+              stockPrefix: "库存",
+              addToCart: "加入购物车",
+              addToCartLogin: "登录后加入",
+              empty: "当前条件下暂无匹配商品。",
+              loadMore: "加载更多",
+              noMore: "没有更多商品了",
+              authHint: "请先登录后再加入购物车。",
+              invalidPrice: "商品价格不可用。",
+              invalidShop: "店铺信息不可用。",
+              addCartSuccess: "已加入购物车",
+              delayedStock: "已加入购物车，当前库存数据可能存在延迟。",
+              loadFailed: "加载商品失败",
+          },
 );
+
+const resultsTitle = computed(() =>
+    activeKeyword.value ? copy.value.resultSearch : copy.value.resultToday,
+);
+
 const resultsHint = computed(() =>
-    activeKeyword.value
-        ? `Keyword: ${activeKeyword.value}`
-        : "Ranked by completed sales today",
+    activeKeyword.value ? copy.value.resultHintSearch : copy.value.resultHintToday,
 );
 
 async function refreshKeywords(seed = ""): Promise<void> {
@@ -73,10 +153,7 @@ async function loadProducts(reset = false): Promise<void> {
                   sortField: "score",
                   sortOrder: "desc",
               })
-            : await listTodayHotSellingProductsWithFallback(
-                  page.value,
-                  size.value,
-              );
+            : await listTodayHotSellingProductsWithFallback(page.value, size.value);
 
         if (!activeKeyword.value && reset && result.documents.length === 0) {
             await refreshKeywords("");
@@ -108,9 +185,7 @@ async function loadProducts(reset = false): Promise<void> {
         if (requestId !== latestLoadRequestId.value) {
             return;
         }
-        toast(
-            error instanceof Error ? error.message : "Failed to load products",
-        );
+        toast(error instanceof Error ? error.message : copy.value.loadFailed);
     } finally {
         if (requestId === latestLoadRequestId.value) {
             loading.value = false;
@@ -152,16 +227,16 @@ function onLoadMore(): void {
 
 async function onAddToCart(item: ProductItem): Promise<void> {
     if (!loggedIn.value) {
-        toast("Sign in to add items to cart");
+        toast(copy.value.authHint);
         goLogin();
         return;
     }
     if (typeof item.price !== "number" || item.price <= 0) {
-        toast("Product price is unavailable");
+        toast(copy.value.invalidPrice);
         return;
     }
     if (typeof item.shopId !== "number" || item.shopId <= 0) {
-        toast("Shop information is unavailable");
+        toast(copy.value.invalidShop);
         return;
     }
     try {
@@ -177,16 +252,12 @@ async function onAddToCart(item: ProductItem): Promise<void> {
             shopId: item.shopId,
         });
         if (typeof item.stockQuantity === "number" && item.stockQuantity <= 0) {
-            toast("Added to cart. Search stock data may be stale.", "success");
+            toast(copy.value.delayedStock, "success");
             return;
         }
-        toast("Added to cart", "success");
+        toast(copy.value.addCartSuccess, "success");
     } catch (error) {
-        toast(
-            error instanceof Error
-                ? error.message
-                : "Failed to add product to cart",
-        );
+        toast(error instanceof Error ? error.message : copy.value.loadFailed);
     }
 }
 
@@ -215,18 +286,19 @@ onShow(() => {
 <template>
     <view class="page">
         <view class="page-container market-layout">
+            <view class="market-topbar fade-in-up">
+                <view class="market-brand">
+                    <text class="market-brand-mark">MS</text>
+                    <text class="market-brand-name">My Shop Cloud</text>
+                </view>
+                <LocaleSwitch />
+            </view>
+
             <view class="hero-panel display-panel fade-in-up">
                 <view class="hero-main">
-                    <text class="hero-eyebrow">Marketplace</text>
-                    <text class="hero-title"
-                        >Discover products in a calmer, more premium
-                        storefront.</text
-                    >
-                    <text class="hero-subtitle">
-                        Explore what is selling today, search by keyword, and
-                        move from inspiration to checkout with a cleaner H5
-                        experience.
-                    </text>
+                    <text class="hero-eyebrow">{{ copy.eyebrow }}</text>
+                    <text class="hero-title">{{ copy.title }}</text>
+                    <text class="hero-subtitle">{{ copy.subtitle }}</text>
 
                     <view class="hero-actions">
                         <button
@@ -234,7 +306,7 @@ onShow(() => {
                             class="btn-primary"
                             @click="goLogin"
                         >
-                            Sign in
+                            {{ copy.login }}
                         </button>
                         <button
                             v-else
@@ -245,57 +317,54 @@ onShow(() => {
                                 })
                             "
                         >
-                            Open dashboard
+                            {{ copy.workspace }}
                         </button>
                         <button
                             class="btn-secondary"
                             @click="navigateTo(Routes.appCatalog)"
                         >
-                            Browse catalog
+                            {{ copy.catalog }}
                         </button>
                     </view>
                 </view>
 
                 <view class="hero-stats">
                     <view class="info-card">
-                        <text class="info-label">Current view</text>
-                        <text class="info-value">{{
-                            activeKeyword ? "Search" : "Hot selling"
-                        }}</text>
+                        <text class="info-label">{{ copy.viewMode }}</text>
+                        <text class="info-value">
+                            {{ activeKeyword ? copy.searchMode : copy.hotMode }}
+                        </text>
                     </view>
                     <view class="info-card">
-                        <text class="info-label">Suggestions</text>
-                        <text class="info-value">{{
-                            hotKeywords.length + recommendations.length
-                        }}</text>
+                        <text class="info-label">{{ copy.recommendedCount }}</text>
+                        <text class="info-value">
+                            {{ hotKeywords.length + recommendations.length }}
+                        </text>
                     </view>
                 </view>
             </view>
 
             <view class="search-panel surface-card fade-in-up">
                 <view class="section-block compact-block">
-                    <text class="section-title">Search the marketplace</text>
-                    <text class="section-subtitle">
-                        Find products, categories, and brands with keyword
-                        guidance.
-                    </text>
+                    <text class="section-title">{{ copy.searchTitle }}</text>
+                    <text class="section-subtitle">{{ copy.searchSubtitle }}</text>
                 </view>
 
                 <view class="search-row">
                     <input
                         v-model="keyword"
                         class="search-input"
-                        placeholder="Search products, categories, or brands"
+                        :placeholder="copy.searchPlaceholder"
                         @confirm="onSearch"
                     />
                     <button class="btn-primary" @click="onSearch">
-                        Search
+                        {{ copy.searchAction }}
                     </button>
                 </view>
 
                 <view class="keyword-grid">
                     <view class="keyword-section" v-if="hotKeywords.length">
-                        <text class="keyword-title">Trending now</text>
+                        <text class="keyword-title">{{ copy.hotKeywords }}</text>
                         <view class="keyword-list">
                             <text
                                 v-for="item in hotKeywords"
@@ -309,7 +378,9 @@ onShow(() => {
                     </view>
 
                     <view class="keyword-section" v-if="recommendations.length">
-                        <text class="keyword-title">Recommended</text>
+                        <text class="keyword-title">
+                            {{ copy.recommendedKeywords }}
+                        </text>
                         <view class="keyword-list">
                             <text
                                 v-for="item in recommendations"
@@ -344,26 +415,22 @@ onShow(() => {
 
                     <view class="product-main">
                         <text class="product-name">{{ item.name }}</text>
-                        <text class="product-price">{{
-                            formatPrice(item.price)
-                        }}</text>
-                        <text class="product-meta"
-                            >Stock {{ item.stockQuantity ?? "--" }}</text
-                        >
+                        <text class="product-price">{{ formatPrice(item.price) }}</text>
+                        <text class="product-meta">
+                            {{ copy.stockPrefix }} {{ item.stockQuantity ?? "--" }}
+                        </text>
                     </view>
 
                     <button
                         class="btn-outline card-action"
                         @click="onAddToCart(item)"
                     >
-                        {{ loggedIn ? "Add to cart" : "Sign in to add" }}
+                        {{ loggedIn ? copy.addToCart : copy.addToCartLogin }}
                     </button>
                 </view>
             </view>
 
-            <view v-else class="empty-state"
-                >No products matched the current query.</view
-            >
+            <view v-else class="empty-state">{{ copy.empty }}</view>
 
             <view class="load-more">
                 <button
@@ -372,9 +439,9 @@ onShow(() => {
                     :loading="loading"
                     @click="onLoadMore"
                 >
-                    Load more
+                    {{ copy.loadMore }}
                 </button>
-                <text v-else class="text-muted">No more products</text>
+                <text v-else class="text-muted">{{ copy.noMore }}</text>
             </view>
         </view>
     </view>
@@ -389,6 +456,42 @@ onShow(() => {
     display: flex;
     flex-direction: column;
     gap: 24px;
+}
+
+.market-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    flex-wrap: wrap;
+}
+
+.market-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.market-brand-mark {
+    width: 42px;
+    height: 42px;
+    border-radius: 14px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, var(--accent), var(--highlight));
+    color: #04111c;
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+}
+
+.market-brand-name {
+    font-size: 12px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    font-weight: 800;
 }
 
 .hero-panel {
@@ -441,16 +544,16 @@ onShow(() => {
 .search-input {
     flex: 1;
     min-height: 48px;
-    background: #fff;
+    background: rgba(255, 255, 255, 0.04);
     border-radius: 999px;
     padding: 12px 16px;
     font-size: 14px;
-    border: 1px solid rgba(20, 20, 20, 0.12);
+    border: 1px solid var(--panel-border);
 }
 
 .search-input:focus {
-    border-color: rgba(11, 107, 95, 0.4);
-    box-shadow: 0 0 0 3px rgba(11, 107, 95, 0.12);
+    border-color: rgba(95, 209, 194, 0.4);
+    box-shadow: 0 0 0 3px rgba(95, 209, 194, 0.12);
 }
 
 .keyword-grid {
@@ -468,8 +571,8 @@ onShow(() => {
 .keyword-title {
     font-size: 12px;
     color: var(--text-muted);
-    font-weight: 700;
-    letter-spacing: 0.06em;
+    font-weight: 800;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
 }
 
@@ -482,15 +585,15 @@ onShow(() => {
 .keyword-chip {
     padding: 8px 14px;
     border-radius: 999px;
-    background: rgba(255, 255, 255, 0.95);
+    background: rgba(255, 255, 255, 0.04);
     font-size: 12px;
-    border: 1px solid rgba(20, 20, 20, 0.08);
+    border: 1px solid var(--panel-border);
     color: var(--text-main);
     transition:
-        transform 0.2s ease,
-        box-shadow 0.2s ease,
-        border-color 0.2s ease,
-        color 0.2s ease;
+        transform 0.22s ease,
+        box-shadow 0.22s ease,
+        border-color 0.22s ease,
+        color 0.22s ease;
 }
 
 .section-head {
@@ -511,17 +614,17 @@ onShow(() => {
     flex-direction: column;
     gap: 14px;
     transition:
-        transform 0.2s ease,
-        box-shadow 0.2s ease,
-        border-color 0.2s ease;
+        transform 0.22s ease,
+        box-shadow 0.22s ease,
+        border-color 0.22s ease;
 }
 
 .product-image {
     width: 100%;
     aspect-ratio: 1.7 / 1;
     border-radius: 18px;
-    background: linear-gradient(180deg, #f7f7f9, #f1f1f4);
-    border: 1px solid rgba(20, 20, 20, 0.08);
+    background: linear-gradient(180deg, #0f2033, #0b1828);
+    border: 1px solid var(--panel-border);
 }
 
 .product-main {
@@ -532,16 +635,16 @@ onShow(() => {
 
 .product-name {
     font-size: 18px;
-    font-weight: 700;
+    font-weight: 800;
     line-height: 1.4;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.03em;
 }
 
 .product-price {
     font-size: 22px;
-    font-weight: 700;
+    font-weight: 800;
     color: var(--text-main);
-    letter-spacing: -0.03em;
+    letter-spacing: -0.04em;
 }
 
 .product-meta {
@@ -562,31 +665,38 @@ onShow(() => {
 @media (hover: hover) {
     .keyword-chip:hover {
         transform: translateY(-1px);
-        border-color: rgba(11, 107, 95, 0.2);
-        box-shadow: 0 10px 20px rgba(20, 20, 20, 0.08);
-        color: var(--accent);
+        border-color: rgba(95, 209, 194, 0.2);
+        box-shadow: 0 12px 22px rgba(1, 7, 14, 0.28);
+        color: var(--accent-strong);
     }
 
     .product-card:hover {
         transform: translateY(-2px);
-        box-shadow: 0 16px 30px rgba(20, 20, 20, 0.12);
-        border-color: rgba(20, 20, 20, 0.12);
+        box-shadow: 0 18px 34px rgba(1, 7, 14, 0.34);
+        border-color: var(--panel-border-strong);
     }
 }
 
-@media (max-width: 900px) {
+@media (max-width: 980px) {
     .hero-panel,
     .keyword-grid,
     .product-grid {
         grid-template-columns: 1fr;
     }
+}
 
+@media (max-width: 768px) {
     .hero-panel {
-        padding: 26px;
+        padding: 24px;
     }
 
     .hero-main {
         min-height: auto;
+    }
+
+    .search-row {
+        flex-direction: column;
+        align-items: stretch;
     }
 }
 </style>
