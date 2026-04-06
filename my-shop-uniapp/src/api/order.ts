@@ -1,5 +1,6 @@
 import http from './http'
 import type {
+  CreateCartOrderPayload,
   AfterSaleInfo,
   CreateOrderPayload,
   OrderAggregateResponse,
@@ -41,6 +42,33 @@ export function createOrder(payload: CreateOrderPayload): Promise<OrderAggregate
     receiverAddress: payload.receiverAddress.trim()
   }
   const idempotencyKey = `${userId}-${payload.spuId}-${payload.skuId}-${Date.now()}`
+  return http.post<OrderAggregateResponse, OrderAggregateResponse>('/api/orders', body, {
+    headers: {
+      'Idempotency-Key': idempotencyKey
+    }
+  })
+}
+
+export function createCartOrder(payload: CreateCartOrderPayload): Promise<OrderAggregateResponse> {
+  const userId = sessionState.user?.id
+  if (typeof userId !== 'number') {
+    return Promise.reject(new Error('User session is required'))
+  }
+  if (typeof payload.cartId !== 'number') {
+    return Promise.reject(new Error('cartId is required'))
+  }
+  if (!payload.receiverName.trim() || !payload.receiverPhone.trim() || !payload.receiverAddress.trim()) {
+    return Promise.reject(new Error('Receiver details are required'))
+  }
+  const body = {
+    userId,
+    cartId: payload.cartId,
+    clientOrderId: payload.clientOrderId?.trim() || `cart-${userId}-${payload.cartId}-${Date.now()}`,
+    receiverName: payload.receiverName.trim(),
+    receiverPhone: payload.receiverPhone.trim(),
+    receiverAddress: payload.receiverAddress.trim()
+  }
+  const idempotencyKey = `${userId}-cart-${payload.cartId}-${Date.now()}`
   return http.post<OrderAggregateResponse, OrderAggregateResponse>('/api/orders', body, {
     headers: {
       'Idempotency-Key': idempotencyKey
@@ -92,14 +120,6 @@ export function batchShipOrders(ids: number[], shippingCompany: string, tracking
 
 export function batchCompleteOrders(ids: number[]): Promise<number> {
   return http.post<number, number>('/api/orders/batch/complete', ids)
-}
-
-export function payOrder(id: number): Promise<boolean> {
-  return http.post<boolean, boolean>(`/api/orders/${id}/pay`)
-}
-
-export function batchPayOrders(ids: number[]): Promise<number> {
-  return http.post<number, number>('/api/orders/batch/pay', ids)
 }
 
 export function applyAfterSale(payload: AfterSaleInfo): Promise<AfterSaleInfo> {

@@ -204,6 +204,52 @@ export interface CreateOrderPayload {
   receiverAddress: string
 }
 
+export interface CreateCartOrderPayload {
+  cartId: number
+  clientOrderId?: string
+  receiverName: string
+  receiverPhone: string
+  receiverAddress: string
+}
+
+export interface RemoteCartItem {
+  id?: number
+  cartId?: number
+  spuId: number
+  skuId: number
+  skuName: string
+  unitPrice: number
+  quantity: number
+  selected?: number
+  checkedOut?: number
+  shopId?: number
+  productName?: string
+}
+
+export interface RemoteCart {
+  id?: number
+  cartNo?: string
+  userId?: number
+  cartStatus?: string
+  selectedCount?: number
+  totalAmount?: number
+  items?: RemoteCartItem[]
+}
+
+export interface CartSyncItemPayload {
+  spuId: number
+  skuId: number
+  skuName: string
+  unitPrice: number
+  quantity: number
+  selected?: number
+  shopId?: number
+}
+
+export interface CartSyncPayload {
+  items: CartSyncItemPayload[]
+}
+
 export interface UserAddress {
   id?: number
   userId?: number

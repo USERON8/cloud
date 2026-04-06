@@ -101,7 +101,19 @@ Notes:
 Notes:
 - Address controller is authenticated at class level and still enforces owner or admin checks in each operation.
 
-### 4. Order Creation, Fulfillment, And After-Sale Chain
+### 4. Cart And Order Preparation Chain
+
+1. Current cart
+   - `GET /api/cart`
+2. Sync cart snapshot
+   - `POST /api/cart/sync`
+
+Notes:
+- `GET /api/cart` returns the current authenticated user's active cart and creates one if it does not exist yet.
+- `POST /api/cart/sync` replaces the current active cart with a full item snapshot. It is not a patch-style update.
+- The response contains the server-issued `cartId`, which is the identifier used by cart checkout on the order side.
+
+### 5. Order Creation, Fulfillment, And After-Sale Chain
 
 1. Create order
    - `POST /api/orders`
@@ -125,7 +137,7 @@ Important behavior:
 - Shipping now requires explicit `shippingCompany` and `trackingNumber`.
 - Merchant users cannot force `complete`; completion is limited to the order owner or admin.
 
-### 5. Payment And Checkout Chain
+### 6. Payment And Checkout Chain
 
 1. Create or locate payment order
    - `POST /api/payments/orders`
@@ -148,7 +160,7 @@ Important behavior:
 - Internal callback mutation endpoint `/api/payments/callbacks` still exists for controlled internal callers, but business logic rejects state mutation through the old direct internal callback path.
 - Checkout is public only at the ticketed HTML endpoint; all order and refund reads remain owner/admin restricted.
 
-### 6. Merchant And Admin Operations Chain
+### 7. Merchant And Admin Operations Chain
 
 1. Merchant management
    - `GET /api/merchant`
@@ -190,7 +202,7 @@ Important behavior:
    - `/api/thread-pool/info*`
    - `/auth/tokens/*`
 
-### 7. Internal Inventory And Gateway Utility Chain
+### 8. Internal Inventory And Gateway Utility Chain
 
 1. Inventory
    - `GET /api/stocks/ledger/{skuId}`
@@ -247,6 +259,17 @@ Notes:
 | POST | `/api/user/address/page` | Authenticated |
 | DELETE | `/api/user/address/deleteBatch` | Authenticated |
 | PUT | `/api/user/address/updateBatch` | Authenticated |
+
+### Cart
+
+| Method | Path | Access |
+| --- | --- | --- |
+| GET | `/api/cart` | Authenticated |
+| POST | `/api/cart/sync` | Authenticated |
+
+Notes:
+- `GET /api/cart` returns the active cart for the current user and creates one if missing.
+- `POST /api/cart/sync` accepts a full cart snapshot and replaces the active cart items atomically.
 
 ### Product Catalog
 

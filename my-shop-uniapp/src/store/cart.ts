@@ -2,7 +2,8 @@ import { computed } from 'vue'
 import { defineStore } from 'pinia'
 import { sessionState, subscribeSessionChange } from '../auth/session'
 import { pinia } from '../stores/pinia'
-import type { UserInfo } from '../types/domain'
+import { getCurrentCart, syncCurrentCart } from '../api/cart'
+import type { CartSyncPayload, RemoteCart, UserInfo } from '../types/domain'
 import { getStorage, removeStorage, setStorage } from '../utils/storage'
 
 export interface CartEntry {
@@ -56,7 +57,8 @@ export const useCartStore = defineStore('cart', {
   state: () => ({
     items: [] as CartEntry[],
     activeCartKey: resolveCartStorageKey(sessionState.user),
-    hasHydrated: false
+    hasHydrated: false,
+    remoteCartId: null as number | null
   }),
   getters: {
     cartCount: (state) => state.items.reduce((sum, item) => sum + item.quantity, 0),
@@ -65,6 +67,74 @@ export const useCartStore = defineStore('cart', {
   actions: {
     persist(): void {
       setStorage(this.activeCartKey, this.items)
+    },
+    applyRemoteCart(cart: RemoteCart | null): void {
+      this.remoteCartId = typeof cart?.id === 'number' ? cart.id : null
+      const remoteItems = Array.isArray(cart?.items)
+        ? cart.items
+            .map((item) => ({
+              productId: item.spuId,
+              skuId: item.skuId,
+              productName: item.productName?.trim() || item.skuName?.trim() || `SKU ${item.skuId}`,
+              price: item.unitPrice,
+              quantity: item.quantity,
+              shopId: item.shopId ?? 0
+            }))
+            .filter(
+              (item) =>
+                typeof item.productId === 'number' &&
+                typeof item.skuId === 'number' &&
+                typeof item.shopId === 'number' &&
+                item.shopId > 0 &&
+                typeof item.productName === 'string' &&
+                item.productName.trim().length > 0 &&
+                typeof item.price === 'number' &&
+                item.price > 0 &&
+                typeof item.quantity === 'number' &&
+                item.quantity > 0
+            )
+        : []
+      if (remoteItems.length > 0 || (cart?.id && this.items.length === 0)) {
+        this.items = remoteItems
+        this.persist()
+      }
+    },
+    buildRemotePayload(): CartSyncPayload {
+      return {
+        items: this.items.map((item) => ({
+          spuId: item.productId,
+          skuId: item.skuId,
+          skuName: item.productName,
+          unitPrice: item.price,
+          quantity: item.quantity,
+          selected: 1,
+          shopId: item.shopId
+        }))
+      }
+    },
+    async hydrateRemoteCart(): Promise<void> {
+      if (typeof sessionState.user?.id !== 'number') {
+        this.remoteCartId = null
+        return
+      }
+      const cart = await getCurrentCart()
+      this.applyRemoteCart(cart)
+    },
+    async syncRemoteCart(): Promise<number | null> {
+      if (typeof sessionState.user?.id !== 'number') {
+        this.remoteCartId = null
+        return null
+      }
+      const cart = await syncCurrentCart(this.buildRemotePayload())
+      this.applyRemoteCart(cart)
+      return this.remoteCartId
+    },
+    triggerRemoteSync(): void {
+      if (typeof sessionState.user?.id !== 'number') {
+        this.remoteCartId = null
+        return
+      }
+      void this.syncRemoteCart().catch(() => {})
     },
     loadCart(key: string): void {
       this.activeCartKey = key
@@ -94,12 +164,28 @@ export const useCartStore = defineStore('cart', {
         return
       }
       this.loadCart(nextKey)
+      if (typeof user?.id === 'number') {
+        if (this.items.length > 0) {
+          this.triggerRemoteSync()
+        } else {
+          void this.hydrateRemoteCart().catch(() => {})
+        }
+      } else {
+        this.remoteCartId = null
+      }
     },
     hydrateFromStorage(): void {
       const targetKey = resolveCartStorageKey(sessionState.user)
       this.migrateLegacyCart(targetKey)
       this.loadCart(targetKey)
       this.hasHydrated = true
+      if (typeof sessionState.user?.id === 'number') {
+        if (this.items.length > 0) {
+          this.triggerRemoteSync()
+        } else {
+          void this.hydrateRemoteCart().catch(() => {})
+        }
+      }
     },
     add(entry: Omit<CartEntry, 'quantity'> & { quantity?: number }): void {
       const qty = Math.max(1, entry.quantity ?? 1)
@@ -113,12 +199,14 @@ export const useCartStore = defineStore('cart', {
         })
       }
       this.persist()
+      this.triggerRemoteSync()
     },
     remove(productId: number, skuId: number): void {
       const idx = this.items.findIndex((item) => item.productId === productId && item.skuId === skuId)
       if (idx !== -1) {
         this.items.splice(idx, 1)
         this.persist()
+        this.triggerRemoteSync()
       }
     },
     setQuantity(productId: number, skuId: number, quantity: number): void {
@@ -132,10 +220,12 @@ export const useCartStore = defineStore('cart', {
       }
       item.quantity = quantity
       this.persist()
+      this.triggerRemoteSync()
     },
     clear(): void {
       this.items = []
       removeStorage(this.activeCartKey)
+      this.triggerRemoteSync()
     },
     removeItemsByShops(shopIds: number[]): void {
       if (shopIds.length === 0) {
@@ -146,6 +236,7 @@ export const useCartStore = defineStore('cart', {
       if (nextItems.length !== this.items.length) {
         this.items = nextItems
         this.persist()
+        this.triggerRemoteSync()
       }
     }
   }
@@ -155,6 +246,14 @@ export const cartStore = useCartStore(pinia)
 
 export function hydrateCartFromStorage(): void {
   cartStore.hydrateFromStorage()
+}
+
+export async function syncCartNow(): Promise<number | null> {
+  return cartStore.syncRemoteCart()
+}
+
+export async function hydrateCartFromRemote(): Promise<void> {
+  await cartStore.hydrateRemoteCart()
 }
 
 export function addToCart(entry: Omit<CartEntry, 'quantity'> & { quantity?: number }): void {
@@ -180,6 +279,7 @@ export function removeItemsByShops(shopIds: number[]): void {
 export const cartItems = computed(() => cartStore.items)
 export const cartCount = computed(() => cartStore.cartCount)
 export const cartTotal = computed(() => cartStore.cartTotal)
+export const currentCartId = computed(() => cartStore.remoteCartId)
 
 subscribeSessionChange((user) => {
   cartStore.syncCartStorage(user)

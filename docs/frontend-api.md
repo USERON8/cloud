@@ -8,6 +8,7 @@ Source of truth: `my-shop-uniapp/src/api/*.ts`
 - Default gateway base URL: `http://127.0.0.1:18080`
 - Frontend uses OAuth2 for login and JWT bearer tokens for protected APIs.
 - Payment flow is no longer based on direct order pay transitions. The app creates a payment order, creates a checkout session, opens the checkout webview, and polls payment status.
+- The cart UI now synchronizes local cart state to the backend cart API and uses backend `cartId` checkout when submitting the cart page.
 
 ## Frontend Chains
 
@@ -95,20 +96,19 @@ Primary APIs:
 - `POST /api/orders/{orderId}/cancel`
 - `POST /api/orders/{orderId}/ship`
 - `POST /api/orders/{orderId}/complete`
-- `POST /api/orders/{orderId}/pay`
 - `POST /api/orders/batch/cancel`
 - `POST /api/orders/batch/ship`
 - `POST /api/orders/batch/complete`
-- `POST /api/orders/batch/pay`
 - `POST /api/orders/after-sales`
 - `POST /api/orders/after-sales/{afterSaleId}/actions/{action}`
 
 Notes:
 - Real payment starts from the payment module after order creation.
-- `payOrder` and `batchPayOrders` helpers still exist only for compatibility. Current backend business logic blocks direct pay transitions on `/api/orders/**/pay`.
+- The frontend no longer exports direct order pay helpers. Current payment flow must go through the payment module.
 - `createOrder(payload)` in `src/api/order.ts` currently implements direct-buy only. It auto-generates `clientOrderId` when the caller does not provide one.
+- `createCartOrder(payload)` now implements cart checkout through backend `cartId`.
 - `listOrders` and `getOrderById` now return `items[]`. Each item includes immutable `skuSnapshot` data and an optional `latestProduct` view when the backend can still resolve the SKU.
-- User and merchant order pages are still summary-first views. They do not yet render `items[]`, `skuSnapshot`, or `latestProduct` in the current UI.
+- User and merchant order pages now render `items[]` with snapshot-first product details.
 
 ### 5. Payment And Checkout
 
@@ -169,8 +169,8 @@ Notes:
 - `spuId` together with `skuId` for direct buy
 
 Notes:
-- The current UniApp order client does not expose cart-checkout creation in `src/api/order.ts`.
-- The backend order service still supports cart checkout through `cartId`.
+- `createCartOrder(payload)` uses backend cart checkout with `cartId`.
+- The cart store synchronizes local cart items to `/api/cart/sync` before cart checkout submission.
 
 ### Order summary payload
 

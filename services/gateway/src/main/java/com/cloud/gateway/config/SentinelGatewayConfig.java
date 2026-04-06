@@ -106,7 +106,7 @@ public class SentinelGatewayConfig {
     definitions.add(api("/api/auth", "/auth"));
     definitions.add(api("/api/user"));
     definitions.add(api("/api/product", "/api/category"));
-    definitions.add(api("/api/orders", "/api/order"));
+    definitions.add(api("/api/orders", "/api/order", "/api/cart"));
     definitions.add(api("/api/payment", "/api/payments"));
     definitions.add(api("/api/stocks", "/api/stock"));
     definitions.add(api("/api/search"));

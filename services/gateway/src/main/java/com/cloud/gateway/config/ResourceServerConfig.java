@@ -188,6 +188,8 @@ public class ResourceServerConfig {
                   .hasAuthority("admin:all")
                   .pathMatchers("/api/user/profile/**", "/api/user/address/**")
                   .authenticated()
+                  .pathMatchers("/api/cart/**")
+                  .authenticated()
                   .pathMatchers(HttpMethod.POST, "/api/orders")
                   .hasAuthority("order:create")
                   .pathMatchers("/api/orders/**")

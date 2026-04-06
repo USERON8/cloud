@@ -6,12 +6,14 @@ import {
     cartItems,
     cartTotal,
     clearCart,
+    currentCartId,
     removeFromCart,
     setCartItemQuantity,
+    syncCartNow,
 } from "../../../store/cart";
 import type { CartEntry } from "../../../store/cart";
 import { getDefaultAddress } from "../../../api/address";
-import { createOrder } from "../../../api/order";
+import { createCartOrder } from "../../../api/order";
 import { sessionState } from "../../../auth/session";
 import type { UserAddress } from "../../../types/domain";
 import { formatPrice } from "../../../utils/format";
@@ -135,71 +137,31 @@ async function onPlaceOrder(): Promise<void> {
         return;
     }
 
-    const ok = await confirm(
-        `Submit ${shopGroups.value.length} shop order(s)?`,
-    );
+    const ok = await confirm(`Submit cart checkout for ${cartItems.value.length} item(s)?`);
     if (!ok) return;
 
     placing.value = true;
-    const orderGroups = shopGroups.value.map((group) => ({
-        shopId: group.shopId,
-        items: group.items.map((item) => ({ ...item })),
-    }));
-    const failedShops = new Set<number>();
-    const successfulItems: CartEntry[] = [];
-
     try {
-        for (const group of orderGroups) {
-            for (const item of group.items) {
-                if (typeof item.skuId !== "number") {
-                    failedShops.add(group.shopId);
-                    toast(`Shop ${group.shopId} item is missing a SKU`);
-                    continue;
-                }
-                try {
-                    await createOrder({
-                        shopId: group.shopId,
-                        spuId: item.productId,
-                        skuId: item.skuId,
-                        quantity: item.quantity,
-                        price: item.price,
-                        receiverName,
-                        receiverPhone,
-                        receiverAddress,
-                    });
-                    successfulItems.push(item);
-                } catch (error) {
-                    failedShops.add(group.shopId);
-                    const msg =
-                        error instanceof Error
-                            ? error.message
-                            : "Unknown error";
-                    toast(`Shop ${group.shopId}: ${msg}`);
-                }
-            }
+        const cartId = (await syncCartNow()) ?? currentCartId.value;
+        if (typeof cartId !== "number") {
+            throw new Error("Failed to prepare remote cart checkout");
         }
+        await createCartOrder({
+            cartId,
+            receiverName,
+            receiverPhone,
+            receiverAddress,
+        });
+        clearCart();
+        toast("Cart checkout submitted", "success");
+        navigateTo(Routes.appOrders, undefined, { requiresAuth: true });
+    } catch (error) {
+        toast(
+            error instanceof Error ? error.message : "Failed to submit cart checkout",
+        );
     } finally {
         placing.value = false;
     }
-
-    successfulItems.forEach((item) => {
-        removeFromCart(item.productId, item.skuId);
-    });
-
-    if (failedShops.size === 0) {
-        toast(`Submitted ${successfulItems.length} item(s)`, "success");
-        navigateTo(Routes.appOrders, undefined, { requiresAuth: true });
-        return;
-    }
-
-    if (successfulItems.length > 0) {
-        toast(
-            "Some items were submitted. Only failed items remain in the cart.",
-        );
-        return;
-    }
-
-    toast(`Failed shops: ${[...failedShops].join(", ")}`);
 }
 
 onShow(() => {

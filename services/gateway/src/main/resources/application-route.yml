@@ -63,7 +63,7 @@ spring:
               uri: lb://order-service
               order: 20
               predicates:
-                - Path=/api/orders/**,/api/v1/refund/**
+                - Path=/api/orders/**,/api/cart/**,/api/v1/refund/**
               filters:
                 - name: RequestRateLimiter
                   args:

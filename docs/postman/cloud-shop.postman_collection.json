@@ -512,6 +512,66 @@
       ]
     },
     {
+      "name": "Cart And Checkout Preparation",
+      "item": [
+        {
+          "name": "Get Current Cart",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/cart",
+            "description": "Returns the current authenticated user's active cart and creates one if missing."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let body = {}; try { body = pm.response.json(); } catch (e) {}",
+                  "if (body && body.data) { if (body.data.id) pm.environment.set('cartId', String(body.data.id)); if (body.data.cartNo) pm.environment.set('cartNo', body.data.cartNo); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Sync Current Cart",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/cart/sync",
+            "description": "Full cart replacement. The request body should contain the complete item snapshot for the current active cart.",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    {\n      \"spuId\": {{spuId}},\n      \"skuId\": {{skuId}},\n      \"skuName\": \"Cloud Phone\",\n      \"quantity\": 1,\n      \"unitPrice\": 4999.00,\n      \"selected\": true\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let body = {}; try { body = pm.response.json(); } catch (e) {}",
+                  "if (body && body.data) { if (body.data.id) pm.environment.set('cartId', String(body.data.id)); if (body.data.cartNo) pm.environment.set('cartNo', body.data.cartNo); }"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
       "name": "Orders And After-Sale",
       "item": [
         {
