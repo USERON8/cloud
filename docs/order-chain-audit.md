@@ -18,22 +18,11 @@ Scope:
 - Payment creation and checkout must go through `/api/payments/orders` and `/api/payments/orders/{paymentNo}/checkout-session`.
 - `/api/orders/{orderId}/pay` and `/api/orders/batch/pay` still exist but are compatibility routes only. Current business flow should not rely on them.
 
-## High-Signal Gaps
+## Environment Preconditions
 
-### 1. Refund chain is not closed by order-only docs and Postman requests
-
-- The backend refund endpoint requires a paid payment order.
-- The order and after-sale requests in the published collection do not on their own produce a paid payment state.
-- `POST /api/payments/callbacks` still exists, but the service treats it as a legacy compatibility path rather than an authoritative mutation lane.
-
-Files:
-- `docs/backend-api.md`
-- `docs/postman/cloud-shop.postman_collection.json`
-- `services/payment-service/src/main/java/com/cloud/payment/controller/PaymentOrderController.java`
-
-Impact:
-- The documented endpoint exists, but the published smoke-test sequence does not close the refund path end-to-end.
-- Readers can overestimate how executable the refund chain is from repository assets alone.
+- The payment callback chain depends on environment injection through `.env`-backed runtime configuration.
+- Refund execution is therefore treated as an environment prerequisite instead of a repository contract gap.
+- No smoke or performance test sequence is required in this audit round.
 
 ## Synced Docs In This Round
 
@@ -50,4 +39,4 @@ The docs now reflect:
 
 ## Suggested Next Closure Work
 
-1. Add a fully executable refund smoke chain once payment callback simulation is available.
+1. Keep the deployment/runtime environment aligned with the documented payment callback configuration.
