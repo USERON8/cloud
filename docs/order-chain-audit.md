@@ -20,21 +20,7 @@ Scope:
 
 ## High-Signal Gaps
 
-### 1. `shopId` in frontend direct-buy payload is client-only metadata
-
-- `CreateOrderPayload` requires `shopId`.
-- `src/api/order.ts` does not send `shopId` to the backend order endpoint.
-- Merchant routing is derived by backend product/cart data instead.
-
-Files:
-- `my-shop-uniapp/src/types/domain.ts`
-- `my-shop-uniapp/src/api/order.ts`
-
-Impact:
-- The payload type implies a backend contract that does not exist.
-- This is harmless for runtime but misleading for client developers.
-
-### 2. Refund chain is not closed by order-only docs and Postman requests
+### 1. Refund chain is not closed by order-only docs and Postman requests
 
 - The backend refund endpoint requires a paid payment order.
 - The order and after-sale requests in the published collection do not on their own produce a paid payment state.
@@ -64,5 +50,4 @@ The docs now reflect:
 
 ## Suggested Next Closure Work
 
-1. Decide whether `shopId` should remain in the direct-buy payload type as UI metadata or be removed entirely.
-2. Add a fully executable refund smoke chain once payment callback simulation is available.
+1. Add a fully executable refund smoke chain once payment callback simulation is available.

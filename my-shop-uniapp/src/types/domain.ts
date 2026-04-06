@@ -193,7 +193,6 @@ export interface OrderQuery {
 }
 
 export interface CreateOrderPayload {
-  shopId?: number
   spuId: number
   skuId: number
   quantity: number
