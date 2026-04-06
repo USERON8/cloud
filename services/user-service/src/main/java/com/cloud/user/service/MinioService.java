@@ -8,5 +8,5 @@ public interface MinioService {
 
   String uploadBusinessLicense(Long merchantId, MultipartFile file);
 
-  String getBusinessLicensePresignedUrl(String objectName);
+  String getCertPresignedUrl(String objectName);
 }

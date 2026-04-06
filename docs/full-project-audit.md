@@ -45,6 +45,21 @@ Scope:
 - Previous behavior: `src/api/shop-search.ts` exposed a `searchAfter` field that the backend shop-search request model does not accept, and the frontend API guide did not list `src/api/shop-search.ts`, `src/api/product-catalog.ts`, or the full set of public search and shop endpoints already wrapped by the frontend.
 - Current behavior: the fake `searchAfter` field is removed, and the frontend API guide now points to the real module boundaries and public endpoint surface for search, filters, shop discovery, and product-catalog maintenance.
 
+### 5. Stock ledger page assumed a string status contract
+
+- Previous behavior: `my-shop-uniapp/src/pages/app/stock/index.vue` treated `ledger.status` as a string enum such as `HEALTHY` or `LOW`, but the backend `StockLedgerVO` exposes an integer status and currently returns active rows only.
+- Current behavior: the page now renders numeric status values correctly, maps `1` to `Active`, and computes low-stock warnings from `availableQty` and `alertThreshold`.
+
+### 6. Admin merchant review mixed incompatible status chains
+
+- Previous behavior: the admin page exposed both `/api/merchant/auth/review/{merchantId}` and `/api/merchant/{id}/approve|reject`, while the UI rendered `authStatus` from merchant-auth data. This let operators click actions that updated `auditStatus` but left the displayed auth review state stale.
+- Current behavior: the admin workspace keeps review actions only on the merchant-auth review queue, the merchant list is read-only for audit visibility, and reject actions now require a non-empty reason before submission.
+
+### 7. Merchant auth attachments were only partially preview-safe
+
+- Previous behavior: merchant auth reads only converted business-license object keys into presigned URLs. ID card attachment fields could still come back as raw object keys, which broke direct preview in the frontend.
+- Current behavior: merchant auth reads normalize all certificate attachment fields to presigned URLs when the stored value belongs to the cert bucket.
+
 ## Current Boundary
 
 - The main user-facing and operational pages present in the UniApp app now have traced backend contracts and synced documentation.

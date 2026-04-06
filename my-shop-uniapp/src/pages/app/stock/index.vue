@@ -30,19 +30,50 @@ function ensureAdminAccess(): boolean {
     return false;
 }
 
-function ledgerStatusTone(status?: string): string {
-    if (!status) return "status-muted";
-    const next = status.toUpperCase();
-    if (["HEALTHY", "NORMAL", "AVAILABLE"].includes(next)) {
+function formatLedgerStatus(status?: number): string {
+    if (typeof status !== "number") {
+        return "Unknown";
+    }
+    if (status === 1) {
+        return "Active";
+    }
+    return `Status ${status}`;
+}
+
+function resolveLedgerHealth(
+    currentLedger?: StockLedger | null,
+): { label: string; tone: string } {
+    if (!currentLedger) {
+        return { label: "Unknown", tone: "status-muted" };
+    }
+    if (currentLedger.status !== 1) {
+        return { label: "Inactive", tone: "status-danger" };
+    }
+    const availableQty = currentLedger.availableQty;
+    const alertThreshold = currentLedger.alertThreshold;
+    if (typeof availableQty !== "number") {
+        return { label: "Active", tone: "status-success" };
+    }
+    if (availableQty <= 0) {
+        return { label: "Out of stock", tone: "status-danger" };
+    }
+    if (
+        typeof alertThreshold === "number" &&
+        availableQty <= Math.max(alertThreshold, 0)
+    ) {
+        return { label: "Low stock", tone: "status-warning" };
+    }
+    return { label: "Healthy", tone: "status-success" };
+}
+
+function ledgerStatusTone(status?: number): string {
+    if (typeof status !== "number") {
+        return "status-muted";
+    }
+    if (status === 1) {
         return "status-success";
     }
-    if (["LOW", "WARNING"].includes(next)) {
-        return "status-warning";
-    }
-    if (["EMPTY", "LOCKED", "ERROR"].includes(next)) {
-        return "status-danger";
-    }
-    return "status-accent";
+    return "status-danger";
 }
 
 async function queryLedger(): Promise<void> {
@@ -131,7 +162,13 @@ onShow(() => {
                         class="meta-chip"
                         :class="ledgerStatusTone(ledger.status)"
                     >
-                        {{ ledger.status ?? "Unknown" }}
+                        {{ formatLedgerStatus(ledger.status) }}
+                    </text>
+                    <text
+                        class="meta-chip"
+                        :class="resolveLedgerHealth(ledger).tone"
+                    >
+                        {{ resolveLedgerHealth(ledger).label }}
                     </text>
                     <text class="meta-chip status-muted">
                         SKU ID: {{ ledger.skuId ?? "--" }}

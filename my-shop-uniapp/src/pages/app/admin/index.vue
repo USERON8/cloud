@@ -1,11 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from "vue";
 import AppShell from "../../../components/AppShell.vue";
-import {
-    getMerchants,
-    approveMerchant,
-    rejectMerchant,
-} from "../../../api/merchant";
+import { getMerchants } from "../../../api/merchant";
 import {
     listMerchantAuthByStatus,
     reviewMerchantAuth,
@@ -14,6 +10,7 @@ import { searchUsers } from "../../../api/user-management";
 import { getAdmins } from "../../../api/admin";
 import { getStatisticsOverview } from "../../../api/statistics";
 import { toast } from "../../../utils/ui";
+import type { MerchantAuthInfo, MerchantInfo } from "../../../types/domain";
 
 type TabKey = "overview" | "review" | "merchants" | "users" | "admins";
 
@@ -30,10 +27,10 @@ const activeTab = ref<TabKey>("review");
 const reviewLoading = ref(false);
 const reviewStatus = ref("0");
 const reviewRemark = ref("");
-const reviewRows = ref<Record<string, any>[]>([]);
+const reviewRows = ref<MerchantAuthInfo[]>([]);
 
 const merchantLoading = ref(false);
-const merchantRows = ref<Record<string, any>[]>([]);
+const merchantRows = ref<MerchantInfo[]>([]);
 
 const userLoading = ref(false);
 const userRows = ref<Record<string, any>[]>([]);
@@ -165,7 +162,22 @@ async function loadOverview(): Promise<void> {
     }
 }
 
-async function approveReview(row: Record<string, any>): Promise<void> {
+function ensureRejectRemark(): string | null {
+    const nextRemark = reviewRemark.value.trim();
+    if (!nextRemark) {
+        toast("Enter a rejection reason");
+        return null;
+    }
+    return nextRemark;
+}
+
+function reviewRowTitle(row: MerchantAuthInfo): string {
+    return row.businessLicenseNumber
+        ? `License ${row.businessLicenseNumber}`
+        : `Merchant #${row.merchantId ?? "--"}`;
+}
+
+async function approveReview(row: MerchantAuthInfo): Promise<void> {
     const merchantId = Number(row.merchantId);
     if (!Number.isFinite(merchantId)) {
         toast("Merchant ID is missing");
@@ -184,42 +196,20 @@ async function approveReview(row: Record<string, any>): Promise<void> {
     }
 }
 
-async function rejectReview(row: Record<string, any>): Promise<void> {
+async function rejectReview(row: MerchantAuthInfo): Promise<void> {
     const merchantId = Number(row.merchantId);
     if (!Number.isFinite(merchantId)) {
         toast("Merchant ID is missing");
         return;
     }
+    const remark = ensureRejectRemark();
+    if (!remark) {
+        return;
+    }
     try {
-        await reviewMerchantAuth(
-            merchantId,
-            2,
-            reviewRemark.value.trim() || undefined,
-        );
+        await reviewMerchantAuth(merchantId, 2, remark);
         toast("Merchant review rejected", "success");
         await Promise.all([loadReviewRows(), loadMerchants()]);
-    } catch (error) {
-        toast(error instanceof Error ? error.message : "Reject failed");
-    }
-}
-
-async function approveMerchantRow(row: Record<string, any>): Promise<void> {
-    if (typeof row.id !== "number") return;
-    try {
-        await approveMerchant(row.id);
-        toast("Merchant approved", "success");
-        await Promise.all([loadMerchants(), loadReviewRows()]);
-    } catch (error) {
-        toast(error instanceof Error ? error.message : "Approve failed");
-    }
-}
-
-async function rejectMerchantRow(row: Record<string, any>): Promise<void> {
-    if (typeof row.id !== "number") return;
-    try {
-        await rejectMerchant(row.id, reviewRemark.value.trim() || undefined);
-        toast("Merchant rejected", "success");
-        await Promise.all([loadMerchants(), loadReviewRows()]);
     } catch (error) {
         toast(error instanceof Error ? error.message : "Reject failed");
     }
@@ -412,9 +402,7 @@ onMounted(() => {
                     >
                         <view class="review-main">
                             <text class="review-title">{{
-                                row.merchantName ||
-                                row.username ||
-                                `Merchant #${row.merchantId}`
+                                reviewRowTitle(row)
                             }}</text>
                             <view class="meta-inline">
                                 <text class="meta-chip">
@@ -451,6 +439,14 @@ onMounted(() => {
                                 "
                                 class="detail-grid"
                             >
+                                <view class="detail-item">
+                                    <text class="summary-label"
+                                        >Auth status</text
+                                    >
+                                    <text class="review-meta">{{
+                                        authStatusText(row.authStatus)
+                                    }}</text>
+                                </view>
                                 <view class="detail-item">
                                     <text class="summary-label"
                                         >Business License URL</text
@@ -587,9 +583,9 @@ onMounted(() => {
                                     }}</text>
                                 </view>
                                 <view class="detail-item">
-                                    <text class="summary-label">Nickname</text>
+                                    <text class="summary-label">Audit status</text>
                                     <text class="row-meta">{{
-                                        row.nickname || "--"
+                                        authStatusText(row.auditStatus)
                                     }}</text>
                                 </view>
                             </view>
@@ -609,18 +605,6 @@ onMounted(() => {
                                         ? "Hide details"
                                         : "Show details"
                                 }}
-                            </button>
-                            <button
-                                class="btn-primary"
-                                @click="approveMerchantRow(row)"
-                            >
-                                Approve
-                            </button>
-                            <button
-                                class="btn-outline"
-                                @click="rejectMerchantRow(row)"
-                            >
-                                Reject
                             </button>
                         </view>
                     </view>

@@ -215,6 +215,9 @@ Important behavior:
    - `/api/thread-pool/info*`
    - `/auth/tokens/*`
 
+Notes:
+- Merchant approval in the current frontend workflow is driven by `/api/merchant/auth/review/{merchantId}` because the UI reads `authStatus` from merchant auth records. `/api/merchant/{id}/approve|reject` still exists as a backend management API but is not the frontend source of truth for auth review state.
+
 ### 8. Internal Inventory And Gateway Utility Chain
 
 1. Inventory
@@ -236,6 +239,7 @@ Important behavior:
 Notes:
 - Stock ledger reads require admin.
 - Stock mutation endpoints require internal scope.
+- Stock ledger `status` is the raw integer segment status aggregated from active rows. Current live ledger reads return active inventory only, so callers should treat `1` as `Active` and derive low-stock warnings from `availableQty` versus `alertThreshold`.
 - Gateway fallback is a degradation utility endpoint, not a primary client search API.
 - MQ governance endpoints are internal operational endpoints and should be exposed only to trusted callers.
 - User statistics, thread-pool monitor, and token management endpoints are admin-only operational APIs.
@@ -457,6 +461,9 @@ Order list and order detail now return `OrderSummaryDTO` with these stable field
 | POST | `/auth/tokens/blacklist/add` | `admin:all` |
 | GET | `/auth/tokens/blacklist/check` | `admin:all` |
 | POST | `/auth/tokens/blacklist/cleanup` | `admin:all` |
+
+Notes:
+- Merchant auth reads (`/api/merchant/auth/get/{merchantId}` and `/api/merchant/auth/list`) now return presigned certificate URLs for business license and ID card attachments when the stored value is an object key in the cert bucket.
 
 ### Inventory
 

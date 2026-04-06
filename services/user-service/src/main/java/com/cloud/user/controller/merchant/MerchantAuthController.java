@@ -147,7 +147,7 @@ public class MerchantAuthController {
 
     String objectName = minioService.uploadBusinessLicense(merchantId, file);
     merchantAuthService.updateBusinessLicenseUrlIfExists(merchantId, objectName);
-    String previewUrl = minioService.getBusinessLicensePresignedUrl(objectName);
+    String previewUrl = minioService.getCertPresignedUrl(objectName);
     MerchantAuthFileUploadDTO response = new MerchantAuthFileUploadDTO();
     response.setFileKey(objectName);
     response.setPreviewUrl(previewUrl);
@@ -286,9 +286,17 @@ public class MerchantAuthController {
     if (isHttpUrl(businessLicenseUrl)) {
       return merchantAuthDTO;
     }
-    merchantAuthDTO.setBusinessLicenseUrl(
-        minioService.getBusinessLicensePresignedUrl(businessLicenseUrl));
+    merchantAuthDTO.setBusinessLicenseUrl(minioService.getCertPresignedUrl(businessLicenseUrl));
+    merchantAuthDTO.setIdCardFrontUrl(enrichCertUrl(merchantAuthDTO.getIdCardFrontUrl()));
+    merchantAuthDTO.setIdCardBackUrl(enrichCertUrl(merchantAuthDTO.getIdCardBackUrl()));
     return merchantAuthDTO;
+  }
+
+  private String enrichCertUrl(String value) {
+    if (value == null || value.isBlank() || isHttpUrl(value)) {
+      return value;
+    }
+    return minioService.getCertPresignedUrl(value);
   }
 
   private String normalizeBusinessLicenseUrl(

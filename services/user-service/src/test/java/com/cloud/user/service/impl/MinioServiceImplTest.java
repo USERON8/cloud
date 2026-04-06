@@ -9,8 +9,10 @@ import static org.mockito.Mockito.when;
 import com.cloud.user.mapper.UserMapper;
 import com.cloud.user.module.entity.User;
 import com.cloud.user.service.cache.TransactionalUserCacheService;
+import io.minio.GetPresignedObjectUrlArgs;
 import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
+import io.minio.http.Method;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.util.List;
@@ -44,6 +46,8 @@ class MinioServiceImplTest {
   void setUp() {
     ReflectionTestUtils.setField(minioService, "bucketName", "avatars");
     ReflectionTestUtils.setField(minioService, "publicEndpoint", "http://cdn.test");
+    ReflectionTestUtils.setField(minioService, "certBucketName", "certs");
+    ReflectionTestUtils.setField(minioService, "certPresignExpireSeconds", 1200);
 
     Jwt jwt = Jwt.withTokenValue("token").header("alg", "none").claim("user_id", "5").build();
     JwtAuthenticationToken auth =
@@ -87,5 +91,23 @@ class MinioServiceImplTest {
     assertThatThrownBy(() -> minioService.uploadAvatar(file))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("unsupported image type");
+  }
+
+  @Test
+  void getCertPresignedUrl_usesCertBucketAndGetMethod() throws Exception {
+    when(minioClient.getPresignedObjectUrl(any(GetPresignedObjectUrlArgs.class)))
+        .thenReturn("http://cdn.test/presigned");
+
+    String url = minioService.getCertPresignedUrl("cert/license/5/test.png");
+
+    assertThat(url).isEqualTo("http://cdn.test/presigned");
+    verify(minioClient)
+        .getPresignedObjectUrl(
+            org.mockito.ArgumentMatchers.argThat(
+                args ->
+                    "certs".equals(ReflectionTestUtils.getField(args, "bucketName"))
+                        && "cert/license/5/test.png"
+                            .equals(ReflectionTestUtils.getField(args, "objectName"))
+                        && Method.GET.equals(ReflectionTestUtils.getField(args, "method"))));
   }
 }

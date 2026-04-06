@@ -115,7 +115,7 @@ public class MinioServiceImpl implements MinioService {
   }
 
   @Override
-  public String getBusinessLicensePresignedUrl(String objectName) {
+  public String getCertPresignedUrl(String objectName) {
     if (objectName == null || objectName.isBlank()) {
       return null;
     }
@@ -129,8 +129,8 @@ public class MinioServiceImpl implements MinioService {
               .expiry(expirySeconds)
               .build());
     } catch (Exception e) {
-      log.error("Failed to generate business license presigned url, objectName={}", objectName, e);
-      throw new RuntimeException("failed to generate business license url: " + e.getMessage(), e);
+      log.error("Failed to generate certificate presigned url, objectName={}", objectName, e);
+      throw new RuntimeException("failed to generate certificate url: " + e.getMessage(), e);
     }
   }
 
