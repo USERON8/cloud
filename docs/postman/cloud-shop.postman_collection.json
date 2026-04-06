@@ -563,6 +563,33 @@
           }
         },
         {
+          "name": "Create Order (Cart Checkout)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/orders",
+            "description": "Cart-checkout sample. Requires an existing cartId from the order/cart chain and uses the same receiver fields as direct buy.",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{idempotencyKey}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"cartId\": \"{{cartId}}\",\n  \"remark\": \"postman cart checkout\",\n  \"clientOrderId\": \"postman-cart-{{userId}}-{{cartId}}-{{idempotencyKey}}\",\n  \"receiverName\": \"{{receiverName}}\",\n  \"receiverPhone\": \"{{receiverPhone}}\",\n  \"receiverAddress\": \"{{receiverAddress}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
           "name": "Get Order Detail",
           "request": {
             "method": "GET",
@@ -738,6 +765,7 @@
           "request": {
             "method": "POST",
             "url": "{{baseUrl}}/api/payments/refunds",
+            "description": "Requires a paid payment order and a valid afterSaleNo. The order-only requests in this collection do not by themselves complete the payment callback chain.",
             "header": [
               {
                 "key": "Content-Type",

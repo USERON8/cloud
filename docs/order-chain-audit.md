@@ -102,6 +102,21 @@ Impact:
 - The payload type implies a backend contract that does not exist.
 - This is harmless for runtime but misleading for client developers.
 
+### 7. Refund chain is not closed by order-only docs and Postman requests
+
+- The backend refund endpoint requires a paid payment order.
+- The order and after-sale requests in the published collection do not on their own produce a paid payment state.
+- `POST /api/payments/callbacks` still exists, but the service treats it as a legacy compatibility path rather than an authoritative mutation lane.
+
+Files:
+- `docs/backend-api.md`
+- `docs/postman/cloud-shop.postman_collection.json`
+- `services/payment-service/src/main/java/com/cloud/payment/controller/PaymentOrderController.java`
+
+Impact:
+- The documented endpoint exists, but the published smoke-test sequence does not close the refund path end-to-end.
+- Readers can overestimate how executable the refund chain is from repository assets alone.
+
 ## Synced Docs In This Round
 
 - `docs/backend-api.md`

@@ -346,8 +346,8 @@ Order list and order detail now return `OrderSummaryDTO` with these stable field
 | GET | `/api/payments/orders/by-order` | Authenticated | Owner/admin only. |
 | POST | `/api/payments/orders/{paymentNo}/checkout-session` | Authenticated | Owner/admin only. |
 | GET | `/api/payments/orders/{paymentNo}/status` | Authenticated | Owner/admin only. |
-| POST | `/api/payments/callbacks` | `order:refund` | Old internal mutation path is rejected by service logic. |
-| POST | `/api/payments/refunds` | `order:refund` | Refund creation path. |
+| POST | `/api/payments/callbacks` | `order:refund` | Legacy compatibility endpoint. Business mutation through this path is intentionally rejected. |
+| POST | `/api/payments/refunds` | `order:refund` | Refund creation path for already-paid payment orders only. |
 | GET | `/api/payments/refunds/{refundNo}` | Authenticated | Owner/admin only. |
 | GET | `/api/payments/checkout/{ticket}` | Public | Ticketed checkout HTML. |
 | POST | `/api/v1/payment/alipay/notify` | Public | Verified external callback. |
@@ -509,6 +509,7 @@ Example order detail response shape:
 - Fields: `refundNo`, `paymentNo`, `afterSaleNo`, `refundAmount`, `reason`, `idempotencyKey`
 - Refunds are allowed only for paid payment orders.
 - Cumulative refund amount cannot exceed the original payment amount.
+- This endpoint is downstream of a successful payment chain. The order-only Postman requests do not by themselves produce a refundable payment state.
 
 ### After-sale request
 
@@ -523,3 +524,5 @@ Example order detail response shape:
 - Detailed chain audit: `docs/order-chain-audit.md`
 
 Use the collection for chain-level smoke tests. The collection is intentionally aligned to current gateway routes and removes old order endpoints that no longer exist.
+- The collection includes both direct-buy and cart-checkout order creation examples.
+- Refund creation still requires a paid payment order and is not closed by the order-only requests alone.

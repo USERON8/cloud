@@ -108,6 +108,7 @@ Notes:
 - `payOrder` and `batchPayOrders` helpers still exist only for compatibility. Current backend business logic blocks direct pay transitions on `/api/orders/**/pay`.
 - `createOrder(payload)` in `src/api/order.ts` currently implements direct-buy only. It auto-generates `clientOrderId` when the caller does not provide one.
 - `listOrders` and `getOrderById` now return `items[]`. Each item includes immutable `skuSnapshot` data and an optional `latestProduct` view when the backend can still resolve the SKU.
+- User and merchant order pages are still summary-first views. They do not yet render `items[]`, `skuSnapshot`, or `latestProduct` in the current UI.
 
 ### 5. Payment And Checkout
 
@@ -128,6 +129,7 @@ Notes:
 - Checkout opens the webview page with a ticketed checkout URL.
 - The payment page and webview both support auto-poll for final payment status.
 - Refund query is owner/admin protected and is wired into the order page.
+- Refund creation is not exposed from the normal frontend payment flow yet. It remains a downstream backend capability after payment success and after-sale progression.
 
 ### 6. Merchant, Admin, Notifications, Statistics, Operations
 
