@@ -199,8 +199,8 @@ onShow(() => {
 <template>
     <AppShell title="Addresses">
         <view class="addresses-layout">
-            <view class="hero-card display-panel fade-in-up">
-                <view class="hero-copy">
+            <view class="hero-card dashboard-hero display-panel fade-in-up">
+                <view class="hero-copy dashboard-hero-copy">
                     <text class="hero-eyebrow">Addresses</text>
                     <text class="hero-title"
                         >Create, edit, and organize delivery destinations in a
@@ -212,7 +212,7 @@ onShow(() => {
                     </text>
                 </view>
 
-                <view class="hero-stats">
+                <view class="hero-stats dashboard-hero-stats">
                     <view class="info-card">
                         <text class="info-label">Saved addresses</text>
                         <text class="info-value">{{ rows.length }}</text>
@@ -228,8 +228,8 @@ onShow(() => {
                 </view>
             </view>
 
-            <view class="content-grid">
-                <view class="surface-card panel editor-panel fade-in-up">
+            <view class="content-grid dashboard-grid-2">
+                <view class="surface-card panel panel-block panel-hover editor-panel fade-in-up">
                     <view class="header">
                         <view class="section-block compact-block">
                             <text class="section-title">{{
@@ -250,39 +250,39 @@ onShow(() => {
                     <view class="form-grid">
                         <input
                             v-model="form.receiverName"
-                            class="input"
+                            class="input field-control"
                             placeholder="Consignee"
                         />
                         <input
                             v-model="form.receiverPhone"
-                            class="input"
+                            class="input field-control"
                             placeholder="Phone"
                         />
                         <input
                             v-model="form.province"
-                            class="input"
+                            class="input field-control"
                             placeholder="Province"
                         />
                         <input
                             v-model="form.city"
-                            class="input"
+                            class="input field-control"
                             placeholder="City"
                         />
                         <input
                             v-model="form.district"
-                            class="input"
+                            class="input field-control"
                             placeholder="District"
                         />
                         <input
                             v-model="form.street"
-                            class="input"
+                            class="input field-control"
                             placeholder="Street"
                         />
                     </view>
 
                     <textarea
                         v-model="form.detailAddress"
-                        class="textarea"
+                        class="textarea field-control"
                         placeholder="Detail address"
                     />
 
@@ -309,7 +309,7 @@ onShow(() => {
                     </button>
                 </view>
 
-                <view class="surface-card panel book-panel fade-in-up">
+                <view class="surface-card panel panel-block panel-hover book-panel fade-in-up">
                     <view class="header">
                         <view class="section-block compact-block">
                             <text class="section-title">Address book</text>
@@ -331,7 +331,7 @@ onShow(() => {
                         <view
                             v-for="item in rows"
                             :key="item.id"
-                            class="row-card"
+                            class="row-card surface-muted panel-hover"
                         >
                             <view class="row-head">
                                 <view class="row-copy">
@@ -352,7 +352,7 @@ onShow(() => {
                                 >
                             </view>
 
-                            <view class="row-actions">
+                            <view class="row-actions action-wrap">
                                 <button
                                     class="btn-outline"
                                     @click="startEdit(item)"
@@ -388,42 +388,6 @@ onShow(() => {
     gap: 24px;
 }
 
-.hero-card {
-    padding: 36px;
-    display: grid;
-    grid-template-columns: minmax(0, 1.45fr) 300px;
-    gap: 24px;
-    align-items: stretch;
-}
-
-.hero-copy {
-    display: flex;
-    flex-direction: column;
-    gap: 18px;
-    justify-content: center;
-    min-height: 320px;
-}
-
-.hero-stats {
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-    justify-content: flex-end;
-}
-
-.content-grid {
-    display: grid;
-    grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
-    gap: 18px;
-}
-
-.panel {
-    padding: 24px;
-    display: flex;
-    flex-direction: column;
-    gap: 18px;
-}
-
 .compact-block {
     gap: 6px;
 }
@@ -440,22 +404,6 @@ onShow(() => {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 12px;
-}
-
-.input,
-.textarea {
-    width: 100%;
-    background: rgba(255, 255, 255, 0.96);
-    border-radius: 16px;
-    padding: 13px 16px;
-    font-size: 14px;
-    border: 1px solid rgba(20, 20, 20, 0.12);
-}
-
-.input:focus,
-.textarea:focus {
-    border-color: rgba(11, 107, 95, 0.4);
-    box-shadow: 0 0 0 3px rgba(11, 107, 95, 0.12);
 }
 
 .textarea {
@@ -485,16 +433,9 @@ onShow(() => {
 
 .row-card {
     padding: 18px;
-    border-radius: var(--radius-lg);
-    background: var(--panel-muted);
-    border: 1px solid rgba(20, 20, 20, 0.08);
     display: flex;
     flex-direction: column;
     gap: 14px;
-    transition:
-        transform 0.2s ease,
-        box-shadow 0.2s ease,
-        border-color 0.2s ease;
 }
 
 .row-head {
@@ -510,12 +451,6 @@ onShow(() => {
     gap: 6px;
 }
 
-.row-actions {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-}
-
 .name {
     font-size: 16px;
     font-weight: 700;
@@ -529,8 +464,8 @@ onShow(() => {
 }
 
 .default-chip {
-    background: rgba(11, 107, 95, 0.16);
-    color: var(--accent);
+    background: rgba(95, 209, 194, 0.16);
+    color: var(--accent-strong);
 }
 
 .empty-state {
@@ -540,28 +475,9 @@ onShow(() => {
     font-size: 13px;
 }
 
-@media (hover: hover) {
-    .row-card:hover,
-    .panel:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 16px 30px rgba(20, 20, 20, 0.12);
-        border-color: rgba(20, 20, 20, 0.12);
-    }
-}
-
 @media (max-width: 900px) {
-    .hero-card,
-    .content-grid,
     .form-grid {
         grid-template-columns: 1fr;
-    }
-
-    .hero-card {
-        padding: 26px;
-    }
-
-    .hero-copy {
-        min-height: auto;
     }
 
     .header {

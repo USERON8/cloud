@@ -9,7 +9,7 @@ const user = computed(() => sessionState.user);
 <template>
     <AppShell title="Profile">
         <view class="profile-layout">
-            <view class="hero-card glass-card fade-in-up">
+            <view class="hero-card dashboard-hero display-panel fade-in-up">
                 <view class="hero-main">
                     <view class="avatar">{{
                         (user?.nickname || user?.username || "U")
@@ -28,7 +28,7 @@ const user = computed(() => sessionState.user);
                     </view>
                 </view>
 
-                <view class="hero-side">
+                <view class="hero-side dashboard-hero-stats">
                     <view class="info-card">
                         <text class="info-label">Primary role</text>
                         <text class="info-value">{{
@@ -44,8 +44,8 @@ const user = computed(() => sessionState.user);
                 </view>
             </view>
 
-            <view class="details-grid fade-in-up">
-                <view class="surface-card details-card">
+            <view class="details-grid dashboard-grid-2 fade-in-up">
+                <view class="surface-card details-card panel-hover">
                     <text class="section-title">Profile details</text>
                     <view class="detail-list">
                         <view class="detail-row">
@@ -71,7 +71,7 @@ const user = computed(() => sessionState.user);
                     </view>
                 </view>
 
-                <view class="surface-card details-card">
+                <view class="surface-card details-card panel-hover">
                     <text class="section-title">Role assignments</text>
                     <view class="roles-wrap">
                         <text
@@ -101,20 +101,13 @@ const user = computed(() => sessionState.user);
 .profile-layout {
     display: flex;
     flex-direction: column;
-    gap: 14px;
-}
-
-.hero-card {
-    padding: 22px;
-    display: grid;
-    grid-template-columns: minmax(0, 1.4fr) 280px;
-    gap: 18px;
+    gap: 20px;
 }
 
 .hero-main {
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 18px;
 }
 
 .avatar {
@@ -128,26 +121,26 @@ const user = computed(() => sessionState.user);
     color: #fff;
     font-size: 28px;
     font-weight: 700;
-    box-shadow: 0 14px 30px rgba(11, 107, 95, 0.24);
+    box-shadow: 0 14px 30px rgba(95, 209, 194, 0.24);
     flex-shrink: 0;
 }
 
 .hero-copy {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 10px;
 }
 
 .eyebrow {
     font-size: 12px;
     color: var(--accent);
-    font-weight: 700;
+    font-weight: 800;
 }
 
 .hero-title {
-    font-size: 28px;
-    font-weight: 700;
-    letter-spacing: -0.02em;
+    font-size: 30px;
+    font-weight: 800;
+    letter-spacing: -0.03em;
 }
 
 .hero-subtitle {
@@ -157,20 +150,8 @@ const user = computed(() => sessionState.user);
     max-width: 620px;
 }
 
-.hero-side {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-
-.details-grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 14px;
-}
-
 .details-card {
-    padding: 18px;
+    padding: 20px;
     display: flex;
     flex-direction: column;
     gap: 16px;
@@ -186,8 +167,12 @@ const user = computed(() => sessionState.user);
     display: flex;
     justify-content: space-between;
     gap: 12px;
-    padding-bottom: 12px;
-    border-bottom: 1px solid rgba(20, 20, 20, 0.08);
+    padding: 14px 0;
+    border-bottom: 1px solid var(--panel-border);
+}
+
+.detail-row:first-child {
+    padding-top: 0;
 }
 
 .detail-row:last-child {
@@ -214,15 +199,15 @@ const user = computed(() => sessionState.user);
 
 .role-chip {
     background: var(--accent-soft);
-    color: var(--accent);
-    border-color: rgba(11, 107, 95, 0.16);
+    color: var(--accent-strong);
+    border-color: rgba(95, 209, 194, 0.16);
 }
 
 .summary-box {
     padding: 16px;
     border-radius: var(--radius-md);
-    background: rgba(11, 107, 95, 0.08);
-    border: 1px solid rgba(11, 107, 95, 0.16);
+    background: rgba(95, 209, 194, 0.08);
+    border: 1px solid rgba(95, 209, 194, 0.16);
     display: flex;
     flex-direction: column;
     gap: 8px;
@@ -240,13 +225,9 @@ const user = computed(() => sessionState.user);
 }
 
 @media (max-width: 900px) {
-    .hero-card,
-    .details-grid {
-        grid-template-columns: 1fr;
-    }
-
     .hero-main {
         align-items: flex-start;
+        flex-direction: column;
     }
 }
 </style>

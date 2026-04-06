@@ -210,8 +210,8 @@ onShow(() => {
 <template>
     <AppShell title="Cart">
         <view class="cart-layout">
-            <view class="hero-card display-panel fade-in-up">
-                <view class="hero-copy">
+            <view class="hero-card dashboard-hero display-panel fade-in-up">
+                <view class="hero-copy dashboard-hero-copy">
                     <text class="hero-eyebrow">Cart</text>
                     <text class="hero-title"
                         >Review items, confirm delivery details, and move to
@@ -223,7 +223,7 @@ onShow(() => {
                     </text>
                 </view>
 
-                <view class="hero-stats">
+                <view class="hero-stats dashboard-hero-stats">
                     <view class="info-card">
                         <text class="info-label">Items</text>
                         <text class="info-value">{{ cartItems.length }}</text>
@@ -235,9 +235,9 @@ onShow(() => {
                 </view>
             </view>
 
-            <view class="content-grid">
+            <view class="content-grid dashboard-grid-main">
                 <view class="main-column">
-                    <view class="surface-card panel fade-in-up">
+                    <view class="surface-card panel panel-block panel-hover fade-in-up">
                         <view class="header">
                             <view class="section-block compact-block">
                                 <text class="section-title"
@@ -260,7 +260,7 @@ onShow(() => {
                             </button>
                         </view>
 
-                        <view class="address-card">
+                        <view class="address-card surface-muted">
                             <template v-if="selectedAddress">
                                 <text class="address-name"
                                     >{{ selectedAddress.receiverName }} |
@@ -282,7 +282,7 @@ onShow(() => {
                         </view>
                     </view>
 
-                    <view class="surface-card panel fade-in-up">
+                    <view class="surface-card panel panel-block panel-hover fade-in-up">
                         <view class="header">
                             <view class="section-block compact-block">
                                 <text class="section-title">Cart items</text>
@@ -322,7 +322,7 @@ onShow(() => {
                             <view
                                 v-for="group in shopGroups"
                                 :key="group.shopId"
-                                class="shop-group"
+                                class="shop-group surface-muted panel-hover"
                             >
                                 <view class="shop-head">
                                     <text class="shop-name"
@@ -351,7 +351,7 @@ onShow(() => {
                                         >
                                     </view>
 
-                                    <view class="item-actions">
+                                    <view class="item-actions action-wrap">
                                         <button
                                             class="btn-outline mini-button"
                                             @click="changeQuantity(item, -1)"
@@ -380,7 +380,7 @@ onShow(() => {
                 </view>
 
                 <view class="side-column">
-                    <view class="surface-card panel summary-card fade-in-up">
+                    <view class="surface-card panel panel-block panel-hover summary-card sticky-side fade-in-up">
                         <view class="section-block compact-block">
                             <text class="section-title">Order summary</text>
                             <text class="section-subtitle"
@@ -389,13 +389,13 @@ onShow(() => {
                         </view>
 
                         <view class="summary-metrics">
-                            <view class="metric-item">
+                            <view class="metric-item metric-card">
                                 <text class="metric-label">Selected items</text>
                                 <text class="metric-value">{{
                                     cartItems.length
                                 }}</text>
                             </view>
-                            <view class="metric-item">
+                            <view class="metric-item metric-card">
                                 <text class="metric-label"
                                     >Merchant groups</text
                                 >
@@ -439,44 +439,8 @@ onShow(() => {
     gap: 24px;
 }
 
-.hero-card {
-    padding: 36px;
-    display: grid;
-    grid-template-columns: minmax(0, 1.45fr) 300px;
-    gap: 24px;
-    align-items: stretch;
-}
-
-.hero-copy {
-    display: flex;
-    flex-direction: column;
-    gap: 18px;
-    justify-content: center;
-    min-height: 320px;
-}
-
-.hero-stats {
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-    justify-content: flex-end;
-}
-
-.content-grid {
-    display: grid;
-    grid-template-columns: minmax(0, 1.5fr) 340px;
-    gap: 18px;
-}
-
 .main-column,
 .side-column {
-    display: flex;
-    flex-direction: column;
-    gap: 18px;
-}
-
-.panel {
-    padding: 24px;
     display: flex;
     flex-direction: column;
     gap: 18px;
@@ -502,9 +466,6 @@ onShow(() => {
 
 .address-card {
     padding: 18px;
-    border-radius: var(--radius-lg);
-    background: var(--panel-muted);
-    border: 1px solid rgba(20, 20, 20, 0.08);
     display: flex;
     flex-direction: column;
     gap: 8px;
@@ -530,16 +491,9 @@ onShow(() => {
 
 .shop-group {
     padding: 18px;
-    border-radius: var(--radius-lg);
-    background: var(--panel-muted);
-    border: 1px solid rgba(20, 20, 20, 0.08);
     display: flex;
     flex-direction: column;
     gap: 14px;
-    transition:
-        transform 0.2s ease,
-        box-shadow 0.2s ease,
-        border-color 0.2s ease;
 }
 
 .shop-head {
@@ -590,8 +544,6 @@ onShow(() => {
 .item-actions {
     display: flex;
     align-items: center;
-    gap: 8px;
-    flex-wrap: wrap;
 }
 
 .mini-button {
@@ -611,25 +563,10 @@ onShow(() => {
     font-weight: 700;
 }
 
-.summary-card {
-    position: sticky;
-    top: 0;
-}
-
 .summary-metrics {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 12px;
-}
-
-.metric-item {
-    padding: 14px;
-    border-radius: var(--radius-md);
-    background: var(--panel-muted);
-    border: 1px solid rgba(20, 20, 20, 0.08);
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
 }
 
 .metric-label {
@@ -676,22 +613,6 @@ onShow(() => {
     width: 100%;
 }
 
-.panel {
-    transition:
-        transform 0.2s ease,
-        box-shadow 0.2s ease,
-        border-color 0.2s ease;
-}
-
-@media (hover: hover) {
-    .panel:hover,
-    .shop-group:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 16px 30px rgba(20, 20, 20, 0.12);
-        border-color: rgba(20, 20, 20, 0.12);
-    }
-}
-
 .empty-state {
     padding: 28px 0;
     text-align: center;
@@ -700,21 +621,9 @@ onShow(() => {
 }
 
 @media (max-width: 900px) {
-    .hero-card,
-    .content-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .hero-card {
-        padding: 26px;
-    }
-
-    .hero-copy {
-        min-height: auto;
-    }
-
-    .summary-card {
-        position: static;
+    .item-actions {
+        width: 100%;
+        justify-content: flex-start;
     }
 }
 </style>

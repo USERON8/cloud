@@ -306,6 +306,108 @@ textarea {
     box-shadow: var(--shadow-float);
 }
 
+.dashboard-hero {
+    padding: 36px;
+    display: grid;
+    grid-template-columns: minmax(0, 1.45fr) 300px;
+    gap: 24px;
+    align-items: stretch;
+}
+
+.dashboard-hero-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    justify-content: center;
+    min-height: 320px;
+}
+
+.dashboard-hero-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    justify-content: flex-end;
+}
+
+.dashboard-grid-2 {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
+}
+
+.dashboard-grid-main {
+    display: grid;
+    grid-template-columns: minmax(0, 1.5fr) 340px;
+    gap: 18px;
+}
+
+.panel-block {
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.panel-hover {
+    transition:
+        transform 0.22s ease,
+        box-shadow 0.22s ease,
+        border-color 0.22s ease;
+}
+
+.field-control {
+    width: 100%;
+    min-height: 48px;
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text-main);
+    border-radius: 16px;
+    padding: 13px 16px;
+    font-size: 14px;
+    border: 1px solid var(--panel-border);
+}
+
+.field-control:focus {
+    border-color: rgba(95, 209, 194, 0.4);
+    box-shadow: 0 0 0 3px rgba(95, 209, 194, 0.12);
+}
+
+.field-control-pill {
+    border-radius: 999px;
+}
+
+.surface-muted {
+    background: var(--panel-muted);
+    border: 1px solid var(--panel-border);
+    border-radius: var(--radius-lg);
+}
+
+.metric-card {
+    padding: 14px;
+    border-radius: var(--radius-md);
+    background: var(--panel-muted);
+    border: 1px solid var(--panel-border);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.meta-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.action-wrap {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.sticky-side {
+    position: sticky;
+    top: 0;
+}
+
 @media (hover: hover) {
     .btn-primary:hover,
     .btn-outline:hover,
@@ -321,11 +423,35 @@ textarea {
     .btn-secondary:hover {
         box-shadow: 0 16px 32px rgba(3, 10, 18, 0.3);
     }
+
+    .panel-hover:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 18px 34px rgba(1, 7, 14, 0.34);
+        border-color: var(--panel-border-strong);
+    }
 }
 
 @media (max-width: 768px) {
     .stats-grid {
         grid-template-columns: 1fr;
+    }
+
+    .dashboard-grid-2,
+    .dashboard-grid-main,
+    .dashboard-hero {
+        grid-template-columns: 1fr;
+    }
+
+    .dashboard-hero {
+        padding: 24px;
+    }
+
+    .dashboard-hero-copy {
+        min-height: auto;
+    }
+
+    .sticky-side {
+        position: static;
     }
 }
 

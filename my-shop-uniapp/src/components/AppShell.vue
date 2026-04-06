@@ -260,7 +260,7 @@ async function handleLogout(): Promise<void> {
 }
 
 .masthead {
-    padding: 28px;
+    padding: 24px 28px;
     display: grid;
     grid-template-columns: minmax(0, 1.25fr) minmax(320px, 420px);
     gap: 24px;
@@ -314,8 +314,8 @@ async function handleLogout(): Promise<void> {
 .subtitle {
     color: var(--text-muted);
     font-size: 15px;
-    line-height: 1.8;
-    max-width: 720px;
+    line-height: 1.75;
+    max-width: 620px;
 }
 
 .masthead-side {
@@ -380,7 +380,7 @@ async function handleLogout(): Promise<void> {
 }
 
 .nav-item {
-    padding: 12px 18px;
+    padding: 11px 16px;
     border-radius: 999px;
     background: rgba(255, 255, 255, 0.03);
     font-size: 13px;
@@ -452,24 +452,36 @@ button::after {
 
 @media (max-width: 768px) {
     .app-shell {
-        padding-top: 16px;
+        padding-top: 12px;
     }
 
     .masthead {
-        padding: 22px;
+        padding: 18px;
+        gap: 18px;
     }
 
     .title {
-        font-size: 34px;
+        font-size: 30px;
     }
 
     .subtitle {
-        font-size: 14px;
+        font-size: 13px;
+        line-height: 1.7;
     }
 
     .profile-panel {
         flex-direction: column;
         align-items: flex-start;
+        padding: 14px;
+    }
+
+    .nav-row {
+        padding: 6px;
+    }
+
+    .nav-item {
+        padding: 10px 14px;
+        font-size: 12px;
     }
 
     .logout-btn {

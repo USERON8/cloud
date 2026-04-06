@@ -237,8 +237,8 @@ onUnload(() => {
 <template>
     <AppShell title="Payments">
         <view class="payments-layout">
-            <view class="hero-card display-panel fade-in-up">
-                <view class="hero-copy">
+            <view class="hero-card dashboard-hero display-panel fade-in-up">
+                <view class="hero-copy dashboard-hero-copy">
                     <text class="hero-eyebrow">Payments</text>
                     <text class="hero-title"
                         >Follow payment and refund progress from one cleaner
@@ -250,7 +250,7 @@ onUnload(() => {
                     </text>
                 </view>
 
-                <view class="hero-stats">
+                <view class="hero-stats dashboard-hero-stats">
                     <view class="info-card">
                         <text class="info-label">Polling state</text>
                         <text class="info-value">{{
@@ -266,8 +266,8 @@ onUnload(() => {
                 </view>
             </view>
 
-            <view class="content-grid">
-                <view class="surface-card panel fade-in-up">
+            <view class="content-grid dashboard-grid-2">
+                <view class="surface-card panel panel-block panel-hover fade-in-up">
                     <view class="section-block compact-block">
                         <text class="section-title">Payment lookup</text>
                         <text class="section-subtitle"
@@ -279,7 +279,7 @@ onUnload(() => {
                     <view class="search-row">
                         <input
                             v-model="paymentNo"
-                            class="search-input"
+                            class="search-input field-control field-control-pill"
                             placeholder="Payment number"
                         />
                         <button class="btn-primary" @click="queryPayment">
@@ -287,7 +287,7 @@ onUnload(() => {
                         </button>
                     </view>
 
-                    <view v-if="paymentInfo" class="result-card">
+                    <view v-if="paymentInfo" class="result-card surface-muted panel-hover">
                         <view class="result-head">
                             <view>
                                 <text class="name"
@@ -307,13 +307,13 @@ onUnload(() => {
                         </view>
 
                         <view class="metric-grid">
-                            <view class="metric-item">
+                            <view class="metric-item metric-card">
                                 <text class="metric-label">Amount</text>
                                 <text class="metric-value">{{
                                     formatPrice(paymentInfo.amount)
                                 }}</text>
                             </view>
-                            <view class="metric-item">
+                            <view class="metric-item metric-card">
                                 <text class="metric-label">Channel</text>
                                 <text class="metric-value">{{
                                     paymentInfo.channel || "--"
@@ -321,7 +321,7 @@ onUnload(() => {
                             </view>
                         </view>
 
-                        <view class="meta-list">
+                        <view class="meta-list meta-stack">
                             <text class="meta"
                                 >Sub order:
                                 {{ paymentInfo.subOrderNo || "--" }}</text
@@ -343,7 +343,7 @@ onUnload(() => {
                             >
                         </view>
 
-                        <view class="actions">
+                        <view class="actions action-wrap">
                             <button
                                 v-if="paymentInfo.status === 'CREATED'"
                                 class="btn-outline action-button"
@@ -372,7 +372,7 @@ onUnload(() => {
                     >
                 </view>
 
-                <view class="surface-card panel fade-in-up">
+                <view class="surface-card panel panel-block panel-hover fade-in-up">
                     <view class="section-block compact-block">
                         <text class="section-title">Refund lookup</text>
                         <text class="section-subtitle"
@@ -384,7 +384,7 @@ onUnload(() => {
                     <view class="search-row">
                         <input
                             v-model="refundNo"
-                            class="search-input"
+                            class="search-input field-control field-control-pill"
                             placeholder="Refund number"
                         />
                         <button class="btn-primary" @click="queryRefund">
@@ -392,7 +392,7 @@ onUnload(() => {
                         </button>
                     </view>
 
-                    <view v-if="refundInfo" class="result-card">
+                    <view v-if="refundInfo" class="result-card surface-muted panel-hover">
                         <view class="result-head">
                             <view>
                                 <text class="name"
@@ -412,13 +412,13 @@ onUnload(() => {
                         </view>
 
                         <view class="metric-grid">
-                            <view class="metric-item">
+                            <view class="metric-item metric-card">
                                 <text class="metric-label">Amount</text>
                                 <text class="metric-value">{{
                                     formatPrice(refundInfo.refundAmount)
                                 }}</text>
                             </view>
-                            <view class="metric-item">
+                            <view class="metric-item metric-card">
                                 <text class="metric-label">After-sale</text>
                                 <text class="metric-value">{{
                                     refundInfo.afterSaleNo || "--"
@@ -426,7 +426,7 @@ onUnload(() => {
                             </view>
                         </view>
 
-                        <view class="meta-list">
+                        <view class="meta-list meta-stack">
                             <text class="meta"
                                 >Refunded at:
                                 {{ formatDate(refundInfo.refundedAt) }}</text
@@ -456,42 +456,6 @@ onUnload(() => {
     gap: 24px;
 }
 
-.hero-card {
-    padding: 36px;
-    display: grid;
-    grid-template-columns: minmax(0, 1.45fr) 300px;
-    gap: 24px;
-    align-items: stretch;
-}
-
-.hero-copy {
-    display: flex;
-    flex-direction: column;
-    gap: 18px;
-    justify-content: center;
-    min-height: 320px;
-}
-
-.hero-stats {
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-    justify-content: flex-end;
-}
-
-.content-grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 18px;
-}
-
-.panel {
-    padding: 24px;
-    display: flex;
-    flex-direction: column;
-    gap: 18px;
-}
-
 .compact-block {
     gap: 6px;
 }
@@ -504,17 +468,12 @@ onUnload(() => {
 
 .search-input {
     flex: 1;
-    min-height: 48px;
-    background: #fff;
-    border-radius: 999px;
-    padding: 12px 16px;
-    font-size: 14px;
-    border: 1px solid rgba(20, 20, 20, 0.12);
 }
 
-.search-input:focus {
-    border-color: rgba(11, 107, 95, 0.4);
-    box-shadow: 0 0 0 3px rgba(11, 107, 95, 0.12);
+.search-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
 }
 
 .result-card {
@@ -522,13 +481,6 @@ onUnload(() => {
     flex-direction: column;
     gap: 16px;
     padding: 18px;
-    border-radius: var(--radius-lg);
-    background: var(--panel-muted);
-    border: 1px solid rgba(20, 20, 20, 0.08);
-    transition:
-        transform 0.2s ease,
-        box-shadow 0.2s ease,
-        border-color 0.2s ease;
 }
 
 .result-head {
@@ -589,16 +541,6 @@ onUnload(() => {
     gap: 12px;
 }
 
-.metric-item {
-    padding: 14px;
-    border-radius: var(--radius-md);
-    background: rgba(255, 255, 255, 0.96);
-    border: 1px solid rgba(20, 20, 20, 0.08);
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
 .metric-label {
     font-size: 12px;
     color: var(--text-muted);
@@ -609,12 +551,6 @@ onUnload(() => {
     font-size: 16px;
     font-weight: 700;
     letter-spacing: -0.02em;
-}
-
-.meta-list {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
 }
 
 .meta {
@@ -628,30 +564,8 @@ onUnload(() => {
     color: var(--accent);
 }
 
-.actions {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-}
-
 .action-button {
     flex: 1 1 180px;
-}
-
-.panel {
-    transition:
-        transform 0.2s ease,
-        box-shadow 0.2s ease,
-        border-color 0.2s ease;
-}
-
-@media (hover: hover) {
-    .panel:hover,
-    .result-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 16px 30px rgba(20, 20, 20, 0.12);
-        border-color: rgba(20, 20, 20, 0.12);
-    }
 }
 
 .empty-state {
@@ -662,17 +576,9 @@ onUnload(() => {
 }
 
 @media (max-width: 900px) {
-    .hero-card,
-    .content-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .hero-card {
-        padding: 26px;
-    }
-
-    .hero-copy {
-        min-height: auto;
+    .search-row {
+        flex-direction: column;
+        align-items: stretch;
     }
 }
 </style>
