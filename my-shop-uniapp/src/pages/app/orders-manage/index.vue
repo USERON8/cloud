@@ -7,7 +7,6 @@ import {
     listOrders,
     shipOrder,
 } from "../../../api/order";
-import type { OrderItem } from "../../../types/domain";
 import {
     formatDate,
     formatOrderStatus,
@@ -15,8 +14,12 @@ import {
     formatRelativeDate,
 } from "../../../utils/format";
 import { confirm, toast } from "../../../utils/ui";
+import type {
+    OrderSummaryDTO,
+    OrderSummaryItem,
+} from "../../../types/domain";
 
-const rows = ref<OrderItem[]>([]);
+const rows = ref<OrderSummaryDTO[]>([]);
 const loading = ref(false);
 const afterSaleActingOrderId = ref<number | null>(null);
 const expandedRows = reactive<Record<string, boolean>>({});
@@ -99,28 +102,28 @@ function requireShippingField(value: string, label: string): string | null {
     return trimmed;
 }
 
-function canAuditAfterSale(order: OrderItem): boolean {
+function canAuditAfterSale(order: OrderSummaryDTO): boolean {
     return (
         typeof order.afterSaleId === "number" &&
         order.afterSaleStatus === "APPLIED"
     );
 }
 
-function canApproveAfterSale(order: OrderItem): boolean {
+function canApproveAfterSale(order: OrderSummaryDTO): boolean {
     return (
         typeof order.afterSaleId === "number" &&
         order.afterSaleStatus === "AUDITING"
     );
 }
 
-function canRejectAfterSale(order: OrderItem): boolean {
+function canRejectAfterSale(order: OrderSummaryDTO): boolean {
     return (
         typeof order.afterSaleId === "number" &&
         ["APPLIED", "AUDITING"].includes(order.afterSaleStatus ?? "")
     );
 }
 
-function canWaitReturn(order: OrderItem): boolean {
+function canWaitReturn(order: OrderSummaryDTO): boolean {
     return (
         typeof order.afterSaleId === "number" &&
         order.afterSaleStatus === "APPROVED" &&
@@ -128,7 +131,7 @@ function canWaitReturn(order: OrderItem): boolean {
     );
 }
 
-function canProcessRefund(order: OrderItem): boolean {
+function canProcessRefund(order: OrderSummaryDTO): boolean {
     return (
         typeof order.afterSaleId === "number" &&
         ((order.afterSaleStatus === "APPROVED" &&
@@ -137,14 +140,14 @@ function canProcessRefund(order: OrderItem): boolean {
     );
 }
 
-function canMarkReturned(order: OrderItem): boolean {
+function canMarkReturned(order: OrderSummaryDTO): boolean {
     return (
         typeof order.afterSaleId === "number" &&
         order.afterSaleStatus === "WAIT_RETURN"
     );
 }
 
-function canMarkReceived(order: OrderItem): boolean {
+function canMarkReceived(order: OrderSummaryDTO): boolean {
     return (
         typeof order.afterSaleId === "number" &&
         order.afterSaleStatus === "RETURNED"
@@ -162,7 +165,53 @@ function isExpandedRow(key: string | number | undefined): boolean {
     return Boolean(expandedRows[String(key)]);
 }
 
-async function onShip(order: OrderItem): Promise<void> {
+function orderItems(order: OrderSummaryDTO): OrderSummaryItem[] {
+    return Array.isArray(order.items) ? order.items : [];
+}
+
+function readSnapshotText(
+    snapshot: Record<string, unknown> | undefined,
+    key: string,
+): string {
+    const value = snapshot?.[key];
+    return typeof value === "string" ? value.trim() : "";
+}
+
+function formatSpecText(specJson?: string): string {
+    if (!specJson?.trim()) {
+        return "";
+    }
+    try {
+        const parsed = JSON.parse(specJson) as Record<string, unknown>;
+        if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+            return specJson;
+        }
+        return Object.entries(parsed)
+            .filter(([, value]) => value !== null && value !== undefined && String(value).trim())
+            .map(([key, value]) => `${key}: ${value}`)
+            .join(" / ");
+    } catch {
+        return specJson;
+    }
+}
+
+function resolveOrderItemName(item: OrderSummaryItem): string {
+    return (
+        item.latestProduct?.skuName ||
+        item.skuName ||
+        readSnapshotText(item.skuSnapshot, "skuName") ||
+        readSnapshotText(item.skuSnapshot, "spuName") ||
+        `SKU ${item.skuId ?? "--"}`
+    );
+}
+
+function resolveOrderItemSpec(item: OrderSummaryItem): string {
+    return formatSpecText(
+        item.latestProduct?.specJson || readSnapshotText(item.skuSnapshot, "specJson"),
+    );
+}
+
+async function onShip(order: OrderSummaryDTO): Promise<void> {
     if (typeof order.id !== "number") return;
     const shippingCompany = requireShippingField(
         shippingForm.shippingCompany,
@@ -185,7 +234,7 @@ async function onShip(order: OrderItem): Promise<void> {
     }
 }
 
-async function onComplete(order: OrderItem): Promise<void> {
+async function onComplete(order: OrderSummaryDTO): Promise<void> {
     if (typeof order.id !== "number") return;
     const ok = await confirm(`Confirm completion for order ${order.orderNo}?`);
     if (!ok) return;
@@ -201,7 +250,7 @@ async function onComplete(order: OrderItem): Promise<void> {
 }
 
 async function onAdvanceAfterSale(
-    order: OrderItem,
+    order: OrderSummaryDTO,
     action: AfterSaleAction,
 ): Promise<void> {
     if (typeof order.afterSaleId !== "number" || typeof order.id !== "number") {
@@ -240,7 +289,7 @@ async function onAdvanceAfterSale(
     }
 }
 
-function buildActionSpecs(order: OrderItem): ActionSpec[] {
+function buildActionSpecs(order: OrderSummaryDTO): ActionSpec[] {
     const actions: ActionSpec[] = [
         { key: "ship", label: "Ship", kind: "ship" },
         { key: "complete", label: "Complete", kind: "complete" },
@@ -306,19 +355,19 @@ function buildActionSpecs(order: OrderItem): ActionSpec[] {
     return actions;
 }
 
-function visibleActions(order: OrderItem): ActionSpec[] {
+function visibleActions(order: OrderSummaryDTO): ActionSpec[] {
     return buildActionSpecs(order).slice(0, 3);
 }
 
-function hiddenActions(order: OrderItem): ActionSpec[] {
+function hiddenActions(order: OrderSummaryDTO): ActionSpec[] {
     return buildActionSpecs(order).slice(3);
 }
 
-function hasMoreActions(order: OrderItem): boolean {
+function hasMoreActions(order: OrderSummaryDTO): boolean {
     return hiddenActions(order).length > 0;
 }
 
-async function triggerAction(order: OrderItem, spec: ActionSpec): Promise<void> {
+async function triggerAction(order: OrderSummaryDTO, spec: ActionSpec): Promise<void> {
     if (spec.kind === "ship") {
         await onShip(order);
         return;
@@ -508,6 +557,47 @@ onMounted(() => {
                                 }}</text>
                             </view>
                         </view>
+
+                        <view
+                            v-if="isExpandedRow(item.id) && orderItems(item).length"
+                            class="item-list"
+                        >
+                            <view
+                                v-for="orderItem in orderItems(item)"
+                                :key="
+                                    orderItem.id ??
+                                    `${item.id ?? 'order'}-${orderItem.skuId ?? 'sku'}`
+                                "
+                                class="item-row"
+                            >
+                                <view class="item-copy">
+                                    <text class="item-name">
+                                        {{ resolveOrderItemName(orderItem) }}
+                                    </text>
+                                    <text
+                                        v-if="resolveOrderItemSpec(orderItem)"
+                                        class="item-spec"
+                                    >
+                                        {{ resolveOrderItemSpec(orderItem) }}
+                                    </text>
+                                    <text
+                                        v-if="orderItem.latestProduct?.shopName"
+                                        class="item-spec"
+                                    >
+                                        {{ orderItem.latestProduct.shopName }}
+                                    </text>
+                                </view>
+                                <text class="item-price">
+                                    {{
+                                        formatPrice(
+                                            orderItem.unitPrice ??
+                                                orderItem.totalPrice,
+                                        )
+                                    }}
+                                    x {{ orderItem.quantity ?? 0 }}
+                                </text>
+                            </view>
+                        </view>
                     </view>
 
                     <view class="action-wrap row-actions">
@@ -602,6 +692,47 @@ onMounted(() => {
     display: flex;
     flex-direction: column;
     gap: 14px;
+}
+
+.item-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px 14px;
+    border-radius: 18px;
+    background: rgba(18, 38, 32, 0.04);
+}
+
+.item-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: flex-start;
+}
+
+.item-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.item-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-main);
+}
+
+.item-spec {
+    font-size: 12px;
+    color: var(--text-soft);
+}
+
+.item-price {
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+    color: var(--text-main);
 }
 
 .order-card {

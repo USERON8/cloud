@@ -18,7 +18,11 @@ import {
 import { useLocale } from "../../../i18n/locale";
 import { navigateTo } from "../../../router/navigation";
 import { Routes } from "../../../router/routes";
-import type { AfterSaleInfo, OrderItem } from "../../../types/domain";
+import type {
+    AfterSaleInfo,
+    OrderSummaryDTO,
+    OrderSummaryItem,
+} from "../../../types/domain";
 import {
     formatDate,
     formatOrderStatus,
@@ -27,7 +31,7 @@ import {
 } from "../../../utils/format";
 import { confirm, toast } from "../../../utils/ui";
 
-const rows = ref<OrderItem[]>([]);
+const rows = ref<OrderSummaryDTO[]>([]);
 const loading = ref(false);
 const refundingOrderId = ref<number | null>(null);
 const payingOrderId = ref<number | null>(null);
@@ -171,7 +175,7 @@ const copy = computed(() =>
           },
 );
 
-function canApplyAfterSale(order: OrderItem): boolean {
+function canApplyAfterSale(order: OrderSummaryDTO): boolean {
     return (
         typeof order.id === "number" &&
         typeof order.subOrderId === "number" &&
@@ -181,14 +185,14 @@ function canApplyAfterSale(order: OrderItem): boolean {
     );
 }
 
-function canCancelAfterSale(order: OrderItem): boolean {
+function canCancelAfterSale(order: OrderSummaryDTO): boolean {
     return (
         typeof order.afterSaleId === "number" &&
-        order.afterSaleStatus === "APPLIED"
+        ["APPLIED", "WAIT_RETURN"].includes(order.afterSaleStatus ?? "")
     );
 }
 
-function canPay(order: OrderItem): boolean {
+function canPay(order: OrderSummaryDTO): boolean {
     return (
         order.status === 0 &&
         typeof order.userId === "number" &&
@@ -197,22 +201,22 @@ function canPay(order: OrderItem): boolean {
     );
 }
 
-function canComplete(order: OrderItem): boolean {
+function canComplete(order: OrderSummaryDTO): boolean {
     return typeof order.id === "number" && order.status === 2;
 }
 
-function canViewRefund(order: OrderItem): boolean {
+function canViewRefund(order: OrderSummaryDTO): boolean {
     return (
         !!order.refundNo &&
         ["REFUNDING", "REFUNDED"].includes(order.afterSaleStatus ?? "")
     );
 }
 
-function buildPaymentIdempotencyKey(order: OrderItem): string {
+function buildPaymentIdempotencyKey(order: OrderSummaryDTO): string {
     return `payment:${order.orderNo}:${order.subOrderNo ?? order.id}`;
 }
 
-function buildPaymentNo(order: OrderItem): string {
+function buildPaymentNo(order: OrderSummaryDTO): string {
     const subOrderNo =
         order.subOrderNo?.replace(/[^A-Za-z0-9_-]/g, "") || String(order.id);
     return `PAY-${subOrderNo}`;
@@ -237,7 +241,53 @@ function resetAfterSaleDraft(): void {
     afterSaleDraft.applyAmount = "";
 }
 
-function openAfterSale(order: OrderItem): void {
+function orderItems(order: OrderSummaryDTO): OrderSummaryItem[] {
+    return Array.isArray(order.items) ? order.items : [];
+}
+
+function readSnapshotText(
+    snapshot: Record<string, unknown> | undefined,
+    key: string,
+): string {
+    const value = snapshot?.[key];
+    return typeof value === "string" ? value.trim() : "";
+}
+
+function formatSpecText(specJson?: string): string {
+    if (!specJson?.trim()) {
+        return "";
+    }
+    try {
+        const parsed = JSON.parse(specJson) as Record<string, unknown>;
+        if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+            return specJson;
+        }
+        return Object.entries(parsed)
+            .filter(([, value]) => value !== null && value !== undefined && String(value).trim())
+            .map(([key, value]) => `${key}: ${value}`)
+            .join(" / ");
+    } catch {
+        return specJson;
+    }
+}
+
+function resolveOrderItemName(item: OrderSummaryItem): string {
+    return (
+        item.latestProduct?.skuName ||
+        item.skuName ||
+        readSnapshotText(item.skuSnapshot, "skuName") ||
+        readSnapshotText(item.skuSnapshot, "spuName") ||
+        `SKU ${item.skuId ?? "--"}`
+    );
+}
+
+function resolveOrderItemSpec(item: OrderSummaryItem): string {
+    return formatSpecText(
+        item.latestProduct?.specJson || readSnapshotText(item.skuSnapshot, "specJson"),
+    );
+}
+
+function openAfterSale(order: OrderSummaryDTO): void {
     if (!canApplyAfterSale(order)) {
         toast(copy.value.afterSaleUnsupported);
         return;
@@ -249,11 +299,11 @@ function openAfterSale(order: OrderItem): void {
     afterSaleDraft.applyAmount = String(order.payAmount ?? order.totalAmount ?? "");
 }
 
-function selectedOrder(): OrderItem | null {
+function selectedOrder(): OrderSummaryDTO | null {
     return rows.value.find((item) => item.id === afterSaleDraft.orderId) ?? null;
 }
 
-function buildAfterSalePayload(order: OrderItem): AfterSaleInfo | null {
+function buildAfterSalePayload(order: OrderSummaryDTO): AfterSaleInfo | null {
     if (
         typeof order.id !== "number" ||
         typeof order.subOrderId !== "number" ||
@@ -298,7 +348,7 @@ async function loadOrders(): Promise<void> {
     }
 }
 
-async function onPay(order: OrderItem): Promise<void> {
+async function onPay(order: OrderSummaryDTO): Promise<void> {
     if (!canPay(order) || typeof order.userId !== "number" || !order.subOrderNo) {
         toast(copy.value.payInfoMissing);
         return;
@@ -350,7 +400,7 @@ async function onPay(order: OrderItem): Promise<void> {
     }
 }
 
-async function onCancel(order: OrderItem): Promise<void> {
+async function onCancel(order: OrderSummaryDTO): Promise<void> {
     if (typeof order.id !== "number") {
         return;
     }
@@ -367,7 +417,7 @@ async function onCancel(order: OrderItem): Promise<void> {
     }
 }
 
-async function onComplete(order: OrderItem): Promise<void> {
+async function onComplete(order: OrderSummaryDTO): Promise<void> {
     if (!canComplete(order) || typeof order.id !== "number") {
         toast(copy.value.completeUnavailable);
         return;
@@ -388,7 +438,7 @@ async function onComplete(order: OrderItem): Promise<void> {
     }
 }
 
-function onViewRefund(order: OrderItem): void {
+function onViewRefund(order: OrderSummaryDTO): void {
     if (!canViewRefund(order)) {
         toast(copy.value.refundUnavailable);
         return;
@@ -434,7 +484,7 @@ async function submitAfterSale(): Promise<void> {
     }
 }
 
-async function cancelAfterSale(order: OrderItem): Promise<void> {
+async function cancelAfterSale(order: OrderSummaryDTO): Promise<void> {
     if (!canCancelAfterSale(order) || typeof order.afterSaleId !== "number") {
         toast(copy.value.afterSaleCannotCancel);
         return;
@@ -568,6 +618,38 @@ onShow(() => {
                             </text>
                         </view>
 
+                        <view v-if="orderItems(item).length" class="item-list">
+                            <view
+                                v-for="orderItem in orderItems(item)"
+                                :key="
+                                    orderItem.id ??
+                                    `${item.id ?? 'order'}-${orderItem.skuId ?? 'sku'}`
+                                "
+                                class="item-row"
+                            >
+                                <view class="item-copy">
+                                    <text class="item-name">
+                                        {{ resolveOrderItemName(orderItem) }}
+                                    </text>
+                                    <text
+                                        v-if="resolveOrderItemSpec(orderItem)"
+                                        class="item-spec"
+                                    >
+                                        {{ resolveOrderItemSpec(orderItem) }}
+                                    </text>
+                                </view>
+                                <text class="item-price">
+                                    {{
+                                        formatPrice(
+                                            orderItem.unitPrice ??
+                                                orderItem.totalPrice,
+                                        )
+                                    }}
+                                    x {{ orderItem.quantity ?? 0 }}
+                                </text>
+                            </view>
+                        </view>
+
                         <view class="actions">
                             <button
                                 v-if="item.status === 0"
@@ -689,6 +771,47 @@ onShow(() => {
     display: flex;
     flex-direction: column;
     gap: 24px;
+}
+
+.item-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px 14px;
+    border-radius: 18px;
+    background: rgba(18, 38, 32, 0.04);
+}
+
+.item-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: flex-start;
+}
+
+.item-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.item-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-main);
+}
+
+.item-spec {
+    font-size: 12px;
+    color: var(--text-soft);
+}
+
+.item-price {
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+    color: var(--text-main);
 }
 
 .hero-card {

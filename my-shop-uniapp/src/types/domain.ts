@@ -193,7 +193,7 @@ export interface OrderQuery {
 }
 
 export interface CreateOrderPayload {
-  shopId: number
+  shopId?: number
   spuId: number
   skuId: number
   quantity: number
@@ -620,7 +620,7 @@ export interface StockOperatePayload {
 }
 
 export type ProductPage = PageResult<ProductItem>
-export type OrderPage = PageResult<OrderItem>
+export type OrderPage = PageResult<OrderSummaryDTO>
 
 export interface ThreadPoolInfo {
   name: string
