@@ -59,7 +59,9 @@ Notes:
 Modules:
 - `src/api/category.ts`
 - `src/api/product.ts`
+- `src/api/product-catalog.ts`
 - `src/api/search-ops.ts`
+- `src/api/shop-search.ts`
 
 Primary APIs:
 - `GET /api/category`
@@ -82,7 +84,16 @@ Primary APIs:
 - `GET /api/search/new`
 - `GET /api/search/hot`
 - `GET /api/search/hot/today`
+- `GET /api/search/filter/category/{categoryId}`
+- `GET /api/search/filter/brand/{brandId}`
+- `GET /api/search/filter/price`
+- `GET /api/search/filter/shop/{shopId}`
+- `GET /api/search/filter/combined`
 - `GET /api/search/shops/recommended`
+- `GET /api/search/shops/suggestions`
+- `GET /api/search/shops/hot-shops`
+- `GET /api/search/shops/{shopId}`
+- `GET /api/search/shops/by-location`
 - `POST /api/search/shops/complex-search`
 - `POST /api/search/shops/filters`
 
@@ -90,6 +101,8 @@ Notes:
 - Empty-keyword market landing now prefers `GET /api/search/hot/today`.
 - Search APIs are split between lightweight aliases and rich request-body operations.
 - Merchant catalog management now uses `GET /api/product/manage` so unpublished products remain visible to the merchant owner and can be published again.
+- `src/api/product-catalog.ts` is the frontend entry for SPU and SKU maintenance APIs.
+- `src/api/shop-search.ts` is the frontend entry for shop discovery and recommendation APIs.
 - The operations workspace now imports and executes its token, category, catalog, search, and thread-pool helpers through the current frontend API modules.
 
 ### 4. Order And After-Sale

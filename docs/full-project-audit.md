@@ -40,6 +40,11 @@ Scope:
 - Previous behavior: `my-shop-uniapp/src/pages/app/ops/index.vue` referenced token, category, product-catalog, and thread-pool helpers that were not imported from the frontend API modules, leaving the page in a compile-time broken state.
 - Current behavior: the page imports the full current helper set from `src/api/auth-tokens.ts`, `src/api/category.ts`, `src/api/product-catalog.ts`, and `src/api/thread-pool.ts`, and the H5 frontend build succeeds again.
 
+### 4. Search and shop docs drifted from the real frontend API surface
+
+- Previous behavior: `src/api/shop-search.ts` exposed a `searchAfter` field that the backend shop-search request model does not accept, and the frontend API guide did not list `src/api/shop-search.ts`, `src/api/product-catalog.ts`, or the full set of public search and shop endpoints already wrapped by the frontend.
+- Current behavior: the fake `searchAfter` field is removed, and the frontend API guide now points to the real module boundaries and public endpoint surface for search, filters, shop discovery, and product-catalog maintenance.
+
 ## Current Boundary
 
 - The main user-facing and operational pages present in the UniApp app now have traced backend contracts and synced documentation.

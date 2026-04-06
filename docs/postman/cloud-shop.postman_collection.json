@@ -504,10 +504,67 @@
           }
         },
         {
+          "name": "Filter Products By Category",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/search/filter/category/{{categoryId}}?page=0&size=20"
+          }
+        },
+        {
+          "name": "Filter Products By Brand",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/search/filter/brand/{{brandId}}?page=0&size=20"
+          }
+        },
+        {
+          "name": "Filter Products By Price",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/search/filter/price?minPrice=10&maxPrice=100&page=0&size=20"
+          }
+        },
+        {
+          "name": "Filter Products By Shop",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/search/filter/shop/{{shopId}}?page=0&size=20"
+          }
+        },
+        {
+          "name": "Combined Product Filter",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/search/filter/combined?keyword={{searchKeyword}}&categoryId={{categoryId}}&brandId={{brandId}}&shopId={{shopId}}&page=0&size=20"
+          }
+        },
+        {
           "name": "Recommended Shops",
           "request": {
             "method": "GET",
             "url": "{{baseUrl}}/api/search/shops/recommended?page=0&size=20"
+          }
+        },
+        {
+          "name": "Shop Filters",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/search/shops/filters",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"keyword\": \"shop\",\n  \"status\": 1,\n  \"page\": 0,\n  \"size\": 20,\n  \"sortBy\": \"hotScore\",\n  \"sortOrder\": \"desc\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
           }
         },
         {
@@ -530,6 +587,34 @@
                 }
               }
             }
+          }
+        },
+        {
+          "name": "Shop Suggestions",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/search/shops/suggestions?keyword={{searchKeyword}}&size=10"
+          }
+        },
+        {
+          "name": "Hot Shops",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/search/shops/hot-shops?size=10"
+          }
+        },
+        {
+          "name": "Shop By Id",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/search/shops/{{shopId}}"
+          }
+        },
+        {
+          "name": "Shops By Location",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/search/shops/by-location?location={{searchKeyword}}&page=0&size=20"
           }
         }
       ]
