@@ -1,4 +1,6 @@
 import http from './http'
+import { getAccessToken } from '../auth/session'
+import { resolveApiUrl } from './http'
 import type { UserInfo, UserProfileUpdatePayload } from '../types/domain'
 
 export function getCurrentProfile(): Promise<UserInfo> {
@@ -20,5 +22,40 @@ export function uploadCurrentAvatar(file: File): Promise<string> {
     headers: {
       'Content-Type': 'multipart/form-data'
     }
+  })
+}
+
+export function uploadCurrentAvatarByPath(filePath: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const accessToken = getAccessToken()
+    uni.uploadFile({
+      url: resolveApiUrl('/api/user/profile/current/avatar'),
+      filePath,
+      name: 'file',
+      header: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+      success: (result) => {
+        if (result.statusCode && result.statusCode >= 400) {
+          reject(new Error('Avatar upload failed'))
+          return
+        }
+        try {
+          const payload = JSON.parse(result.data) as {
+            code?: number
+            message?: string
+            data?: string
+          }
+          if (payload.code !== 200 || typeof payload.data !== 'string') {
+            reject(new Error(payload.message || 'Avatar upload failed'))
+            return
+          }
+          resolve(payload.data)
+        } catch {
+          reject(new Error('Avatar upload failed'))
+        }
+      },
+      fail: (error) => {
+        reject(error instanceof Error ? error : new Error('Avatar upload failed'))
+      }
+    })
   })
 }

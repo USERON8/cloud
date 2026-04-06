@@ -37,7 +37,9 @@ Source of truth: `services/**/controller/*.java`, gateway security rules, and cu
    - `GET /api/product/spu/{spuId}`
    - `GET /api/product/spu/category/{categoryId}`
    - `GET /api/product/sku/batch`
-3. Search discovery
+3. Product management discovery
+   - `GET /api/product/manage`
+4. Search discovery
    - `GET /api/search/search`
    - `GET /api/search/smart-search`
    - `GET /api/search/basic`
@@ -80,6 +82,16 @@ Notes:
    - `GET /auth/tokens/validate`
    - `DELETE /auth/sessions`
    - `DELETE /auth/users/{username}/sessions` (admin only)
+5. Admin token management
+   - `GET /auth/tokens/stats`
+   - `GET /auth/tokens/authorization/{id}`
+   - `DELETE /auth/tokens/authorization/{id}`
+   - `POST /auth/tokens/cleanup`
+   - `GET /auth/tokens/storage-structure`
+   - `GET /auth/tokens/blacklist/stats`
+   - `POST /auth/tokens/blacklist/add`
+   - `GET /auth/tokens/blacklist/check`
+   - `POST /auth/tokens/blacklist/cleanup`
 
 ### 3. User Profile And Address Chain
 
@@ -100,6 +112,7 @@ Notes:
 
 Notes:
 - Address controller is authenticated at class level and still enforces owner or admin checks in each operation.
+- The frontend profile page now reads and updates the current user through the profile endpoints instead of relying on session claims only.
 
 ### 4. Cart And Order Preparation Chain
 
@@ -225,6 +238,7 @@ Notes:
 - Stock mutation endpoints require internal scope.
 - Gateway fallback is a degradation utility endpoint, not a primary client search API.
 - MQ governance endpoints are internal operational endpoints and should be exposed only to trusted callers.
+- User statistics, thread-pool monitor, and token management endpoints are admin-only operational APIs.
 
 ## Endpoint Index
 
@@ -295,8 +309,14 @@ Notes:
 | GET | `/api/product/sku/batch` | Public |
 | PATCH | `/api/product/spu/{spuId}/status` | `product:edit` |
 | GET | `/api/product` | Public |
+| GET | `/api/product/manage` | `product:edit` |
 | GET | `/api/product/search` | Public |
 | PATCH | `/api/product/{spuId}/status` | `product:edit` |
+
+Notes:
+- `GET /api/product` remains a public browse endpoint and only supports active products.
+- `GET /api/product/manage` is the merchant/admin management list endpoint and supports non-public status values.
+- Merchant callers on `/api/product/manage` are restricted to their own `merchantId`. When `merchantId` is omitted, the backend defaults to the authenticated merchant.
 
 ### Search
 

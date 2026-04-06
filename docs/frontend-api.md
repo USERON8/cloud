@@ -9,6 +9,7 @@ Source of truth: `my-shop-uniapp/src/api/*.ts`
 - Frontend uses OAuth2 for login and JWT bearer tokens for protected APIs.
 - Payment flow is no longer based on direct order pay transitions. The app creates a payment order, creates a checkout session, opens the checkout webview, and polls payment status.
 - The cart UI now synchronizes local cart state to the backend cart API and uses backend `cartId` checkout when submitting the cart page.
+- The profile page now refreshes and updates data through `/api/user/profile/current` instead of rendering JWT claims only.
 
 ## Frontend Chains
 
@@ -49,6 +50,10 @@ Primary APIs:
 - `DELETE /api/user/address/deleteBatch`
 - `PUT /api/user/address/updateBatch`
 
+Notes:
+- The profile page now supports backend-backed refresh, profile update, password change, and avatar upload.
+- Avatar upload on the page uses `uni.uploadFile` against `POST /api/user/profile/current/avatar` with the current bearer token.
+
 ### 3. Catalog And Search
 
 Modules:
@@ -62,6 +67,7 @@ Primary APIs:
 - `GET /api/category/tree`
 - `GET /api/category/{id}/children`
 - `GET /api/product`
+- `GET /api/product/manage`
 - `GET /api/product/search`
 - `GET /api/product/spu/{spuId}`
 - `GET /api/product/spu/category/{categoryId}`
@@ -83,6 +89,7 @@ Primary APIs:
 Notes:
 - Empty-keyword market landing now prefers `GET /api/search/hot/today`.
 - Search APIs are split between lightweight aliases and rich request-body operations.
+- Merchant catalog management now uses `GET /api/product/manage` so unpublished products remain visible to the merchant owner and can be published again.
 
 ### 4. Order And After-Sale
 
@@ -158,6 +165,8 @@ Notes:
 - Stock ledger view is admin-only in current backend policy.
 - Stock mutation APIs are internal-scope APIs and are not part of normal frontend user flows.
 - Stock pre-check API (`POST /api/stocks/pre-check`) is available for batch stock validation before order creation.
+- Admin workspace currently consumes `/api/admin`, `/api/query/users/search`, `/api/merchant/auth/list`, `/api/merchant/auth/review/{merchantId}`, `/api/statistics/overview`, and `/api/thread-pool/info`.
+- Token management utilities exposed in `src/api/auth-tokens.ts` are admin-only operational tools rather than normal user flows.
 
 ## Request And Behavior Notes
 
@@ -213,3 +222,4 @@ The admin UI now depends on:
 The backend reference is maintained in `docs/backend-api.md`.
 The Postman collection under `docs/postman/cloud-shop.postman_collection.json` follows the same chain order used here.
 Detailed chain audit findings are maintained in `docs/order-chain-audit.md`.
+Broader module audit findings are maintained in `docs/full-project-audit.md`.
