@@ -8,15 +8,16 @@ import {
     listSearchKeywordRecommendationsWithFallback,
     smartSearchProductsWithFallback,
 } from "../../../api/search-ops";
-import type { ProductItem } from "../../../types/domain";
-import { addToCart } from "../../../store/cart";
-import { formatPrice } from "../../../utils/format";
-import { resolveProductImageUrl } from "../../../utils/image";
-import { toast } from "../../../utils/ui";
 import { useRole } from "../../../auth/permission";
+import { useLocale } from "../../../i18n/locale";
 import { navigateTo } from "../../../router/navigation";
 import { Routes } from "../../../router/routes";
+import { addToCart } from "../../../store/cart";
+import type { ProductItem } from "../../../types/domain";
+import { formatPrice } from "../../../utils/format";
+import { resolveProductImageUrl } from "../../../utils/image";
 import { mapSearchDocumentToProduct, resolveCartSkuId } from "../../../utils/product";
+import { toast } from "../../../utils/ui";
 
 const keyword = ref("");
 const loading = ref(false);
@@ -33,8 +34,70 @@ const latestLoadRequestId = ref(0);
 const failedImageIds = ref<Record<string, boolean>>({});
 
 const { isAdmin, isMerchant } = useRole();
+const { locale } = useLocale();
 const canManage = computed(() => isAdmin.value || isMerchant.value);
 
+const copy = computed(() =>
+    locale.value === "en-US"
+        ? {
+              pageTitle: "Catalog",
+              eyebrow: "Catalog",
+              heroTitle: "Search the product index with less interruption.",
+              heroSubtitle:
+                  "Use recommendation signals to locate products, categories, and brands, then jump into catalog operations when your role allows it.",
+              primaryAction: "Search now",
+              manageAction: "Manage catalog",
+              searchTitle: "Search the catalog",
+              searchSubtitle:
+                  "Start from keywords and narrow quickly with the recommendation feed.",
+              searchPlaceholder: "Search by product, category, or brand",
+              searchAction: "Search",
+              hotKeywords: "Popular searches",
+              recommendedKeywords: "Suggested keywords",
+              resultTitle: "Catalog results",
+              resultSubtitle:
+                  "Review the latest matches and add purchasable items into the cart flow.",
+              stockPrefix: "Stock",
+              addToCart: "Add to cart",
+              empty: "No products matched the current search conditions.",
+              loadMore: "Load more",
+              noMore: "No more products",
+              invalidPrice: "Product price is unavailable.",
+              invalidShop: "Shop metadata is unavailable.",
+              outOfStock: "This product is out of stock.",
+              addSuccess: "Added to cart",
+              addFailed: "Failed to add item to cart",
+              loadFailed: "Failed to load products",
+          }
+        : {
+              pageTitle: "商品",
+              eyebrow: "商品",
+              heroTitle: "更适合快速发现商品的目录浏览体验。",
+              heroSubtitle:
+                  "结合推荐关键词快速定位商品、类目和品牌，并在权限允许时直接进入商品管理动作。",
+              primaryAction: "立即搜索",
+              manageAction: "管理商品",
+              searchTitle: "搜索商品目录",
+              searchSubtitle: "从关键词开始，并通过推荐词流快速缩小范围。",
+              searchPlaceholder: "搜索商品、类目或品牌",
+              searchAction: "搜索",
+              hotKeywords: "热门搜索",
+              recommendedKeywords: "推荐关键词",
+              resultTitle: "商品结果",
+              resultSubtitle: "查看最新搜索结果，并把可购买商品加入购物车。",
+              stockPrefix: "库存",
+              addToCart: "加入购物车",
+              empty: "当前搜索条件下暂无匹配商品。",
+              loadMore: "加载更多",
+              noMore: "没有更多商品了",
+              invalidPrice: "商品价格不可用。",
+              invalidShop: "店铺信息不可用。",
+              outOfStock: "商品库存不足。",
+              addSuccess: "已加入购物车",
+              addFailed: "加入购物车失败",
+              loadFailed: "加载商品失败",
+          },
+);
 
 async function refreshKeywords(seed = ""): Promise<void> {
     const [hotResult, recResult] = await Promise.allSettled([
@@ -79,14 +142,27 @@ async function loadProducts(reset = false): Promise<void> {
         if (requestId !== latestLoadRequestId.value) {
             return;
         }
-        toast(
-            error instanceof Error ? error.message : "Failed to load products",
-        );
+        toast(error instanceof Error ? error.message : copy.value.loadFailed);
     } finally {
         if (requestId === latestLoadRequestId.value) {
             loading.value = false;
         }
     }
+}
+
+function productImageSrc(item: ProductItem): string {
+    return resolveProductImageUrl(
+        item.imageUrl,
+        item.name,
+        !!failedImageIds.value[String(item.id)],
+    );
+}
+
+function markImageFailed(id: number | string): void {
+    failedImageIds.value = {
+        ...failedImageIds.value,
+        [String(id)]: true,
+    };
 }
 
 function onSearch(): void {
@@ -108,15 +184,15 @@ function onLoadMore(): void {
 
 async function onAddToCart(item: ProductItem): Promise<void> {
     if (typeof item.price !== "number" || item.price <= 0) {
-        toast("Product price is unavailable");
+        toast(copy.value.invalidPrice);
         return;
     }
     if (typeof item.shopId !== "number" || item.shopId <= 0) {
-        toast("Shop information is unavailable");
+        toast(copy.value.invalidShop);
         return;
     }
     if (typeof item.stockQuantity === "number" && item.stockQuantity <= 0) {
-        toast("Product is out of stock");
+        toast(copy.value.outOfStock);
         return;
     }
     try {
@@ -131,13 +207,9 @@ async function onAddToCart(item: ProductItem): Promise<void> {
             price: item.price,
             shopId: item.shopId,
         });
-        toast("Added to cart", "success");
+        toast(copy.value.addSuccess, "success");
     } catch (error) {
-        toast(
-            error instanceof Error
-                ? error.message
-                : "Failed to add product to cart",
-        );
+        toast(error instanceof Error ? error.message : copy.value.addFailed);
     }
 }
 
@@ -160,25 +232,18 @@ onShow(() => {
 </script>
 
 <template>
-    <AppShell title="Products">
+    <AppShell :title="copy.pageTitle">
         <view class="catalog-layout">
             <view class="hero-card display-panel fade-in-up">
                 <view class="hero-copy">
-                    <text class="hero-eyebrow">Products</text>
-                    <text class="hero-title"
-                        >A cleaner product catalog built for fast
-                        discovery.</text
-                    >
-                    <text class="hero-subtitle">
-                        Search the indexed catalog, explore guided keywords, and
-                        move directly into product management when your role
-                        allows it.
-                    </text>
+                    <text class="hero-eyebrow">{{ copy.eyebrow }}</text>
+                    <text class="hero-title">{{ copy.heroTitle }}</text>
+                    <text class="hero-subtitle">{{ copy.heroSubtitle }}</text>
                 </view>
 
                 <view class="hero-actions">
                     <button class="btn-primary" @click="onSearch">
-                        Search now
+                        {{ copy.primaryAction }}
                     </button>
                     <button
                         v-if="canManage"
@@ -189,35 +254,32 @@ onShow(() => {
                             })
                         "
                     >
-                        Manage products
+                        {{ copy.manageAction }}
                     </button>
                 </view>
             </view>
 
             <view class="surface-card search-card fade-in-up">
                 <view class="section-block compact-block">
-                    <text class="section-title">Search the catalog</text>
-                    <text class="section-subtitle">
-                        Find products, categories, and brands with keyword
-                        suggestions.
-                    </text>
+                    <text class="section-title">{{ copy.searchTitle }}</text>
+                    <text class="section-subtitle">{{ copy.searchSubtitle }}</text>
                 </view>
 
                 <view class="search-row">
                     <input
                         v-model="keyword"
                         class="search-input"
-                        placeholder="Search products, categories, or brands"
+                        :placeholder="copy.searchPlaceholder"
                         @confirm="onSearch"
                     />
                     <button class="btn-primary" @click="onSearch">
-                        Search
+                        {{ copy.searchAction }}
                     </button>
                 </view>
 
                 <view class="keyword-grid">
                     <view class="keyword-block" v-if="hotKeywords.length">
-                        <text class="keyword-title">Trending</text>
+                        <text class="keyword-title">{{ copy.hotKeywords }}</text>
                         <view class="keyword-list">
                             <text
                                 v-for="item in hotKeywords"
@@ -231,7 +293,9 @@ onShow(() => {
                     </view>
 
                     <view class="keyword-block" v-if="recommendations.length">
-                        <text class="keyword-title">Recommended</text>
+                        <text class="keyword-title">
+                            {{ copy.recommendedKeywords }}
+                        </text>
                         <view class="keyword-list">
                             <text
                                 v-for="item in recommendations"
@@ -247,11 +311,8 @@ onShow(() => {
             </view>
 
             <view class="section-head fade-in-up">
-                <text class="section-title">Catalog results</text>
-                <text class="section-subtitle"
-                    >Browse the latest search results and add eligible items to
-                    the cart.</text
-                >
+                <text class="section-title">{{ copy.resultTitle }}</text>
+                <text class="section-subtitle">{{ copy.resultSubtitle }}</text>
             </view>
 
             <view v-if="rows.length" class="product-grid fade-in-up">
@@ -268,25 +329,21 @@ onShow(() => {
                     />
                     <view class="product-main">
                         <text class="product-name">{{ item.name }}</text>
-                        <text class="product-price">{{
-                            formatPrice(item.price)
-                        }}</text>
-                        <text class="product-meta"
-                            >Stock {{ item.stockQuantity ?? "--" }}</text
-                        >
+                        <text class="product-price">{{ formatPrice(item.price) }}</text>
+                        <text class="product-meta">
+                            {{ copy.stockPrefix }} {{ item.stockQuantity ?? "--" }}
+                        </text>
                     </view>
                     <button
                         class="btn-outline action-button"
                         @click="onAddToCart(item)"
                     >
-                        Add to cart
+                        {{ copy.addToCart }}
                     </button>
                 </view>
             </view>
 
-            <view v-else class="empty-state"
-                >No products matched the current search conditions.</view
-            >
+            <view v-else class="empty-state">{{ copy.empty }}</view>
 
             <view class="load-more">
                 <button
@@ -295,9 +352,9 @@ onShow(() => {
                     :loading="loading"
                     @click="onLoadMore"
                 >
-                    Load more
+                    {{ copy.loadMore }}
                 </button>
-                <text v-else class="text-muted">No more products</text>
+                <text v-else class="text-muted">{{ copy.noMore }}</text>
             </view>
         </view>
     </AppShell>
@@ -351,31 +408,16 @@ onShow(() => {
 .search-input {
     flex: 1;
     min-height: 48px;
-    background: #fff;
+    background: rgba(255, 255, 255, 0.04);
     border-radius: 999px;
     padding: 12px 16px;
     font-size: 14px;
-    border: 1px solid rgba(20, 20, 20, 0.12);
-}
-
-function productImageSrc(item: ProductItem): string {
-    return resolveProductImageUrl(
-        item.imageUrl,
-        item.name,
-        !!failedImageIds.value[String(item.id)],
-    );
-}
-
-function markImageFailed(id: number | string): void {
-    failedImageIds.value = {
-        ...failedImageIds.value,
-        [String(id)]: true,
-    };
+    border: 1px solid var(--panel-border);
 }
 
 .search-input:focus {
-    border-color: rgba(11, 107, 95, 0.4);
-    box-shadow: 0 0 0 3px rgba(11, 107, 95, 0.12);
+    border-color: rgba(95, 209, 194, 0.4);
+    box-shadow: 0 0 0 3px rgba(95, 209, 194, 0.12);
 }
 
 .keyword-grid {
@@ -393,8 +435,8 @@ function markImageFailed(id: number | string): void {
 .keyword-title {
     font-size: 12px;
     color: var(--text-muted);
-    font-weight: 700;
-    letter-spacing: 0.06em;
+    font-weight: 800;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
 }
 
@@ -407,15 +449,15 @@ function markImageFailed(id: number | string): void {
 .keyword-chip {
     padding: 8px 14px;
     border-radius: 999px;
-    background: rgba(255, 255, 255, 0.95);
+    background: rgba(255, 255, 255, 0.04);
     font-size: 12px;
-    border: 1px solid rgba(20, 20, 20, 0.08);
+    border: 1px solid var(--panel-border);
     color: var(--text-main);
     transition:
-        transform 0.2s ease,
-        box-shadow 0.2s ease,
-        border-color 0.2s ease,
-        color 0.2s ease;
+        transform 0.22s ease,
+        box-shadow 0.22s ease,
+        border-color 0.22s ease,
+        color 0.22s ease;
 }
 
 .section-head {
@@ -436,25 +478,17 @@ function markImageFailed(id: number | string): void {
     flex-direction: column;
     gap: 14px;
     transition:
-        transform 0.2s ease,
-        box-shadow 0.2s ease,
-        border-color 0.2s ease;
+        transform 0.22s ease,
+        box-shadow 0.22s ease,
+        border-color 0.22s ease;
 }
 
 .product-image {
     width: 100%;
     aspect-ratio: 1.7 / 1;
     border-radius: 18px;
-    background: linear-gradient(180deg, #f7f7f9, #f1f1f4);
-    border: 1px solid rgba(20, 20, 20, 0.08);
-}
-
-.product-image.placeholder {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 12px;
-    color: var(--text-muted);
+    background: linear-gradient(180deg, #0f2033, #0b1828);
+    border: 1px solid var(--panel-border);
 }
 
 .product-main {
@@ -465,16 +499,16 @@ function markImageFailed(id: number | string): void {
 
 .product-name {
     font-size: 18px;
-    font-weight: 700;
+    font-weight: 800;
     line-height: 1.4;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.03em;
 }
 
 .product-price {
     font-size: 22px;
-    font-weight: 700;
+    font-weight: 800;
     color: var(--text-main);
-    letter-spacing: -0.03em;
+    letter-spacing: -0.04em;
 }
 
 .product-meta {
@@ -495,15 +529,15 @@ function markImageFailed(id: number | string): void {
 @media (hover: hover) {
     .keyword-chip:hover {
         transform: translateY(-1px);
-        border-color: rgba(11, 107, 95, 0.2);
-        box-shadow: 0 10px 20px rgba(20, 20, 20, 0.08);
-        color: var(--accent);
+        border-color: rgba(95, 209, 194, 0.2);
+        box-shadow: 0 12px 22px rgba(1, 7, 14, 0.28);
+        color: var(--accent-strong);
     }
 
     .product-card:hover {
         transform: translateY(-2px);
-        box-shadow: 0 16px 30px rgba(20, 20, 20, 0.12);
-        border-color: rgba(20, 20, 20, 0.12);
+        box-shadow: 0 18px 34px rgba(1, 7, 14, 0.34);
+        border-color: var(--panel-border-strong);
     }
 }
 
@@ -518,6 +552,11 @@ function markImageFailed(id: number | string): void {
         align-items: flex-start;
         flex-direction: column;
         padding: 26px;
+    }
+
+    .search-row {
+        flex-direction: column;
+        align-items: stretch;
     }
 }
 </style>
