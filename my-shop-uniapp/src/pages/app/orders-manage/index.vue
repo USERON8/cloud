@@ -35,6 +35,22 @@ const activeAfterSaleCount = computed(
         ).length,
 );
 
+type AfterSaleAction =
+    | "AUDIT"
+    | "APPROVE"
+    | "REJECT"
+    | "WAIT_RETURN"
+    | "RETURN"
+    | "RECEIVE"
+    | "PROCESS";
+
+type ActionSpec = {
+    key: string;
+    label: string;
+    kind: "ship" | "complete" | "after_sale";
+    action?: AfterSaleAction;
+};
+
 async function loadOrders(): Promise<void> {
     if (loading.value) return;
     loading.value = true;
@@ -160,14 +176,7 @@ async function onComplete(order: OrderItem): Promise<void> {
 
 async function onAdvanceAfterSale(
     order: OrderItem,
-    action:
-        | "AUDIT"
-        | "APPROVE"
-        | "REJECT"
-        | "WAIT_RETURN"
-        | "RETURN"
-        | "RECEIVE"
-        | "PROCESS",
+    action: AfterSaleAction,
 ): Promise<void> {
     if (typeof order.afterSaleId !== "number" || typeof order.id !== "number") {
         toast("This order is missing after-sale metadata");
@@ -202,6 +211,98 @@ async function onAdvanceAfterSale(
         );
     } finally {
         afterSaleActingOrderId.value = null;
+    }
+}
+
+function buildActionSpecs(order: OrderItem): ActionSpec[] {
+    const actions: ActionSpec[] = [
+        { key: "ship", label: "Ship", kind: "ship" },
+        { key: "complete", label: "Complete", kind: "complete" },
+    ];
+
+    if (canAuditAfterSale(order)) {
+        actions.push({
+            key: "audit",
+            label: "Start review",
+            kind: "after_sale",
+            action: "AUDIT",
+        });
+    }
+    if (canApproveAfterSale(order)) {
+        actions.push({
+            key: "approve",
+            label: "Approve",
+            kind: "after_sale",
+            action: "APPROVE",
+        });
+    }
+    if (canRejectAfterSale(order)) {
+        actions.push({
+            key: "reject",
+            label: "Reject",
+            kind: "after_sale",
+            action: "REJECT",
+        });
+    }
+    if (canWaitReturn(order)) {
+        actions.push({
+            key: "wait-return",
+            label: "Wait return",
+            kind: "after_sale",
+            action: "WAIT_RETURN",
+        });
+    }
+    if (canMarkReturned(order)) {
+        actions.push({
+            key: "mark-returned",
+            label: "Mark returned",
+            kind: "after_sale",
+            action: "RETURN",
+        });
+    }
+    if (canMarkReceived(order)) {
+        actions.push({
+            key: "mark-received",
+            label: "Mark received",
+            kind: "after_sale",
+            action: "RECEIVE",
+        });
+    }
+    if (canProcessRefund(order)) {
+        actions.push({
+            key: "process",
+            label: "Start refund",
+            kind: "after_sale",
+            action: "PROCESS",
+        });
+    }
+
+    return actions;
+}
+
+function visibleActions(order: OrderItem): ActionSpec[] {
+    return buildActionSpecs(order).slice(0, 3);
+}
+
+function hiddenActions(order: OrderItem): ActionSpec[] {
+    return buildActionSpecs(order).slice(3);
+}
+
+function hasMoreActions(order: OrderItem): boolean {
+    return hiddenActions(order).length > 0;
+}
+
+async function triggerAction(order: OrderItem, spec: ActionSpec): Promise<void> {
+    if (spec.kind === "ship") {
+        await onShip(order);
+        return;
+    }
+    if (spec.kind === "complete") {
+        await onComplete(order);
+        return;
+    }
+    if (spec.action) {
+        await onAdvanceAfterSale(order, spec.action);
     }
 }
 
@@ -388,68 +489,45 @@ onMounted(() => {
                                     : "Show details"
                             }}
                         </button>
-                        <button class="btn-outline" @click="onShip(item)">
-                            Ship
-                        </button>
-                        <button class="btn-outline" @click="onComplete(item)">
-                            Complete
-                        </button>
                         <button
-                            v-if="canAuditAfterSale(item)"
+                            v-for="spec in visibleActions(item)"
+                            :key="spec.key"
                             class="btn-outline"
-                            :loading="afterSaleActingOrderId === item.id"
-                            @click="onAdvanceAfterSale(item, 'AUDIT')"
+                            :loading="
+                                spec.kind === 'after_sale' &&
+                                afterSaleActingOrderId === item.id
+                            "
+                            @click="triggerAction(item, spec)"
                         >
-                            Start review
+                            {{ spec.label }}
                         </button>
-                        <button
-                            v-if="canApproveAfterSale(item)"
-                            class="btn-outline"
-                            :loading="afterSaleActingOrderId === item.id"
-                            @click="onAdvanceAfterSale(item, 'APPROVE')"
+                        <text
+                            v-if="hasMoreActions(item) && !isExpandedRow(item.id)"
+                            class="more-hint"
                         >
-                            Approve
-                        </button>
-                        <button
-                            v-if="canRejectAfterSale(item)"
-                            class="btn-outline"
-                            :loading="afterSaleActingOrderId === item.id"
-                            @click="onAdvanceAfterSale(item, 'REJECT')"
-                        >
-                            Reject
-                        </button>
-                        <button
-                            v-if="canWaitReturn(item)"
-                            class="btn-outline"
-                            :loading="afterSaleActingOrderId === item.id"
-                            @click="onAdvanceAfterSale(item, 'WAIT_RETURN')"
-                        >
-                            Wait return
-                        </button>
-                        <button
-                            v-if="canMarkReturned(item)"
-                            class="btn-outline"
-                            :loading="afterSaleActingOrderId === item.id"
-                            @click="onAdvanceAfterSale(item, 'RETURN')"
-                        >
-                            Mark returned
-                        </button>
-                        <button
-                            v-if="canMarkReceived(item)"
-                            class="btn-outline"
-                            :loading="afterSaleActingOrderId === item.id"
-                            @click="onAdvanceAfterSale(item, 'RECEIVE')"
-                        >
-                            Mark received
-                        </button>
-                        <button
-                            v-if="canProcessRefund(item)"
-                            class="btn-outline"
-                            :loading="afterSaleActingOrderId === item.id"
-                            @click="onAdvanceAfterSale(item, 'PROCESS')"
-                        >
-                            Start refund
-                        </button>
+                            More actions inside details
+                        </text>
+                    </view>
+
+                    <view
+                        v-if="isExpandedRow(item.id) && hasMoreActions(item)"
+                        class="surface-muted panel-block secondary-actions"
+                    >
+                        <text class="summary-label">More actions</text>
+                        <view class="action-wrap">
+                            <button
+                                v-for="spec in hiddenActions(item)"
+                                :key="spec.key"
+                                class="btn-secondary"
+                                :loading="
+                                    spec.kind === 'after_sale' &&
+                                    afterSaleActingOrderId === item.id
+                                "
+                                @click="triggerAction(item, spec)"
+                            >
+                                {{ spec.label }}
+                            </button>
+                        </view>
                     </view>
                 </view>
             </view>
@@ -572,6 +650,15 @@ onMounted(() => {
 
 .row-actions {
     align-items: center;
+}
+
+.secondary-actions {
+    gap: 12px;
+}
+
+.more-hint {
+    font-size: 12px;
+    color: var(--text-soft);
 }
 
 @media (max-width: 768px) {

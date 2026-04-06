@@ -78,7 +78,7 @@ const quickActions = computed(() => [
     },
 ]);
 
-const readinessCards = computed(() => [
+const heroStatusCards = computed(() => [
     {
         label: "Merchant status",
         value: merchantStatusText(merchantInfo.value?.status),
@@ -89,6 +89,9 @@ const readinessCards = computed(() => [
             authInfo.value?.authStatus ?? merchantInfo.value?.authStatus,
         ),
     },
+]);
+
+const readinessCards = computed(() => [
     {
         label: "Catalog entry",
         value: "Ready",
@@ -393,7 +396,7 @@ onMounted(() => {
 
                 <view class="dashboard-hero-stats">
                     <view
-                        v-for="item in readinessCards"
+                        v-for="item in heroStatusCards"
                         :key="item.label"
                         class="metric-card"
                     >
@@ -477,6 +480,17 @@ onMounted(() => {
                             }}</text>
                         </view>
                     </view>
+
+                    <view class="readiness-list">
+                        <view
+                            v-for="item in readinessCards"
+                            :key="item.label"
+                            class="surface-muted readiness-card"
+                        >
+                            <text class="field-label">{{ item.label }}</text>
+                            <text class="readiness-value">{{ item.value }}</text>
+                        </view>
+                    </view>
                 </view>
             </view>
 
@@ -558,75 +572,90 @@ onMounted(() => {
 
                     <view class="field field-span">
                         <text class="field-label">Business license URL</text>
-                        <view class="input-row">
+                        <view class="attachment-field">
                             <input
                                 v-model="authForm.businessLicenseUrl"
                                 class="field-control flex-input"
                                 placeholder="Enter the business license image URL"
                             />
-                            <button
-                                class="btn-outline"
-                                :loading="uploadState.businessLicenseUrl"
-                                @click="uploadAuthImage('businessLicenseUrl')"
-                            >
-                                Upload
-                            </button>
-                            <button
-                                class="btn-outline"
-                                @click="
-                                    previewImage(authForm.businessLicenseUrl)
-                                "
-                            >
-                                Preview
-                            </button>
+                            <view class="action-wrap attachment-actions">
+                                <button
+                                    class="btn-outline"
+                                    :loading="uploadState.businessLicenseUrl"
+                                    @click="
+                                        uploadAuthImage('businessLicenseUrl')
+                                    "
+                                >
+                                    Upload
+                                </button>
+                                <button
+                                    v-if="authForm.businessLicenseUrl"
+                                    class="btn-secondary"
+                                    @click="
+                                        previewImage(
+                                            authForm.businessLicenseUrl,
+                                        )
+                                    "
+                                >
+                                    Preview
+                                </button>
+                            </view>
                         </view>
                     </view>
 
                     <view class="field field-span">
                         <text class="field-label">Front ID card URL</text>
-                        <view class="input-row">
+                        <view class="attachment-field">
                             <input
                                 v-model="authForm.idCardFrontUrl"
                                 class="field-control flex-input"
                                 placeholder="Enter the front ID card image URL"
                             />
-                            <button
-                                class="btn-outline"
-                                :loading="uploadState.idCardFrontUrl"
-                                @click="uploadAuthImage('idCardFrontUrl')"
-                            >
-                                Upload
-                            </button>
-                            <button
-                                class="btn-outline"
-                                @click="previewImage(authForm.idCardFrontUrl)"
-                            >
-                                Preview
-                            </button>
+                            <view class="action-wrap attachment-actions">
+                                <button
+                                    class="btn-outline"
+                                    :loading="uploadState.idCardFrontUrl"
+                                    @click="uploadAuthImage('idCardFrontUrl')"
+                                >
+                                    Upload
+                                </button>
+                                <button
+                                    v-if="authForm.idCardFrontUrl"
+                                    class="btn-secondary"
+                                    @click="
+                                        previewImage(authForm.idCardFrontUrl)
+                                    "
+                                >
+                                    Preview
+                                </button>
+                            </view>
                         </view>
                     </view>
 
                     <view class="field field-span">
                         <text class="field-label">Back ID card URL</text>
-                        <view class="input-row">
+                        <view class="attachment-field">
                             <input
                                 v-model="authForm.idCardBackUrl"
                                 class="field-control flex-input"
                                 placeholder="Enter the back ID card image URL"
                             />
-                            <button
-                                class="btn-outline"
-                                :loading="uploadState.idCardBackUrl"
-                                @click="uploadAuthImage('idCardBackUrl')"
-                            >
-                                Upload
-                            </button>
-                            <button
-                                class="btn-outline"
-                                @click="previewImage(authForm.idCardBackUrl)"
-                            >
-                                Preview
-                            </button>
+                            <view class="action-wrap attachment-actions">
+                                <button
+                                    class="btn-outline"
+                                    :loading="uploadState.idCardBackUrl"
+                                    @click="uploadAuthImage('idCardBackUrl')"
+                                >
+                                    Upload
+                                </button>
+                                <button
+                                    v-if="authForm.idCardBackUrl"
+                                    class="btn-secondary"
+                                    @click="previewImage(authForm.idCardBackUrl)"
+                                >
+                                    Preview
+                                </button>
+                            </view>
                         </view>
                     </view>
 
@@ -796,6 +825,24 @@ onMounted(() => {
     gap: 6px;
 }
 
+.readiness-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.readiness-card {
+    padding: 14px 16px;
+    border-radius: 16px;
+}
+
+.readiness-value {
+    margin-top: 6px;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-main);
+}
+
 .kv-row {
     display: flex;
     align-items: center;
@@ -824,12 +871,21 @@ onMounted(() => {
 }
 
 .flex-input {
-    flex: 1;
-    min-width: 220px;
+    width: 100%;
 }
 
 .textarea {
     min-height: 92px;
+}
+
+.attachment-field {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.attachment-actions {
+    justify-content: flex-start;
 }
 
 .stats-grid {
@@ -857,16 +913,13 @@ onMounted(() => {
 
 @media (max-width: 760px) {
     .stats-grid,
-    .form-grid {
+    .form-grid,
+    .readiness-list {
         grid-template-columns: 1fr;
     }
 
     .field-span {
         grid-column: span 1;
-    }
-
-    .input-row .btn-outline {
-        width: 100%;
     }
 }
 </style>
