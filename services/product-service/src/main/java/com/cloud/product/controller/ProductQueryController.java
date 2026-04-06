@@ -4,6 +4,7 @@ import com.cloud.common.enums.ResultCode;
 import com.cloud.common.exception.BizException;
 import com.cloud.common.result.PageResult;
 import com.cloud.common.result.Result;
+import com.cloud.common.security.SecurityPermissionUtils;
 import com.cloud.product.controller.support.ProductMerchantGuard;
 import com.cloud.product.dto.ProductItemDTO;
 import com.cloud.product.service.ProductCatalogService;
@@ -42,7 +43,26 @@ public class ProductQueryController {
       @RequestParam(required = false) Integer status) {
     Integer effectiveStatus = normalizePublicStatus(status);
     return Result.success(
-        productQueryService.listProducts(page, size, name, categoryId, brandId, effectiveStatus));
+        productQueryService.listProducts(
+            page, size, name, categoryId, brandId, null, effectiveStatus));
+  }
+
+  @GetMapping("/manage")
+  @PreAuthorize("hasAuthority('product:edit')")
+  @Operation(summary = "List products for product management")
+  public Result<PageResult<ProductItemDTO>> listManageProducts(
+      @RequestParam(required = false) Integer page,
+      @RequestParam(required = false) Integer size,
+      @RequestParam(required = false) String name,
+      @RequestParam(required = false) Long categoryId,
+      @RequestParam(required = false) Long brandId,
+      @RequestParam(required = false) Long merchantId,
+      @RequestParam(required = false) Integer status,
+      Authentication authentication) {
+    Long effectiveMerchantId = resolveManageMerchantId(authentication, merchantId);
+    return Result.success(
+        productQueryService.listProducts(
+            page, size, name, categoryId, brandId, effectiveMerchantId, status));
   }
 
   @GetMapping("/search")
@@ -70,5 +90,24 @@ public class ProductQueryController {
           ResultCode.BAD_REQUEST, "public product queries only support active status");
     }
     return status;
+  }
+
+  private Long resolveManageMerchantId(Authentication authentication, Long merchantId) {
+    if (SecurityPermissionUtils.isAdmin(authentication)) {
+      return merchantId;
+    }
+    String currentUserId = SecurityPermissionUtils.getCurrentUserId(authentication);
+    if (currentUserId == null || currentUserId.isBlank()) {
+      throw new BizException(ResultCode.UNAUTHORIZED, "current merchant is not available");
+    }
+    Long currentMerchantId;
+    try {
+      currentMerchantId = Long.parseLong(currentUserId);
+    } catch (NumberFormatException ex) {
+      throw new BizException(ResultCode.UNAUTHORIZED, "invalid merchant id in token");
+    }
+    Long effectiveMerchantId = merchantId == null ? currentMerchantId : merchantId;
+    productMerchantGuard.assertCanWriteMerchant(authentication, effectiveMerchantId);
+    return effectiveMerchantId;
   }
 }

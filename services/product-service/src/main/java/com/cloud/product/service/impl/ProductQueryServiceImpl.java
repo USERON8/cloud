@@ -36,7 +36,13 @@ public class ProductQueryServiceImpl implements ProductQueryService {
 
   @Override
   public PageResult<ProductItemDTO> listProducts(
-      Integer page, Integer size, String name, Long categoryId, Long brandId, Integer status) {
+      Integer page,
+      Integer size,
+      String name,
+      Long categoryId,
+      Long brandId,
+      Long merchantId,
+      Integer status) {
     int safePage = page == null || page < 1 ? 1 : page;
     int safeSize = size == null || size <= 0 ? 20 : size;
     int maxSize = maxListSize == null || maxListSize <= 0 ? 100 : maxListSize;
@@ -52,7 +58,12 @@ public class ProductQueryServiceImpl implements ProductQueryService {
     if (brandId != null) {
       wrapper.eq(Spu::getBrandId, brandId);
     }
-    wrapper.eq(Spu::getStatus, status != null ? status : ACTIVE_STATUS);
+    if (merchantId != null) {
+      wrapper.eq(Spu::getMerchantId, merchantId);
+    }
+    if (status != null) {
+      wrapper.eq(Spu::getStatus, status);
+    }
     wrapper.orderByDesc(Spu::getId);
 
     Page<Spu> pageData = new Page<>(safePage, safeSize);

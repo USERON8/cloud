@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
 import AppShell from "../../../components/AppShell.vue";
-import { listProducts, updateProductStatus } from "../../../api/product";
+import { listManageProducts, updateProductStatus } from "../../../api/product";
+import { sessionState } from "../../../auth/session";
 import type { ProductItem } from "../../../types/domain";
 import { formatPrice, formatProductStatus } from "../../../utils/format";
 import { confirm, toast } from "../../../utils/ui";
@@ -27,10 +28,14 @@ async function loadProducts(): Promise<void> {
     if (loading.value) return;
     loading.value = true;
     try {
-        const result = await listProducts({
+        const result = await listManageProducts({
             page: 1,
             size: 50,
             name: keyword.value || undefined,
+            merchantId:
+                typeof sessionState.user?.id === "number"
+                    ? sessionState.user.id
+                    : undefined,
         });
         rows.value = result.records;
     } catch (error) {

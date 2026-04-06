@@ -6,6 +6,7 @@ import static org.mockito.Mockito.when;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cloud.common.result.PageResult;
+import com.cloud.product.converter.ProductItemConverter;
 import com.cloud.product.dto.ProductItemDTO;
 import com.cloud.product.mapper.SkuMapper;
 import com.cloud.product.mapper.SpuMapper;
@@ -16,6 +17,7 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mapstruct.factory.Mappers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -30,11 +32,12 @@ class ProductQueryServiceImplTest {
 
   @BeforeEach
   void setUp() {
-    service = new ProductQueryServiceImpl(spuMapper, skuMapper);
+    ProductItemConverter productItemConverter = Mappers.getMapper(ProductItemConverter.class);
+    service = new ProductQueryServiceImpl(productItemConverter, spuMapper, skuMapper);
   }
 
   @Test
-  void listProductsShouldDefaultToActiveSpuAndActiveSku() {
+  void listProductsShouldUseExplicitStatusFilterAndActiveSku() {
     Spu spu = new Spu();
     spu.setId(100L);
     spu.setMerchantId(200L);
@@ -61,7 +64,7 @@ class ProductQueryServiceImplTest {
     when(spuMapper.selectPage(any(Page.class), any())).thenReturn(page);
     when(skuMapper.selectList(any())).thenReturn(List.of(inactiveSku, activeSku));
 
-    PageResult<ProductItemDTO> result = service.listProducts(1, 20, null, null, null, null);
+    PageResult<ProductItemDTO> result = service.listProducts(1, 20, null, null, null, null, 1);
 
     assertThat(result.getRecords()).hasSize(1);
     assertThat(result.getRecords().get(0).getPrice()).isEqualByComparingTo("19.9");
@@ -83,5 +86,31 @@ class ProductQueryServiceImplTest {
     List<ProductItemDTO> result = service.searchProducts("phone", 10);
 
     assertThat(result).isEmpty();
+  }
+
+  @Test
+  void listProductsShouldFilterByMerchantIdWhenProvided() {
+    Spu spu = new Spu();
+    spu.setId(102L);
+    spu.setMerchantId(9001L);
+    spu.setSpuName("Merchant Phone");
+    spu.setStatus(0);
+
+    Sku activeSku = new Sku();
+    activeSku.setSpuId(102L);
+    activeSku.setSalePrice(BigDecimal.valueOf(39.9));
+    activeSku.setStatus(1);
+
+    Page<Spu> page = new Page<>(1, 20);
+    page.setRecords(List.of(spu));
+    page.setTotal(1L);
+
+    when(spuMapper.selectPage(any(Page.class), any())).thenReturn(page);
+    when(skuMapper.selectList(any())).thenReturn(List.of(activeSku));
+
+    PageResult<ProductItemDTO> result = service.listProducts(1, 20, null, null, null, 9001L, 0);
+
+    assertThat(result.getRecords()).hasSize(1);
+    assertThat(result.getRecords().get(0).getId()).isEqualTo(102L);
   }
 }

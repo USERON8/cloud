@@ -180,6 +180,7 @@ export interface ProductQuery {
   name?: string
   categoryId?: number | string
   brandId?: number | string
+  merchantId?: number | string
   status?: number
 }
 
@@ -510,11 +511,6 @@ export interface PaymentCheckoutSession {
   paymentNo?: string
   checkoutPath?: string
   expiresInSeconds?: number
-}
-
-export interface PaymentStatusInfo {
-  paymentNo?: string
-  status?: string
 }
 
 export interface PaymentRefundInfo {

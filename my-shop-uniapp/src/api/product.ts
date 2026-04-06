@@ -11,6 +11,10 @@ export function listProducts(params: ProductQuery = {}): Promise<ProductPage> {
   return http.get<ProductPage, ProductPage>('/api/product', { params })
 }
 
+export function listManageProducts(params: ProductQuery = {}): Promise<ProductPage> {
+  return http.get<ProductPage, ProductPage>('/api/product/manage', { params })
+}
+
 export function searchProducts(name: string): Promise<ProductItem[]> {
   // 调用搜索服务接口，返回的是 SearchResultDTO，需要提取 list 字段
   return http.get<SearchResult<ProductDocument>, SearchResult<ProductDocument>>('/api/search/search', {

@@ -7,7 +7,13 @@ import java.util.List;
 public interface ProductQueryService {
 
   PageResult<ProductItemDTO> listProducts(
-      Integer page, Integer size, String name, Long categoryId, Long brandId, Integer status);
+      Integer page,
+      Integer size,
+      String name,
+      Long categoryId,
+      Long brandId,
+      Long merchantId,
+      Integer status);
 
   List<ProductItemDTO> searchProducts(String name, Integer size);
 }

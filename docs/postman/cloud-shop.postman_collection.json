@@ -261,7 +261,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"consignee\": \"{{receiverName}}\",\n  \"phone\": \"{{receiverPhone}}\",\n  \"province\": \"Shanghai\",\n  \"city\": \"Shanghai\",\n  \"district\": \"Pudong\",\n  \"street\": \"Century Ave\",\n  \"detailAddress\": \"No.200\",\n  \"isDefault\": 1\n}",
+              "raw": "{\n  \"receiverName\": \"{{receiverName}}\",\n  \"receiverPhone\": \"{{receiverPhone}}\",\n  \"province\": \"Shanghai\",\n  \"city\": \"Shanghai\",\n  \"district\": \"Pudong\",\n  \"street\": \"Century Ave\",\n  \"detailAddress\": \"No.200\",\n  \"isDefault\": 1\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -295,7 +295,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"consignee\": \"{{receiverName}}\",\n  \"phone\": \"{{receiverPhone}}\",\n  \"province\": \"Shanghai\",\n  \"city\": \"Shanghai\",\n  \"district\": \"Pudong\",\n  \"street\": \"Century Ave\",\n  \"detailAddress\": \"No.201\",\n  \"isDefault\": 0\n}",
+              "raw": "{\n  \"receiverName\": \"{{receiverName}}\",\n  \"receiverPhone\": \"{{receiverPhone}}\",\n  \"province\": \"Shanghai\",\n  \"city\": \"Shanghai\",\n  \"district\": \"Pudong\",\n  \"street\": \"Century Ave\",\n  \"detailAddress\": \"No.201\",\n  \"isDefault\": 0\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -315,8 +315,23 @@
           "name": "Delete Addresses In Batch",
           "request": {
             "method": "DELETE",
-            "url": "{{baseUrl}}/api/user/address/deleteBatch?addressIds={{addressId}}",
-            "description": "Delete multiple addresses by comma-separated IDs."
+            "url": "{{baseUrl}}/api/user/address/deleteBatch",
+            "description": "Delete multiple addresses by request-body ID list.",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "[{{addressId}}]",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
           }
         },
         {
@@ -386,6 +401,14 @@
           "request": {
             "method": "GET",
             "url": "{{baseUrl}}/api/product?page=1&size=20&status=1"
+          }
+        },
+        {
+          "name": "List Manage Products",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/product/manage?page=1&size=20&merchantId={{merchantId}}",
+            "description": "Merchant/admin management list. Merchant callers are limited to their own merchant scope."
           }
         },
         {
