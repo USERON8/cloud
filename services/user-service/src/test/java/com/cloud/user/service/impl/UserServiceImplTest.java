@@ -5,10 +5,12 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.lenient;
 
 import com.cloud.common.domain.dto.auth.AuthPrincipalDTO;
 import com.cloud.common.domain.dto.user.UserUpsertRequestDTO;
 import com.cloud.common.exception.EntityNotFoundException;
+import com.cloud.user.converter.AuthPrincipalConverter;
 import com.cloud.user.converter.UserConverter;
 import com.cloud.user.module.entity.User;
 import com.cloud.user.service.cache.TransactionalUserCacheService;
@@ -26,6 +28,8 @@ class UserServiceImplTest {
 
   @Mock private UserConverter userConverter;
 
+  @Mock private AuthPrincipalConverter authPrincipalConverter;
+
   @Mock private AuthPrincipalService authPrincipalService;
 
   @Mock private TransactionalUserCacheService transactionalUserCacheService;
@@ -37,7 +41,37 @@ class UserServiceImplTest {
     service =
         spy(
             new UserServiceImpl(
-                userConverter, authPrincipalService, transactionalUserCacheService));
+                userConverter,
+                authPrincipalConverter,
+                authPrincipalService,
+                transactionalUserCacheService));
+    lenient()
+        .when(authPrincipalConverter.toDTO(any(UserUpsertRequestDTO.class)))
+        .thenAnswer(
+            invocation -> {
+              UserUpsertRequestDTO request = invocation.getArgument(0);
+              AuthPrincipalDTO dto = new AuthPrincipalDTO();
+              dto.setUsername(request.getUsername());
+              dto.setNickname(request.getNickname());
+              dto.setEmail(request.getEmail());
+              dto.setPhone(request.getPhone());
+              dto.setStatus(request.getStatus());
+              return dto;
+            });
+    lenient()
+        .when(userConverter.toEntity(any(UserUpsertRequestDTO.class)))
+        .thenAnswer(
+            invocation -> {
+              UserUpsertRequestDTO request = invocation.getArgument(0);
+              User user = new User();
+              user.setUsername(request.getUsername());
+              user.setPhone(request.getPhone());
+              user.setNickname(request.getNickname());
+              user.setAvatarUrl(request.getAvatarUrl());
+              user.setEmail(request.getEmail());
+              user.setStatus(request.getStatus());
+              return user;
+            });
   }
 
   @Test

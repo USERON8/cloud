@@ -12,6 +12,7 @@ import com.cloud.common.domain.dto.auth.AuthPrincipalDTO;
 import com.cloud.common.domain.dto.user.AdminDTO;
 import com.cloud.common.domain.dto.user.AdminUpsertRequestDTO;
 import com.cloud.user.converter.AdminConverter;
+import com.cloud.user.converter.AuthPrincipalConverter;
 import com.cloud.user.exception.AdminException;
 import com.cloud.user.mapper.AdminMapper;
 import com.cloud.user.module.entity.Admin;
@@ -32,6 +33,8 @@ class AdminServiceImplTest {
 
   @Mock private AdminConverter adminConverter;
 
+  @Mock private AuthPrincipalConverter authPrincipalConverter;
+
   @Mock private AuthPrincipalService authPrincipalService;
 
   @Mock private TransactionalAdminCacheService adminCacheService;
@@ -43,7 +46,11 @@ class AdminServiceImplTest {
     adminService =
         Mockito.spy(
             new AdminServiceImpl(
-                adminMapper, adminConverter, authPrincipalService, adminCacheService));
+                adminMapper,
+                adminConverter,
+                authPrincipalConverter,
+                authPrincipalService,
+                adminCacheService));
     ReflectionTestUtils.setField(adminService, "baseMapper", adminMapper);
   }
 
@@ -63,11 +70,32 @@ class AdminServiceImplTest {
               admin.setId(1L);
               return 1;
             });
-    when(adminConverter.toDTO(any()))
+    when(adminConverter.toDTO(any(Admin.class)))
         .thenAnswer(
             invocation -> {
               AdminDTO dto = new AdminDTO();
               Admin admin = invocation.getArgument(0);
+              dto.setId(admin.getId());
+              dto.setUsername(admin.getUsername());
+              return dto;
+            });
+    when(adminConverter.toEntity(any(AdminUpsertRequestDTO.class)))
+        .thenAnswer(
+            invocation -> {
+              AdminUpsertRequestDTO request = invocation.getArgument(0);
+              Admin admin = new Admin();
+              admin.setUsername(request.getUsername());
+              admin.setRealName(request.getRealName());
+              admin.setPhone(request.getPhone());
+              admin.setRole(request.getRole());
+              admin.setStatus(request.getStatus());
+              return admin;
+            });
+    when(authPrincipalConverter.toDTO(any(Admin.class)))
+        .thenAnswer(
+            invocation -> {
+              Admin admin = invocation.getArgument(0);
+              AuthPrincipalDTO dto = new AuthPrincipalDTO();
               dto.setId(admin.getId());
               dto.setUsername(admin.getUsername());
               return dto;

@@ -12,6 +12,7 @@ import com.baomidou.mybatisplus.extension.conditions.query.LambdaQueryChainWrapp
 import com.cloud.common.domain.dto.auth.AuthPrincipalDTO;
 import com.cloud.common.domain.dto.user.MerchantDTO;
 import com.cloud.common.domain.dto.user.MerchantUpsertRequestDTO;
+import com.cloud.user.converter.AuthPrincipalConverter;
 import com.cloud.user.converter.MerchantConverter;
 import com.cloud.user.exception.MerchantException;
 import com.cloud.user.mapper.MerchantAuthMapper;
@@ -39,6 +40,8 @@ class MerchantServiceImplTest {
 
   @Mock private MerchantConverter merchantConverter;
 
+  @Mock private AuthPrincipalConverter authPrincipalConverter;
+
   @Mock private AuthPrincipalService authPrincipalService;
 
   @Mock private TransactionalMerchantCacheService merchantCacheService;
@@ -52,6 +55,7 @@ class MerchantServiceImplTest {
             new MerchantServiceImpl(
                 merchantAuthMapper,
                 userMapper,
+                authPrincipalConverter,
                 merchantConverter,
                 authPrincipalService,
                 merchantCacheService));
@@ -73,11 +77,31 @@ class MerchantServiceImplTest {
               merchant.setId(1L);
               return 1;
             });
-    when(merchantConverter.toDTO(any()))
+    when(merchantConverter.toDTO(any(Merchant.class)))
         .thenAnswer(
             invocation -> {
               MerchantDTO dto = new MerchantDTO();
               Merchant merchant = invocation.getArgument(0);
+              dto.setId(merchant.getId());
+              dto.setUsername(merchant.getUsername());
+              return dto;
+            });
+    when(merchantConverter.toEntity(any(MerchantUpsertRequestDTO.class)))
+        .thenAnswer(
+            invocation -> {
+              MerchantUpsertRequestDTO request = invocation.getArgument(0);
+              Merchant merchant = new Merchant();
+              merchant.setUsername(request.getUsername());
+              merchant.setMerchantName(request.getMerchantName());
+              merchant.setPhone(request.getPhone());
+              merchant.setStatus(request.getStatus());
+              return merchant;
+            });
+    when(authPrincipalConverter.toDTO(any(Merchant.class)))
+        .thenAnswer(
+            invocation -> {
+              Merchant merchant = invocation.getArgument(0);
+              AuthPrincipalDTO dto = new AuthPrincipalDTO();
               dto.setId(merchant.getId());
               dto.setUsername(merchant.getUsername());
               return dto;

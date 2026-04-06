@@ -42,8 +42,8 @@ class TransactionalUserAddressCacheServiceTest {
             Map.of(
                 "id", "1",
                 "userId", "9",
-                "consignee", "Alice",
-                "phone", "13800138000",
+                "receiver_name", "Alice",
+                "receiver_phone", "13800138000",
                 "detailAddress", "Road 1",
                 "isDefault", "1"));
 
@@ -61,9 +61,13 @@ class TransactionalUserAddressCacheServiceTest {
   void getByUserId_returnsCachedAddressList() {
     when(hashOperations.entries("user:address:user:9")).thenReturn(Map.of("ids", "1,2"));
     when(hashOperations.entries("user:address:1"))
-        .thenReturn(Map.of("id", "1", "userId", "9", "consignee", "A", "phone", "13800138000"));
+        .thenReturn(
+            Map.of(
+                "id", "1", "userId", "9", "receiver_name", "A", "receiver_phone", "13800138000"));
     when(hashOperations.entries("user:address:2"))
-        .thenReturn(Map.of("id", "2", "userId", "9", "consignee", "B", "phone", "13900139000"));
+        .thenReturn(
+            Map.of(
+                "id", "2", "userId", "9", "receiver_name", "B", "receiver_phone", "13900139000"));
 
     List<TransactionalUserAddressCacheService.UserAddressCache> caches =
         transactionalUserAddressCacheService.getByUserId(9L);
@@ -77,14 +81,14 @@ class TransactionalUserAddressCacheServiceTest {
     UserAddress first = new UserAddress();
     first.setId(1L);
     first.setUserId(9L);
-    first.setConsignee("A");
-    first.setPhone("13800138000");
+    first.setReceiverName("A");
+    first.setReceiverPhone("13800138000");
 
     UserAddress second = new UserAddress();
     second.setId(2L);
     second.setUserId(9L);
-    second.setConsignee("B");
-    second.setPhone("13900139000");
+    second.setReceiverName("B");
+    second.setReceiverPhone("13900139000");
 
     transactionalUserAddressCacheService.putUserList(9L, List.of(first, second));
 

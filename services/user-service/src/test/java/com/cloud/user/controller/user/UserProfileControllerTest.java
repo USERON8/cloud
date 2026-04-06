@@ -7,6 +7,7 @@ import static org.mockito.Mockito.when;
 
 import com.cloud.common.domain.dto.user.UserProfileUpsertDTO;
 import com.cloud.common.result.Result;
+import com.cloud.user.converter.UserProfileCommandConverter;
 import com.cloud.user.service.MinioService;
 import com.cloud.user.service.UserService;
 import java.time.Instant;
@@ -27,11 +28,13 @@ class UserProfileControllerTest {
 
   @Mock private MinioService minioService;
 
+  @Mock private UserProfileCommandConverter userProfileCommandConverter;
+
   private UserProfileController controller;
 
   @BeforeEach
   void setUp() {
-    controller = new UserProfileController(userService, minioService);
+    controller = new UserProfileController(userService, minioService, userProfileCommandConverter);
   }
 
   @Test
