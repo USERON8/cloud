@@ -3,14 +3,14 @@
     {
       "path": "pages/market/index",
       "style": {
-        "navigationBarTitleText": "Marketplace",
+        "navigationBarTitleText": "Market",
         "navigationStyle": "custom"
       }
     },
     {
       "path": "pages/login/index",
       "style": {
-        "navigationBarTitleText": "Sign In",
+        "navigationBarTitleText": "Login",
         "navigationStyle": "custom"
       }
     },
@@ -24,21 +24,21 @@
     {
       "path": "pages/oauth/success",
       "style": {
-        "navigationBarTitleText": "OAuth Callback",
+        "navigationBarTitleText": "Authorization Success",
         "navigationStyle": "custom"
       }
     },
     {
       "path": "pages/oauth/error",
       "style": {
-        "navigationBarTitleText": "OAuth Error",
+        "navigationBarTitleText": "Authorization Error",
         "navigationStyle": "custom"
       }
     },
     {
       "path": "pages/webview/index",
       "style": {
-        "navigationBarTitleText": "Web",
+        "navigationBarTitleText": "Webview",
         "navigationStyle": "default"
       }
     }
@@ -50,21 +50,21 @@
         {
           "path": "home/index",
           "style": {
-            "navigationBarTitleText": "Dashboard",
+            "navigationBarTitleText": "Home",
             "navigationStyle": "custom"
           }
         },
         {
           "path": "catalog/index",
           "style": {
-            "navigationBarTitleText": "Products",
+            "navigationBarTitleText": "Catalog",
             "navigationStyle": "custom"
           }
         },
         {
           "path": "catalog-manage/index",
           "style": {
-            "navigationBarTitleText": "Product Admin",
+            "navigationBarTitleText": "Catalog Manage",
             "navigationStyle": "custom"
           }
         },
@@ -78,7 +78,7 @@
         {
           "path": "orders-manage/index",
           "style": {
-            "navigationBarTitleText": "Order Admin",
+            "navigationBarTitleText": "Orders Manage",
             "navigationStyle": "custom"
           }
         },
@@ -142,9 +142,9 @@
     }
   ],
   "globalStyle": {
-    "navigationBarTextStyle": "black",
-    "navigationBarTitleText": "My Shop",
-    "navigationBarBackgroundColor": "#eef3fb",
-    "backgroundColor": "#eef3fb"
+    "navigationBarTextStyle": "white",
+    "navigationBarTitleText": "My Shop Cloud",
+    "navigationBarBackgroundColor": "#06111b",
+    "backgroundColor": "#06111b"
   }
 }
