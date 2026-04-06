@@ -25,7 +25,7 @@ const tabs: { key: TabKey; label: string; desc: string }[] = [
     { key: "admins", label: "Admins", desc: "Permissions" },
 ];
 
-const activeTab = ref<TabKey>("overview");
+const activeTab = ref<TabKey>("review");
 
 const reviewLoading = ref(false);
 const reviewStatus = ref("0");
@@ -222,37 +222,37 @@ onMounted(() => {
 <template>
     <AppShell title="Admin Center">
         <view class="admin-page">
-            <view class="hero surface-card">
-                <view class="hero-copy">
-                    <text class="eyebrow">Administrator workspace</text>
+            <view class="display-panel dashboard-hero fade-in-up">
+                <view class="dashboard-hero-copy">
+                    <text class="hero-eyebrow">Administrator workspace</text>
                     <text class="hero-title">Focus merchant review first.</text>
-                    <text class="hero-desc">
+                    <text class="hero-subtitle">
                         Prioritize merchant audit, then manage stores, users,
                         and platform operators in one place.
                     </text>
+                    <view class="action-wrap">
+                        <button class="btn-primary" @click="activeTab = 'review'">
+                            Open review queue
+                        </button>
+                        <button class="btn-outline" @click="init">
+                            Refresh workspace
+                        </button>
+                    </view>
                 </view>
-                <view class="hero-actions">
-                    <button class="btn-primary" @click="activeTab = 'review'">
-                        Open review queue
-                    </button>
-                    <button class="btn-outline" @click="init">
-                        Refresh workspace
-                    </button>
+
+                <view class="dashboard-hero-stats">
+                    <view
+                        v-for="item in heroCards"
+                        :key="item.label"
+                        class="metric-card"
+                    >
+                        <text class="metric-label">{{ item.label }}</text>
+                        <text class="metric-value">{{ item.value }}</text>
+                    </view>
                 </view>
             </view>
 
-            <view class="metrics-grid">
-                <view
-                    v-for="item in heroCards"
-                    :key="item.label"
-                    class="metric-card surface-card"
-                >
-                    <text class="metric-label">{{ item.label }}</text>
-                    <text class="metric-value">{{ item.value }}</text>
-                </view>
-            </view>
-
-            <view class="tab-strip">
+            <view class="tab-strip fade-in-up">
                 <view
                     v-for="tab in tabs"
                     :key="tab.key"
@@ -265,10 +265,13 @@ onMounted(() => {
                 </view>
             </view>
 
-            <view v-if="activeTab === 'overview'" class="content-grid">
-                <view class="panel surface-card">
+            <view
+                v-if="activeTab === 'overview'"
+                class="dashboard-grid-main fade-in-up"
+            >
+                <view class="surface-card panel-block">
                     <text class="panel-title">Platform snapshot</text>
-                    <text class="panel-copy"
+                    <text class="section-subtitle"
                         >A concise summary of the current platform state.</text
                     >
                     <view class="kv-list">
@@ -299,20 +302,12 @@ onMounted(() => {
                     </view>
                 </view>
 
-                <view class="panel surface-card">
-                    <text class="panel-title">Statistics response</text>
-                    <text class="panel-copy"
-                        >Raw overview data for administrators.</text
-                    >
-                    <text class="code-block">{{
-                        statisticsOverview
-                            ? JSON.stringify(statisticsOverview, null, 2)
-                            : "--"
-                    }}</text>
-                </view>
-
-                <view class="panel surface-card">
+                <view class="surface-card panel-block sticky-side">
                     <text class="panel-title">Immediate actions</text>
+                    <text class="section-subtitle">
+                        Move to the next operational queue without scanning the
+                        whole screen.
+                    </text>
                     <view class="action-stack">
                         <button
                             class="btn-primary"
@@ -333,14 +328,26 @@ onMounted(() => {
                             Inspect user accounts
                         </button>
                     </view>
+
+                    <view class="surface-muted panel-block code-panel">
+                        <text class="metric-label">Statistics response</text>
+                        <text class="code-block">{{
+                            statisticsOverview
+                                ? JSON.stringify(statisticsOverview, null, 2)
+                                : "--"
+                        }}</text>
+                    </view>
                 </view>
             </view>
 
-            <view v-else-if="activeTab === 'review'" class="panel surface-card">
+            <view
+                v-else-if="activeTab === 'review'"
+                class="surface-card panel-block fade-in-up"
+            >
                 <view class="panel-head">
                     <view>
                         <text class="panel-title">Merchant review queue</text>
-                        <text class="panel-copy">Review merchant profiles, business licenses, ID documents and contact information.</text>
+                        <text class="section-subtitle">Review merchant profiles, business licenses, ID documents and contact information.</text>
                     </view>
                     <button
                         class="btn-outline"
@@ -360,14 +367,14 @@ onMounted(() => {
                             loadReviewRows();
                         "
                     >
-                        <view class="select-like"
+                        <view class="select-like field-control field-control-pill"
                             >Status:
                             {{ authStatusText(Number(reviewStatus)) }}</view
                         >
                     </picker>
                     <input
                         v-model="reviewRemark"
-                        class="input"
+                        class="field-control review-input"
                         placeholder="Review remark or rejection reason"
                     />
                 </view>
@@ -380,7 +387,7 @@ onMounted(() => {
                     <view
                         v-for="row in reviewRows"
                         :key="row.id || row.merchantId"
-                        class="review-card"
+                        class="surface-muted panel-block review-card"
                     >
                         <view class="review-main">
                             <text class="review-title">{{
@@ -440,12 +447,12 @@ onMounted(() => {
 
             <view
                 v-else-if="activeTab === 'merchants'"
-                class="panel surface-card"
+                class="surface-card panel-block fade-in-up"
             >
                 <view class="panel-head">
                     <view>
                         <text class="panel-title">Merchant management</text>
-                        <text class="panel-copy"
+                        <text class="section-subtitle"
                             >Review merchant status, approval, and store
                             availability.</text
                         >
@@ -467,7 +474,7 @@ onMounted(() => {
                     <view
                         v-for="row in merchantRows"
                         :key="row.id"
-                        class="row-card"
+                        class="surface-muted panel-block row-card"
                     >
                         <view class="row-main">
                             <text class="row-title">{{
@@ -509,11 +516,14 @@ onMounted(() => {
                 </view>
             </view>
 
-            <view v-else-if="activeTab === 'users'" class="panel surface-card">
+            <view
+                v-else-if="activeTab === 'users'"
+                class="surface-card panel-block fade-in-up"
+            >
                 <view class="panel-head">
                     <view>
                         <text class="panel-title">User management</text>
-                        <text class="panel-copy"
+                        <text class="section-subtitle"
                             >Quick user directory for support and
                             governance.</text
                         >
@@ -535,7 +545,7 @@ onMounted(() => {
                     <view
                         v-for="row in userRows"
                         :key="row.id"
-                        class="row-card"
+                        class="surface-muted panel-block row-card"
                     >
                         <view class="row-main">
                             <text class="row-title">{{
@@ -559,11 +569,14 @@ onMounted(() => {
                 </view>
             </view>
 
-            <view v-else-if="activeTab === 'admins'" class="panel surface-card">
+            <view
+                v-else-if="activeTab === 'admins'"
+                class="surface-card panel-block fade-in-up"
+            >
                 <view class="panel-head">
                     <view>
                         <text class="panel-title">Administrator accounts</text>
-                        <text class="panel-copy"
+                        <text class="section-subtitle"
                             >Inspect platform operator accounts.</text
                         >
                     </view>
@@ -584,7 +597,7 @@ onMounted(() => {
                     <view
                         v-for="row in adminRows"
                         :key="row.id"
-                        class="row-card"
+                        class="surface-muted panel-block row-card"
                     >
                         <view class="row-main">
                             <text class="row-title">{{
@@ -605,9 +618,9 @@ onMounted(() => {
                 </view>
             </view>
 
-            <view v-else class="panel surface-card">
+            <view v-else class="surface-card panel-block fade-in-up">
                 <text class="panel-title">Module in progress</text>
-                <text class="panel-copy"
+                <text class="section-subtitle"
                     >This section is reserved for the next admin
                     iteration.</text
                 >
@@ -623,48 +636,6 @@ onMounted(() => {
     gap: 24px;
 }
 
-.hero,
-.panel,
-.metric-card,
-.review-card,
-.row-card {
-    background: rgba(255, 255, 255, 0.9);
-    border: 1px solid rgba(15, 23, 42, 0.06);
-    box-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
-    border-radius: 28px;
-}
-
-.hero {
-    padding: 28px;
-    display: flex;
-    justify-content: space-between;
-    gap: 20px;
-    flex-wrap: wrap;
-}
-
-.hero-copy {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    max-width: 720px;
-}
-
-.eyebrow {
-    font-size: 12px;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-    color: var(--text-muted);
-}
-
-.hero-title {
-    font-size: 32px;
-    line-height: 1.1;
-    font-weight: 700;
-    color: var(--text-primary);
-}
-
-.hero-desc,
-.panel-copy,
 .row-meta,
 .review-meta,
 .metric-label,
@@ -674,41 +645,26 @@ onMounted(() => {
     color: var(--text-muted);
 }
 
-.hero-desc,
-.panel-copy,
 .row-meta,
 .review-meta,
 .kv-row {
     font-size: 14px;
 }
 
-.hero-actions,
 .row-actions,
 .review-actions,
 .action-stack,
 .toolbar {
     display: flex;
+    align-items: flex-start;
     gap: 12px;
     flex-wrap: wrap;
-}
-
-.metrics-grid {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 16px;
-}
-
-.metric-card {
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
 }
 
 .metric-value {
     font-size: 30px;
     font-weight: 700;
-    color: var(--text-primary);
+    color: var(--text-main);
 }
 
 .tab-strip {
@@ -722,20 +678,24 @@ onMounted(() => {
     min-width: 160px;
     padding: 16px 18px;
     border-radius: 22px;
-    background: rgba(255, 255, 255, 0.74);
-    border: 1px solid rgba(15, 23, 42, 0.05);
+    background: rgba(10, 22, 35, 0.84);
+    border: 1px solid var(--panel-border);
     display: flex;
     flex-direction: column;
     gap: 4px;
+    transition:
+        transform 0.22s ease,
+        border-color 0.22s ease,
+        background-color 0.22s ease;
 }
 
 .tab-pill.active {
     background: linear-gradient(
         135deg,
-        rgba(36, 107, 255, 0.14),
-        rgba(76, 167, 255, 0.2)
+        rgba(95, 209, 194, 0.16),
+        rgba(240, 182, 90, 0.12)
     );
-    border-color: rgba(36, 107, 255, 0.16);
+    border-color: var(--panel-border-strong);
 }
 
 .tab-label,
@@ -743,15 +703,8 @@ onMounted(() => {
 .row-title,
 .review-title,
 .kv-value {
-    color: var(--text-primary);
+    color: var(--text-main);
     font-weight: 600;
-}
-
-.panel {
-    padding: 24px;
-    display: flex;
-    flex-direction: column;
-    gap: 18px;
 }
 
 .panel-head {
@@ -760,12 +713,6 @@ onMounted(() => {
     gap: 16px;
     align-items: flex-start;
     flex-wrap: wrap;
-}
-
-.content-grid {
-    display: grid;
-    grid-template-columns: 1.2fr 1fr 0.9fr;
-    gap: 16px;
 }
 
 .kv-list,
@@ -783,7 +730,6 @@ onMounted(() => {
 
 .review-card,
 .row-card {
-    padding: 18px;
     display: flex;
     justify-content: space-between;
     gap: 16px;
@@ -799,52 +745,56 @@ onMounted(() => {
     flex: 1;
 }
 
+.code-panel {
+    gap: 12px;
+}
+
 .code-block {
     white-space: pre-wrap;
     font-size: 12px;
-    background: rgba(241, 245, 249, 0.85);
+    line-height: 1.7;
+    background: rgba(255, 255, 255, 0.03);
     border-radius: 18px;
     padding: 14px;
+    border: 1px solid var(--panel-border);
 }
 
-.input,
 .select-like {
-    min-height: 44px;
-    padding: 0 14px;
-    border-radius: 16px;
-    background: rgba(248, 250, 252, 0.95);
-    border: 1px solid rgba(15, 23, 42, 0.06);
-    font-size: 14px;
     display: flex;
     align-items: center;
 }
 
+.review-input {
+    flex: 1;
+    min-width: 260px;
+}
+
 .empty-state {
-    padding: 28px 0;
-    text-align: center;
-    color: var(--text-muted);
+    padding: 32px 18px;
 }
 
 @media (max-width: 1100px) {
-    .metrics-grid,
-    .content-grid {
-        grid-template-columns: 1fr 1fr;
+    .review-actions,
+    .row-actions {
+        width: 100%;
     }
 }
 
 @media (max-width: 760px) {
-    .metrics-grid,
-    .content-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .hero-title {
-        font-size: 26px;
-    }
-
     .review-card,
     .row-card {
         flex-direction: column;
+    }
+
+    .review-input {
+        min-width: 100%;
+    }
+}
+
+@media (hover: hover) {
+    .tab-pill:hover {
+        transform: translateY(-1px);
+        border-color: var(--panel-border-strong);
     }
 }
 </style>

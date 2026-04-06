@@ -61,19 +61,20 @@ const copy = computed(() =>
                       action: "Go to orders",
                       route: Routes.appOrders,
                   },
-                  {
-                      eyebrow: "Checkout prep",
-                      title: "Move cart and address work into one lane.",
-                      body:
-                          "Review items, verify shipping data, and push through checkout with fewer context switches.",
-                      action: "Go to cart",
-                      route: Routes.appCart,
-                  },
               ],
               panelTitle: "Quick launch",
               panelSubtitle:
                   "Use the entry points below when you want to move directly into a focused task.",
+              flowTitle: "Core flow",
+              quickSubtitle: "Move straight into a focused task.",
+              focusTitle: "Workspace tone",
               quickLinks: [
+                  {
+                      title: "Cart",
+                      body: "Review current items and move into checkout without leaving the workspace flow.",
+                      action: "Open cart",
+                      route: Routes.appCart,
+                  },
                   {
                       title: "Payments",
                       body: "Track payment status and reopen checkout when needed.",
@@ -143,19 +144,20 @@ const copy = computed(() =>
                       action: "进入订单页",
                       route: Routes.appOrders,
                   },
-                  {
-                      eyebrow: "结算准备",
-                      title: "购物车和地址维护收敛到同一条工作线。",
-                      body:
-                          "更快核对商品、收货信息与结算前置条件，减少上下文切换。",
-                      action: "进入购物车",
-                      route: Routes.appCart,
-                  },
               ],
               panelTitle: "快速入口",
               panelSubtitle:
                   "需要直接进入某项动作时，可以从下面这些入口开始。",
+              flowTitle: "核心流程",
+              quickSubtitle: "直接进入单一任务，不被多余信息打断。",
+              focusTitle: "当前工作节奏",
               quickLinks: [
+                  {
+                      title: "购物车",
+                      body: "查看当前待结算商品，让下单动作保持在连续链路里。",
+                      action: "打开购物车",
+                      route: Routes.appCart,
+                  },
                   {
                       title: "支付",
                       body: "查看支付状态，并在需要时重新拉起收银台。",
@@ -182,13 +184,13 @@ const copy = computed(() =>
 <template>
     <AppShell :title="copy.pageTitle">
         <view class="dashboard-layout">
-            <view class="hero-grid display-panel fade-in-up">
-                <view class="hero-copy">
+            <view class="display-panel dashboard-hero fade-in-up">
+                <view class="dashboard-hero-copy">
                     <text class="hero-eyebrow">{{ copy.eyebrow }}</text>
                     <text class="hero-title">{{ copy.title }}</text>
                     <text class="hero-subtitle">{{ copy.subtitle }}</text>
 
-                    <view class="hero-actions">
+                    <view class="action-wrap hero-actions">
                         <button
                             class="btn-primary"
                             @click="
@@ -212,11 +214,11 @@ const copy = computed(() =>
                     </view>
                 </view>
 
-                <view class="hero-stack">
+                <view class="dashboard-hero-stats">
                     <view
                         v-for="card in copy.heroCards"
                         :key="card.label"
-                        class="hero-card info-card"
+                        class="info-card hero-card"
                     >
                         <text class="info-label">{{ card.label }}</text>
                         <text class="info-value">{{ card.value }}</text>
@@ -225,52 +227,87 @@ const copy = computed(() =>
                 </view>
             </view>
 
-            <view class="feature-grid fade-in-up">
-                <view
-                    v-for="section in copy.sections"
-                    :key="section.title"
-                    class="feature-card surface-card"
-                >
-                    <text class="feature-kicker">{{ section.eyebrow }}</text>
-                    <text class="feature-title">{{ section.title }}</text>
-                    <text class="feature-copy">{{ section.body }}</text>
-                    <button
-                        class="btn-outline feature-button"
-                        @click="
-                            navigateTo(section.route, undefined, {
-                                requiresAuth: true,
-                            })
-                        "
-                    >
-                        {{ section.action }}
-                    </button>
+            <view class="dashboard-grid-main fade-in-up">
+                <view class="surface-card panel-block workflow-panel">
+                    <view class="section-head">
+                        <text class="section-title">{{ copy.flowTitle }}</text>
+                        <text class="section-subtitle">
+                            {{ copy.panelSubtitle }}
+                        </text>
+                    </view>
+
+                    <view class="workflow-grid">
+                        <view
+                            v-for="section in copy.sections"
+                            :key="section.title"
+                            class="surface-muted panel-block panel-hover workflow-card"
+                        >
+                            <text class="feature-kicker">{{
+                                section.eyebrow
+                            }}</text>
+                            <text class="feature-title">{{ section.title }}</text>
+                            <text class="feature-copy">{{ section.body }}</text>
+                            <button
+                                class="btn-outline feature-button"
+                                @click="
+                                    navigateTo(section.route, undefined, {
+                                        requiresAuth: true,
+                                    })
+                                "
+                            >
+                                {{ section.action }}
+                            </button>
+                        </view>
+                    </view>
+                </view>
+
+                <view class="surface-card panel-block quick-panel">
+                    <view class="section-head">
+                        <text class="section-title">{{ copy.panelTitle }}</text>
+                        <text class="section-subtitle">
+                            {{ copy.quickSubtitle }}
+                        </text>
+                    </view>
+
+                    <view class="quick-grid">
+                        <view
+                            v-for="link in copy.quickLinks"
+                            :key="link.title"
+                            class="surface-muted panel-block panel-hover quick-card"
+                        >
+                            <text class="quick-title">{{ link.title }}</text>
+                            <text class="quick-copy">{{ link.body }}</text>
+                            <button
+                                class="btn-secondary quick-button"
+                                @click="
+                                    navigateTo(link.route, undefined, {
+                                        requiresAuth: true,
+                                    })
+                                "
+                            >
+                                {{ link.action }}
+                            </button>
+                        </view>
+                    </view>
                 </view>
             </view>
 
-            <view class="section-block editorial-section fade-in-up">
+            <view class="surface-card panel-block focus-strip fade-in-up">
                 <view class="section-head">
-                    <text class="section-title">{{ copy.panelTitle }}</text>
-                    <text class="section-subtitle">{{ copy.panelSubtitle }}</text>
+                    <text class="section-title">{{ copy.focusTitle }}</text>
+                    <text class="section-subtitle">
+                        {{ copy.panelSubtitle }}
+                    </text>
                 </view>
 
-                <view class="quick-grid">
+                <view class="focus-grid">
                     <view
-                        v-for="link in copy.quickLinks"
-                        :key="link.title"
-                        class="quick-card surface-card"
+                        v-for="card in copy.heroCards"
+                        :key="card.label"
+                        class="surface-muted focus-card"
                     >
-                        <text class="quick-title">{{ link.title }}</text>
-                        <text class="quick-copy">{{ link.body }}</text>
-                        <button
-                            class="btn-secondary quick-button"
-                            @click="
-                                navigateTo(link.route, undefined, {
-                                    requiresAuth: true,
-                                })
-                            "
-                        >
-                            {{ link.action }}
-                        </button>
+                        <text class="focus-label">{{ card.label }}</text>
+                        <text class="focus-detail">{{ card.detail }}</text>
                     </view>
                 </view>
             </view>
@@ -285,37 +322,12 @@ const copy = computed(() =>
     gap: 24px;
 }
 
-.hero-grid {
-    padding: 34px;
-    display: grid;
-    grid-template-columns: minmax(0, 1.3fr) minmax(320px, 360px);
-    gap: 24px;
-    align-items: stretch;
-}
-
-.hero-copy {
-    display: flex;
-    flex-direction: column;
-    gap: 18px;
-    justify-content: center;
-    min-height: 420px;
-}
-
 .hero-actions {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
     padding-top: 8px;
 }
 
-.hero-stack {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 14px;
-}
-
 .hero-card {
-    min-height: 138px;
+    min-height: 120px;
 }
 
 .hero-card-copy {
@@ -325,23 +337,15 @@ const copy = computed(() =>
     color: var(--text-muted);
 }
 
-.feature-grid {
+.workflow-grid {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 18px;
 }
 
-.feature-card {
-    padding: 26px;
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-    min-height: 280px;
+.workflow-card {
+    min-height: 260px;
     justify-content: flex-end;
-    transition:
-        transform 0.22s ease,
-        box-shadow 0.22s ease,
-        border-color 0.22s ease;
 }
 
 .feature-kicker {
@@ -369,10 +373,6 @@ const copy = computed(() =>
     align-self: flex-start;
 }
 
-.editorial-section {
-    gap: 16px;
-}
-
 .section-head {
     display: flex;
     flex-direction: column;
@@ -380,22 +380,13 @@ const copy = computed(() =>
 }
 
 .quick-grid {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
 }
 
 .quick-card {
-    padding: 24px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    min-height: 220px;
-    justify-content: flex-end;
-    transition:
-        transform 0.22s ease,
-        box-shadow 0.22s ease,
-        border-color 0.22s ease;
+    gap: 10px;
 }
 
 .quick-title {
@@ -414,34 +405,46 @@ const copy = computed(() =>
     align-self: flex-start;
 }
 
-@media (hover: hover) {
-    .feature-card:hover,
-    .quick-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 18px 36px rgba(1, 7, 14, 0.34);
-        border-color: var(--panel-border-strong);
-    }
+.focus-strip {
+    gap: 16px;
+}
+
+.focus-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+}
+
+.focus-card {
+    min-height: 120px;
+    padding: 18px;
+    border-radius: var(--radius-md);
+}
+
+.focus-label {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-main);
+    letter-spacing: -0.02em;
+}
+
+.focus-detail {
+    margin-top: 10px;
+    font-size: 13px;
+    line-height: 1.75;
+    color: var(--text-muted);
 }
 
 @media (max-width: 980px) {
-    .hero-grid,
-    .feature-grid,
-    .quick-grid {
+    .workflow-grid,
+    .focus-grid {
         grid-template-columns: 1fr;
     }
 }
 
 @media (max-width: 768px) {
-    .hero-grid {
-        padding: 24px;
-    }
-
-    .hero-copy {
-        min-height: auto;
-    }
-
-    .feature-card,
-    .quick-card {
+    .workflow-card,
+    .focus-card {
         min-height: auto;
     }
 }

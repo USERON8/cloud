@@ -325,9 +325,9 @@ onMounted(() => {
 <template>
     <AppShell title="Merchant Center">
         <view class="merchant-page">
-            <view class="hero surface-card">
-                <view class="hero-copy">
-                    <text class="eyebrow">Merchant workspace</text>
+            <view class="display-panel dashboard-hero fade-in-up">
+                <view class="dashboard-hero-copy">
+                    <text class="hero-eyebrow">Merchant workspace</text>
                     <text class="hero-title">
                         {{
                             merchantInfo?.merchantName ||
@@ -335,7 +335,7 @@ onMounted(() => {
                             "Merchant"
                         }}
                     </text>
-                    <text class="hero-desc">
+                    <text class="hero-subtitle">
                         Operate your storefront from one place: update profile
                         data, submit business verification, review core metrics,
                         and jump directly into catalog or order handling.
@@ -367,48 +367,48 @@ onMounted(() => {
                             }}
                         </view>
                     </view>
+
+                    <view class="action-wrap">
+                        <button
+                            class="btn-primary"
+                            @click="navigateTo(Routes.appCatalogManage)"
+                        >
+                            Manage products
+                        </button>
+                        <button
+                            class="btn-outline"
+                            @click="navigateTo(Routes.appOrdersManage)"
+                        >
+                            Manage orders
+                        </button>
+                        <button
+                            class="btn-outline"
+                            :loading="loading"
+                            @click="loadMerchant"
+                        >
+                            Refresh
+                        </button>
+                    </view>
                 </view>
 
-                <view class="hero-actions">
-                    <button
-                        class="btn-primary"
-                        @click="navigateTo(Routes.appCatalogManage)"
+                <view class="dashboard-hero-stats">
+                    <view
+                        v-for="item in readinessCards"
+                        :key="item.label"
+                        class="metric-card"
                     >
-                        Manage products
-                    </button>
-                    <button
-                        class="btn-outline"
-                        @click="navigateTo(Routes.appOrdersManage)"
-                    >
-                        Manage orders
-                    </button>
-                    <button
-                        class="btn-outline"
-                        :loading="loading"
-                        @click="loadMerchant"
-                    >
-                        Refresh
-                    </button>
+                        <text class="metric-label">{{ item.label }}</text>
+                        <text class="metric-value">{{ item.value }}</text>
+                    </view>
                 </view>
             </view>
 
-            <view class="metrics-grid">
-                <view
-                    v-for="item in readinessCards"
-                    :key="item.label"
-                    class="metric-card surface-card"
-                >
-                    <text class="metric-label">{{ item.label }}</text>
-                    <text class="metric-value">{{ item.value }}</text>
-                </view>
-            </view>
-
-            <view class="content-grid">
-                <view class="panel surface-card">
+            <view class="dashboard-grid-main fade-in-up">
+                <view class="surface-card panel-block">
                     <view class="panel-head">
                         <view>
                             <text class="panel-title">Quick actions</text>
-                            <text class="panel-copy"
+                            <text class="section-subtitle"
                                 >Jump into the day-to-day merchant
                                 operations.</text
                             >
@@ -419,7 +419,7 @@ onMounted(() => {
                         <view
                             v-for="item in quickActions"
                             :key="item.title"
-                            class="quick-action-card"
+                            class="surface-muted panel-block quick-action-card"
                         >
                             <view class="quick-action-main">
                                 <text class="quick-action-title">{{
@@ -436,11 +436,11 @@ onMounted(() => {
                     </view>
                 </view>
 
-                <view class="panel surface-card">
+                <view class="surface-card panel-block sticky-side">
                     <view class="panel-head">
                         <view>
                             <text class="panel-title">Store snapshot</text>
-                            <text class="panel-copy"
+                            <text class="section-subtitle"
                                 >Core merchant identity and readiness.</text
                             >
                         </view>
@@ -480,11 +480,11 @@ onMounted(() => {
                 </view>
             </view>
 
-            <view class="panel surface-card">
+            <view class="surface-card panel-block fade-in-up">
                 <view class="panel-head">
                     <view>
                         <text class="panel-title">Merchant profile</text>
-                        <text class="panel-copy"
+                        <text class="section-subtitle"
                             >Keep storefront identity and contact information up
                             to date.</text
                         >
@@ -496,7 +496,7 @@ onMounted(() => {
                         <text class="field-label">Merchant name</text>
                         <input
                             v-model="profileForm.merchantName"
-                            class="input"
+                            class="field-control"
                             placeholder="Enter the merchant name"
                         />
                     </view>
@@ -504,7 +504,7 @@ onMounted(() => {
                         <text class="field-label">Email</text>
                         <input
                             v-model="profileForm.email"
-                            class="input"
+                            class="field-control"
                             placeholder="Enter the email address"
                         />
                     </view>
@@ -512,13 +512,13 @@ onMounted(() => {
                         <text class="field-label">Phone</text>
                         <input
                             v-model="profileForm.phone"
-                            class="input"
+                            class="field-control"
                             placeholder="Enter the phone number"
                         />
                     </view>
                 </view>
 
-                <view class="actions">
+                <view class="action-wrap">
                     <button
                         class="btn-primary"
                         :loading="saving"
@@ -529,11 +529,11 @@ onMounted(() => {
                 </view>
             </view>
 
-            <view class="panel surface-card">
+            <view class="surface-card panel-block fade-in-up">
                 <view class="panel-head">
                     <view>
                         <text class="panel-title">Merchant authentication</text>
-                        <text class="panel-copy">
+                        <text class="section-subtitle">
                             Submit or update your business verification
                             materials for administrator review.
                         </text>
@@ -551,7 +551,7 @@ onMounted(() => {
                         <text class="field-label">Business license number</text>
                         <input
                             v-model="authForm.businessLicenseNumber"
-                            class="input"
+                            class="field-control"
                             placeholder="Enter the business license number"
                         />
                     </view>
@@ -561,7 +561,7 @@ onMounted(() => {
                         <view class="input-row">
                             <input
                                 v-model="authForm.businessLicenseUrl"
-                                class="input flex-input"
+                                class="field-control flex-input"
                                 placeholder="Enter the business license image URL"
                             />
                             <button
@@ -587,7 +587,7 @@ onMounted(() => {
                         <view class="input-row">
                             <input
                                 v-model="authForm.idCardFrontUrl"
-                                class="input flex-input"
+                                class="field-control flex-input"
                                 placeholder="Enter the front ID card image URL"
                             />
                             <button
@@ -611,7 +611,7 @@ onMounted(() => {
                         <view class="input-row">
                             <input
                                 v-model="authForm.idCardBackUrl"
-                                class="input flex-input"
+                                class="field-control flex-input"
                                 placeholder="Enter the back ID card image URL"
                             />
                             <button
@@ -634,7 +634,7 @@ onMounted(() => {
                         <text class="field-label">Contact phone</text>
                         <input
                             v-model="authForm.contactPhone"
-                            class="input"
+                            class="field-control"
                             placeholder="Enter the contact phone number"
                         />
                     </view>
@@ -643,13 +643,13 @@ onMounted(() => {
                         <text class="field-label">Contact address</text>
                         <textarea
                             v-model="authForm.contactAddress"
-                            class="textarea"
+                            class="field-control textarea"
                             placeholder="Enter the contact address"
                         />
                     </view>
                 </view>
 
-                <view class="actions">
+                <view class="action-wrap">
                     <button
                         class="btn-primary"
                         :loading="authSaving"
@@ -667,11 +667,11 @@ onMounted(() => {
                 </view>
             </view>
 
-            <view class="panel surface-card">
+            <view class="surface-card panel-block fade-in-up">
                 <view class="panel-head">
                     <view>
                         <text class="panel-title">Merchant statistics</text>
-                        <text class="panel-copy"
+                        <text class="section-subtitle"
                             >Operational figures returned by the merchant
                             service.</text
                         >
@@ -686,7 +686,7 @@ onMounted(() => {
                     <view
                         v-for="entry in statsEntries"
                         :key="entry.rawKey"
-                        class="stats-card"
+                        class="surface-muted stats-card"
                     >
                         <text class="stats-key">{{ entry.key }}</text>
                         <text class="stats-value">{{
@@ -706,48 +706,6 @@ onMounted(() => {
     gap: 24px;
 }
 
-.hero,
-.panel,
-.metric-card,
-.quick-action-card,
-.stats-card {
-    background: rgba(255, 255, 255, 0.92);
-    border: 1px solid rgba(15, 23, 42, 0.06);
-    border-radius: 28px;
-    box-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
-}
-
-.hero {
-    padding: 28px;
-    display: flex;
-    justify-content: space-between;
-    gap: 20px;
-    flex-wrap: wrap;
-}
-
-.hero-copy {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    max-width: 760px;
-}
-
-.eyebrow {
-    font-size: 12px;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    color: var(--text-muted);
-}
-
-.hero-title {
-    font-size: 32px;
-    line-height: 1.1;
-    font-weight: 700;
-    color: var(--text-primary);
-}
-
-.hero-desc,
-.panel-copy,
 .metric-label,
 .kv-key,
 .field-label,
@@ -756,8 +714,6 @@ onMounted(() => {
     color: var(--text-muted);
 }
 
-.hero-desc,
-.panel-copy,
 .quick-action-desc,
 .kv-row,
 .field-label {
@@ -765,8 +721,6 @@ onMounted(() => {
 }
 
 .hero-status-row,
-.hero-actions,
-.actions,
 .input-row {
     display: flex;
     gap: 12px;
@@ -786,50 +740,24 @@ onMounted(() => {
 
 .status-badge.success {
     background: rgba(16, 185, 129, 0.12);
-    color: #047857;
+    color: #7ee2b8;
 }
 
 .status-badge.warning {
     background: rgba(245, 158, 11, 0.12);
-    color: #b45309;
+    color: #ffcf78;
 }
 
 .status-badge.danger {
     background: rgba(239, 68, 68, 0.12);
-    color: #b91c1c;
-}
-
-.metrics-grid {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 16px;
-}
-
-.metric-card {
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
+    color: #ff9e9e;
 }
 
 .metric-value,
 .stats-value {
     font-size: 28px;
     font-weight: 700;
-    color: var(--text-primary);
-}
-
-.content-grid {
-    display: grid;
-    grid-template-columns: 1.15fr 0.85fr;
-    gap: 16px;
-}
-
-.panel {
-    padding: 24px;
-    display: flex;
-    flex-direction: column;
-    gap: 18px;
+    color: var(--text-main);
 }
 
 .panel-head {
@@ -843,7 +771,7 @@ onMounted(() => {
 .panel-title,
 .quick-action-title,
 .kv-value {
-    color: var(--text-primary);
+    color: var(--text-main);
     font-weight: 600;
 }
 
@@ -855,7 +783,6 @@ onMounted(() => {
 }
 
 .quick-action-card {
-    padding: 18px;
     display: flex;
     justify-content: space-between;
     gap: 16px;
@@ -892,14 +819,8 @@ onMounted(() => {
     grid-column: span 2;
 }
 
-.input,
 .textarea {
     width: 100%;
-    background: rgba(248, 250, 252, 0.95);
-    border: 1px solid rgba(15, 23, 42, 0.06);
-    border-radius: 16px;
-    padding: 12px 14px;
-    font-size: 14px;
 }
 
 .flex-input {
@@ -925,23 +846,17 @@ onMounted(() => {
 }
 
 .empty-state {
-    padding: 24px 0;
-    text-align: center;
-    color: var(--text-muted);
+    padding: 28px 18px;
 }
 
 @media (max-width: 1100px) {
-    .metrics-grid,
-    .stats-grid,
-    .content-grid {
+    .stats-grid {
         grid-template-columns: 1fr 1fr;
     }
 }
 
 @media (max-width: 760px) {
-    .metrics-grid,
     .stats-grid,
-    .content-grid,
     .form-grid {
         grid-template-columns: 1fr;
     }
@@ -950,8 +865,8 @@ onMounted(() => {
         grid-column: span 1;
     }
 
-    .hero-title {
-        font-size: 26px;
+    .input-row .btn-outline {
+        width: 100%;
     }
 }
 </style>
