@@ -594,55 +594,6 @@ onMounted(() => {
     color: var(--text-main);
 }
 
-.meta-inline {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-}
-
-.meta-chip {
-    display: inline-flex;
-    align-items: center;
-    min-height: 30px;
-    padding: 0 12px;
-    border-radius: 999px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid var(--panel-border);
-    font-size: 12px;
-    color: var(--text-muted);
-}
-
-.summary-grid,
-.detail-grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 12px;
-}
-
-.summary-item,
-.detail-item {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    padding: 12px 14px;
-    border-radius: 16px;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid var(--panel-border);
-}
-
-.summary-label {
-    font-size: 12px;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    color: var(--text-soft);
-}
-
-.summary-value {
-    font-size: 14px;
-    line-height: 1.7;
-    color: var(--text-main);
-}
-
 .summary-subvalue {
     font-size: 12px;
     color: var(--text-muted);
@@ -662,9 +613,7 @@ onMounted(() => {
 }
 
 @media (max-width: 768px) {
-    .form-grid,
-    .summary-grid,
-    .detail-grid {
+    .form-grid {
         grid-template-columns: 1fr;
     }
 

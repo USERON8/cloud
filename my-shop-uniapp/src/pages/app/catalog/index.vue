@@ -234,85 +234,113 @@ onShow(() => {
 <template>
     <AppShell :title="copy.pageTitle">
         <view class="catalog-layout">
-            <view class="hero-card display-panel fade-in-up">
-                <view class="hero-copy">
+            <view class="display-panel dashboard-hero fade-in-up">
+                <view class="dashboard-hero-copy">
                     <text class="hero-eyebrow">{{ copy.eyebrow }}</text>
                     <text class="hero-title">{{ copy.heroTitle }}</text>
                     <text class="hero-subtitle">{{ copy.heroSubtitle }}</text>
-                </view>
 
-                <view class="hero-actions">
-                    <button class="btn-primary" @click="onSearch">
-                        {{ copy.primaryAction }}
-                    </button>
-                    <button
-                        v-if="canManage"
-                        class="btn-outline"
-                        @click="
-                            navigateTo(Routes.appCatalogManage, undefined, {
-                                requiresAuth: true,
-                            })
-                        "
-                    >
-                        {{ copy.manageAction }}
-                    </button>
-                </view>
-            </view>
-
-            <view class="surface-card search-card fade-in-up">
-                <view class="section-block compact-block">
-                    <text class="section-title">{{ copy.searchTitle }}</text>
-                    <text class="section-subtitle">{{ copy.searchSubtitle }}</text>
-                </view>
-
-                <view class="search-row">
-                    <input
-                        v-model="keyword"
-                        class="search-input"
-                        :placeholder="copy.searchPlaceholder"
-                        @confirm="onSearch"
-                    />
-                    <button class="btn-primary" @click="onSearch">
-                        {{ copy.searchAction }}
-                    </button>
-                </view>
-
-                <view class="keyword-grid">
-                    <view class="keyword-block" v-if="hotKeywords.length">
-                        <text class="keyword-title">{{ copy.hotKeywords }}</text>
-                        <view class="keyword-list">
-                            <text
-                                v-for="item in hotKeywords"
-                                :key="`hot-${item}`"
-                                class="keyword-chip"
-                                @click="onKeywordSelect(item)"
-                            >
-                                {{ item }}
-                            </text>
-                        </view>
+                    <view class="action-wrap">
+                        <button class="btn-primary" @click="onSearch">
+                            {{ copy.primaryAction }}
+                        </button>
+                        <button
+                            v-if="canManage"
+                            class="btn-outline"
+                            @click="
+                                navigateTo(Routes.appCatalogManage, undefined, {
+                                    requiresAuth: true,
+                                })
+                            "
+                        >
+                            {{ copy.manageAction }}
+                        </button>
                     </view>
+                </view>
 
-                    <view class="keyword-block" v-if="recommendations.length">
-                        <text class="keyword-title">
-                            {{ copy.recommendedKeywords }}
+                <view class="dashboard-hero-stats">
+                    <view class="metric-card">
+                        <text class="metric-label">{{
+                            copy.recommendedKeywords
+                        }}</text>
+                        <text class="metric-value">
+                            {{ recommendations.length }}
                         </text>
-                        <view class="keyword-list">
-                            <text
-                                v-for="item in recommendations"
-                                :key="`rec-${item}`"
-                                class="keyword-chip"
-                                @click="onKeywordSelect(item)"
-                            >
-                                {{ item }}
-                            </text>
-                        </view>
+                    </view>
+                    <view class="metric-card">
+                        <text class="metric-label">{{ copy.hotKeywords }}</text>
+                        <text class="metric-value">{{ hotKeywords.length }}</text>
                     </view>
                 </view>
             </view>
 
-            <view class="section-head fade-in-up">
-                <text class="section-title">{{ copy.resultTitle }}</text>
-                <text class="section-subtitle">{{ copy.resultSubtitle }}</text>
+            <view class="dashboard-grid-main fade-in-up">
+                <view class="surface-card panel-block search-card">
+                    <view class="section-block compact-block">
+                        <text class="section-title">{{ copy.searchTitle }}</text>
+                        <text class="section-subtitle">{{
+                            copy.searchSubtitle
+                        }}</text>
+                    </view>
+
+                    <view class="search-row">
+                        <input
+                            v-model="keyword"
+                            class="field-control field-control-pill"
+                            :placeholder="copy.searchPlaceholder"
+                            @confirm="onSearch"
+                        />
+                        <button class="btn-primary" @click="onSearch">
+                            {{ copy.searchAction }}
+                        </button>
+                    </view>
+
+                    <view class="keyword-grid">
+                        <view class="keyword-block" v-if="hotKeywords.length">
+                            <text class="keyword-title">{{
+                                copy.hotKeywords
+                            }}</text>
+                            <view class="keyword-list">
+                                <text
+                                    v-for="item in hotKeywords"
+                                    :key="`hot-${item}`"
+                                    class="keyword-chip"
+                                    @click="onKeywordSelect(item)"
+                                >
+                                    {{ item }}
+                                </text>
+                            </view>
+                        </view>
+
+                        <view
+                            class="keyword-block"
+                            v-if="recommendations.length"
+                        >
+                            <text class="keyword-title">
+                                {{ copy.recommendedKeywords }}
+                            </text>
+                            <view class="keyword-list">
+                                <text
+                                    v-for="item in recommendations"
+                                    :key="`rec-${item}`"
+                                    class="keyword-chip"
+                                    @click="onKeywordSelect(item)"
+                                >
+                                    {{ item }}
+                                </text>
+                            </view>
+                        </view>
+                    </view>
+                </view>
+
+                <view class="surface-card panel-block sticky-side">
+                    <view class="section-head">
+                        <text class="section-title">{{ copy.resultTitle }}</text>
+                        <text class="section-subtitle">{{
+                            copy.resultSubtitle
+                        }}</text>
+                    </view>
+                </view>
             </view>
 
             <view v-if="rows.length" class="product-grid fade-in-up">
@@ -367,34 +395,6 @@ onShow(() => {
     gap: 24px;
 }
 
-.hero-card {
-    padding: 36px;
-    display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: 24px;
-}
-
-.hero-copy {
-    display: flex;
-    flex-direction: column;
-    gap: 18px;
-    max-width: 760px;
-}
-
-.hero-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-}
-
-.search-card {
-    padding: 24px;
-    display: flex;
-    flex-direction: column;
-    gap: 18px;
-}
-
 .compact-block {
     gap: 6px;
 }
@@ -403,21 +403,6 @@ onShow(() => {
     display: flex;
     gap: 10px;
     align-items: center;
-}
-
-.search-input {
-    flex: 1;
-    min-height: 48px;
-    background: rgba(255, 255, 255, 0.04);
-    border-radius: 999px;
-    padding: 12px 16px;
-    font-size: 14px;
-    border: 1px solid var(--panel-border);
-}
-
-.search-input:focus {
-    border-color: rgba(95, 209, 194, 0.4);
-    box-shadow: 0 0 0 3px rgba(95, 209, 194, 0.12);
 }
 
 .keyword-grid {
@@ -458,12 +443,6 @@ onShow(() => {
         box-shadow 0.22s ease,
         border-color 0.22s ease,
         color 0.22s ease;
-}
-
-.section-head {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
 }
 
 .product-grid {
@@ -542,16 +521,9 @@ onShow(() => {
 }
 
 @media (max-width: 900px) {
-    .hero-card,
     .keyword-grid,
     .product-grid {
         grid-template-columns: 1fr;
-    }
-
-    .hero-card {
-        align-items: flex-start;
-        flex-direction: column;
-        padding: 26px;
     }
 
     .search-row {

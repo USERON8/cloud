@@ -825,22 +825,8 @@ onMounted(() => {
     gap: 6px;
 }
 
-.readiness-list {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 12px;
-}
-
-.readiness-card {
-    padding: 14px 16px;
-    border-radius: 16px;
-}
-
 .readiness-value {
     margin-top: 6px;
-    font-size: 15px;
-    font-weight: 700;
-    color: var(--text-main);
 }
 
 .kv-row {
@@ -870,22 +856,8 @@ onMounted(() => {
     width: 100%;
 }
 
-.flex-input {
-    width: 100%;
-}
-
 .textarea {
     min-height: 92px;
-}
-
-.attachment-field {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-.attachment-actions {
-    justify-content: flex-start;
 }
 
 .stats-grid {
@@ -913,8 +885,7 @@ onMounted(() => {
 
 @media (max-width: 760px) {
     .stats-grid,
-    .form-grid,
-    .readiness-list {
+    .form-grid {
         grid-template-columns: 1fr;
     }
 
