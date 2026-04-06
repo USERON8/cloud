@@ -330,6 +330,13 @@ Notes:
 | POST | `/api/orders/after-sales` | `order:refund` | User ownership and amount checks are enforced. |
 | POST | `/api/orders/after-sales/{afterSaleId}/actions/{action}` | `order:refund` | User, merchant, and admin action sets differ. |
 
+Order list and order detail now return `OrderSummaryDTO` with these stable fields:
+- Top-level summary: `id`, `orderNo`, `userId`, `subOrderId`, `subOrderNo`, `merchantId`, `afterSaleId`, `afterSaleNo`, `afterSaleType`, `refundNo`, `totalAmount`, `payAmount`, `status`, `afterSaleStatus`, `createdAt`.
+- Item list: `items[]` contains `id`, `subOrderId`, `spuId`, `skuId`, `skuCode`, `skuName`, `quantity`, `unitPrice`, `totalPrice`.
+- Snapshot field: `items[].skuSnapshot` is the immutable transaction snapshot parsed from `order_item.sku_snapshot`.
+- Optional latest product view: `items[].latestProduct` is best-effort live product data. It may be `null` when the product service is unavailable or the SKU no longer exists.
+- Status mapping: `0` pending, `1` paid, `2` shipped, `3` done, `4` closed/cancelled.
+
 ### Payments
 
 | Method | Path | Access | Notes |
@@ -430,6 +437,64 @@ Notes:
 - Cart checkout uses `cartId` plus the same receiver fields.
 - Regular users cannot impersonate another `userId`.
 - `clientOrderId` is the strict business idempotency key on the order domain and must stay stable across retries from the same client intent.
+
+Example order detail response shape:
+
+```json
+{
+  "id": 10001,
+  "orderNo": "MO202604060001",
+  "userId": 20001,
+  "subOrderId": 11001,
+  "subOrderNo": "SO202604060001",
+  "merchantId": 30001,
+  "totalAmount": 199.00,
+  "payAmount": 189.00,
+  "status": 1,
+  "afterSaleStatus": "NONE",
+  "createdAt": "2026-04-06T16:30:00",
+  "items": [
+    {
+      "id": 12001,
+      "subOrderId": 11001,
+      "spuId": 50001,
+      "skuId": 51001,
+      "skuCode": "SKU-51001",
+      "skuName": "Cloud Phone Pro",
+      "quantity": 1,
+      "unitPrice": 189.00,
+      "totalPrice": 189.00,
+      "skuSnapshot": {
+        "spuId": 50001,
+        "spuName": "Cloud Phone",
+        "brandName": "Cloud",
+        "skuId": 51001,
+        "skuCode": "SKU-51001",
+        "skuName": "Cloud Phone Pro",
+        "specJson": "{\"color\":\"black\"}",
+        "unitPrice": 189.00,
+        "quantity": 1
+      },
+      "latestProduct": {
+        "spuId": 50001,
+        "skuId": 51001,
+        "spuName": "Cloud Phone",
+        "skuCode": "SKU-51001",
+        "skuName": "Cloud Phone Pro",
+        "specJson": "{\"color\":\"black\"}",
+        "salePrice": 189.00,
+        "marketPrice": 219.00,
+        "imageUrl": "https://cdn.example.com/products/51001.png",
+        "status": 1,
+        "brandName": "Cloud",
+        "categoryName": "Phone",
+        "merchantId": 30001,
+        "shopName": "Cloud Shop"
+      }
+    }
+  ]
+}
+```
 
 ### Create payment order request
 

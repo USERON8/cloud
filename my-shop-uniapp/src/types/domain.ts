@@ -119,6 +119,39 @@ export interface OrderSummaryDTO {
   status?: number
   afterSaleStatus?: string
   createdAt?: string
+  items?: OrderSummaryItem[]
+}
+
+export interface OrderSummaryItem {
+  id?: number
+  subOrderId?: number
+  spuId?: number
+  skuId?: number
+  skuCode?: string
+  skuName?: string
+  quantity?: number
+  unitPrice?: number
+  totalPrice?: number
+  skuSnapshot?: Record<string, unknown>
+  latestProduct?: LatestOrderProduct | null
+}
+
+export interface LatestOrderProduct {
+  spuId?: number
+  skuId?: number
+  spuName?: string
+  skuCode?: string
+  skuName?: string
+  specJson?: string
+  salePrice?: number
+  marketPrice?: number
+  imageUrl?: string
+  imageFile?: string
+  status?: number
+  brandName?: string
+  categoryName?: string
+  merchantId?: number
+  shopName?: string
 }
 
 export interface OrderItem {

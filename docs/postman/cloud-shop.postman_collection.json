@@ -519,6 +519,7 @@
           "request": {
             "method": "POST",
             "url": "{{baseUrl}}/api/orders",
+            "description": "Direct-buy sample. clientOrderId is required by the current backend contract.",
             "header": [
               {
                 "key": "Content-Type",
@@ -531,7 +532,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"spuId\": \"{{spuId}}\",\n  \"skuId\": \"{{skuId}}\",\n  \"quantity\": 1,\n  \"remark\": \"postman direct buy\",\n  \"receiverName\": \"{{receiverName}}\",\n  \"receiverPhone\": \"{{receiverPhone}}\",\n  \"receiverAddress\": \"{{receiverAddress}}\"\n}",
+              "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"spuId\": \"{{spuId}}\",\n  \"skuId\": \"{{skuId}}\",\n  \"quantity\": 1,\n  \"remark\": \"postman direct buy\",\n  \"clientOrderId\": \"postman-{{userId}}-{{skuId}}-{{idempotencyKey}}\",\n  \"receiverName\": \"{{receiverName}}\",\n  \"receiverPhone\": \"{{receiverPhone}}\",\n  \"receiverAddress\": \"{{receiverAddress}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -557,14 +558,16 @@
           "name": "List Orders",
           "request": {
             "method": "GET",
-            "url": "{{baseUrl}}/api/orders?page=1&size=20&userId={{userId}}"
+            "url": "{{baseUrl}}/api/orders?page=1&size=20&userId={{userId}}",
+            "description": "Order summaries now include items[].skuSnapshot and optional items[].latestProduct."
           }
         },
         {
           "name": "Get Order Detail",
           "request": {
             "method": "GET",
-            "url": "{{baseUrl}}/api/orders/{{mainOrderId}}"
+            "url": "{{baseUrl}}/api/orders/{{mainOrderId}}",
+            "description": "Order detail shares the same OrderSummaryDTO shape as list items, including items[].skuSnapshot and optional items[].latestProduct."
           }
         },
         {

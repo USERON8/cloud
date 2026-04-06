@@ -105,7 +105,9 @@ Primary APIs:
 
 Notes:
 - Real payment starts from the payment module after order creation.
-- The frontend order module now exposes `payOrder` and `batchPayOrders` helpers for direct order payment.
+- `payOrder` and `batchPayOrders` helpers still exist only for compatibility. Current backend business logic blocks direct pay transitions on `/api/orders/**/pay`.
+- `createOrder(payload)` in `src/api/order.ts` currently implements direct-buy only. It auto-generates `clientOrderId` when the caller does not provide one.
+- `listOrders` and `getOrderById` now return `items[]`. Each item includes immutable `skuSnapshot` data and an optional `latestProduct` view when the backend can still resolve the SKU.
 
 ### 5. Payment And Checkout
 
@@ -163,7 +165,18 @@ Notes:
 - `skuId` for direct buy
 - Receiver fields: `receiverName`, `receiverPhone`, `receiverAddress`
 - `spuId` together with `skuId` for direct buy
-- `cartId` for cart checkout
+
+Notes:
+- The current UniApp order client does not expose cart-checkout creation in `src/api/order.ts`.
+- The backend order service still supports cart checkout through `cartId`.
+
+### Order summary payload
+
+`OrderSummaryDTO` now includes:
+- Summary fields: `id`, `orderNo`, `userId`, `subOrderId`, `subOrderNo`, `merchantId`, `afterSaleId`, `afterSaleNo`, `afterSaleType`, `refundNo`, `totalAmount`, `payAmount`, `status`, `afterSaleStatus`, `createdAt`
+- `items[]` with `id`, `subOrderId`, `spuId`, `skuId`, `skuCode`, `skuName`, `quantity`, `unitPrice`, `totalPrice`
+- `items[].skuSnapshot` as parsed immutable order-time product snapshot data
+- `items[].latestProduct` as optional live product projection for display enhancement
 
 ### Create payment order payload
 
