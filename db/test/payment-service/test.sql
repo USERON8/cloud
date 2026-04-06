@@ -20,10 +20,22 @@ ALTER TABLE payment_refund
     ADD INDEX idx_payment_refund_status_deleted_next_retry (status, deleted, next_retry_at);
 
 INSERT INTO payment_order (id, payment_no, main_order_no, sub_order_no, user_id, amount, channel, status, idempotency_key, deleted, version)
-VALUES (70001, 'PAY202603050001', 'M2026000001', 'S2026000001', 20001, 4999.00, 'ALIPAY', 'CREATED', 'idem-pay-70001', 0, 0);
+VALUES (70001, 'PAY202603050001', 'M2026000001', 'S2026000001', 20001, 4999.00, 'ALIPAY', 'CREATED', 'idem-pay-70001', 0, 0),
+       (70002, 'PAY202603050002', 'M2026000002', 'S2026000002', 20002, 6799.00, 'ALIPAY', 'PAID', 'idem-pay-70002', 0, 0),
+       (70003, 'PAY202603050003', 'M2026000003', 'S2026000003', 20003, 8999.00, 'ALIPAY', 'PAID', 'idem-pay-70003', 0, 0),
+       (70004, 'PAY202603050004', 'M2026000003', 'S2026000004', 20003, 1299.00, 'WECHAT', 'PAID', 'idem-pay-70004', 0, 0),
+       (70005, 'PAY202603050005', 'M2026000004', 'S2026000005', 20001, 5699.00, 'WECHAT', 'PAID', 'idem-pay-70005', 0, 0),
+       (70006, 'PAY202603050006', 'M2026000005', 'S2026000006', 20002, 1599.00, 'ALIPAY', 'PAID', 'idem-pay-70006', 0, 0),
+       (70007, 'PAY202603050007', 'M2026000006', 'S2026000007', 20002, 6999.00, 'ALIPAY', 'PAID', 'idem-pay-70007', 0, 0);
 
 INSERT INTO payment_callback_log (id, payment_no, callback_no, callback_status, provider_txn_no, payload, idempotency_key, deleted, version)
-VALUES (71001, 'PAY202603050001', 'CB202603050001', 'SUCCESS', 'ALI-TXN-001', '{"tradeStatus":"TRADE_SUCCESS"}', 'idem-callback-71001', 0, 0);
+VALUES (71001, 'PAY202603050001', 'CB202603050001', 'PENDING', 'ALI-TXN-001', '{"tradeStatus":"WAIT_BUYER_PAY"}', 'idem-callback-71001', 0, 0),
+       (71002, 'PAY202603050002', 'CB202603050002', 'SUCCESS', 'ALI-TXN-002', '{"tradeStatus":"TRADE_SUCCESS"}', 'idem-callback-71002', 0, 0),
+       (71003, 'PAY202603050003', 'CB202603050003', 'SUCCESS', 'ALI-TXN-003', '{"tradeStatus":"TRADE_SUCCESS"}', 'idem-callback-71003', 0, 0),
+       (71004, 'PAY202603050004', 'CB202603050004', 'SUCCESS', 'WX-TXN-004', '{"tradeState":"SUCCESS"}', 'idem-callback-71004', 0, 0),
+       (71005, 'PAY202603050005', 'CB202603050005', 'SUCCESS', 'WX-TXN-005', '{"tradeState":"SUCCESS"}', 'idem-callback-71005', 0, 0),
+       (71006, 'PAY202603050006', 'CB202603050006', 'SUCCESS', 'ALI-TXN-006', '{"tradeStatus":"TRADE_SUCCESS"}', 'idem-callback-71006', 0, 0),
+       (71007, 'PAY202603050007', 'CB202603050007', 'SUCCESS', 'ALI-TXN-007', '{"tradeStatus":"TRADE_SUCCESS"}', 'idem-callback-71007', 0, 0);
 
 INSERT INTO payment_refund (id, refund_no, payment_no, after_sale_no, refund_amount, status, reason, idempotency_key, deleted, version)
-VALUES (72001, 'REF202603050001', 'PAY202603050001', 'AS2026000001', 4999.00, 'REFUNDED', 'quality issue', 'idem-refund-72001', 0, 0);
+VALUES (72001, 'REF202603050001', 'PAY202603050003', 'AS2026000001', 8999.00, 'REFUNDING', 'hinge feel', 'idem-refund-72001', 0, 0);
