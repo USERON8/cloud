@@ -12,10 +12,13 @@ import com.cloud.order.entity.Cart;
 import com.cloud.order.entity.CartItem;
 import com.cloud.order.mapper.CartItemMapper;
 import com.cloud.order.mapper.CartMapper;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
@@ -34,6 +37,7 @@ public class OrderPlacementSupport {
   private final CartMapper cartMapper;
   private final CartItemMapper cartItemMapper;
   private final RemoteCallSupport remoteCallSupport;
+  private final ObjectMapper objectMapper;
 
   @DubboReference(check = false, timeout = 5000, retries = 0)
   private ProductDubboApi productDubboApi;
@@ -130,10 +134,10 @@ public class OrderPlacementSupport {
       BigDecimal itemAmount = BigDecimal.ZERO;
       List<CreateMainOrderRequest.CreateOrderItemRequest> items = new ArrayList<>();
       for (CartItem cartItem : entry.getValue()) {
+        SkuDetailVO skuDetail = skuDetails.get(cartItem.getSkuId());
         BigDecimal unitPrice = cartItem.getUnitPrice();
-        if (unitPrice == null) {
-          SkuDetailVO skuDetail = skuDetails.get(cartItem.getSkuId());
-          unitPrice = skuDetail != null ? skuDetail.getSalePrice() : null;
+        if (skuDetail != null && skuDetail.getSalePrice() != null) {
+          unitPrice = skuDetail.getSalePrice();
         }
         if (unitPrice == null) {
           throw new BizException("cart item missing unit price for skuId=" + cartItem.getSkuId());
@@ -150,16 +154,17 @@ public class OrderPlacementSupport {
         item.setSpuId(cartItem.getSpuId());
         item.setSkuId(cartItem.getSkuId());
         item.setSkuName(cartItem.getSkuName());
-        SkuDetailVO skuDetail = skuDetails.get(cartItem.getSkuId());
         if (skuDetail != null) {
           item.setSkuCode(skuDetail.getSkuCode());
-          if (item.getSkuName() == null) {
+          if (skuDetail.getSkuName() != null) {
             item.setSkuName(skuDetail.getSkuName());
           }
         }
         item.setQuantity(quantity);
         item.setUnitPrice(unitPrice);
         item.setTotalPrice(totalPrice);
+        item.setSkuSnapshot(
+            buildSkuSnapshot(spuDetails.get(cartItem.getSpuId()), skuDetail, unitPrice, quantity));
         items.add(item);
       }
       sub.setItems(items);
@@ -217,6 +222,7 @@ public class OrderPlacementSupport {
     item.setQuantity(quantity);
     item.setUnitPrice(unitPrice);
     item.setTotalPrice(totalPrice);
+    item.setSkuSnapshot(buildSkuSnapshot(spuDetail, skuDetail, unitPrice, quantity));
 
     CreateMainOrderRequest.CreateSubOrderRequest sub =
         new CreateMainOrderRequest.CreateSubOrderRequest();
@@ -272,5 +278,38 @@ public class OrderPlacementSupport {
 
   private <T> T invokeProductService(String action, Supplier<T> supplier) {
     return remoteCallSupport.query("product-service." + action, supplier);
+  }
+
+  private String buildSkuSnapshot(
+      SpuDetailVO spuDetail, SkuDetailVO skuDetail, BigDecimal unitPrice, Integer quantity) {
+    Map<String, Object> snapshot = new LinkedHashMap<>();
+    if (spuDetail != null) {
+      snapshot.put("spuId", spuDetail.getSpuId());
+      snapshot.put("spuName", spuDetail.getSpuName());
+      snapshot.put("subtitle", spuDetail.getSubtitle());
+      snapshot.put("categoryId", spuDetail.getCategoryId());
+      snapshot.put("categoryName", spuDetail.getCategoryName());
+      snapshot.put("brandId", spuDetail.getBrandId());
+      snapshot.put("brandName", spuDetail.getBrandName());
+      snapshot.put("merchantId", spuDetail.getMerchantId());
+      snapshot.put("shopName", spuDetail.getShopName());
+      snapshot.put("spuMainImage", spuDetail.getMainImage());
+    }
+    if (skuDetail != null) {
+      snapshot.put("skuId", skuDetail.getSkuId());
+      snapshot.put("skuCode", skuDetail.getSkuCode());
+      snapshot.put("skuName", skuDetail.getSkuName());
+      snapshot.put("specJson", skuDetail.getSpecJson());
+      snapshot.put("marketPrice", skuDetail.getMarketPrice());
+      snapshot.put("imageUrl", skuDetail.getImageUrl());
+      snapshot.put("imageFile", skuDetail.getImageFile());
+    }
+    snapshot.put("unitPrice", unitPrice);
+    snapshot.put("quantity", quantity);
+    try {
+      return objectMapper.writeValueAsString(snapshot);
+    } catch (JsonProcessingException ex) {
+      throw new BizException("failed to serialize sku snapshot");
+    }
   }
 }

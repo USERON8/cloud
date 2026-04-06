@@ -3,13 +3,18 @@ package com.cloud.order.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.cloud.api.product.ProductDubboApi;
 import com.cloud.common.domain.dto.order.ProductSellStatDTO;
 import com.cloud.common.domain.vo.order.OrderSubStatusVO;
+import com.cloud.common.domain.vo.product.SkuDetailVO;
+import com.cloud.common.domain.vo.product.SpuDetailVO;
 import com.cloud.common.exception.BizException;
+import com.cloud.common.remote.RemoteCallSupport;
 import com.cloud.common.result.PageResult;
 import com.cloud.common.security.SecurityPermissionUtils;
 import com.cloud.order.dto.OrderSummaryDTO;
 import com.cloud.order.entity.AfterSale;
+import com.cloud.order.entity.OrderItem;
 import com.cloud.order.entity.OrderMain;
 import com.cloud.order.entity.OrderSub;
 import com.cloud.order.mapper.AfterSaleMapper;
@@ -19,10 +24,13 @@ import com.cloud.order.mapper.OrderSubMapper;
 import com.cloud.order.service.OrderQueryService;
 import com.cloud.order.service.OrderService;
 import com.cloud.order.service.support.OrderRefundSagaCoordinator;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -36,11 +44,17 @@ import org.springframework.util.StringUtils;
 @RequiredArgsConstructor
 public class OrderQueryServiceImpl implements OrderQueryService {
 
+  private static final TypeReference<Map<String, Object>> SNAPSHOT_TYPE = new TypeReference<>() {};
+
   private final OrderService orderService;
   private final OrderMainMapper orderMainMapper;
   private final OrderSubMapper orderSubMapper;
   private final OrderItemMapper orderItemMapper;
   private final AfterSaleMapper afterSaleMapper;
+  private final RemoteCallSupport remoteCallSupport;
+  private final ObjectMapper objectMapper;
+
+  @org.apache.dubbo.config.annotation.DubboReference private ProductDubboApi productDubboApi;
 
   @Override
   public PageResult<OrderSummaryDTO> listOrders(
@@ -63,7 +77,7 @@ public class OrderQueryServiceImpl implements OrderQueryService {
     List<OrderSummaryDTO> summaries = new ArrayList<>(mains.size());
     for (OrderMain main : mains) {
       List<OrderSub> subs = subOrdersByMainId.getOrDefault(main.getId(), List.of());
-      summaries.add(toSummary(main, subs));
+      summaries.add(toSummary(main, subs, loadItemsBySubOrders(subs)));
     }
 
     long total = pageResult == null ? 0L : pageResult.getTotal();
@@ -76,7 +90,7 @@ public class OrderQueryServiceImpl implements OrderQueryService {
     Long summaryMerchantId = resolveSummaryMerchantId(authentication, null);
     List<OrderSub> subs =
         filterSummarySubOrders(orderService.listSubOrders(orderId), summaryMerchantId);
-    return toSummary(main, subs);
+    return toSummary(main, subs, loadItemsBySubOrders(subs));
   }
 
   @Override
@@ -270,7 +284,8 @@ public class OrderQueryServiceImpl implements OrderQueryService {
         .toList();
   }
 
-  private OrderSummaryDTO toSummary(OrderMain main, List<OrderSub> subs) {
+  private OrderSummaryDTO toSummary(
+      OrderMain main, List<OrderSub> subs, Map<Long, List<OrderItem>> itemsBySubOrderId) {
     OrderSummaryDTO summary = new OrderSummaryDTO();
     summary.setId(main.getId());
     summary.setOrderNo(main.getMainOrderNo());
@@ -279,6 +294,7 @@ public class OrderQueryServiceImpl implements OrderQueryService {
     summary.setPayAmount(main.getPayableAmount());
     summary.setCreatedAt(main.getCreatedAt());
     summary.setStatus(resolveStatusCode(subs));
+    summary.setItems(buildItemSummaries(subs, itemsBySubOrderId));
     if (subs != null && subs.size() == 1) {
       OrderSub sub = subs.get(0);
       summary.setSubOrderId(sub.getId());
@@ -297,6 +313,169 @@ public class OrderQueryServiceImpl implements OrderQueryService {
       }
     }
     return summary;
+  }
+
+  private Map<Long, List<OrderItem>> loadItemsBySubOrders(List<OrderSub> subs) {
+    if (subs == null || subs.isEmpty()) {
+      return Collections.emptyMap();
+    }
+    List<Long> subOrderIds = subs.stream().map(OrderSub::getId).filter(Objects::nonNull).toList();
+    if (subOrderIds.isEmpty()) {
+      return Collections.emptyMap();
+    }
+    List<OrderItem> items = orderItemMapper.listActiveBySubOrderIds(subOrderIds);
+    if (items == null || items.isEmpty()) {
+      return Collections.emptyMap();
+    }
+    Map<Long, List<OrderItem>> grouped = new HashMap<>();
+    for (OrderItem item : items) {
+      if (item == null || item.getSubOrderId() == null) {
+        continue;
+      }
+      grouped.computeIfAbsent(item.getSubOrderId(), ignored -> new ArrayList<>()).add(item);
+    }
+    return grouped;
+  }
+
+  private List<OrderSummaryDTO.OrderItemSummaryDTO> buildItemSummaries(
+      List<OrderSub> subs, Map<Long, List<OrderItem>> itemsBySubOrderId) {
+    if (subs == null
+        || subs.isEmpty()
+        || itemsBySubOrderId == null
+        || itemsBySubOrderId.isEmpty()) {
+      return List.of();
+    }
+    List<OrderItem> allItems = new ArrayList<>();
+    for (OrderSub sub : subs) {
+      if (sub == null || sub.getId() == null) {
+        continue;
+      }
+      allItems.addAll(itemsBySubOrderId.getOrDefault(sub.getId(), List.of()));
+    }
+    if (allItems.isEmpty()) {
+      return List.of();
+    }
+
+    Map<Long, SkuDetailVO> latestSkuMap = loadLatestSkuMap(allItems);
+    Map<Long, SpuDetailVO> latestSpuMap = loadLatestSpuMap(latestSkuMap.values());
+    List<OrderSummaryDTO.OrderItemSummaryDTO> result = new ArrayList<>(allItems.size());
+    for (OrderItem item : allItems) {
+      result.add(toItemSummary(item, latestSkuMap.get(item.getSkuId()), latestSpuMap));
+    }
+    return result;
+  }
+
+  private Map<Long, SkuDetailVO> loadLatestSkuMap(List<OrderItem> items) {
+    List<Long> skuIds =
+        items.stream()
+            .map(OrderItem::getSkuId)
+            .filter(Objects::nonNull)
+            .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new))
+            .stream()
+            .toList();
+    if (skuIds.isEmpty()) {
+      return Collections.emptyMap();
+    }
+    List<SkuDetailVO> skuDetails =
+        remoteCallSupport.queryOrFallback(
+            "product-service.list sku by ids",
+            () -> productDubboApi.listSkuByIds(skuIds),
+            ex -> List.of());
+    if (skuDetails == null || skuDetails.isEmpty()) {
+      return Collections.emptyMap();
+    }
+    Map<Long, SkuDetailVO> latestSkuMap = new HashMap<>();
+    for (SkuDetailVO skuDetail : skuDetails) {
+      if (skuDetail != null && skuDetail.getSkuId() != null) {
+        latestSkuMap.put(skuDetail.getSkuId(), skuDetail);
+      }
+    }
+    return latestSkuMap;
+  }
+
+  private Map<Long, SpuDetailVO> loadLatestSpuMap(java.util.Collection<SkuDetailVO> skuDetails) {
+    if (skuDetails == null || skuDetails.isEmpty()) {
+      return Collections.emptyMap();
+    }
+    List<Long> spuIds =
+        skuDetails.stream()
+            .map(SkuDetailVO::getSpuId)
+            .filter(Objects::nonNull)
+            .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new))
+            .stream()
+            .toList();
+    if (spuIds.isEmpty()) {
+      return Collections.emptyMap();
+    }
+    Map<Long, SpuDetailVO> latestSpuMap = new HashMap<>();
+    for (Long spuId : spuIds) {
+      SpuDetailVO spuDetail =
+          remoteCallSupport.queryOrFallback(
+              "product-service.get spu by id", () -> productDubboApi.getSpuById(spuId), ex -> null);
+      if (spuDetail != null && spuDetail.getSpuId() != null) {
+        latestSpuMap.put(spuDetail.getSpuId(), spuDetail);
+      }
+    }
+    return latestSpuMap;
+  }
+
+  private OrderSummaryDTO.OrderItemSummaryDTO toItemSummary(
+      OrderItem item, SkuDetailVO latestSku, Map<Long, SpuDetailVO> latestSpuMap) {
+    OrderSummaryDTO.OrderItemSummaryDTO summary = new OrderSummaryDTO.OrderItemSummaryDTO();
+    summary.setId(item.getId());
+    summary.setSubOrderId(item.getSubOrderId());
+    summary.setSpuId(item.getSpuId());
+    summary.setSkuId(item.getSkuId());
+    summary.setSkuCode(item.getSkuCode());
+    summary.setSkuName(item.getSkuName());
+    summary.setQuantity(item.getQuantity());
+    summary.setUnitPrice(item.getUnitPrice());
+    summary.setTotalPrice(item.getTotalPrice());
+    summary.setSkuSnapshot(parseSnapshot(item.getSkuSnapshot()));
+    summary.setLatestProduct(buildLatestProduct(item, latestSku, latestSpuMap));
+    return summary;
+  }
+
+  private Map<String, Object> parseSnapshot(String snapshot) {
+    if (!StringUtils.hasText(snapshot)) {
+      return Collections.emptyMap();
+    }
+    try {
+      return objectMapper.readValue(snapshot, SNAPSHOT_TYPE);
+    } catch (Exception ex) {
+      Map<String, Object> fallback = new HashMap<>();
+      fallback.put("raw", snapshot);
+      return fallback;
+    }
+  }
+
+  private OrderSummaryDTO.LatestProductDTO buildLatestProduct(
+      OrderItem item, SkuDetailVO latestSku, Map<Long, SpuDetailVO> latestSpuMap) {
+    if (latestSku == null) {
+      return null;
+    }
+    OrderSummaryDTO.LatestProductDTO latestProduct = new OrderSummaryDTO.LatestProductDTO();
+    latestProduct.setSkuId(latestSku.getSkuId());
+    latestProduct.setSpuId(latestSku.getSpuId());
+    latestProduct.setSkuCode(latestSku.getSkuCode());
+    latestProduct.setSkuName(latestSku.getSkuName());
+    latestProduct.setSpecJson(latestSku.getSpecJson());
+    latestProduct.setSalePrice(latestSku.getSalePrice());
+    latestProduct.setMarketPrice(latestSku.getMarketPrice());
+    latestProduct.setImageUrl(latestSku.getImageUrl());
+    latestProduct.setImageFile(latestSku.getImageFile());
+    latestProduct.setStatus(latestSku.getStatus());
+    SpuDetailVO latestSpu = latestSpuMap.getOrDefault(latestSku.getSpuId(), null);
+    if (latestSpu != null) {
+      latestProduct.setSpuName(latestSpu.getSpuName());
+      latestProduct.setBrandName(latestSpu.getBrandName());
+      latestProduct.setCategoryName(latestSpu.getCategoryName());
+      latestProduct.setMerchantId(latestSpu.getMerchantId());
+      latestProduct.setShopName(latestSpu.getShopName());
+    } else {
+      latestProduct.setSpuId(item.getSpuId());
+    }
+    return latestProduct;
   }
 
   private AfterSale findLatestAfterSale(Long subOrderId) {

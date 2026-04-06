@@ -117,7 +117,9 @@ class OrderServiceImplTest {
 
     assertThat(created.getId()).isEqualTo(101L);
     verify(orderSubMapper).insert(any(OrderSub.class));
-    verify(orderItemMapper).insert(any(OrderItem.class));
+    ArgumentCaptor<OrderItem> itemCaptor = ArgumentCaptor.forClass(OrderItem.class);
+    verify(orderItemMapper).insert(itemCaptor.capture());
+    assertThat(itemCaptor.getValue().getSkuSnapshot()).contains("\"skuId\":2");
     verify(tradeMetrics).incrementOrder("success");
   }
 
@@ -374,6 +376,7 @@ class OrderServiceImplTest {
     CreateMainOrderRequest request = new CreateMainOrderRequest();
     request.setUserId(1L);
     request.setIdempotencyKey("key-1");
+    request.setClientOrderId("client-order-1");
     request.setTotalAmount(BigDecimal.valueOf(100));
     request.setPayableAmount(BigDecimal.valueOf(100));
     request.setCartId(10L);
@@ -382,6 +385,8 @@ class OrderServiceImplTest {
         new CreateMainOrderRequest.CreateOrderItemRequest();
     item.setSpuId(1L);
     item.setSkuId(2L);
+    item.setSkuCode("SKU-2");
+    item.setSkuName("Cloud Phone");
     item.setQuantity(1);
     item.setUnitPrice(BigDecimal.valueOf(100));
     item.setTotalPrice(BigDecimal.valueOf(100));

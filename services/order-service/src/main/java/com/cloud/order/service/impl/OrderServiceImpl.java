@@ -26,6 +26,8 @@ import com.cloud.order.messaging.OrderShippedMessageProducer;
 import com.cloud.order.service.OrderService;
 import com.cloud.order.service.support.OrderAggregateCacheService;
 import com.cloud.order.service.support.OrderRefundSagaCoordinator;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -45,6 +47,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class OrderServiceImpl implements OrderService {
+
+  private static final ObjectMapper SNAPSHOT_OBJECT_MAPPER = new ObjectMapper();
 
   private static final Set<String> AFTER_SALE_ELIGIBLE_SUB_STATUSES =
       Set.of("PAID", "SHIPPED", "DONE");
@@ -166,7 +170,7 @@ public class OrderServiceImpl implements OrderService {
           item.setSkuId(itemRequest.getSkuId());
           item.setSkuCode(itemRequest.getSkuCode());
           item.setSkuName(itemRequest.getSkuName());
-          item.setSkuSnapshot(itemRequest.getSkuSnapshot());
+          item.setSkuSnapshot(resolveSkuSnapshot(itemRequest));
           item.setQuantity(itemRequest.getQuantity());
           item.setUnitPrice(defaultAmount(itemRequest.getUnitPrice()));
           item.setTotalPrice(defaultAmount(itemRequest.getTotalPrice()));
@@ -641,5 +645,27 @@ public class OrderServiceImpl implements OrderService {
       throw new BizException("clientOrderId is required");
     }
     return clientOrderId.trim();
+  }
+
+  private String resolveSkuSnapshot(CreateMainOrderRequest.CreateOrderItemRequest itemRequest) {
+    if (itemRequest == null) {
+      throw new BizException("order item is required");
+    }
+    if (StrUtil.isNotBlank(itemRequest.getSkuSnapshot())) {
+      return itemRequest.getSkuSnapshot().trim();
+    }
+    Map<String, Object> snapshot = new LinkedHashMap<>();
+    snapshot.put("spuId", itemRequest.getSpuId());
+    snapshot.put("skuId", itemRequest.getSkuId());
+    snapshot.put("skuCode", itemRequest.getSkuCode());
+    snapshot.put("skuName", itemRequest.getSkuName());
+    snapshot.put("unitPrice", defaultAmount(itemRequest.getUnitPrice()));
+    snapshot.put("quantity", itemRequest.getQuantity());
+    snapshot.put("totalPrice", defaultAmount(itemRequest.getTotalPrice()));
+    try {
+      return SNAPSHOT_OBJECT_MAPPER.writeValueAsString(snapshot);
+    } catch (JsonProcessingException ex) {
+      throw new BizException("failed to serialize order item snapshot");
+    }
   }
 }

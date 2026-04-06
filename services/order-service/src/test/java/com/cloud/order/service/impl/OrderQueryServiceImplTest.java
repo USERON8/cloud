@@ -7,8 +7,13 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.cloud.api.product.ProductDubboApi;
+import com.cloud.common.domain.vo.product.SkuDetailVO;
+import com.cloud.common.domain.vo.product.SpuDetailVO;
+import com.cloud.common.remote.RemoteCallSupport;
 import com.cloud.order.dto.OrderSummaryDTO;
 import com.cloud.order.entity.AfterSale;
+import com.cloud.order.entity.OrderItem;
 import com.cloud.order.entity.OrderMain;
 import com.cloud.order.entity.OrderSub;
 import com.cloud.order.mapper.AfterSaleMapper;
@@ -16,6 +21,7 @@ import com.cloud.order.mapper.OrderItemMapper;
 import com.cloud.order.mapper.OrderMainMapper;
 import com.cloud.order.mapper.OrderSubMapper;
 import com.cloud.order.service.OrderService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,6 +32,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 class OrderQueryServiceImplTest {
@@ -35,6 +42,8 @@ class OrderQueryServiceImplTest {
   @Mock private OrderSubMapper orderSubMapper;
   @Mock private OrderItemMapper orderItemMapper;
   @Mock private AfterSaleMapper afterSaleMapper;
+  @Mock private RemoteCallSupport remoteCallSupport;
+  @Mock private ProductDubboApi productDubboApi;
 
   private OrderQueryServiceImpl orderQueryService;
 
@@ -42,7 +51,14 @@ class OrderQueryServiceImplTest {
   void setUp() {
     orderQueryService =
         new OrderQueryServiceImpl(
-            orderService, orderMainMapper, orderSubMapper, orderItemMapper, afterSaleMapper);
+            orderService,
+            orderMainMapper,
+            orderSubMapper,
+            orderItemMapper,
+            afterSaleMapper,
+            remoteCallSupport,
+            new ObjectMapper());
+    ReflectionTestUtils.setField(orderQueryService, "productDubboApi", productDubboApi);
   }
 
   @Test
@@ -65,11 +81,37 @@ class OrderQueryServiceImplTest {
 
     when(orderService.getMainOrder(10L)).thenReturn(main);
     when(orderService.listSubOrders(10L)).thenReturn(List.of(sub));
+    when(orderItemMapper.listActiveBySubOrderIds(List.of(20L)))
+        .thenReturn(
+            List.of(
+                orderItem(201L, 20L, 50001L, 51001L, "{\"spuName\":\"Phone\",\"unitPrice\":80}")));
+    when(remoteCallSupport.queryOrFallback(any(), any(), any()))
+        .thenAnswer(
+            invocation -> invocation.getArgument(1, java.util.function.Supplier.class).get());
     AfterSale afterSale = new AfterSale();
     afterSale.setId(30L);
     afterSale.setAfterSaleNo("AS-30");
     afterSale.setAfterSaleType("RETURN_REFUND");
     when(afterSaleMapper.selectOne(org.mockito.ArgumentMatchers.any())).thenReturn(afterSale);
+    SkuDetailVO skuDetail = new SkuDetailVO();
+    skuDetail.setSkuId(51001L);
+    skuDetail.setSpuId(50001L);
+    skuDetail.setSkuCode("SKU-51001");
+    skuDetail.setSkuName("Phone Pro");
+    skuDetail.setSpecJson("{\"color\":\"black\"}");
+    skuDetail.setSalePrice(BigDecimal.valueOf(79));
+    skuDetail.setMarketPrice(BigDecimal.valueOf(99));
+    skuDetail.setImageUrl("https://img.example.com/51001.png");
+    skuDetail.setStatus(1);
+    SpuDetailVO spuDetail = new SpuDetailVO();
+    spuDetail.setSpuId(50001L);
+    spuDetail.setSpuName("Phone");
+    spuDetail.setBrandName("Cloud");
+    spuDetail.setCategoryName("Mobile");
+    spuDetail.setMerchantId(300L);
+    spuDetail.setShopName("Cloud Shop");
+    when(productDubboApi.listSkuByIds(List.of(51001L))).thenReturn(List.of(skuDetail));
+    when(productDubboApi.getSpuById(50001L)).thenReturn(spuDetail);
 
     OrderSummaryDTO summary =
         orderQueryService.getOrderSummary(10L, authentication("1", "ROLE_ADMIN", "order:query"));
@@ -85,6 +127,11 @@ class OrderQueryServiceImplTest {
     assertThat(summary.getRefundNo()).isEqualTo("RFAS-30");
     assertThat(summary.getAfterSaleStatus()).isEqualTo("NONE");
     assertThat(summary.getStatus()).isEqualTo(1);
+    assertThat(summary.getItems()).hasSize(1);
+    assertThat(summary.getItems().get(0).getSkuSnapshot()).containsEntry("spuName", "Phone");
+    assertThat(summary.getItems().get(0).getLatestProduct()).isNotNull();
+    assertThat(summary.getItems().get(0).getLatestProduct().getSkuName()).isEqualTo("Phone Pro");
+    assertThat(summary.getItems().get(0).getLatestProduct().getBrandName()).isEqualTo("Cloud");
   }
 
   @Test
@@ -115,6 +162,7 @@ class OrderQueryServiceImplTest {
 
     when(orderService.getMainOrder(11L)).thenReturn(main);
     when(orderService.listSubOrders(11L)).thenReturn(List.of(first, second));
+    when(orderItemMapper.listActiveBySubOrderIds(List.of(21L, 22L))).thenReturn(List.of());
 
     OrderSummaryDTO summary =
         orderQueryService.getOrderSummary(11L, authentication("1", "ROLE_ADMIN", "order:query"));
@@ -171,6 +219,8 @@ class OrderQueryServiceImplTest {
         .thenReturn(page);
     when(orderSubMapper.selectList(org.mockito.ArgumentMatchers.any()))
         .thenReturn(List.of(ownSub, otherSub));
+    when(orderItemMapper.listActiveBySubOrderIds(List.of(41L)))
+        .thenReturn(List.of(orderItem(301L, 41L, 60001L, 61001L, "{\"skuName\":\"Headset\"}")));
     when(afterSaleMapper.selectOne(org.mockito.ArgumentMatchers.any())).thenReturn(afterSale);
 
     var result =
@@ -188,6 +238,8 @@ class OrderQueryServiceImplTest {
     assertThat(summary.getRefundNo()).isEqualTo("RFAS-61");
     assertThat(summary.getAfterSaleStatus()).isEqualTo("APPLIED");
     assertThat(summary.getStatus()).isEqualTo(1);
+    assertThat(summary.getItems()).hasSize(1);
+    assertThat(summary.getItems().get(0).getSkuSnapshot()).containsEntry("skuName", "Headset");
   }
 
   @Test
@@ -214,6 +266,7 @@ class OrderQueryServiceImplTest {
     when(orderMainMapper.selectPageByVisibleStatus(any(), eq(null), eq(901L), eq(1)))
         .thenReturn(page);
     when(orderSubMapper.selectList(any())).thenReturn(List.of(paidSub));
+    when(orderItemMapper.listActiveBySubOrderIds(List.of(51L))).thenReturn(List.of());
 
     var result =
         orderQueryService.listOrders(
@@ -249,6 +302,10 @@ class OrderQueryServiceImplTest {
     when(orderMainMapper.selectPageByVisibleStatus(any(), eq(null), eq(902L), eq(2)))
         .thenReturn(page);
     when(orderSubMapper.selectList(any())).thenReturn(List.of(shippedSub));
+    when(orderItemMapper.listActiveBySubOrderIds(List.of(52L)))
+        .thenReturn(
+            List.of(
+                orderItem(401L, 52L, 70001L, 71001L, "{\"skuName\":\"Tablet\",\"skuId\":71001}")));
 
     var result =
         orderQueryService.listOrders(
@@ -257,7 +314,27 @@ class OrderQueryServiceImplTest {
     assertThat(result.getTotal()).isEqualTo(1);
     assertThat(result.getRecords()).hasSize(1);
     assertThat(result.getRecords().get(0).getStatus()).isEqualTo(2);
+    assertThat(result.getRecords().get(0).getItems()).hasSize(1);
+    assertThat(result.getRecords().get(0).getItems().get(0).getLatestProduct()).isNull();
+    assertThat(result.getRecords().get(0).getItems().get(0).getSkuSnapshot())
+        .containsEntry("skuName", "Tablet");
     verify(orderMainMapper).selectPageByVisibleStatus(any(), eq(null), eq(902L), eq(2));
+  }
+
+  private OrderItem orderItem(
+      Long id, Long subOrderId, Long spuId, Long skuId, String skuSnapshot) {
+    OrderItem item = new OrderItem();
+    item.setId(id);
+    item.setSubOrderId(subOrderId);
+    item.setSpuId(spuId);
+    item.setSkuId(skuId);
+    item.setSkuCode("SKU-" + skuId);
+    item.setSkuName("Item-" + skuId);
+    item.setSkuSnapshot(skuSnapshot);
+    item.setQuantity(2);
+    item.setUnitPrice(BigDecimal.valueOf(40));
+    item.setTotalPrice(BigDecimal.valueOf(80));
+    return item;
   }
 
   private JwtAuthenticationToken authentication(
