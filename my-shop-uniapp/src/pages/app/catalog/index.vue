@@ -16,7 +16,10 @@ import { addToCart } from "../../../store/cart";
 import type { ProductItem } from "../../../types/domain";
 import { formatPrice } from "../../../utils/format";
 import { resolveProductImageUrl } from "../../../utils/image";
-import { mapSearchDocumentToProduct, resolveCartSkuId } from "../../../utils/product";
+import {
+    mapSearchDocumentToProduct,
+    resolveCartSkuId,
+} from "../../../utils/product";
 import { toast } from "../../../utils/ui";
 
 const keyword = ref("");
@@ -78,13 +81,15 @@ const copy = computed(() =>
               primaryAction: "立即搜索",
               manageAction: "管理商品",
               searchTitle: "搜索商品目录",
-              searchSubtitle: "从关键词开始，并通过推荐词流快速缩小范围。",
+              searchSubtitle:
+                  "从关键词开始，并通过推荐词流快速缩小范围。",
               searchPlaceholder: "搜索商品、类目或品牌",
               searchAction: "搜索",
               hotKeywords: "热门搜索",
               recommendedKeywords: "推荐关键词",
               resultTitle: "商品结果",
-              resultSubtitle: "查看最新搜索结果，并把可购买商品加入购物车。",
+              resultSubtitle:
+                  "查看最新搜索结果，并把可购买商品加入购物车。",
               stockPrefix: "库存",
               addToCart: "加入购物车",
               empty: "当前搜索条件下暂无匹配商品。",

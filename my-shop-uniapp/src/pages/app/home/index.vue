@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue";
+import { useRole } from "../../../auth/permission";
 import { sessionState } from "../../../auth/session";
 import AppShell from "../../../components/AppShell.vue";
 import { useLocale } from "../../../i18n/locale";
@@ -7,6 +8,60 @@ import { navigateTo } from "../../../router/navigation";
 import { Routes } from "../../../router/routes";
 
 const { locale } = useLocale();
+const { isMerchant } = useRole();
+
+const quickLinks = computed(() => {
+    const baseLinks = [
+        {
+            title: locale.value === "en-US" ? "Cart" : "购物车",
+            body:
+                locale.value === "en-US"
+                    ? "Review current items and move into checkout without leaving the workspace flow."
+                    : "查看当前待结算商品，让下单动作保持在连续链路里。",
+            action: locale.value === "en-US" ? "Open cart" : "打开购物车",
+            route: Routes.appCart,
+        },
+        {
+            title: locale.value === "en-US" ? "Address book" : "地址簿",
+            body:
+                locale.value === "en-US"
+                    ? "Keep delivery details ready for a faster checkout path."
+                    : "提前维护收货信息，让下单链路更顺畅。",
+            action:
+                locale.value === "en-US" ? "Open addresses" : "打开地址簿",
+            route: Routes.appAddresses,
+        },
+        {
+            title: locale.value === "en-US" ? "Profile" : "我的",
+            body:
+                locale.value === "en-US"
+                    ? "Review account data and your current session identity."
+                    : "查看账号信息与当前登录会话状态。",
+            action: locale.value === "en-US" ? "Open profile" : "打开个人页",
+            route: Routes.appProfile,
+        },
+    ];
+
+    if (isMerchant.value) {
+        return baseLinks;
+    }
+
+    return [
+        baseLinks[0],
+        {
+            title: locale.value === "en-US" ? "Payments" : "支付",
+            body:
+                locale.value === "en-US"
+                    ? "Track payment status and reopen checkout when needed."
+                    : "查看支付状态，并在需要时重新拉起收银台。",
+            action:
+                locale.value === "en-US" ? "Open payments" : "打开支付页",
+            route: Routes.appPayments,
+        },
+        baseLinks[1],
+        baseLinks[2],
+    ];
+});
 
 const copy = computed(() =>
     locale.value === "en-US"
@@ -68,32 +123,6 @@ const copy = computed(() =>
               flowTitle: "Core flow",
               quickSubtitle: "Move straight into a focused task.",
               focusTitle: "Workspace tone",
-              quickLinks: [
-                  {
-                      title: "Cart",
-                      body: "Review current items and move into checkout without leaving the workspace flow.",
-                      action: "Open cart",
-                      route: Routes.appCart,
-                  },
-                  {
-                      title: "Payments",
-                      body: "Track payment status and reopen checkout when needed.",
-                      action: "Open payments",
-                      route: Routes.appPayments,
-                  },
-                  {
-                      title: "Address book",
-                      body: "Keep delivery details ready for a faster checkout path.",
-                      action: "Open addresses",
-                      route: Routes.appAddresses,
-                  },
-                  {
-                      title: "Profile",
-                      body: "Review account data and your current session identity.",
-                      action: "Open profile",
-                      route: Routes.appProfile,
-                  },
-              ],
           }
         : {
               pageTitle: "首页",
@@ -152,32 +181,6 @@ const copy = computed(() =>
               flowTitle: "核心流程",
               quickSubtitle: "直接进入单一任务，不被多余信息打断。",
               focusTitle: "当前工作节奏",
-              quickLinks: [
-                  {
-                      title: "购物车",
-                      body: "查看当前待结算商品，让下单动作保持在连续链路里。",
-                      action: "打开购物车",
-                      route: Routes.appCart,
-                  },
-                  {
-                      title: "支付",
-                      body: "查看支付状态，并在需要时重新拉起收银台。",
-                      action: "打开支付页",
-                      route: Routes.appPayments,
-                  },
-                  {
-                      title: "地址簿",
-                      body: "提前维护收货信息，让下单链路更顺畅。",
-                      action: "打开地址簿",
-                      route: Routes.appAddresses,
-                  },
-                  {
-                      title: "我的",
-                      body: "查看账号信息与当前登录会话状态。",
-                      action: "打开个人页",
-                      route: Routes.appProfile,
-                  },
-              ],
           },
 );
 </script>
@@ -272,7 +275,7 @@ const copy = computed(() =>
 
                     <view class="quick-grid">
                         <view
-                            v-for="link in copy.quickLinks"
+                            v-for="link in quickLinks"
                             :key="link.title"
                             class="surface-muted panel-block panel-hover quick-card"
                         >

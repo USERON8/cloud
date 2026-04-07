@@ -16,7 +16,7 @@ export interface UserInfo {
 }
 
 /**
- * 用户资料更新请求（对应后端 UserProfileUpdateDTO）
+ * User profile update payload mapped to UserProfileUpdateDTO.
  */
 export interface UserProfileUpdatePayload {
   nickname?: string
@@ -272,7 +272,7 @@ export interface UserAddress {
 }
 
 /**
- * 地址创建/更新请求（对应后端 UserAddressRequestDTO）
+ * User address create or update payload mapped to UserAddressRequestDTO.
  */
 export interface UserAddressRequestPayload {
   receiverName: string

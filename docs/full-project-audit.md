@@ -75,6 +75,16 @@ Scope:
 - Previous behavior: the admin page overwrote `overview.pendingReviews` with the currently selected review queue length. Switching from `Pending` to `Approved` or `Rejected` made the dashboard card report the wrong pending count.
 - Current behavior: the pending-review metric is refreshed only from the pending queue path, and `init()` resets the page to the pending queue before loading the overview.
 
+### 11. Merchant and home quick actions still leaked into the payment page
+
+- Previous behavior: even after shell navigation was tightened, the merchant center still exposed a direct `Payments` shortcut and the home dashboard still rendered the payment quick link for merchant sessions. Those links could still send a merchant into a page whose backend read path is not closed for merchant users.
+- Current behavior: merchant quick actions no longer link to the standalone payment page, and the home dashboard only shows the payment quick link for roles that can complete the current payment-query flow.
+
+### 12. Catalog page still contained broken Chinese copy
+
+- Previous behavior: `my-shop-uniapp/src/pages/app/catalog/index.vue` still contained mojibake in the Chinese locale block, which made the catalog page inconsistent with the rest of the audited frontend.
+- Current behavior: the catalog page now uses clean UTF-8 Chinese copy, with the same search and cart behavior preserved.
+
 ## Current Boundary
 
 - The main user-facing and operational pages present in the UniApp app now have traced backend contracts and synced documentation.

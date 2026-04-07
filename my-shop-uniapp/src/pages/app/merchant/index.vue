@@ -71,11 +71,6 @@ const quickActions = computed(() => [
         desc: "Handle shipping and after-sale requests",
         action: () => navigateTo(Routes.appOrdersManage),
     },
-    {
-        title: "Payments",
-        desc: "Review transaction and payment flows",
-        action: () => navigateTo(Routes.appPayments),
-    },
 ]);
 
 const heroStatusCards = computed(() => [

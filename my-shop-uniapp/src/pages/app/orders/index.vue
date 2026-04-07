@@ -391,7 +391,7 @@ async function onPay(order: OrderSummaryDTO): Promise<void> {
                 { paymentNo, autoPoll: 1 },
                 {
                     requiresAuth: true,
-                    roles: ["USER", "MERCHANT", "ADMIN"],
+                    roles: ["USER", "ADMIN"],
                 },
             );
         }
@@ -448,7 +448,7 @@ function onViewRefund(order: OrderSummaryDTO): void {
         { refundNo: order.refundNo },
         {
             requiresAuth: true,
-            roles: ["USER", "MERCHANT", "ADMIN"],
+            roles: ["USER", "ADMIN"],
         },
     );
 }
