@@ -20,6 +20,14 @@ export function formatProductStatus(status?: number): string {
   return 'Unknown'
 }
 
+/** Stock ledger health status label */
+export function formatStockLedgerStatus(status?: number): string {
+  if (status === 1) return 'Healthy'
+  if (status === 0) return 'Warning'
+  if (status === -1) return 'Unavailable'
+  return status != null ? String(status) : 'Unknown'
+}
+
 export function formatPrice(price?: number, currency = 'CNY'): string {
   if (typeof price !== 'number' || !Number.isFinite(price)) {
     return '--'
