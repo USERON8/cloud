@@ -35,6 +35,8 @@ public class ApiSignatureReplayFilter implements GlobalFilter, Ordered {
   private static final String HEADER_SIGNATURE = "X-Signature";
   private static final String HEADER_TIMESTAMP = "X-Timestamp";
   private static final String HEADER_NONCE = "X-Nonce";
+  private static final String HEADER_AUTHORIZATION = "Authorization";
+  private static final String BEARER_PREFIX = "Bearer ";
   private static final String NONCE_KEY_PREFIX = "gateway:nonce:";
 
   private final ReactiveStringRedisTemplate reactiveStringRedisTemplate;
@@ -80,6 +82,11 @@ public class ApiSignatureReplayFilter implements GlobalFilter, Ordered {
 
     String path = request.getPath().pathWithinApplication().value();
     if (!path.startsWith("/api/")) {
+      return chain.filter(exchange);
+    }
+
+    String authorization = request.getHeaders().getFirst(HEADER_AUTHORIZATION);
+    if (StrUtil.isNotBlank(authorization) && authorization.startsWith(BEARER_PREFIX)) {
       return chain.filter(exchange);
     }
 

@@ -51,6 +51,27 @@ public interface OrderMainMapper extends BaseMapper<OrderMain> {
   @Select(
       """
             <script>
+            SELECT om.*
+            FROM order_main om
+            FORCE INDEX (
+              <choose>
+                <when test="userId != null">idx_order_main_user_deleted_id</when>
+                <otherwise>idx_order_main_deleted_id</otherwise>
+              </choose>
+            )
+            WHERE om.deleted = 0
+              <if test="userId != null">
+                AND om.user_id = #{userId}
+              </if>
+            ORDER BY om.id DESC
+            </script>
+            """)
+  IPage<OrderMain> selectPageActive(IPage<OrderMain> page, @Param("userId") Long userId);
+
+  @InterceptorIgnore(illegalSql = "1")
+  @Select(
+      """
+            <script>
             SELECT DISTINCT om.*
             FROM order_main om
             JOIN order_sub os ON os.main_order_id = om.id AND os.deleted = 0

@@ -5,7 +5,7 @@ spring:
         webflux:
           routes:
             - id: oauth2-endpoints
-              uri: lb://auth-service
+              uri: ${GATEWAY_ROUTE_AUTH_URI:lb://auth-service}
               order: 10
               predicates:
                 - Path=/oauth2/**
@@ -13,7 +13,7 @@ spring:
                 - PreserveHostHeader
 
             - id: oidc-endpoints
-              uri: lb://auth-service
+              uri: ${GATEWAY_ROUTE_AUTH_URI:lb://auth-service}
               order: 10
               predicates:
                 - Path=/.well-known/**,/connect/**,/userinfo
@@ -21,7 +21,7 @@ spring:
                 - PreserveHostHeader
 
             - id: auth-service-api
-              uri: lb://auth-service
+              uri: ${GATEWAY_ROUTE_AUTH_URI:lb://auth-service}
               order: 10
               predicates:
                 - Path=/auth/**
@@ -34,7 +34,7 @@ spring:
                     redis-rate-limiter.requestedTokens: ${app.security.auth-rate-limit.requested-tokens}
 
             - id: user-service-api-v2
-              uri: lb://user-service
+              uri: ${GATEWAY_ROUTE_USER_URI:lb://user-service}
               order: 20
               predicates:
                 - Path=/api/manage/users/**,/api/query/users/**,/api/user/address/**,/api/user/profile/**,/api/user/notification/**,/api/merchant/**,/api/admin/**,/api/statistics/**,/api/thread-pool/**
@@ -47,7 +47,7 @@ spring:
                     redis-rate-limiter.requestedTokens: ${app.security.rate-limit.requested-tokens}
 
             - id: product-service-api-v2
-              uri: lb://product-service
+              uri: ${GATEWAY_ROUTE_PRODUCT_URI:lb://product-service}
               order: 20
               predicates:
                 - Path=/api/product,/api/product/**,/api/category,/api/category/**
@@ -60,7 +60,7 @@ spring:
                     redis-rate-limiter.requestedTokens: ${app.security.rate-limit.requested-tokens}
 
             - id: order-service-api-v2
-              uri: lb://order-service
+              uri: ${GATEWAY_ROUTE_ORDER_URI:lb://order-service}
               order: 20
               predicates:
                 - Path=/api/orders/**,/api/cart/**,/api/v1/refund/**
@@ -73,7 +73,7 @@ spring:
                     redis-rate-limiter.requestedTokens: ${app.security.rate-limit.requested-tokens}
 
             - id: payment-service-api-v2
-              uri: lb://payment-service
+              uri: ${GATEWAY_ROUTE_PAYMENT_URI:lb://payment-service}
               order: 20
               predicates:
                 - Path=/api/payments/**,/api/v1/payment/alipay/**
@@ -86,7 +86,7 @@ spring:
                     redis-rate-limiter.requestedTokens: ${app.security.rate-limit.requested-tokens}
 
             - id: stock-service-api-v2
-              uri: lb://stock-service
+              uri: ${GATEWAY_ROUTE_STOCK_URI:lb://stock-service}
               order: 20
               predicates:
                 - Path=/api/stocks/**
@@ -99,7 +99,7 @@ spring:
                     redis-rate-limiter.requestedTokens: ${app.security.rate-limit.requested-tokens}
 
             - id: search-service-api-v2
-              uri: lb://search-service
+              uri: ${GATEWAY_ROUTE_SEARCH_URI:lb://search-service}
               order: 20
               predicates:
                 - Path=/api/search,/api/search/**

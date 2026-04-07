@@ -90,6 +90,45 @@ function Get-PreferredLocalIpv4 {
     return ""
 }
 
+function Resolve-PublicBaseUrl {
+    param(
+        [string]$Url
+    )
+
+    if ([string]::IsNullOrWhiteSpace($Url)) {
+        return ""
+    }
+
+    $trimmedUrl = $Url.Trim()
+    try {
+        $uri = [System.Uri]$trimmedUrl
+        if (
+            $uri.Scheme -eq "http" -and
+            -not $uri.IsLoopback -and
+            $uri.Host -notin @("localhost", "127.0.0.1") -and
+            $uri.Host -notlike "192.168.*" -and
+            $uri.Host -notlike "10.*" -and
+            $uri.Host -notlike "172.16.*" -and
+            $uri.Host -notlike "172.17.*" -and
+            $uri.Host -notlike "172.18.*" -and
+            $uri.Host -notlike "172.19.*" -and
+            $uri.Host -notlike "172.2?.*" -and
+            $uri.Host -notlike "172.30.*" -and
+            $uri.Host -notlike "172.31.*"
+        ) {
+            $builder = New-Object System.UriBuilder($uri)
+            $builder.Scheme = "https"
+            if ($builder.Port -eq 80) {
+                $builder.Port = -1
+            }
+            return $builder.Uri.GetLeftPart([System.UriPartial]::Authority)
+        }
+    } catch {
+    }
+
+    return $trimmedUrl.TrimEnd("/")
+}
+
 function Import-EnvMap {
     param(
         [Parameter(Mandatory = $true)]
@@ -121,6 +160,7 @@ function Sync-EnvironmentFiles {
     }
 
     $cpolarDomain = [string]($rootEnv["CPOLAR_DOMAIN"])
+    $publicBaseUrl = Resolve-PublicBaseUrl -Url $cpolarDomain
     $nginxHttpPort = if ($dockerEnv.Contains("PORT_NGINX_HTTP")) { [string]$dockerEnv["PORT_NGINX_HTTP"] } else { "18080" }
     $localGatewayBaseUrl = "http://127.0.0.1:{0}" -f $nginxHttpPort
     $preferredLocalIpv4 = Get-PreferredLocalIpv4
@@ -130,10 +170,13 @@ function Sync-EnvironmentFiles {
     Set-EnvValue -Values $dockerEnv -Name "NGINX_GATEWAY_UPSTREAM" -Value $gatewayUpstream
     Set-EnvValue -Values $dockerEnv -Name "NGINX_AUTH_UPSTREAM" -Value $authUpstream
 
-    if (-not [string]::IsNullOrWhiteSpace($cpolarDomain)) {
-        Set-EnvValue -Values $dockerEnv -Name "CPOLAR_DOMAIN" -Value $cpolarDomain
-        Set-EnvValue -Values $dockerEnv -Name "CPOLAR_PUBLIC_BASE_URL" -Value $cpolarDomain
-        Set-EnvValue -Values $dockerEnv -Name "CPOLAR_FRONTEND_BASE_URL" -Value $cpolarDomain
+    if (-not [string]::IsNullOrWhiteSpace($publicBaseUrl)) {
+        Set-EnvValue -Values $rootEnv -Name "CPOLAR_DOMAIN" -Value $publicBaseUrl
+        Set-EnvValue -Values $rootEnv -Name "CPOLAR_PUBLIC_BASE_URL" -Value $publicBaseUrl
+        Set-EnvValue -Values $rootEnv -Name "CPOLAR_FRONTEND_BASE_URL" -Value $publicBaseUrl
+        Set-EnvValue -Values $dockerEnv -Name "CPOLAR_DOMAIN" -Value $publicBaseUrl
+        Set-EnvValue -Values $dockerEnv -Name "CPOLAR_PUBLIC_BASE_URL" -Value $publicBaseUrl
+        Set-EnvValue -Values $dockerEnv -Name "CPOLAR_FRONTEND_BASE_URL" -Value $publicBaseUrl
         Set-EnvValue -Values $dockerEnv -Name "ALIPAY_NOTIFY_URL" -Value ("{0}/api/v1/payment/alipay/notify" -f $dockerEnv["CPOLAR_PUBLIC_BASE_URL"])
         Set-EnvValue -Values $dockerEnv -Name "ALIPAY_RETURN_URL" -Value ("{0}/#/pages/app/payments/index" -f $dockerEnv["CPOLAR_FRONTEND_BASE_URL"])
         Set-EnvValue -Values $dockerEnv -Name "GITHUB_REDIRECT_URI" -Value ("{0}/login/oauth2/code/github" -f $dockerEnv["CPOLAR_PUBLIC_BASE_URL"])
@@ -143,13 +186,23 @@ function Sync-EnvironmentFiles {
             $dockerEnv["CPOLAR_PUBLIC_BASE_URL"],
             $nginxHttpPort
         )
-        Set-EnvValue -Values $dockerEnv -Name "APP_SECURITY_CORS_ALLOWED_ORIGIN_PATTERNS" -Value (
-            "http://127.0.0.1:*,https://127.0.0.1:*,http://localhost:*,https://localhost:*,{0},{1}" -f
-            $dockerEnv["CPOLAR_PUBLIC_BASE_URL"],
-            ($dockerEnv["CPOLAR_PUBLIC_BASE_URL"] -replace '^http://', 'https://')
-        )
+        $originPatterns = [System.Collections.Generic.List[string]]::new()
+        foreach ($pattern in @(
+            "http://127.0.0.1:*",
+            "https://127.0.0.1:*",
+            "http://localhost:*",
+            "https://localhost:*",
+            [string]$dockerEnv["CPOLAR_PUBLIC_BASE_URL"],
+            ([string]$dockerEnv["CPOLAR_PUBLIC_BASE_URL"] -replace '^http://', 'https://')
+        )) {
+            if (-not [string]::IsNullOrWhiteSpace($pattern) -and -not $originPatterns.Contains($pattern)) {
+                $originPatterns.Add($pattern)
+            }
+        }
+        Set-EnvValue -Values $dockerEnv -Name "APP_SECURITY_CORS_ALLOWED_ORIGIN_PATTERNS" -Value ($originPatterns -join ",")
     }
 
+    Write-EnvFile -Path $rootEnvPath -Values $rootEnv
     Write-EnvFile -Path $dockerEnvPath -Values $dockerEnv
 
     $frontendEnv = [ordered]@{
@@ -323,6 +376,13 @@ function Set-ServiceRuntimeEnvironment {
     $env:DUBBO_REGISTRY_PASSWORD = $nacosPassword
     $env:DUBBO_REGISTRY_PARAMETERS_NAMESPACE = $nacosNamespace
     $env:DUBBO_REGISTRY_PARAMETERS_GROUP = "DUBBO_GROUP"
+    $env:GATEWAY_ROUTE_AUTH_URI = "http://127.0.0.1:8081"
+    $env:GATEWAY_ROUTE_USER_URI = "http://127.0.0.1:8082"
+    $env:GATEWAY_ROUTE_ORDER_URI = "http://127.0.0.1:8083"
+    $env:GATEWAY_ROUTE_PRODUCT_URI = "http://127.0.0.1:8084"
+    $env:GATEWAY_ROUTE_STOCK_URI = "http://127.0.0.1:8085"
+    $env:GATEWAY_ROUTE_PAYMENT_URI = "http://127.0.0.1:8086"
+    $env:GATEWAY_ROUTE_SEARCH_URI = "http://127.0.0.1:8087"
     if ([string]::IsNullOrWhiteSpace($env:DUBBO_APPLICATION_QOS_ENABLE)) {
         $env:DUBBO_APPLICATION_QOS_ENABLE = "false"
     }
