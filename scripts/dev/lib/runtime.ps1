@@ -31,7 +31,7 @@ function Write-EnvFile {
         [Parameter(Mandatory = $true)]
         [string]$Path,
         [Parameter(Mandatory = $true)]
-        [hashtable]$Values
+        [System.Collections.IDictionary]$Values
     )
 
     $content = foreach ($key in $Values.Keys) {
@@ -52,6 +52,42 @@ function Set-EnvValueIfMissing {
     if (-not $Values.Contains($Name) -or [string]::IsNullOrWhiteSpace([string]$Values[$Name])) {
         $Values[$Name] = $Value
     }
+}
+
+function Set-EnvValue {
+    param(
+        [Parameter(Mandatory = $true)]
+        [System.Collections.IDictionary]$Values,
+        [Parameter(Mandatory = $true)]
+        [string]$Name,
+        [string]$Value = ""
+    )
+
+    $Values[$Name] = $Value
+}
+
+function Get-PreferredLocalIpv4 {
+    try {
+        $defaultRoute = Get-NetRoute -DestinationPrefix "0.0.0.0/0" -AddressFamily IPv4 -ErrorAction Stop |
+            Where-Object { $_.NextHop -and $_.NextHop -ne "0.0.0.0" } |
+            Sort-Object RouteMetric, ifMetric |
+            Select-Object -First 1
+        if ($null -ne $defaultRoute) {
+            $ipAddress = Get-NetIPAddress -InterfaceIndex $defaultRoute.InterfaceIndex -AddressFamily IPv4 -ErrorAction Stop |
+                Where-Object {
+                    $_.IPAddress -and
+                    $_.IPAddress -notlike "127.*" -and
+                    $_.IPAddress -notlike "169.254.*"
+                } |
+                Select-Object -First 1
+            if ($null -ne $ipAddress) {
+                return [string]$ipAddress.IPAddress
+            }
+        }
+    } catch {
+    }
+
+    return ""
 }
 
 function Import-EnvMap {
@@ -87,21 +123,30 @@ function Sync-EnvironmentFiles {
     $cpolarDomain = [string]($rootEnv["CPOLAR_DOMAIN"])
     $nginxHttpPort = if ($dockerEnv.Contains("PORT_NGINX_HTTP")) { [string]$dockerEnv["PORT_NGINX_HTTP"] } else { "18080" }
     $localGatewayBaseUrl = "http://127.0.0.1:{0}" -f $nginxHttpPort
+    $preferredLocalIpv4 = Get-PreferredLocalIpv4
+    $gatewayUpstream = if (-not [string]::IsNullOrWhiteSpace($preferredLocalIpv4)) { "{0}:8080" -f $preferredLocalIpv4 } else { "host.docker.internal:8080" }
+    $authUpstream = if (-not [string]::IsNullOrWhiteSpace($preferredLocalIpv4)) { "{0}:8081" -f $preferredLocalIpv4 } else { "host.docker.internal:8081" }
 
-    Set-EnvValueIfMissing -Values $dockerEnv -Name "NGINX_GATEWAY_UPSTREAM" -Value "host.docker.internal:8080"
-    Set-EnvValueIfMissing -Values $dockerEnv -Name "NGINX_AUTH_UPSTREAM" -Value "host.docker.internal:8081"
+    Set-EnvValue -Values $dockerEnv -Name "NGINX_GATEWAY_UPSTREAM" -Value $gatewayUpstream
+    Set-EnvValue -Values $dockerEnv -Name "NGINX_AUTH_UPSTREAM" -Value $authUpstream
 
     if (-not [string]::IsNullOrWhiteSpace($cpolarDomain)) {
-        Set-EnvValueIfMissing -Values $dockerEnv -Name "CPOLAR_PUBLIC_BASE_URL" -Value $cpolarDomain
-        Set-EnvValueIfMissing -Values $dockerEnv -Name "CPOLAR_FRONTEND_BASE_URL" -Value $cpolarDomain
-        Set-EnvValueIfMissing -Values $dockerEnv -Name "ALIPAY_NOTIFY_URL" -Value ("{0}/api/v1/payment/alipay/notify" -f $dockerEnv["CPOLAR_PUBLIC_BASE_URL"])
-        Set-EnvValueIfMissing -Values $dockerEnv -Name "ALIPAY_RETURN_URL" -Value ("{0}/#/pages/app/payments/index" -f $dockerEnv["CPOLAR_FRONTEND_BASE_URL"])
-        Set-EnvValueIfMissing -Values $dockerEnv -Name "GITHUB_REDIRECT_URI" -Value ("{0}/login/oauth2/code/github" -f $dockerEnv["CPOLAR_PUBLIC_BASE_URL"])
-        Set-EnvValueIfMissing -Values $dockerEnv -Name "APP_OAUTH2_GITHUB_ERROR_URL" -Value ("{0}/auth/error" -f $dockerEnv["CPOLAR_FRONTEND_BASE_URL"])
-        Set-EnvValueIfMissing -Values $dockerEnv -Name "APP_OAUTH2_WEB_REDIRECT_URIS" -Value (
+        Set-EnvValue -Values $dockerEnv -Name "CPOLAR_DOMAIN" -Value $cpolarDomain
+        Set-EnvValue -Values $dockerEnv -Name "CPOLAR_PUBLIC_BASE_URL" -Value $cpolarDomain
+        Set-EnvValue -Values $dockerEnv -Name "CPOLAR_FRONTEND_BASE_URL" -Value $cpolarDomain
+        Set-EnvValue -Values $dockerEnv -Name "ALIPAY_NOTIFY_URL" -Value ("{0}/api/v1/payment/alipay/notify" -f $dockerEnv["CPOLAR_PUBLIC_BASE_URL"])
+        Set-EnvValue -Values $dockerEnv -Name "ALIPAY_RETURN_URL" -Value ("{0}/#/pages/app/payments/index" -f $dockerEnv["CPOLAR_FRONTEND_BASE_URL"])
+        Set-EnvValue -Values $dockerEnv -Name "GITHUB_REDIRECT_URI" -Value ("{0}/login/oauth2/code/github" -f $dockerEnv["CPOLAR_PUBLIC_BASE_URL"])
+        Set-EnvValue -Values $dockerEnv -Name "APP_OAUTH2_GITHUB_ERROR_URL" -Value ("{0}/auth/error" -f $dockerEnv["CPOLAR_FRONTEND_BASE_URL"])
+        Set-EnvValue -Values $dockerEnv -Name "APP_OAUTH2_WEB_REDIRECT_URIS" -Value (
             "{0}/callback,http://127.0.0.1:{1}/callback,http://127.0.0.1:3000/callback,http://127.0.0.1:5173/callback,http://localhost:5173/callback" -f
             $dockerEnv["CPOLAR_PUBLIC_BASE_URL"],
             $nginxHttpPort
+        )
+        Set-EnvValue -Values $dockerEnv -Name "APP_SECURITY_CORS_ALLOWED_ORIGIN_PATTERNS" -Value (
+            "http://127.0.0.1:*,https://127.0.0.1:*,http://localhost:*,https://localhost:*,{0},{1}" -f
+            $dockerEnv["CPOLAR_PUBLIC_BASE_URL"],
+            ($dockerEnv["CPOLAR_PUBLIC_BASE_URL"] -replace '^http://', 'https://')
         )
     }
 

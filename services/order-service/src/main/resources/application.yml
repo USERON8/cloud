@@ -11,7 +11,7 @@ spring:
   application:
     name: order-service
   config:
-    import: "optional:nacos:common.yaml"
+    import: "optional:nacos:common.yaml,optional:nacos:order-service.yaml"
   profiles:
     active: dev
     include: rocketmq

@@ -9,7 +9,7 @@ spring:
   application:
     name: payment-service
   config:
-    import: "optional:nacos:common.yaml"
+    import: "optional:nacos:common.yaml,optional:nacos:payment-service.yaml"
   profiles:
     active: dev
     include: rocketmq

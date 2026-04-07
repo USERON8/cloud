@@ -107,9 +107,9 @@ spring:
                 - name: RequestRateLimiter
                   args:
                     key-resolver: "#{@userIpPathKeyResolver}"
-                    redis-rate-limiter.replenishRate: ${app.security.rate-limit.replenish-rate}
-                    redis-rate-limiter.burstCapacity: ${app.security.rate-limit.burst-capacity}
-                    redis-rate-limiter.requestedTokens: ${app.security.rate-limit.requested-tokens}
+                    redis-rate-limiter.replenishRate: ${APP_SECURITY_SEARCH_RATE_LIMIT_REPLENISH_RATE:120}
+                    redis-rate-limiter.burstCapacity: ${APP_SECURITY_SEARCH_RATE_LIMIT_BURST_CAPACITY:240}
+                    redis-rate-limiter.requestedTokens: ${APP_SECURITY_SEARCH_RATE_LIMIT_REQUESTED_TOKENS:1}
 
           discovery:
             locator:
