@@ -51,6 +51,23 @@
 - Fix: added a flexible `LocalDateTime` deserializer and applied it to `ProductDocument` date fields.
 - Result: direct search endpoint regression returned HTTP 200 after the fix, and the previous deserialization error no longer appeared in logs.
 
+### 6. Nacos config was too centralized for service-specific tuning
+- Symptom: all services effectively depended on one shared `common.yaml`, which made service-specific runtime tuning opaque and harder to audit.
+- Cause: each service imported only `common.yaml` from Nacos.
+- Fix: split config loading into `common.yaml` plus one dedicated `*.yaml` per service, and added matching `config_info` seed rows for `gateway`, `auth-service`, `user-service`, `product-service`, `order-service`, `payment-service`, `search-service`, and `stock-service`.
+- Result: each service now has a clear per-service config slot while local shared values remain easy to inspect in `common.yaml`.
+
+### 7. Local Nginx convenience entry used an unstable upstream path on Windows Docker Desktop
+- Symptom: search pressure through `http://127.0.0.1:18080` intermittently returned `504` after about `5s`, even when gateway and search-service stayed healthy.
+- Cause: Nginx connected to host-started services through Docker Desktop host routing, and `host.docker.internal` showed intermittent upstream connect timeouts under concurrent load.
+- Fix:
+  - switched Nginx config to explicit upstream blocks with keepalive;
+  - changed the local Docker env to use the host primary IPv4 instead of `host.docker.internal`;
+  - updated `scripts/dev/lib/runtime.ps1` to auto-detect the preferred local IPv4 and write `NGINX_GATEWAY_UPSTREAM` and `NGINX_AUTH_UPSTREAM` accordingly for local runs.
+- Result:
+  - the `18080` convenience entry improved significantly but still shows occasional Windows-specific connect jitter;
+  - the direct gateway entry on `8080` passes the full search pressure scenario cleanly.
+
 ## Baseline Verification
 ### Service startup state
 - gateway: `UP`
@@ -94,32 +111,60 @@
   - gateway search route rate limiter started rejecting requests after capacity was exhausted;
   - `/api/search/search` also threw internal errors because of legacy datetime parsing.
 
-### Search pressure scenario after search datetime fix
+### Search pressure scenario through local Nginx convenience entry
+- Target: `http://127.0.0.1:18080`
 - Scenario: controlled staged ramp to 12 iterations/s
-- Result: still failed thresholds
-- `http_req_failed`: `10.29%`
-- `search_singleton_latency_ms p95`: `5.00s`
-- `search_singleton_timeout_rate`: `7.29%`
+- Result: improved but still not fully stable
+- Best observed controlled probe:
+  - `http_req_failed`: `0.47%`
+  - `http_req_duration p95`: `59.10ms`
+- Formal `search-singleton-max.js` run still showed intermittent failures on some runs:
+  - `http_req_failed`: up to `3.64%`
+  - `search_singleton_timeout_rate`: up to `4.11%`
 - Interpretation:
-  - the search datetime bug was fixed;
-  - the remaining failures are consistent with gateway-side rate limiting and some timeout behavior under sustained search pressure.
+  - remaining failures come from local Nginx upstream connect timeouts on Windows Docker Desktop;
+  - this is not the search business path itself.
+
+### Search pressure scenario through direct gateway entry
+- Target: `http://127.0.0.1:8080`
+- Scenario: `search-singleton-max.js` with staged ramp to 12 iterations/s
+- Result: passed all thresholds
+- `http_req_failed`: `0.00%`
+- `search_singleton_error_rate`: `0.00%`
+- `search_singleton_timeout_rate`: `0.00%`
+- `http_req_duration p95`: `64.17ms`
+- Interpretation:
+  - the local host-started gateway plus downstream search chain is stable for the validated pressure profile;
+  - the remaining risk is isolated to the Docker Desktop convenience ingress on `18080`.
 
 ## Current Deployment Readiness Assessment
 - Local startup readiness: yes.
 - Basic service health readiness: yes.
 - Functional smoke readiness: yes.
-- Search pressure readiness through current gateway policy: no.
+- Search pressure readiness through direct gateway entry (`8080`): yes.
+- Search pressure readiness through local Nginx convenience entry (`18080`): no.
 
 ## Remaining Risks
-- Search throughput through the gateway is still constrained by current route rate-limiter settings.
-- Moderate search pressure can still trigger timeout and rejection behavior.
+- The local Windows Docker Desktop Nginx convenience layer can still show intermittent upstream connect timeouts under pressure.
+- If local `18080` is used for pressure verification, results may include host bridge noise that does not reproduce on direct gateway traffic.
 - Some startup warnings remain from third-party frameworks such as Dubbo and Spring Security; they are non-blocking for local startup but should be reviewed separately if production log cleanliness is required.
 
 ## Changed Files In This Validation Round
 - `docker/.env`
 - `scripts/dev/lib/runtime.ps1`
+- `docker/docker-compose/nginx/config/nginx.conf`
 - `scripts/ci/smoke-local.ps1`
 - `tests/perf/k6/lib/preflight.ps1`
+- `services/gateway/src/main/java/com/cloud/gateway/config/GatewayServerNettyConfig.java`
+- `services/gateway/src/main/resources/application.yml`
+- `services/auth-service/src/main/resources/application.yml`
+- `services/user-service/src/main/resources/application.yml`
+- `services/product-service/src/main/resources/application.yml`
+- `services/order-service/src/main/resources/application.yml`
+- `services/payment-service/src/main/resources/application.yml`
+- `services/stock-service/src/main/resources/application.yml`
+- `services/search-service/src/main/resources/application.yml`
+- `db/init/infra/nacos/init.sql`
 - `services/search-service/src/main/java/com/cloud/search/document/ProductDocument.java`
 - `services/search-service/src/main/java/com/cloud/search/jackson/FlexibleLocalDateTimeDeserializer.java`
 
