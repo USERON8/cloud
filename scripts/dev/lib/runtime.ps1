@@ -221,6 +221,7 @@ function Set-ServiceRuntimeEnvironment {
     $nacosPort = Get-DockerPortValue -Root $Root -Name "PORT_NACOS_HTTP" -DefaultValue 18848
     $nacosGrpcPort = Get-DockerPortValue -Root $Root -Name "PORT_NACOS_GRPC" -DefaultValue ($nacosPort + 1000)
     $nacosGrpcOffset = $nacosGrpcPort - $nacosPort
+    $redisPort = Get-DockerPortValue -Root $Root -Name "PORT_REDIS" -DefaultValue 16379
     $rocketMqNamesrvPort = Get-DockerPortValue -Root $Root -Name "PORT_RMQ_NAMESRV" -DefaultValue 20011
     $minioPort = Get-DockerPortValue -Root $Root -Name "PORT_MINIO_API" -DefaultValue 19000
 
@@ -259,8 +260,15 @@ function Set-ServiceRuntimeEnvironment {
     $env:SPRING_CLOUD_NACOS_DISCOVERY_NAMESPACE = $nacosNamespace
     $env:SPRING_CLOUD_NACOS_DISCOVERY_GROUP = $nacosGroup
     if ($nacosGrpcOffset -gt 0) {
-        $env:NACOS_GRPC_PORT_OFFSET = [string]$nacosGrpcOffset
+    $env:NACOS_GRPC_PORT_OFFSET = [string]$nacosGrpcOffset
     }
+
+    $env:REDIS_HOST = "127.0.0.1"
+    $env:REDIS_PORT = [string]$redisPort
+    $env:SPRING_DATA_REDIS_HOST = $env:REDIS_HOST
+    $env:SPRING_DATA_REDIS_PORT = $env:REDIS_PORT
+    $env:SPRING_REDIS_HOST = $env:REDIS_HOST
+    $env:SPRING_REDIS_PORT = $env:REDIS_PORT
 
     $env:ROCKETMQ_NAMESRV_HOST = "127.0.0.1"
     $env:ROCKETMQ_NAMESRV_PORT = [string]$rocketMqNamesrvPort

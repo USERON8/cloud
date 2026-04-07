@@ -24,8 +24,26 @@ function Test-TcpPortOpen {
 function Get-RequiredContainers {
     param([string]$Mode)
     switch ($Mode) {
-        "search" { return @("cloud-nginx-gateway", "cloud-redis", "cloud-es-search", "cloud-prometheus") }
-        default { return @("cloud-mysql", "cloud-redis", "cloud-nacos", "cloud-rmq-namesrv", "cloud-rmq-broker", "cloud-nginx-gateway", "cloud-es-search", "cloud-prometheus") }
+        "search" {
+            return @(
+                @("nginx", "cloud-nginx-gateway"),
+                @("redis", "cloud-redis"),
+                @("es-search", "cloud-es-search"),
+                @("cloud-prometheus")
+            )
+        }
+        default {
+            return @(
+                @("mysql", "cloud-mysql"),
+                @("redis", "cloud-redis"),
+                @("nacos", "cloud-nacos"),
+                @("rmq-namesrv", "cloud-rmq-namesrv"),
+                @("rmq-broker", "cloud-rmq-broker"),
+                @("nginx", "cloud-nginx-gateway"),
+                @("es-search", "cloud-es-search"),
+                @("cloud-prometheus")
+            )
+        }
     }
 }
 
@@ -53,9 +71,9 @@ function Assert-K6Preflight {
 
     $runningContainers = @(docker ps --format "{{.Names}}")
     $missingContainers = @()
-    foreach ($container in $requiredContainers) {
-        if ($runningContainers -notcontains $container) {
-            $missingContainers += $container
+    foreach ($containerAliases in $requiredContainers) {
+        if (@($containerAliases | Where-Object { $runningContainers -contains $_ }).Count -eq 0) {
+            $missingContainers += ($containerAliases -join "|")
         }
     }
     if ($missingContainers.Count -gt 0) {
