@@ -68,6 +68,20 @@
   - the `18080` convenience entry improved significantly but still shows occasional Windows-specific connect jitter;
   - the direct gateway entry on `8080` passes the full search pressure scenario cleanly.
 
+### 8. Browser write requests were blocked by gateway signature enforcement
+- Symptom: authenticated browser requests like `POST /api/user/address/add/{userId}` returned `401` with `signature headers missing`.
+- Cause: `ApiSignatureReplayFilter` enforced HMAC signature headers for all non-GET `/api/**` requests, but the H5 browser client only sends `Authorization: Bearer ...`.
+- Fix: bypass signature validation for requests carrying a bearer access token and keep signature enforcement for non-user signed traffic.
+- Result: real browser address creation now succeeds with HTTP 200 and no console errors.
+
+### 9. Order list page failed because `order_main` pagination did not use a compliant index
+- Symptom: the browser order page returned `500` on `GET /api/orders?page=1&size=30`.
+- Cause: `OrderQueryServiceImpl` used `BaseMapper.selectPage(...)` with a generic wrapper on `order_main`, which triggered `IllegalSQLInnerInterceptor` because the query shape did not use an accepted index for `deleted` and `user_id`.
+- Fix:
+  - added explicit mapper SQL `selectPageActive(...)` with `FORCE INDEX`;
+  - added `idx_order_main_user_deleted_id (user_id, deleted, id)` and `idx_order_main_deleted_id (deleted, id)` to the schema seed and the running MySQL instance.
+- Result: browser order list requests now return HTTP 200 and the page loads normally.
+
 ## Baseline Verification
 ### Service startup state
 - gateway: `UP`
@@ -143,11 +157,36 @@
 - Functional smoke readiness: yes.
 - Search pressure readiness through direct gateway entry (`8080`): yes.
 - Search pressure readiness through local Nginx convenience entry (`18080`): no.
+- Public browser access through `https://6e314e0f.r6.cpolar.cn`: yes for browse, login, address, order list, and payment workspace entry.
+- Full browser checkout readiness: no.
 
 ## Remaining Risks
 - The local Windows Docker Desktop Nginx convenience layer can still show intermittent upstream connect timeouts under pressure.
 - If local `18080` is used for pressure verification, results may include host bridge noise that does not reproduce on direct gateway traffic.
+- The storefront still lacks a product detail and variant-selection flow for multi-SKU goods, so a real browser user cannot complete add-to-cart and order creation from the current search result UI.
 - Some startup warnings remain from third-party frameworks such as Dubbo and Spring Security; they are non-blocking for local startup but should be reviewed separately if production log cleanliness is required.
+
+## Public Browser Verification
+### Verified with real browser on `https://6e314e0f.r6.cpolar.cn`
+- Home page loads successfully.
+- Search suggestions and search results load successfully.
+- Login state persists with bearer token in browser storage.
+- Address page loads successfully.
+- Address creation succeeds with:
+  - consignee: `itest`
+  - phone: `13492870207`
+  - region: `Guangdong / Shenzhen / Nanshan`
+  - street: `Keji South 12th Road`
+  - detail: `Tower A, Room 1201`
+- Cart page loads successfully and displays the default address.
+- Order page loads successfully and `GET /api/orders?page=1&size=30` returns `200`.
+- Payment page loads successfully without console errors.
+
+### Verified remaining blocker
+- Search result entry `Cloud Phone 15` is a multi-SKU product.
+- Clicking `加入购物车` in the list view does not create a cart item request.
+- The UI only shows the toast `This product has multiple variants and cannot be added from the list view`.
+- There is still no browser-exposed product detail / variant picker route, so a real user cannot complete checkout for the current catalog path.
 
 ## Changed Files In This Validation Round
 - `docker/.env`
@@ -155,16 +194,21 @@
 - `docker/docker-compose/nginx/config/nginx.conf`
 - `scripts/ci/smoke-local.ps1`
 - `tests/perf/k6/lib/preflight.ps1`
+- `services/gateway/src/main/java/com/cloud/gateway/filter/ApiSignatureReplayFilter.java`
 - `services/gateway/src/main/java/com/cloud/gateway/config/GatewayServerNettyConfig.java`
+- `services/gateway/src/main/resources/application-route.yml`
 - `services/gateway/src/main/resources/application.yml`
 - `services/auth-service/src/main/resources/application.yml`
 - `services/user-service/src/main/resources/application.yml`
 - `services/product-service/src/main/resources/application.yml`
 - `services/order-service/src/main/resources/application.yml`
+- `services/order-service/src/main/java/com/cloud/order/mapper/OrderMainMapper.java`
+- `services/order-service/src/main/java/com/cloud/order/service/impl/OrderQueryServiceImpl.java`
 - `services/payment-service/src/main/resources/application.yml`
 - `services/stock-service/src/main/resources/application.yml`
 - `services/search-service/src/main/resources/application.yml`
 - `db/init/infra/nacos/init.sql`
+- `db/init/order-service/init.sql`
 - `services/search-service/src/main/java/com/cloud/search/document/ProductDocument.java`
 - `services/search-service/src/main/java/com/cloud/search/jackson/FlexibleLocalDateTimeDeserializer.java`
 
