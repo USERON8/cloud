@@ -13,7 +13,9 @@ import java.util.List;
 public class FlexibleLocalDateTimeDeserializer extends JsonDeserializer<LocalDateTime> {
 
   private static final List<DateTimeFormatter> SUPPORTED_FORMATTERS =
-      List.of(DateTimeFormatter.ISO_LOCAL_DATE_TIME, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+      List.of(
+          DateTimeFormatter.ISO_LOCAL_DATE_TIME,
+          DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
 
   @Override
   public LocalDateTime deserialize(JsonParser parser, DeserializationContext context)

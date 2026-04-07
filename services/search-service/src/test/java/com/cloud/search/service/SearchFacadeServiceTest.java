@@ -10,7 +10,10 @@ import static org.mockito.Mockito.when;
 import com.cloud.search.dto.ProductSearchRequest;
 import com.cloud.search.mapper.SearchRequestMapper;
 import com.cloud.search.service.support.SearchHotDataCacheService;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
@@ -35,13 +38,17 @@ class SearchFacadeServiceTest {
 
   @BeforeEach
   void setUp() {
+    ObjectMapper objectMapper =
+        new ObjectMapper()
+            .registerModule(new JavaTimeModule())
+            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
     searchFacadeService =
         new SearchFacadeService(
             productSearchService,
             elasticsearchOptimizedService,
             searchRequestMapper,
             searchHotDataCacheService,
-            new ObjectMapper());
+            objectMapper);
   }
 
   @Test
@@ -173,5 +180,39 @@ class SearchFacadeServiceTest {
     assertThat(result.getHighlights())
         .containsEntry("1001", List.of("<em class='highlight'>Cloud</em> Phone"));
     assertThat(result.getList()).extracting("id").containsExactly("1001");
+  }
+
+  @Test
+  void searchProductsShouldAcceptLegacyDateTimeFormatFromElasticsearchDocuments() {
+    ProductSearchRequest request = new ProductSearchRequest();
+    request.setKeyword("watch");
+    request.setPage(0);
+    request.setSize(10);
+
+    ElasticsearchOptimizedService.SearchResultDTO esResult =
+        ElasticsearchOptimizedService.SearchResultDTO.builder()
+            .documents(
+                List.of(
+                    Map.of(
+                        "id", "2001",
+                        "productName", "Legacy Watch",
+                        "createdAt", "2026-04-01 03:04:49",
+                        "updatedAt", "2026-04-02 05:06:07")))
+            .total(1L)
+            .from(0)
+            .size(10)
+            .aggregations(Map.of())
+            .searchAfter(List.of())
+            .build();
+
+    when(elasticsearchOptimizedService.productSearchAfter(eq(request), any())).thenReturn(esResult);
+
+    var result = searchFacadeService.searchProducts(request, "[1]");
+
+    assertThat(result.getList()).hasSize(1);
+    assertThat(result.getList().get(0).getCreatedAt())
+        .isEqualTo(LocalDateTime.of(2026, 4, 1, 3, 4, 49));
+    assertThat(result.getList().get(0).getUpdatedAt())
+        .isEqualTo(LocalDateTime.of(2026, 4, 2, 5, 6, 7));
   }
 }
