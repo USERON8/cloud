@@ -1,10 +1,10 @@
 import http from './http'
 import type {
+  ProductDocument,
   ProductItem,
   ProductPage,
   ProductQuery,
-  SearchResult,
-  ProductDocument
+  SearchResult
 } from '../types/domain'
 
 export function listProducts(params: ProductQuery = {}): Promise<ProductPage> {
@@ -16,7 +16,7 @@ export function listManageProducts(params: ProductQuery = {}): Promise<ProductPa
 }
 
 export function searchProducts(name: string): Promise<ProductItem[]> {
-  // 调用搜索服务接口，返回的是 SearchResultDTO，需要提取 list 字段
+  // Search service returns a SearchResult payload, so map from its list field.
   return http.get<SearchResult<ProductDocument>, SearchResult<ProductDocument>>('/api/search/search', {
     params: { keyword: name, page: 0, size: 20 }
   }).then(result => result.list.map(doc => ({
