@@ -34,15 +34,6 @@ public class SystemException extends BaseException {
     this(code, message, cause, true);
   }
 
-  public static SystemException retryable(ResultCode resultCode, String message, Throwable cause) {
-    return new SystemException(resultCode, message, cause, true);
-  }
-
-  public static SystemException nonRetryable(
-      ResultCode resultCode, String message, Throwable cause) {
-    return new SystemException(resultCode, message, cause, false);
-  }
-
   public boolean isRetryable() {
     return retryable;
   }
