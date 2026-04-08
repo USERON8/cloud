@@ -1,9 +1,9 @@
 package com.cloud.user.exception;
 
 import com.cloud.common.enums.ResultCode;
-import com.cloud.common.exception.BusinessException;
+import com.cloud.common.exception.BizException;
 
-public class UserServiceException extends BusinessException {
+public class UserServiceException extends BizException {
 
   public UserServiceException(int code, String message) {
     super(code, message);
@@ -26,7 +26,7 @@ public class UserServiceException extends BusinessException {
   }
 
   public UserServiceException(ResultCode resultCode, Throwable cause) {
-    super(resultCode, cause);
+    super(resultCode, null, cause);
   }
 
   public UserServiceException(int code, String message, Throwable cause) {

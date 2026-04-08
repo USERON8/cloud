@@ -3,7 +3,7 @@ package com.cloud.user.service.support;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.cloud.common.domain.dto.auth.AuthPrincipalDTO;
-import com.cloud.common.exception.BusinessException;
+import com.cloud.common.exception.BizException;
 import com.cloud.user.converter.AuthPrincipalConverter;
 import com.cloud.user.mapper.UserMapper;
 import com.cloud.user.module.entity.User;
@@ -34,7 +34,7 @@ public class AuthPrincipalService {
         userMapper.selectOne(
             new LambdaQueryWrapper<User>().eq(User::getUsername, username.trim()).last("limit 1"));
     if (existing != null && (currentUserId == null || !existing.getId().equals(currentUserId))) {
-      throw new BusinessException("username already exists");
+      throw new BizException("username already exists");
     }
   }
 
@@ -60,7 +60,7 @@ public class AuthPrincipalService {
   @Transactional(rollbackFor = Exception.class)
   public Long createPrincipal(AuthPrincipalDTO authPrincipalDTO) {
     if (authPrincipalDTO == null || StrUtil.isBlank(authPrincipalDTO.getUsername())) {
-      throw new BusinessException("username is required");
+      throw new BizException("username is required");
     }
     assertUsernameAvailable(authPrincipalDTO.getUsername(), authPrincipalDTO.getId());
 
@@ -72,7 +72,7 @@ public class AuthPrincipalService {
     }
     user.setUsername(StrUtil.trim(authPrincipalDTO.getUsername()));
     if (StrUtil.isBlank(authPrincipalDTO.getPassword())) {
-      throw new BusinessException("password is required");
+      throw new BizException("password is required");
     }
     user.setPassword(normalizePassword(authPrincipalDTO.getPassword()));
     user.setNickname(StrUtil.blankToDefault(authPrincipalDTO.getNickname(), user.getUsername()));
@@ -99,12 +99,12 @@ public class AuthPrincipalService {
   @Transactional(rollbackFor = Exception.class)
   public Boolean updatePrincipal(AuthPrincipalDTO authPrincipalDTO) {
     if (authPrincipalDTO == null || authPrincipalDTO.getId() == null) {
-      throw new BusinessException("principal id is required");
+      throw new BizException("principal id is required");
     }
 
     User existing = userMapper.selectById(authPrincipalDTO.getId());
     if (existing == null) {
-      throw new BusinessException("principal not found");
+      throw new BizException("principal not found");
     }
 
     String newUsername = StrUtil.trim(authPrincipalDTO.getUsername());
@@ -157,15 +157,15 @@ public class AuthPrincipalService {
   @Transactional(rollbackFor = Exception.class)
   public Boolean changePassword(Long userId, String oldPassword, String newPassword) {
     if (userId == null) {
-      throw new BusinessException("principal id is required");
+      throw new BizException("principal id is required");
     }
     if (StrUtil.isBlank(oldPassword) || StrUtil.isBlank(newPassword)) {
-      throw new BusinessException("old password and new password are required");
+      throw new BizException("old password and new password are required");
     }
 
     User existing = userMapper.selectById(userId);
     if (existing == null) {
-      throw new BusinessException("principal not found");
+      throw new BizException("principal not found");
     }
     if (!passwordEncoder.matches(oldPassword, existing.getPassword())) {
       return false;
@@ -235,7 +235,7 @@ public class AuthPrincipalService {
   private String normalizePassword(String password) {
     String trimmed = password == null ? null : password.trim();
     if (StrUtil.isBlank(trimmed)) {
-      throw new BusinessException("password is required");
+      throw new BizException("password is required");
     }
     if (isBCryptHash(trimmed)) {
       return trimmed;
