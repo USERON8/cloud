@@ -1,5 +1,7 @@
 package com.cloud.search.document;
 
+import com.cloud.search.jackson.FlexibleLocalDateTimeDeserializer;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -102,12 +104,14 @@ public class ProductDocument {
       type = FieldType.Date,
       format = {DateFormat.date_optional_time, DateFormat.epoch_millis},
       pattern = {"uuuu-MM-dd HH:mm:ss"})
+  @JsonDeserialize(using = FlexibleLocalDateTimeDeserializer.class)
   private LocalDateTime createdAt;
 
   @Field(
       type = FieldType.Date,
       format = {DateFormat.date_optional_time, DateFormat.epoch_millis},
       pattern = {"uuuu-MM-dd HH:mm:ss"})
+  @JsonDeserialize(using = FlexibleLocalDateTimeDeserializer.class)
   private LocalDateTime updatedAt;
 
   @Field(type = FieldType.Double)

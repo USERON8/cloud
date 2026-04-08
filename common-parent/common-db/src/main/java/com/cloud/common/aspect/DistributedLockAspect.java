@@ -2,7 +2,7 @@ package com.cloud.common.aspect;
 
 import cn.hutool.core.util.StrUtil;
 import com.cloud.common.annotation.DistributedLock;
-import com.cloud.common.exception.LockException;
+import com.cloud.common.exception.BizException;
 import com.xxl.job.core.context.XxlJobHelper;
 import java.lang.reflect.Method;
 import lombok.RequiredArgsConstructor;
@@ -138,7 +138,7 @@ public class DistributedLockAspect {
     return switch (distributedLock.failStrategy()) {
       case THROW_EXCEPTION -> {
         log.warn("Failed to acquire lock: key={}", lockKey);
-        throw new LockException("LOCK_ACQUIRE_FAILED", failMessage + " - key=" + lockKey);
+        throw new BizException(failMessage + " - key=" + lockKey);
       }
       case RETURN_NULL -> {
         log.warn("Failed to acquire lock and return null: key={}", lockKey);
@@ -150,8 +150,7 @@ public class DistributedLockAspect {
       }
       case FAIL_FAST -> {
         log.warn("Lock acquisition timeout: key={}", lockKey);
-        throw new LockException(
-            "LOCK_ACQUIRE_TIMEOUT", "Lock acquisition timeout - key=" + lockKey);
+        throw new BizException("Lock acquisition timeout - key=" + lockKey);
       }
     };
   }

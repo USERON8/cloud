@@ -4,7 +4,7 @@ import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.cloud.common.domain.dto.user.UserDTO;
 import com.cloud.common.domain.vo.user.UserVO;
-import com.cloud.common.exception.BusinessException;
+import com.cloud.common.exception.BizException;
 import com.cloud.user.converter.UserConverter;
 import com.cloud.user.mapper.UserMapper;
 import com.cloud.user.module.entity.User;
@@ -100,7 +100,7 @@ public class UserAsyncServiceImpl implements UserAsyncService {
       }
       try {
         result.put(username, userService.findByUsername(username) != null);
-      } catch (BusinessException e) {
+      } catch (BizException e) {
         log.warn("Username validation failed, username={}", username);
         result.put(username, false);
       } catch (Exception e) {

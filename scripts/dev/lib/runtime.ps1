@@ -31,7 +31,7 @@ function Write-EnvFile {
         [Parameter(Mandatory = $true)]
         [string]$Path,
         [Parameter(Mandatory = $true)]
-        [hashtable]$Values
+        [System.Collections.IDictionary]$Values
     )
 
     $content = foreach ($key in $Values.Keys) {
@@ -52,6 +52,63 @@ function Set-EnvValueIfMissing {
     if (-not $Values.Contains($Name) -or [string]::IsNullOrWhiteSpace([string]$Values[$Name])) {
         $Values[$Name] = $Value
     }
+}
+
+function Set-EnvValue {
+    param(
+        [Parameter(Mandatory = $true)]
+        [System.Collections.IDictionary]$Values,
+        [Parameter(Mandatory = $true)]
+        [string]$Name,
+        [string]$Value = ""
+    )
+
+    $Values[$Name] = $Value
+}
+
+function Get-PreferredLocalIpv4 {
+    try {
+        $defaultRoute = Get-NetRoute -DestinationPrefix "0.0.0.0/0" -AddressFamily IPv4 -ErrorAction Stop |
+            Where-Object { $_.NextHop -and $_.NextHop -ne "0.0.0.0" } |
+            Sort-Object RouteMetric, ifMetric |
+            Select-Object -First 1
+        if ($null -ne $defaultRoute) {
+            $ipAddress = Get-NetIPAddress -InterfaceIndex $defaultRoute.InterfaceIndex -AddressFamily IPv4 -ErrorAction Stop |
+                Where-Object {
+                    $_.IPAddress -and
+                    $_.IPAddress -notlike "127.*" -and
+                    $_.IPAddress -notlike "169.254.*"
+                } |
+                Select-Object -First 1
+            if ($null -ne $ipAddress) {
+                return [string]$ipAddress.IPAddress
+            }
+        }
+    } catch {
+    }
+
+    return ""
+}
+
+function Resolve-PublicBaseUrl {
+    param(
+        [string]$Url
+    )
+
+    if ([string]::IsNullOrWhiteSpace($Url)) {
+        return ""
+    }
+
+    $trimmedUrl = $Url.Trim()
+    try {
+        $uri = [System.Uri]$trimmedUrl
+        if ($uri.IsAbsoluteUri) {
+            return $uri.GetLeftPart([System.UriPartial]::Authority).TrimEnd("/")
+        }
+    } catch {
+    }
+
+    return $trimmedUrl.TrimEnd("/")
 }
 
 function Import-EnvMap {
@@ -85,26 +142,49 @@ function Sync-EnvironmentFiles {
     }
 
     $cpolarDomain = [string]($rootEnv["CPOLAR_DOMAIN"])
+    $publicBaseUrl = Resolve-PublicBaseUrl -Url $cpolarDomain
     $nginxHttpPort = if ($dockerEnv.Contains("PORT_NGINX_HTTP")) { [string]$dockerEnv["PORT_NGINX_HTTP"] } else { "18080" }
     $localGatewayBaseUrl = "http://127.0.0.1:{0}" -f $nginxHttpPort
+    $preferredLocalIpv4 = Get-PreferredLocalIpv4
+    $gatewayUpstream = if (-not [string]::IsNullOrWhiteSpace($preferredLocalIpv4)) { "{0}:8080" -f $preferredLocalIpv4 } else { "host.docker.internal:8080" }
+    $authUpstream = if (-not [string]::IsNullOrWhiteSpace($preferredLocalIpv4)) { "{0}:8081" -f $preferredLocalIpv4 } else { "host.docker.internal:8081" }
 
-    Set-EnvValueIfMissing -Values $dockerEnv -Name "NGINX_GATEWAY_UPSTREAM" -Value "host.docker.internal:8080"
-    Set-EnvValueIfMissing -Values $dockerEnv -Name "NGINX_AUTH_UPSTREAM" -Value "host.docker.internal:8081"
+    Set-EnvValue -Values $dockerEnv -Name "NGINX_GATEWAY_UPSTREAM" -Value $gatewayUpstream
+    Set-EnvValue -Values $dockerEnv -Name "NGINX_AUTH_UPSTREAM" -Value $authUpstream
 
-    if (-not [string]::IsNullOrWhiteSpace($cpolarDomain)) {
-        Set-EnvValueIfMissing -Values $dockerEnv -Name "CPOLAR_PUBLIC_BASE_URL" -Value $cpolarDomain
-        Set-EnvValueIfMissing -Values $dockerEnv -Name "CPOLAR_FRONTEND_BASE_URL" -Value $cpolarDomain
-        Set-EnvValueIfMissing -Values $dockerEnv -Name "ALIPAY_NOTIFY_URL" -Value ("{0}/api/v1/payment/alipay/notify" -f $dockerEnv["CPOLAR_PUBLIC_BASE_URL"])
-        Set-EnvValueIfMissing -Values $dockerEnv -Name "ALIPAY_RETURN_URL" -Value ("{0}/#/pages/app/payments/index" -f $dockerEnv["CPOLAR_FRONTEND_BASE_URL"])
-        Set-EnvValueIfMissing -Values $dockerEnv -Name "GITHUB_REDIRECT_URI" -Value ("{0}/login/oauth2/code/github" -f $dockerEnv["CPOLAR_PUBLIC_BASE_URL"])
-        Set-EnvValueIfMissing -Values $dockerEnv -Name "APP_OAUTH2_GITHUB_ERROR_URL" -Value ("{0}/auth/error" -f $dockerEnv["CPOLAR_FRONTEND_BASE_URL"])
-        Set-EnvValueIfMissing -Values $dockerEnv -Name "APP_OAUTH2_WEB_REDIRECT_URIS" -Value (
+    if (-not [string]::IsNullOrWhiteSpace($publicBaseUrl)) {
+        Set-EnvValue -Values $rootEnv -Name "CPOLAR_DOMAIN" -Value $publicBaseUrl
+        Set-EnvValue -Values $rootEnv -Name "CPOLAR_PUBLIC_BASE_URL" -Value $publicBaseUrl
+        Set-EnvValue -Values $rootEnv -Name "CPOLAR_FRONTEND_BASE_URL" -Value $publicBaseUrl
+        Set-EnvValue -Values $dockerEnv -Name "CPOLAR_DOMAIN" -Value $publicBaseUrl
+        Set-EnvValue -Values $dockerEnv -Name "CPOLAR_PUBLIC_BASE_URL" -Value $publicBaseUrl
+        Set-EnvValue -Values $dockerEnv -Name "CPOLAR_FRONTEND_BASE_URL" -Value $publicBaseUrl
+        Set-EnvValue -Values $dockerEnv -Name "ALIPAY_NOTIFY_URL" -Value ("{0}/api/v1/payment/alipay/notify" -f $dockerEnv["CPOLAR_PUBLIC_BASE_URL"])
+        Set-EnvValue -Values $dockerEnv -Name "ALIPAY_RETURN_URL" -Value ("{0}/#/pages/app/payments/index" -f $dockerEnv["CPOLAR_FRONTEND_BASE_URL"])
+        Set-EnvValue -Values $dockerEnv -Name "GITHUB_REDIRECT_URI" -Value ("{0}/login/oauth2/code/github" -f $dockerEnv["CPOLAR_PUBLIC_BASE_URL"])
+        Set-EnvValue -Values $dockerEnv -Name "APP_OAUTH2_GITHUB_ERROR_URL" -Value ("{0}/auth/error" -f $dockerEnv["CPOLAR_FRONTEND_BASE_URL"])
+        Set-EnvValue -Values $dockerEnv -Name "APP_OAUTH2_WEB_REDIRECT_URIS" -Value (
             "{0}/callback,http://127.0.0.1:{1}/callback,http://127.0.0.1:3000/callback,http://127.0.0.1:5173/callback,http://localhost:5173/callback" -f
             $dockerEnv["CPOLAR_PUBLIC_BASE_URL"],
             $nginxHttpPort
         )
+        $originPatterns = [System.Collections.Generic.List[string]]::new()
+        foreach ($pattern in @(
+            "http://127.0.0.1:*",
+            "https://127.0.0.1:*",
+            "http://localhost:*",
+            "https://localhost:*",
+            [string]$dockerEnv["CPOLAR_PUBLIC_BASE_URL"],
+            ([string]$dockerEnv["CPOLAR_PUBLIC_BASE_URL"] -replace '^http://', 'https://')
+        )) {
+            if (-not [string]::IsNullOrWhiteSpace($pattern) -and -not $originPatterns.Contains($pattern)) {
+                $originPatterns.Add($pattern)
+            }
+        }
+        Set-EnvValue -Values $dockerEnv -Name "APP_SECURITY_CORS_ALLOWED_ORIGIN_PATTERNS" -Value ($originPatterns -join ",")
     }
 
+    Write-EnvFile -Path $rootEnvPath -Values $rootEnv
     Write-EnvFile -Path $dockerEnvPath -Values $dockerEnv
 
     $frontendEnv = [ordered]@{
@@ -221,6 +301,7 @@ function Set-ServiceRuntimeEnvironment {
     $nacosPort = Get-DockerPortValue -Root $Root -Name "PORT_NACOS_HTTP" -DefaultValue 18848
     $nacosGrpcPort = Get-DockerPortValue -Root $Root -Name "PORT_NACOS_GRPC" -DefaultValue ($nacosPort + 1000)
     $nacosGrpcOffset = $nacosGrpcPort - $nacosPort
+    $redisPort = Get-DockerPortValue -Root $Root -Name "PORT_REDIS" -DefaultValue 16379
     $rocketMqNamesrvPort = Get-DockerPortValue -Root $Root -Name "PORT_RMQ_NAMESRV" -DefaultValue 20011
     $minioPort = Get-DockerPortValue -Root $Root -Name "PORT_MINIO_API" -DefaultValue 19000
 
@@ -259,8 +340,15 @@ function Set-ServiceRuntimeEnvironment {
     $env:SPRING_CLOUD_NACOS_DISCOVERY_NAMESPACE = $nacosNamespace
     $env:SPRING_CLOUD_NACOS_DISCOVERY_GROUP = $nacosGroup
     if ($nacosGrpcOffset -gt 0) {
-        $env:NACOS_GRPC_PORT_OFFSET = [string]$nacosGrpcOffset
+    $env:NACOS_GRPC_PORT_OFFSET = [string]$nacosGrpcOffset
     }
+
+    $env:REDIS_HOST = "127.0.0.1"
+    $env:REDIS_PORT = [string]$redisPort
+    $env:SPRING_DATA_REDIS_HOST = $env:REDIS_HOST
+    $env:SPRING_DATA_REDIS_PORT = $env:REDIS_PORT
+    $env:SPRING_REDIS_HOST = $env:REDIS_HOST
+    $env:SPRING_REDIS_PORT = $env:REDIS_PORT
 
     $env:ROCKETMQ_NAMESRV_HOST = "127.0.0.1"
     $env:ROCKETMQ_NAMESRV_PORT = [string]$rocketMqNamesrvPort
@@ -270,6 +358,13 @@ function Set-ServiceRuntimeEnvironment {
     $env:DUBBO_REGISTRY_PASSWORD = $nacosPassword
     $env:DUBBO_REGISTRY_PARAMETERS_NAMESPACE = $nacosNamespace
     $env:DUBBO_REGISTRY_PARAMETERS_GROUP = "DUBBO_GROUP"
+    $env:GATEWAY_ROUTE_AUTH_URI = "http://127.0.0.1:8081"
+    $env:GATEWAY_ROUTE_USER_URI = "http://127.0.0.1:8082"
+    $env:GATEWAY_ROUTE_ORDER_URI = "http://127.0.0.1:8083"
+    $env:GATEWAY_ROUTE_PRODUCT_URI = "http://127.0.0.1:8084"
+    $env:GATEWAY_ROUTE_STOCK_URI = "http://127.0.0.1:8085"
+    $env:GATEWAY_ROUTE_PAYMENT_URI = "http://127.0.0.1:8086"
+    $env:GATEWAY_ROUTE_SEARCH_URI = "http://127.0.0.1:8087"
     if ([string]::IsNullOrWhiteSpace($env:DUBBO_APPLICATION_QOS_ENABLE)) {
         $env:DUBBO_APPLICATION_QOS_ENABLE = "false"
     }

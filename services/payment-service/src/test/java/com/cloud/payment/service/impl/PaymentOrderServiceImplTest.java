@@ -13,8 +13,9 @@ import com.cloud.common.domain.dto.payment.PaymentRefundCommandDTO;
 import com.cloud.common.domain.vo.order.OrderSubStatusVO;
 import com.cloud.common.domain.vo.payment.PaymentCheckoutSessionVO;
 import com.cloud.common.enums.ResultCode;
-import com.cloud.common.exception.BusinessException;
+import com.cloud.common.exception.BizException;
 import com.cloud.common.metrics.TradeMetrics;
+import com.cloud.payment.converter.PaymentOrderConverter;
 import com.cloud.payment.mapper.PaymentCallbackLogMapper;
 import com.cloud.payment.mapper.PaymentOrderMapper;
 import com.cloud.payment.mapper.PaymentRefundMapper;
@@ -45,6 +46,8 @@ class PaymentOrderServiceImplTest {
 
   @Mock private PaymentCallbackLogMapper paymentCallbackLogMapper;
 
+  @Mock private PaymentOrderConverter paymentOrderConverter;
+
   @Mock private PaymentCompensationService paymentCompensationService;
 
   @Mock private OrderStatusRemoteService orderStatusRemoteService;
@@ -71,6 +74,7 @@ class PaymentOrderServiceImplTest {
             paymentOrderMapper,
             paymentRefundMapper,
             paymentCallbackLogMapper,
+            paymentOrderConverter,
             paymentCompensationService,
             orderStatusRemoteService,
             paymentOrderStateSupport,
@@ -239,7 +243,7 @@ class PaymentOrderServiceImplTest {
     when(paymentOrderMapper.selectOne(any())).thenReturn(order);
 
     assertThatThrownBy(() -> service.renderCheckoutPage("ticket-123"))
-        .isInstanceOf(BusinessException.class)
+        .isInstanceOf(BizException.class)
         .hasMessageContaining("checkout session is invalid");
   }
 
@@ -316,7 +320,7 @@ class PaymentOrderServiceImplTest {
         .thenReturn(status);
 
     assertThatThrownBy(() -> service.createPaymentOrder(command))
-        .isInstanceOf(BusinessException.class)
+        .isInstanceOf(BizException.class)
         .hasMessageContaining("order owner");
   }
 
@@ -332,7 +336,7 @@ class PaymentOrderServiceImplTest {
         .thenReturn(status);
 
     assertThatThrownBy(() -> service.createPaymentOrder(command))
-        .isInstanceOf(BusinessException.class)
+        .isInstanceOf(BizException.class)
         .hasMessageContaining("order payable amount");
   }
 
@@ -372,10 +376,10 @@ class PaymentOrderServiceImplTest {
     command.setCallbackStatus("SUCCESS");
 
     assertThatThrownBy(() -> service.handleInternalPaymentCallback(command))
-        .isInstanceOf(BusinessException.class)
+        .isInstanceOf(BizException.class)
         .satisfies(
             ex ->
-                assertThat(((BusinessException) ex).getCode())
+                assertThat(((BizException) ex).getCode())
                     .isEqualTo(ResultCode.BAD_REQUEST.getCode()))
         .hasMessageContaining("internal payment callbacks cannot update payment state");
   }
@@ -389,7 +393,7 @@ class PaymentOrderServiceImplTest {
     when(paymentOrderMapper.selectOne(any())).thenReturn(paymentOrder);
 
     assertThatThrownBy(() -> service.createRefund(command))
-        .isInstanceOf(BusinessException.class)
+        .isInstanceOf(BizException.class)
         .hasMessageContaining("not eligible for refund");
 
     verify(paymentRefundMapper, never()).insert(any(PaymentRefundEntity.class));
@@ -411,7 +415,7 @@ class PaymentOrderServiceImplTest {
         .thenReturn(List.of(), List.of(existingAfterSaleRefund));
 
     assertThatThrownBy(() -> service.createRefund(command))
-        .isInstanceOf(BusinessException.class)
+        .isInstanceOf(BizException.class)
         .hasMessageContaining("does not belong to the target payment order");
 
     verify(paymentRefundMapper, never()).insert(any(PaymentRefundEntity.class));
@@ -432,7 +436,7 @@ class PaymentOrderServiceImplTest {
     when(paymentRefundMapper.selectList(any())).thenReturn(List.of(refunded), List.of());
 
     assertThatThrownBy(() -> service.createRefund(command))
-        .isInstanceOf(BusinessException.class)
+        .isInstanceOf(BizException.class)
         .hasMessageContaining("remaining paid amount");
 
     verify(paymentRefundMapper, never()).insert(any(PaymentRefundEntity.class));

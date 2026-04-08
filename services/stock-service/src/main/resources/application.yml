@@ -11,7 +11,7 @@ spring:
   application:
     name: stock-service
   config:
-    import: "optional:nacos:common.yaml"
+    import: "optional:nacos:common.yaml,optional:nacos:stock-service.yaml"
   profiles:
     active: dev
     include: rocketmq

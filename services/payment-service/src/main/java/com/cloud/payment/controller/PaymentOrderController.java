@@ -9,7 +9,6 @@ import com.cloud.common.domain.vo.payment.PaymentOrderVO;
 import com.cloud.common.domain.vo.payment.PaymentRefundVO;
 import com.cloud.common.enums.ResultCode;
 import com.cloud.common.exception.BizException;
-import com.cloud.common.exception.BusinessException;
 import com.cloud.common.result.Result;
 import com.cloud.common.security.SecurityPermissionUtils;
 import com.cloud.payment.service.PaymentOrderService;
@@ -174,7 +173,7 @@ public class PaymentOrderController {
   public String renderCheckoutPage(@PathVariable String ticket) {
     try {
       return paymentOrderService.renderCheckoutPage(ticket);
-    } catch (BusinessException ex) {
+    } catch (BizException ex) {
       return buildHtmlPage("Payment unavailable", ex.getMessage());
     } catch (RuntimeException ex) {
       return buildHtmlPage("Payment unavailable", "Failed to initialize the payment page.");

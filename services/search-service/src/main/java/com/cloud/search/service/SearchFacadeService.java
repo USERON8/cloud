@@ -8,6 +8,9 @@ import com.cloud.search.mapper.SearchRequestMapper;
 import com.cloud.search.service.support.SearchHotDataCacheService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -20,6 +23,11 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 @Slf4j
 public class SearchFacadeService {
+
+  private static final List<DateTimeFormatter> SUPPORTED_DATE_TIME_FORMATTERS =
+      List.of(
+          DateTimeFormatter.ISO_LOCAL_DATE_TIME,
+          DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
 
   private final ProductSearchService productSearchService;
   private final ElasticsearchOptimizedService elasticsearchOptimizedService;
@@ -344,9 +352,7 @@ public class SearchFacadeService {
     List<ProductDocument> list =
         esResult == null || esResult.getDocuments() == null
             ? Collections.emptyList()
-            : esResult.getDocuments().stream()
-                .map(document -> objectMapper.convertValue(document, ProductDocument.class))
-                .toList();
+            : esResult.getDocuments().stream().map(this::toProductDocument).toList();
     long total = esResult == null ? list.size() : esResult.getTotal();
     int totalPages = safeSize <= 0 ? 0 : (int) Math.ceil((double) total / safeSize);
     boolean hasPrevious = usedSearchAfter || safePage > 0;
@@ -500,5 +506,63 @@ public class SearchFacadeService {
     } catch (Exception ignored) {
       return value;
     }
+  }
+
+  private ProductDocument toProductDocument(Object document) {
+    if (document instanceof ProductDocument productDocument) {
+      return productDocument;
+    }
+    if (document instanceof Map<?, ?> source) {
+      Map<String, Object> normalized = new LinkedHashMap<>();
+      LocalDateTime createdAt = null;
+      LocalDateTime updatedAt = null;
+      for (Map.Entry<?, ?> entry : source.entrySet()) {
+        if (entry.getKey() == null) {
+          continue;
+        }
+        String key = String.valueOf(entry.getKey());
+        Object value = entry.getValue();
+        if ("createdAt".equals(key)) {
+          createdAt = parseDateTimeValue(value);
+          normalized.put(key, createdAt);
+          continue;
+        }
+        if ("updatedAt".equals(key)) {
+          updatedAt = parseDateTimeValue(value);
+          normalized.put(key, updatedAt);
+          continue;
+        }
+        normalized.put(key, value);
+      }
+      ProductDocument mapped = objectMapper.convertValue(normalized, ProductDocument.class);
+      if (createdAt != null) {
+        mapped.setCreatedAt(createdAt);
+      }
+      if (updatedAt != null) {
+        mapped.setUpdatedAt(updatedAt);
+      }
+      return mapped;
+    }
+    return objectMapper.convertValue(document, ProductDocument.class);
+  }
+
+  private LocalDateTime parseDateTimeValue(Object value) {
+    if (value instanceof LocalDateTime localDateTime) {
+      return localDateTime;
+    }
+    if (!(value instanceof String text)) {
+      return null;
+    }
+    String normalized = text.trim();
+    if (normalized.isEmpty()) {
+      return null;
+    }
+    for (DateTimeFormatter formatter : SUPPORTED_DATE_TIME_FORMATTERS) {
+      try {
+        return LocalDateTime.parse(normalized, formatter);
+      } catch (DateTimeParseException ignored) {
+      }
+    }
+    return null;
   }
 }

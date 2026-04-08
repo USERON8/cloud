@@ -9,7 +9,7 @@ spring:
   application:
     name: user-service
   config:
-    import: "optional:nacos:common.yaml"
+    import: "optional:nacos:common.yaml,optional:nacos:user-service.yaml"
   profiles:
     active: dev
   main:

@@ -1,12 +1,13 @@
 server:
   port: ${SERVER_PORT:8080}
+  address: 0.0.0.0
   forward-headers-strategy: native
 
 spring:
   application:
     name: gateway
   config:
-    import: "optional:nacos:common.yaml"
+    import: "optional:nacos:common.yaml,optional:nacos:gateway.yaml"
   profiles:
     active: dev
     include: route
@@ -113,7 +114,7 @@ app:
       enabled: ${APP_SENTINEL_GATEWAY_ENABLED:true}
       default-qps: ${APP_SENTINEL_GATEWAY_DEFAULT_QPS:80}
       interval-sec: ${APP_SENTINEL_GATEWAY_INTERVAL_SEC:1}
-      search-qps: ${APP_SENTINEL_GATEWAY_SEARCH_QPS:30}
+      search-qps: ${APP_SENTINEL_GATEWAY_SEARCH_QPS:120}
       search-interval-sec: ${APP_SENTINEL_GATEWAY_SEARCH_INTERVAL_SEC:1}
       search-route-ids: ${APP_SENTINEL_GATEWAY_SEARCH_ROUTE_IDS:search-service-api-v2}
       route-ids: ${APP_SENTINEL_GATEWAY_ROUTE_IDS:user-service-api-v2,product-service-api-v2,order-service-api-v2,payment-service-api-v2,stock-service-api-v2,search-service-api-v2}
@@ -132,6 +133,10 @@ app:
       replenish-rate: ${APP_SECURITY_RATE_LIMIT_REPLENISH_RATE:30}
       burst-capacity: ${APP_SECURITY_RATE_LIMIT_BURST_CAPACITY:60}
       requested-tokens: ${APP_SECURITY_RATE_LIMIT_REQUESTED_TOKENS:1}
+    search-rate-limit:
+      replenish-rate: ${APP_SECURITY_SEARCH_RATE_LIMIT_REPLENISH_RATE:120}
+      burst-capacity: ${APP_SECURITY_SEARCH_RATE_LIMIT_BURST_CAPACITY:240}
+      requested-tokens: ${APP_SECURITY_SEARCH_RATE_LIMIT_REQUESTED_TOKENS:1}
     auth-rate-limit:
       replenish-rate: ${APP_SECURITY_AUTH_RATE_LIMIT_REPLENISH_RATE:5}
       burst-capacity: ${APP_SECURITY_AUTH_RATE_LIMIT_BURST_CAPACITY:10}

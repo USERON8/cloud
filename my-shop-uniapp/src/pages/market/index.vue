@@ -1,15 +1,14 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed } from "vue";
 import { onShow } from "@dcloudio/uni-app";
 import { watchDebounced } from "@vueuse/core";
 import {
-    listSearchHotKeywordsWithFallback,
-    listSearchKeywordRecommendationsWithFallback,
     listTodayHotSellingProductsWithFallback,
     smartSearchProductsWithFallback,
 } from "../../api/search-ops";
 import { isAuthenticated } from "../../auth/session";
 import LocaleSwitch from "../../components/LocaleSwitch.vue";
+import { useProductSearchFeed } from "../../composables/useProductSearchFeed";
 import { useLocale } from "../../i18n/locale";
 import { navigateTo } from "../../router/navigation";
 import { Routes } from "../../router/routes";
@@ -20,24 +19,72 @@ import { resolveProductImageUrl } from "../../utils/image";
 import { mapSearchDocumentToProduct, resolveCartSkuId } from "../../utils/product";
 import { toast } from "../../utils/ui";
 
-const keyword = ref("");
-const loading = ref(false);
-const rows = ref<ProductItem[]>([]);
-const page = ref(1);
-const size = ref(10);
-const hasMore = ref(true);
-const hotKeywords = ref<string[]>([]);
-const recommendations = ref<string[]>([]);
 const skuIdCache = new Map<number | string, number | null>();
 const skuLookupCache = new Map<number | string, Promise<number | null>>();
-const initialized = ref(false);
-const latestLoadRequestId = ref(0);
-const failedImageIds = ref<Record<string, boolean>>({});
-
 const { locale } = useLocale();
 
 const loggedIn = computed(() => isAuthenticated());
-const activeKeyword = computed(() => keyword.value.trim());
+const {
+    activeKeyword,
+    failedImageIds,
+    hasMore,
+    hotKeywords,
+    initialize,
+    keyword,
+    loading,
+    markImageFailed,
+    onKeywordSelect,
+    onLoadMore,
+    onSearch,
+    recommendations,
+    refreshKeywords,
+    rows,
+} = useProductSearchFeed({
+    async loadPage({
+        keyword,
+        page,
+        size,
+        reset,
+        hotKeywords,
+        recommendations,
+        setKeyword,
+        refreshKeywords,
+    }) {
+        let result = keyword
+            ? await smartSearchProductsWithFallback({
+                  keyword,
+                  page,
+                  size,
+                  sortField: "score",
+                  sortOrder: "desc",
+              })
+            : await listTodayHotSellingProductsWithFallback(page, size);
+
+        if (!keyword && reset && result.documents.length === 0) {
+            await refreshKeywords("");
+            const fallbackKeyword =
+                hotKeywords[0] || recommendations[0] || "";
+            if (fallbackKeyword) {
+                setKeyword(fallbackKeyword);
+                result = await smartSearchProductsWithFallback({
+                    keyword: fallbackKeyword,
+                    page: 1,
+                    size,
+                    sortField: "score",
+                    sortOrder: "desc",
+                });
+            }
+        }
+
+        return {
+            items: result.documents.map(mapSearchDocumentToProduct),
+            total: result.total,
+        };
+    },
+    onLoadError(error) {
+        toast(error instanceof Error ? error.message : copy.value.loadFailed);
+    },
+});
 
 const copy = computed(() =>
     locale.value === "en-US"
@@ -123,106 +170,12 @@ const resultsHint = computed(() =>
     activeKeyword.value ? copy.value.resultHintSearch : copy.value.resultHintToday,
 );
 
-async function refreshKeywords(seed = ""): Promise<void> {
-    const [hotResult, recResult] = await Promise.allSettled([
-        listSearchHotKeywordsWithFallback(8),
-        listSearchKeywordRecommendationsWithFallback(seed, 10),
-    ]);
-    hotKeywords.value = hotResult.status === "fulfilled" ? hotResult.value : [];
-    recommendations.value =
-        recResult.status === "fulfilled" ? recResult.value : [];
-}
-
-async function loadProducts(reset = false): Promise<void> {
-    if (loading.value) {
-        return;
-    }
-    const requestId = latestLoadRequestId.value + 1;
-    latestLoadRequestId.value = requestId;
-    if (reset) {
-        page.value = 1;
-        hasMore.value = true;
-    }
-    loading.value = true;
-    try {
-        let result = activeKeyword.value
-            ? await smartSearchProductsWithFallback({
-                  keyword: activeKeyword.value,
-                  page: page.value,
-                  size: size.value,
-                  sortField: "score",
-                  sortOrder: "desc",
-              })
-            : await listTodayHotSellingProductsWithFallback(page.value, size.value);
-
-        if (!activeKeyword.value && reset && result.documents.length === 0) {
-            await refreshKeywords("");
-            const fallbackKeyword =
-                hotKeywords.value[0] || recommendations.value[0] || "";
-            if (fallbackKeyword) {
-                keyword.value = fallbackKeyword;
-                result = await smartSearchProductsWithFallback({
-                    keyword: fallbackKeyword,
-                    page: 1,
-                    size: size.value,
-                    sortField: "score",
-                    sortOrder: "desc",
-                });
-            }
-        }
-
-        if (requestId !== latestLoadRequestId.value) {
-            return;
-        }
-        const items = result.documents.map(mapSearchDocumentToProduct);
-        if (reset) {
-            failedImageIds.value = {};
-        }
-        rows.value = reset ? items : rows.value.concat(items);
-        hasMore.value = rows.value.length < result.total;
-        await refreshKeywords(activeKeyword.value);
-    } catch (error) {
-        if (requestId !== latestLoadRequestId.value) {
-            return;
-        }
-        toast(error instanceof Error ? error.message : copy.value.loadFailed);
-    } finally {
-        if (requestId === latestLoadRequestId.value) {
-            loading.value = false;
-        }
-    }
-}
-
 function productImageSrc(item: ProductItem): string {
     return resolveProductImageUrl(
         item.imageUrl,
         item.name,
         !!failedImageIds.value[String(item.id)],
     );
-}
-
-function markImageFailed(id: number | string): void {
-    failedImageIds.value = {
-        ...failedImageIds.value,
-        [String(id)]: true,
-    };
-}
-
-function onSearch(): void {
-    void loadProducts(true);
-}
-
-function onKeywordSelect(value: string): void {
-    keyword.value = value;
-    void loadProducts(true);
-}
-
-function onLoadMore(): void {
-    if (!hasMore.value || loading.value) {
-        return;
-    }
-    page.value += 1;
-    void loadProducts();
 }
 
 async function onAddToCart(item: ProductItem): Promise<void> {
@@ -274,12 +227,7 @@ watchDebounced(
 );
 
 onShow(() => {
-    if (initialized.value) {
-        return;
-    }
-    initialized.value = true;
-    void loadProducts(true);
-    void refreshKeywords("");
+    initialize();
 });
 </script>
 
@@ -321,7 +269,11 @@ onShow(() => {
                         </button>
                         <button
                             class="btn-secondary"
-                            @click="navigateTo(Routes.appCatalog)"
+                            @click="
+                                navigateTo(Routes.appCatalog, undefined, {
+                                    requiresAuth: true,
+                                })
+                            "
                         >
                             {{ copy.catalog }}
                         </button>

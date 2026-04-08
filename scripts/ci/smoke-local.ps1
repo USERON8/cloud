@@ -98,15 +98,18 @@ function Test-HttpUp {
 function Assert-ContainerRunning {
     param(
         [Parameter(Mandatory = $true)]
-        [string]$ContainerName
+        [string[]]$ContainerNames
     )
 
-    $status = docker inspect --format '{{.State.Status}}' $ContainerName 2>$null
-    if ($LASTEXITCODE -ne 0 -or $status.Trim() -ne "running") {
-        throw ("SMOKE_FAIL container={0} status={1}" -f $ContainerName, $status)
+    foreach ($containerName in $ContainerNames) {
+        $status = docker inspect --format '{{.State.Status}}' $containerName 2>$null
+        if ($LASTEXITCODE -eq 0 -and $status.Trim() -eq "running") {
+            Write-Host ("SMOKE_OK container={0} status=running" -f $containerName)
+            return
+        }
     }
 
-    Write-Host ("SMOKE_OK container={0} status=running" -f $ContainerName)
+    throw ("SMOKE_FAIL containers={0}" -f ($ContainerNames -join ","))
 }
 
 Write-Host "Smoke: verify backend services"
@@ -120,10 +123,10 @@ Test-HttpUp -Name "payment-service" -Url "http://127.0.0.1:8086/actuator/health"
 Test-HttpUp -Name "search-service" -Url "http://127.0.0.1:8087/actuator/health" -TimeoutSeconds $HttpTimeoutSeconds
 
 Write-Host "Smoke: verify docker core containers"
-Assert-ContainerRunning -ContainerName "cloud-mysql"
-Assert-ContainerRunning -ContainerName "cloud-redis"
-Assert-ContainerRunning -ContainerName "cloud-nacos"
-Assert-ContainerRunning -ContainerName "cloud-rmq-namesrv"
-Assert-ContainerRunning -ContainerName "cloud-rmq-broker"
+Assert-ContainerRunning -ContainerNames @("mysql", "cloud-mysql")
+Assert-ContainerRunning -ContainerNames @("redis", "cloud-redis")
+Assert-ContainerRunning -ContainerNames @("nacos", "cloud-nacos")
+Assert-ContainerRunning -ContainerNames @("rmq-namesrv", "cloud-rmq-namesrv")
+Assert-ContainerRunning -ContainerNames @("rmq-broker", "cloud-rmq-broker")
 
 Write-Host "SMOKE_ALL_OK"

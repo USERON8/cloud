@@ -9,7 +9,7 @@ spring:
   application:
     name: search-service
   config:
-    import: "optional:nacos:common.yaml"
+    import: "optional:nacos:common.yaml,optional:nacos:search-service.yaml"
   profiles:
     active: dev
     include: rocketmq
@@ -93,7 +93,7 @@ search:
     enabled: true
   optimized:
     elasticsearch:
-      request-timeout-ms: ${SEARCH_ES_REQUEST_TIMEOUT_MS:550}
+      request-timeout-ms: ${SEARCH_ES_REQUEST_TIMEOUT_MS:1500}
     limit:
       default-search-size: ${SEARCH_DEFAULT_SIZE:16}
       default-keyword-size: ${SEARCH_DEFAULT_KEYWORD_SIZE:10}

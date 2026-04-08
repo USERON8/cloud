@@ -21,6 +21,28 @@ function buildAccent(value?: string): string {
   return palette[seed % palette.length]
 }
 
+function shouldUsePlaceholderImage(imageUrl: string): boolean {
+  try {
+    const parsed = new URL(imageUrl, 'https://placeholder.invalid')
+    if (!/^https?:$/.test(parsed.protocol)) {
+      return true
+    }
+    if (/(^|\.)example\.com$/i.test(parsed.hostname)) {
+      return true
+    }
+    if (
+      typeof window !== 'undefined' &&
+      window.location.protocol === 'https:' &&
+      parsed.protocol === 'http:'
+    ) {
+      return true
+    }
+    return false
+  } catch {
+    return true
+  }
+}
+
 export function createProductPlaceholderSvg(productName?: string): string {
   const label = buildLabel(productName)
   const accent = buildAccent(productName)
@@ -45,7 +67,7 @@ export function createProductPlaceholderSvg(productName?: string): string {
 
 export function resolveProductImageUrl(imageUrl?: string, productName?: string, failed = false): string {
   const trimmed = (imageUrl || '').trim()
-  if (!trimmed || failed) {
+  if (!trimmed || failed || shouldUsePlaceholderImage(trimmed)) {
     return createProductPlaceholderSvg(productName)
   }
   return trimmed

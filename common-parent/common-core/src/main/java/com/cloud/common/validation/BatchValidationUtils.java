@@ -1,7 +1,6 @@
 package com.cloud.common.validation;
 
 import com.cloud.common.exception.ValidationException;
-import com.cloud.common.result.Result;
 import java.util.Collection;
 import java.util.List;
 

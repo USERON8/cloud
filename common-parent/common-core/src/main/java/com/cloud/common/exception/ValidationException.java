@@ -5,7 +5,7 @@ import lombok.EqualsAndHashCode;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
-public class ValidationException extends BusinessException {
+public class ValidationException extends BizException {
   private String field;
   private Object rejectedValue;
 

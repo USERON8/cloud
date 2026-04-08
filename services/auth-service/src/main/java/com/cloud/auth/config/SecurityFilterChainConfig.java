@@ -19,7 +19,6 @@ import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.server.authorization.config.annotation.web.configurers.OAuth2AuthorizationServerConfigurer;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -33,7 +32,8 @@ public class SecurityFilterChainConfig {
   private final JwtAuthenticationConverter jwtAuthenticationConverter;
   private final OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler;
 
-  @Value("${app.oauth2.github.redirect.error-url:http://127.0.0.1:3000/auth/error}")
+  @Value(
+      "${app.oauth2.github.redirect.error-url:${APP_OAUTH2_GITHUB_ERROR_URL:http://127.0.0.1:3000/auth/error}}")
   private String githubErrorRedirectUrl;
 
   @Value("${app.security.public-actuator-enabled:false}")
@@ -43,7 +43,7 @@ public class SecurityFilterChainConfig {
   private boolean apiDocsEnabled;
 
   @Value(
-      "${app.security.cors.allowed-origin-patterns:http://127.0.0.1:*,https://127.0.0.1:*,http://localhost:*,https://localhost:*}")
+      "${app.security.cors.allowed-origin-patterns:${APP_SECURITY_CORS_ALLOWED_ORIGIN_PATTERNS:http://127.0.0.1:*,https://127.0.0.1:*,http://localhost:*,https://localhost:*}}")
   private String corsAllowedOriginPatterns;
 
   public SecurityFilterChainConfig(
@@ -61,18 +61,10 @@ public class SecurityFilterChainConfig {
   public SecurityFilterChain authorizationServerSecurityFilterChain(HttpSecurity http)
       throws Exception {
     OAuth2AuthorizationServerConfigurer authorizationServerConfigurer =
-        new OAuth2AuthorizationServerConfigurer();
+        OAuth2AuthorizationServerConfigurer.authorizationServer();
     authorizationServerConfigurer.oidc(Customizer.withDefaults());
 
-    http.securityMatcher(
-            (RequestMatcher)
-                request -> {
-                  String path = request.getRequestURI();
-                  return (path.startsWith("/oauth2/") && !path.startsWith("/oauth2/authorization/"))
-                      || path.startsWith("/.well-known/")
-                      || path.startsWith("/connect/")
-                      || "/userinfo".equals(path);
-                })
+    http.securityMatcher(authorizationServerConfigurer.getEndpointsMatcher())
         .with(authorizationServerConfigurer, Customizer.withDefaults())
         .csrf(AbstractHttpConfigurer::disable)
         .cors(Customizer.withDefaults())

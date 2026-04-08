@@ -5,7 +5,7 @@ import lombok.EqualsAndHashCode;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
-public class ResourceNotFoundException extends BusinessException {
+public class ResourceNotFoundException extends BizException {
   private String resourceType;
   private String resourceId;
 

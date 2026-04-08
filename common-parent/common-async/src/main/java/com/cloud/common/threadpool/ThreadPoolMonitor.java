@@ -137,12 +137,4 @@ public class ThreadPoolMonitor {
       return "HEALTHY";
     }
   }
-
-  public void logThreadPoolStatus() {
-    Map<String, ThreadPoolInfo> allThreadPools = getAllThreadPoolInfo();
-
-    for (Map.Entry<String, ThreadPoolInfo> entry : allThreadPools.entrySet()) {
-      ThreadPoolInfo info = entry.getValue();
-    }
-  }
 }

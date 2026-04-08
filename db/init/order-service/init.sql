@@ -26,6 +26,8 @@ CREATE TABLE IF NOT EXISTS order_main
     UNIQUE KEY uk_order_main_idempotency_key (idempotency_key),
     INDEX idx_order_main_user_client_deleted (user_id, client_order_id, deleted),
     INDEX idx_order_main_idempotency_deleted (idempotency_key, deleted),
+    INDEX idx_order_main_user_deleted_id (user_id, deleted, id),
+    INDEX idx_order_main_deleted_id (deleted, id),
     INDEX idx_order_main_user_status_deleted (user_id, order_status, deleted),
     INDEX idx_order_main_created_deleted (created_at, deleted)
 ) ENGINE = InnoDB
@@ -197,7 +199,8 @@ CREATE TABLE IF NOT EXISTS cart
     version          INT             NOT NULL DEFAULT 0,
     UNIQUE KEY uk_cart_no (cart_no),
     UNIQUE KEY uk_cart_user_status (user_id, cart_status),
-    INDEX idx_cart_user_deleted (user_id, deleted)
+    INDEX idx_cart_user_deleted (user_id, deleted),
+    INDEX idx_cart_user_deleted_status (user_id, deleted, cart_status)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci;
@@ -220,7 +223,8 @@ CREATE TABLE IF NOT EXISTS cart_item
     version          INT             NOT NULL DEFAULT 0,
     UNIQUE KEY uk_cart_item_user_sku (user_id, sku_id),
     INDEX idx_cart_item_cart_deleted (cart_id, deleted),
-    INDEX idx_cart_item_user_selected_deleted (user_id, selected, deleted)
+    INDEX idx_cart_item_user_selected_deleted (user_id, selected, deleted),
+    INDEX idx_cart_item_cart_user_checked_deleted (cart_id, user_id, checked_out, deleted)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci;

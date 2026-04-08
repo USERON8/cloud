@@ -53,7 +53,7 @@ function readCart(key: string): CartEntry[] {
   return normalizeCartEntries(getStorage<CartEntry[]>(key))
 }
 
-export const useCartStore = defineStore('cart', {
+const useCartStore = defineStore('cart', {
   state: () => ({
     items: [] as CartEntry[],
     activeCartKey: resolveCartStorageKey(sessionState.user),
@@ -226,23 +226,11 @@ export const useCartStore = defineStore('cart', {
       this.items = []
       removeStorage(this.activeCartKey)
       this.triggerRemoteSync()
-    },
-    removeItemsByShops(shopIds: number[]): void {
-      if (shopIds.length === 0) {
-        return
-      }
-      const shopSet = new Set(shopIds)
-      const nextItems = this.items.filter((item) => !shopSet.has(item.shopId))
-      if (nextItems.length !== this.items.length) {
-        this.items = nextItems
-        this.persist()
-        this.triggerRemoteSync()
-      }
     }
   }
 })
 
-export const cartStore = useCartStore(pinia)
+const cartStore = useCartStore(pinia)
 
 export function hydrateCartFromStorage(): void {
   cartStore.hydrateFromStorage()
@@ -250,10 +238,6 @@ export function hydrateCartFromStorage(): void {
 
 export async function syncCartNow(): Promise<number | null> {
   return cartStore.syncRemoteCart()
-}
-
-export async function hydrateCartFromRemote(): Promise<void> {
-  await cartStore.hydrateRemoteCart()
 }
 
 export function addToCart(entry: Omit<CartEntry, 'quantity'> & { quantity?: number }): void {
@@ -270,10 +254,6 @@ export function setCartItemQuantity(productId: number, skuId: number, quantity: 
 
 export function clearCart(): void {
   cartStore.clear()
-}
-
-export function removeItemsByShops(shopIds: number[]): void {
-  cartStore.removeItemsByShops(shopIds)
 }
 
 export const cartItems = computed(() => cartStore.items)

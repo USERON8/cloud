@@ -66,16 +66,16 @@ public class StockReservationRemoteService {
   }
 
   private RuntimeException translateException(RuntimeException ex) {
-    BizException BizException = findBusinessException(ex);
-    if (BizException != null) {
-      String message = normalizeMessage(BizException.getMessage());
+    BizException bizException = findBizException(ex);
+    if (bizException != null) {
+      String message = normalizeMessage(bizException.getMessage());
       if (isInsufficientStock(message)) {
         return new BizException(ResultCode.STOCK_INSUFFICIENT.getCode(), message, ex);
       }
-      if (BizException == ex) {
-        return BizException;
+      if (bizException == ex) {
+        return bizException;
       }
-      return new BizException(BizException.getCode(), message, ex);
+      return new BizException(bizException.getCode(), message, ex);
     }
 
     String message = normalizeMessage(ex.getMessage());
@@ -85,11 +85,11 @@ public class StockReservationRemoteService {
     return new RemoteException(ResultCode.REMOTE_SERVICE_UNAVAILABLE, message, ex);
   }
 
-  private BizException findBusinessException(Throwable throwable) {
+  private BizException findBizException(Throwable throwable) {
     Throwable cursor = throwable;
     while (cursor != null) {
-      if (cursor instanceof BizException BizException) {
-        return BizException;
+      if (cursor instanceof BizException bizException) {
+        return bizException;
       }
       cursor = cursor.getCause();
     }

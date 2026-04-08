@@ -44,45 +44,9 @@ public class AdminException extends BizException {
     }
   }
 
-  public static class AdminPermissionException extends AdminException {
-    public AdminPermissionException(String message) {
-      super(403, message);
-    }
-  }
-
   public static class AdminPasswordException extends AdminException {
     public AdminPasswordException(String message) {
       super(400, message);
-    }
-  }
-
-  public static class AdminCreateFailedException extends AdminException {
-    public AdminCreateFailedException(String message) {
-      super(500, "Admin creation failed: " + message);
-    }
-  }
-
-  public static class AdminUpdateFailedException extends AdminException {
-    public AdminUpdateFailedException(String message) {
-      super(500, "Admin update failed: " + message);
-    }
-  }
-
-  public static class AdminDeleteFailedException extends AdminException {
-    public AdminDeleteFailedException(String message) {
-      super(500, "Admin deletion failed: " + message);
-    }
-  }
-
-  public static class AdminStatusErrorException extends AdminException {
-    public AdminStatusErrorException(String message) {
-      super(400, "Admin status error: " + message);
-    }
-  }
-
-  public static class AdminQueryFailedException extends AdminException {
-    public AdminQueryFailedException(String message) {
-      super(500, "Admin query failed: " + message);
     }
   }
 }

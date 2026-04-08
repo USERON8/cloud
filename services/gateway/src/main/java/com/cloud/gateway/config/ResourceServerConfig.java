@@ -78,6 +78,10 @@ public class ResourceServerConfig {
   @Value("${app.security.jwt.blacklist-fail-closed:true}")
   private boolean blacklistFailClosed = true;
 
+  @Value(
+      "${app.security.cors.allowed-origin-patterns:${APP_SECURITY_CORS_ALLOWED_ORIGIN_PATTERNS:http://127.0.0.1:*,https://127.0.0.1:*,http://localhost:*,https://localhost:*}}")
+  private String corsAllowedOriginPatterns;
+
   @Bean
   public SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity http) {
     if (securityTestMode) {
@@ -262,12 +266,7 @@ public class ResourceServerConfig {
   public CorsConfigurationSource corsConfigurationSource() {
     CorsConfiguration config = new CorsConfiguration();
     config.setAllowCredentials(true);
-    config.setAllowedOriginPatterns(
-        List.of(
-            "http://127.0.0.1:*",
-            "https://127.0.0.1:*",
-            "http://localhost:*",
-            "https://localhost:*"));
+    config.setAllowedOriginPatterns(parseCsv(corsAllowedOriginPatterns).stream().toList());
     config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
     config.setAllowedHeaders(List.of("*"));
     config.setExposedHeaders(List.of("Authorization", "Content-Type"));

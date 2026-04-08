@@ -221,13 +221,7 @@ public class OrderQueryServiceImpl implements OrderQueryService {
       if (merchantId != null) {
         return orderMainMapper.selectPageByMerchant(pageData, merchantId, List.of(), userId);
       }
-      LambdaQueryWrapper<OrderMain> wrapper =
-          new LambdaQueryWrapper<OrderMain>().eq(OrderMain::getDeleted, 0);
-      if (userId != null) {
-        wrapper.eq(OrderMain::getUserId, userId);
-      }
-      wrapper.orderByDesc(OrderMain::getId);
-      return orderMainMapper.selectPage(pageData, wrapper);
+      return orderMainMapper.selectPageActive(pageData, userId);
     }
 
     if (isMerchant(authentication)) {
@@ -236,12 +230,7 @@ public class OrderQueryServiceImpl implements OrderQueryService {
     }
 
     Long currentUserId = requireCurrentUserId(authentication);
-    LambdaQueryWrapper<OrderMain> wrapper =
-        new LambdaQueryWrapper<OrderMain>()
-            .eq(OrderMain::getDeleted, 0)
-            .eq(OrderMain::getUserId, currentUserId);
-    wrapper.orderByDesc(OrderMain::getId);
-    return orderMainMapper.selectPage(pageData, wrapper);
+    return orderMainMapper.selectPageActive(pageData, currentUserId);
   }
 
   private Map<Long, List<OrderSub>> loadSubOrdersByMainIds(

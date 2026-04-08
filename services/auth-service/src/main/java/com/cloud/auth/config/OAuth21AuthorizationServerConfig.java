@@ -126,8 +126,7 @@ public class OAuth21AuthorizationServerConfig {
     RegisteredClient.Builder userClient =
         RegisteredClient.withId(UUID.randomUUID().toString())
             .clientId(webClientId)
-            .clientSecret(encodeClientSecret(webClientSecret))
-            .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
+            .clientAuthenticationMethod(ClientAuthenticationMethod.NONE)
             .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
             .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
             .scope(OidcScopes.OPENID)
@@ -159,8 +158,7 @@ public class OAuth21AuthorizationServerConfig {
     RegisteredClient.Builder miniClient =
         RegisteredClient.withId(UUID.randomUUID().toString())
             .clientId(mobileClientId)
-            .clientSecret(encodeClientSecret(mobileClientSecret))
-            .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
+            .clientAuthenticationMethod(ClientAuthenticationMethod.NONE)
             .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
             .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
             .scope(OidcScopes.OPENID)

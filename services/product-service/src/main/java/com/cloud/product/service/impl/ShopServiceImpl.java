@@ -5,7 +5,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.cloud.common.exception.BusinessException;
+import com.cloud.common.exception.BizException;
 import com.cloud.common.result.PageResult;
 import com.cloud.product.converter.ShopConverter;
 import com.cloud.product.mapper.ShopMapper;
@@ -47,7 +47,7 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements Sh
 
     boolean saved = save(shop);
     if (!saved) {
-      throw new BusinessException("Create shop failed");
+      throw new BizException("Create shop failed");
     }
     shopRedisCacheService.clearAllAfterCommit();
     return shop.getId();
@@ -64,7 +64,7 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements Sh
 
     boolean updated = updateById(existingShop);
     if (!updated) {
-      throw new BusinessException("Update shop failed");
+      throw new BizException("Update shop failed");
     }
     shopRedisCacheService.clearAllAfterCommit();
     return true;
@@ -78,7 +78,7 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements Sh
 
     boolean deleted = removeById(id);
     if (!deleted) {
-      throw new BusinessException("Delete shop failed");
+      throw new BizException("Delete shop failed");
     }
     shopRedisCacheService.clearAllAfterCommit();
     return true;
@@ -93,7 +93,7 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements Sh
 
     boolean deleted = removeBatchByIds(ids);
     if (!deleted) {
-      throw new BusinessException("Batch delete shops failed");
+      throw new BizException("Batch delete shops failed");
     }
     shopRedisCacheService.clearAllAfterCommit();
     return true;
@@ -325,38 +325,38 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements Sh
 
   private void validateId(Long id) {
     if (id == null || id <= 0) {
-      throw new BusinessException("Invalid shop id");
+      throw new BizException("Invalid shop id");
     }
   }
 
   private Shop requireExistingShop(Long id) {
     Shop shop = getById(id);
     if (shop == null) {
-      throw new BusinessException("Shop not found: " + id);
+      throw new BizException("Shop not found: " + id);
     }
     return shop;
   }
 
   private void validateShopRequest(ShopRequestDTO requestDTO, boolean create) {
     if (requestDTO == null) {
-      throw new BusinessException("Shop payload cannot be null");
+      throw new BizException("Shop payload cannot be null");
     }
     if (create && requestDTO.getMerchantId() == null) {
-      throw new BusinessException("Merchant id is required");
+      throw new BizException("Merchant id is required");
     }
     if (create && StrUtil.isBlank(requestDTO.getShopName())) {
-      throw new BusinessException("Shop name cannot be blank");
+      throw new BizException("Shop name cannot be blank");
     }
     if (create && StrUtil.isBlank(requestDTO.getContactPhone())) {
-      throw new BusinessException("Contact phone cannot be blank");
+      throw new BizException("Contact phone cannot be blank");
     }
     if (create && StrUtil.isBlank(requestDTO.getAddress())) {
-      throw new BusinessException("Address cannot be blank");
+      throw new BizException("Address cannot be blank");
     }
     if (requestDTO.getStatus() != null
         && requestDTO.getStatus() != 0
         && requestDTO.getStatus() != 1) {
-      throw new BusinessException("Shop status must be 0 or 1");
+      throw new BizException("Shop status must be 0 or 1");
     }
   }
 
@@ -387,7 +387,7 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements Sh
     updateWrapper.eq(Shop::getId, id).set(Shop::getStatus, status);
     boolean updated = update(updateWrapper);
     if (!updated) {
-      throw new BusinessException(operation + " shop failed");
+      throw new BizException(operation + " shop failed");
     }
     shopRedisCacheService.clearAllAfterCommit();
     return true;
@@ -401,7 +401,7 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements Sh
     updateWrapper.in(Shop::getId, ids).set(Shop::getStatus, status);
     boolean updated = update(updateWrapper);
     if (!updated) {
-      throw new BusinessException(operation + " shops failed");
+      throw new BizException(operation + " shops failed");
     }
     shopRedisCacheService.clearAllAfterCommit();
     return true;

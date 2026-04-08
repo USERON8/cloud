@@ -1,6 +1,5 @@
 package com.cloud.order.service.support;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.cloud.api.product.ProductDubboApi;
 import com.cloud.common.domain.vo.product.SkuDetailVO;
@@ -84,6 +83,14 @@ public class OrderPlacementSupport {
       throw new BizException("user id is required for cart checkout");
     }
     Cart cart = cartMapper.selectById(cartId);
+    if ((cart == null || cart.getDeleted() == 1) && request.getUserId() != null) {
+      // Browser clients lose precision for 64-bit cart ids, so tolerate an imprecise cartId
+      // by falling back to the current user's active cart and correcting the request in-place.
+      cart = cartMapper.selectActiveByUserId(request.getUserId());
+      if (cart != null) {
+        request.setCartId(cart.getId());
+      }
+    }
     if (cart == null || cart.getDeleted() == 1) {
       throw new BizException("cart not found");
     }
@@ -95,13 +102,7 @@ public class OrderPlacementSupport {
     }
 
     List<CartItem> cartItems =
-        cartItemMapper.selectList(
-            new LambdaQueryWrapper<CartItem>()
-                .eq(CartItem::getCartId, cartId)
-                .eq(CartItem::getUserId, request.getUserId())
-                .eq(CartItem::getSelected, 1)
-                .eq(CartItem::getCheckedOut, 0)
-                .eq(CartItem::getDeleted, 0));
+        cartItemMapper.listActiveByCartIdAndUserId(request.getCartId(), request.getUserId());
     if (cartItems == null || cartItems.isEmpty()) {
       throw new BizException("cart has no selectable items");
     }
