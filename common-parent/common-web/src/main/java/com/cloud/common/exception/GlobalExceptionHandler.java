@@ -79,21 +79,6 @@ public class GlobalExceptionHandler {
     return buildResponse(404, Result.error(e.getCode(), e.getMessage()));
   }
 
-  @ExceptionHandler(PermissionException.class)
-  public ResponseEntity<Result<String>> handlePermissionException(
-      PermissionException e, HttpServletRequest request) {
-    exceptionReporter.reportWarn("PERMISSION", request, "Permission exception: " + e.getMessage());
-    return buildResponse(403, Result.error(e.getCode(), e.getMessage()));
-  }
-
-  @ExceptionHandler(ConcurrencyException.class)
-  public ResponseEntity<Result<String>> handleConcurrencyException(
-      ConcurrencyException e, HttpServletRequest request) {
-    exceptionReporter.reportWarn(
-        "CONCURRENCY", request, "Concurrency exception: " + e.getMessage());
-    return buildResponse(409, Result.error(e.getCode(), e.getMessage()));
-  }
-
   @ExceptionHandler(MethodArgumentNotValidException.class)
   public ResponseEntity<Result<String>> handleMethodArgumentNotValidException(
       MethodArgumentNotValidException e, HttpServletRequest request) {
@@ -251,27 +236,6 @@ public class GlobalExceptionHandler {
     String errorMessage = String.join(", ", errors);
     exceptionReporter.reportWarn("VALIDATION", request, "Bind validation failed: " + errorMessage);
     return buildResponse(400, Result.paramError("Parameter binding failed: " + errorMessage));
-  }
-
-  @ExceptionHandler(OAuth2Exception.class)
-  public ResponseEntity<Result<String>> handleOAuth2Exception(
-      OAuth2Exception e, HttpServletRequest request) {
-    exceptionReporter.reportWarn("OAUTH2", request, "OAuth2 exception: " + e.getMessage());
-    return buildResponse(400, Result.error(e.getCode(), e.getMessage()));
-  }
-
-  @ExceptionHandler(JwtException.class)
-  public ResponseEntity<Result<String>> handleJwtException(
-      JwtException e, HttpServletRequest request) {
-    exceptionReporter.reportWarn("JWT", request, "JWT exception: " + e.getMessage());
-    return buildResponse(401, Result.error(e.getCode(), e.getMessage()));
-  }
-
-  @ExceptionHandler(LockException.class)
-  public ResponseEntity<Result<String>> handleLockException(
-      LockException e, HttpServletRequest request) {
-    exceptionReporter.reportWarn("LOCK", request, "Distributed lock exception: " + e.getMessage());
-    return buildResponse(409, Result.error(e.getCode(), e.getMessage()));
   }
 
   @ExceptionHandler(Exception.class)
