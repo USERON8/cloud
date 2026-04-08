@@ -1,6 +1,6 @@
 package com.cloud.common.exception;
 
-public class LockException extends BusinessException {
+public class LockException extends BizException {
 
   public static final String LOCK_ACQUIRE_TIMEOUT = "LOCK_ACQUIRE_TIMEOUT";
 

@@ -5,7 +5,7 @@ import lombok.EqualsAndHashCode;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
-public class ConcurrencyException extends BusinessException {
+public class ConcurrencyException extends BizException {
   private String resourceType;
   private String resourceId;
 

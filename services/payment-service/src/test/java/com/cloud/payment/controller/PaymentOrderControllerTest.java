@@ -201,7 +201,7 @@ class PaymentOrderControllerTest {
   @Test
   void renderCheckoutPageShouldFallbackToHtmlErrorPage() {
     when(paymentOrderService.renderCheckoutPage("expired-ticket"))
-        .thenThrow(new com.cloud.common.exception.BusinessException("checkout expired"));
+        .thenThrow(new com.cloud.common.exception.BizException("checkout expired"));
 
     PaymentOrderController controller =
         new PaymentOrderController(paymentOrderService, paymentSecurityCacheService);

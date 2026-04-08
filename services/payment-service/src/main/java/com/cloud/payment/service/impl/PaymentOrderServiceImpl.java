@@ -8,7 +8,7 @@ import com.cloud.common.domain.vo.payment.PaymentCheckoutSessionVO;
 import com.cloud.common.domain.vo.payment.PaymentOrderVO;
 import com.cloud.common.domain.vo.payment.PaymentRefundVO;
 import com.cloud.common.enums.ResultCode;
-import com.cloud.common.exception.BusinessException;
+import com.cloud.common.exception.BizException;
 import com.cloud.common.metrics.TradeMetrics;
 import com.cloud.payment.converter.PaymentOrderConverter;
 import com.cloud.payment.mapper.PaymentCallbackLogMapper;
@@ -57,7 +57,7 @@ public class PaymentOrderServiceImpl implements PaymentOrderService {
     ensureOrderReadyForPayment(command);
 
     if (!paymentSecurityCacheService.allowRateLimit(command.getUserId())) {
-      throw new BusinessException("payment rate limit exceeded");
+      throw new BizException("payment rate limit exceeded");
     }
 
     String orderKey = buildOrderKey(command);
@@ -106,7 +106,7 @@ public class PaymentOrderServiceImpl implements PaymentOrderService {
         paymentSecurityCacheService.cacheResult(orderKey, duplicated.getId());
         return duplicated.getId();
       }
-      throw new BusinessException("duplicate payment request");
+      throw new BizException("duplicate payment request");
     }
 
     PaymentOrderEntity entity = paymentOrderConverter.toEntity(command);
@@ -120,26 +120,25 @@ public class PaymentOrderServiceImpl implements PaymentOrderService {
 
   private void ensureOrderReadyForPayment(PaymentOrderCommandDTO command) {
     if (command == null) {
-      throw new BusinessException("payment command is required");
+      throw new BizException("payment command is required");
     }
     var orderStatus =
         orderStatusRemoteService.getSubOrderStatus(
             command.getMainOrderNo(), command.getSubOrderNo());
     if (orderStatus == null) {
-      throw new BusinessException("order status not found for payment");
+      throw new BizException("order status not found for payment");
     }
     if (orderStatus.getUserId() != null && !orderStatus.getUserId().equals(command.getUserId())) {
-      throw new BusinessException("payment user does not match order owner");
+      throw new BizException("payment user does not match order owner");
     }
     if (orderStatus.getPayableAmount() != null
         && command.getAmount() != null
         && orderStatus.getPayableAmount().compareTo(command.getAmount()) != 0) {
-      throw new BusinessException("payment amount does not match order payable amount");
+      throw new BizException("payment amount does not match order payable amount");
     }
     if (!"STOCK_RESERVED".equals(orderStatus.getOrderStatus())
         && !"PAID".equals(orderStatus.getOrderStatus())) {
-      throw new BusinessException(
-          "order is not ready for payment: " + orderStatus.getOrderStatus());
+      throw new BizException("order is not ready for payment: " + orderStatus.getOrderStatus());
     }
   }
 
@@ -164,14 +163,13 @@ public class PaymentOrderServiceImpl implements PaymentOrderService {
   public PaymentCheckoutSessionVO createCheckoutSession(String paymentNo) {
     PaymentOrderEntity order = findPaymentOrderEntityByNo(paymentNo);
     if (order == null) {
-      throw new BusinessException(ResultCode.NOT_FOUND, "payment order not found");
+      throw new BizException(ResultCode.NOT_FOUND, "payment order not found");
     }
     if (paymentOrderStateSupport.isTerminalStatus(order.getStatus())) {
-      throw new BusinessException("payment order is already finalized");
+      throw new BizException("payment order is already finalized");
     }
     if (!PaymentOrderStateSupport.ORDER_STATUS_CREATED.equals(order.getStatus())) {
-      throw new BusinessException(
-          "payment order is not eligible for checkout: " + order.getStatus());
+      throw new BizException("payment order is not eligible for checkout: " + order.getStatus());
     }
 
     String ticket =
@@ -188,14 +186,14 @@ public class PaymentOrderServiceImpl implements PaymentOrderService {
     PaymentSecurityCacheService.CheckoutTicket checkoutTicket =
         paymentSecurityCacheService.getCheckoutTicket(ticket);
     if (checkoutTicket == null) {
-      throw new BusinessException(ResultCode.NOT_FOUND, "payment checkout session expired");
+      throw new BizException(ResultCode.NOT_FOUND, "payment checkout session expired");
     }
     PaymentOrderEntity order = findPaymentOrderEntityByNo(checkoutTicket.paymentNo());
     if (order == null) {
-      throw new BusinessException(ResultCode.NOT_FOUND, "payment order not found");
+      throw new BizException(ResultCode.NOT_FOUND, "payment order not found");
     }
     if (!Objects.equals(order.getUserId(), checkoutTicket.userId())) {
-      throw new BusinessException(ResultCode.FORBIDDEN, "payment checkout session is invalid");
+      throw new BizException(ResultCode.FORBIDDEN, "payment checkout session is invalid");
     }
     if (PaymentOrderStateSupport.ORDER_STATUS_PAID.equals(order.getStatus())) {
       return buildStatusPage("Payment completed", "This payment order has already been completed.");
@@ -205,7 +203,7 @@ public class PaymentOrderServiceImpl implements PaymentOrderService {
     }
     PaymentProviderGateway gateway = resolveGateway(order.getChannel());
     if (gateway == null) {
-      throw new BusinessException("unsupported payment channel: " + order.getChannel());
+      throw new BizException("unsupported payment channel: " + order.getChannel());
     }
     return gateway.buildCheckoutPage(order);
   }
@@ -227,7 +225,7 @@ public class PaymentOrderServiceImpl implements PaymentOrderService {
                   .eq(PaymentOrderEntity::getDeleted, 0)
                   .last("LIMIT 1"));
       if (order == null) {
-        throw new BusinessException("payment order not found");
+        throw new BizException("payment order not found");
       }
       validateCallbackAgainstOrder(order, command);
       String previousStatus = order.getStatus();
@@ -267,7 +265,7 @@ public class PaymentOrderServiceImpl implements PaymentOrderService {
 
   @Override
   public Boolean handleInternalPaymentCallback(PaymentCallbackCommandDTO command) {
-    throw new BusinessException(
+    throw new BizException(
         ResultCode.BAD_REQUEST, "internal payment callbacks cannot update payment state");
   }
 
@@ -275,7 +273,7 @@ public class PaymentOrderServiceImpl implements PaymentOrderService {
   @Transactional(rollbackFor = Exception.class)
   public Long createRefund(PaymentRefundCommandDTO command) {
     if (command == null) {
-      throw new BusinessException("refund command is required");
+      throw new BizException("refund command is required");
     }
     PaymentRefundEntity existing =
         paymentRefundMapper.selectOne(
@@ -294,7 +292,7 @@ public class PaymentOrderServiceImpl implements PaymentOrderService {
                 .eq(PaymentOrderEntity::getDeleted, 0)
                 .last("LIMIT 1"));
     if (paymentOrder == null) {
-      throw new BusinessException("payment order not found");
+      throw new BizException("payment order not found");
     }
     validateRefundRequest(command, paymentOrder);
 
@@ -311,19 +309,19 @@ public class PaymentOrderServiceImpl implements PaymentOrderService {
   private void validateRefundRequest(
       PaymentRefundCommandDTO command, PaymentOrderEntity paymentOrder) {
     if (!PaymentOrderStateSupport.ORDER_STATUS_PAID.equals(paymentOrder.getStatus())) {
-      throw new BusinessException(
+      throw new BizException(
           "payment order is not eligible for refund: " + paymentOrder.getStatus());
     }
     if (paymentOrder.getAmount() == null
         || paymentOrder.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
-      throw new BusinessException("payment order amount is invalid for refund");
+      throw new BizException("payment order amount is invalid for refund");
     }
     if (command.getRefundAmount() == null
         || command.getRefundAmount().compareTo(BigDecimal.ZERO) <= 0) {
-      throw new BusinessException("refund amount must be greater than 0");
+      throw new BizException("refund amount must be greater than 0");
     }
     if (command.getRefundAmount().compareTo(paymentOrder.getAmount()) > 0) {
-      throw new BusinessException("refund amount cannot exceed payment amount");
+      throw new BizException("refund amount cannot exceed payment amount");
     }
 
     List<PaymentRefundEntity> paymentRefunds =
@@ -346,7 +344,7 @@ public class PaymentOrderServiceImpl implements PaymentOrderService {
     }
     if (accumulatedRefundAmount.add(command.getRefundAmount()).compareTo(paymentOrder.getAmount())
         > 0) {
-      throw new BusinessException("refund amount exceeds the remaining paid amount");
+      throw new BizException("refund amount exceeds the remaining paid amount");
     }
   }
 
@@ -364,12 +362,10 @@ public class PaymentOrderServiceImpl implements PaymentOrderService {
         continue;
       }
       if (!paymentOrder.getPaymentNo().equals(refund.getPaymentNo())) {
-        throw new BusinessException(
-            "after-sale refund does not belong to the target payment order");
+        throw new BizException("after-sale refund does not belong to the target payment order");
       }
       if (!command.getRefundNo().equals(refund.getRefundNo())) {
-        throw new BusinessException(
-            "after-sale refund already exists for the target payment order");
+        throw new BizException("after-sale refund already exists for the target payment order");
       }
     }
 
@@ -378,8 +374,7 @@ public class PaymentOrderServiceImpl implements PaymentOrderService {
         continue;
       }
       if (!command.getRefundNo().equals(refund.getRefundNo())) {
-        throw new BusinessException(
-            "after-sale refund already exists for the target payment order");
+        throw new BizException("after-sale refund already exists for the target payment order");
       }
     }
   }
@@ -388,7 +383,7 @@ public class PaymentOrderServiceImpl implements PaymentOrderService {
   @Transactional(rollbackFor = Exception.class)
   public Boolean cancelRefund(String refundNo, String reason) {
     if (refundNo == null || refundNo.isBlank()) {
-      throw new BusinessException("refund no is required");
+      throw new BizException("refund no is required");
     }
     PaymentRefundEntity refund =
         paymentRefundMapper.selectOne(
@@ -562,23 +557,23 @@ public class PaymentOrderServiceImpl implements PaymentOrderService {
     if (command.getAmount() != null
         && order.getAmount() != null
         && order.getAmount().compareTo(command.getAmount()) != 0) {
-      throw new BusinessException("payment callback amount does not match order amount");
+      throw new BizException("payment callback amount does not match order amount");
     }
     if (StringUtils.hasText(order.getProviderTxnNo())
         && StringUtils.hasText(command.getProviderTxnNo())
         && !order.getProviderTxnNo().equals(command.getProviderTxnNo())) {
-      throw new BusinessException("payment callback provider transaction does not match order");
+      throw new BizException("payment callback provider transaction does not match order");
     }
   }
 
   private String normalizeCallbackStatus(String callbackStatus) {
     if (!StringUtils.hasText(callbackStatus)) {
-      throw new BusinessException("payment callback status is required");
+      throw new BizException("payment callback status is required");
     }
     String normalized = callbackStatus.trim().toUpperCase();
     if ("SUCCESS".equals(normalized) || "FAIL".equals(normalized)) {
       return normalized;
     }
-    throw new BusinessException("unsupported payment callback status: " + callbackStatus);
+    throw new BizException("unsupported payment callback status: " + callbackStatus);
   }
 }

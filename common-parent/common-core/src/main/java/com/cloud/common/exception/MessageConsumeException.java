@@ -1,6 +1,6 @@
 package com.cloud.common.exception;
 
-public class MessageConsumeException extends BusinessException {
+public class MessageConsumeException extends BizException {
 
   public MessageConsumeException(String message) {
     super(message);

@@ -1,6 +1,6 @@
 package com.cloud.common.exception;
 
-public class MessageSendException extends BusinessException {
+public class MessageSendException extends BizException {
 
   public MessageSendException(String message) {
     super(message);

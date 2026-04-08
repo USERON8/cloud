@@ -1,6 +1,6 @@
 package com.cloud.common.exception;
 
-public class InvalidStatusException extends BusinessException {
+public class InvalidStatusException extends BizException {
 
   public InvalidStatusException(String entityName, String currentStatus, String operation) {
     super(String.format("%s褰撳墠鐘舵€佷负[%s]锛屾棤娉曟墽琛孾%s]鎿嶄綔", entityName, currentStatus, operation));

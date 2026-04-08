@@ -1,6 +1,6 @@
 package com.cloud.common.exception;
 
-public class InsufficientException extends BusinessException {
+public class InsufficientException extends BizException {
 
   public InsufficientException(String resourceName, Object required, Object available) {
     super(String.format("%s涓嶈冻锛岄渶瑕? %s锛屽彲鐢? %s", resourceName, required, available));

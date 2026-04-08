@@ -6,7 +6,7 @@ import lombok.EqualsAndHashCode;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
-public class JwtException extends BusinessException {
+public class JwtException extends BizException {
 
   private String tokenValue;
   private String tokenType;
@@ -39,7 +39,7 @@ public class JwtException extends BusinessException {
   }
 
   public JwtException(ResultCode resultCode, Throwable cause) {
-    super(resultCode, cause);
+    super(resultCode, null, cause);
   }
 
   public static JwtException invalidToken(String message) {

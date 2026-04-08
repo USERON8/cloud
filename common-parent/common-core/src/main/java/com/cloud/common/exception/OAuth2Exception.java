@@ -6,7 +6,7 @@ import lombok.EqualsAndHashCode;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
-public class OAuth2Exception extends BusinessException {
+public class OAuth2Exception extends BizException {
 
   private String error;
   private String errorDescription;
