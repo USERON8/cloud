@@ -46,7 +46,7 @@ class StockReservationRemoteServiceTest {
   }
 
   @Test
-  void reserve_businessException_passthrough() {
+  void reserve_bizException_passthrough() {
     StockOperateCommandDTO command = new StockOperateCommandDTO();
     BizException original = new BizException(422, "invalid");
     when(stockDubboApi.reserve(command)).thenThrow(original);
