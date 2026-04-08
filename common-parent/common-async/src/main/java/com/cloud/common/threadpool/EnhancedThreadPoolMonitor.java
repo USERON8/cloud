@@ -9,7 +9,6 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.context.ApplicationContext;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -20,8 +19,6 @@ import org.springframework.stereotype.Component;
     havingValue = "true",
     matchIfMissing = true)
 public class EnhancedThreadPoolMonitor extends ThreadPoolMonitor {
-
-  @Autowired private ApplicationContext applicationContext;
 
   @Autowired(required = false)
   private MeterRegistry meterRegistry;
@@ -142,17 +139,6 @@ public class EnhancedThreadPoolMonitor extends ThreadPoolMonitor {
       case "CRITICAL" -> "CRIT";
       default -> "UNKNOWN";
     };
-  }
-
-  private String getServiceName(String poolName) {
-    if (poolName.contains("user")) return "user-service";
-    if (poolName.contains("order")) return "order-service";
-    if (poolName.contains("payment")) return "payment-service";
-    if (poolName.contains("product")) return "product-service";
-    if (poolName.contains("stock")) return "stock-service";
-    if (poolName.contains("search")) return "search-service";
-    if (poolName.contains("auth")) return "auth-service";
-    return "unknown";
   }
 
   private ThreadPoolPerformanceStats calculatePerformanceStats(
