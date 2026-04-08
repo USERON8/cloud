@@ -8,7 +8,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.cloud.common.domain.dto.user.UserDTO;
-import com.cloud.common.exception.BusinessException;
+import com.cloud.common.exception.BizException;
 import com.cloud.user.converter.UserConverter;
 import com.cloud.user.mapper.UserMapper;
 import com.cloud.user.module.entity.User;
@@ -77,7 +77,7 @@ class UserAsyncServiceImplTest {
   @Test
   void checkUsernamesExistAsync_handlesErrors() {
     when(userService.findByUsername("ok")).thenReturn(new UserDTO());
-    when(userService.findByUsername("bad")).thenThrow(new BusinessException("fail"));
+    when(userService.findByUsername("bad")).thenThrow(new BizException("fail"));
 
     Map<String, Boolean> result =
         userAsyncService.checkUsernamesExistAsync(List.of("ok", " ", "bad")).join();

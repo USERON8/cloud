@@ -2,7 +2,7 @@ package com.cloud.user.service.impl;
 
 import cn.hutool.core.util.StrUtil;
 import com.cloud.common.domain.dto.user.UserDTO;
-import com.cloud.common.exception.BusinessException;
+import com.cloud.common.exception.BizException;
 import com.cloud.common.exception.EntityNotFoundException;
 import com.cloud.user.notification.UserNotificationDeliveryProvider;
 import com.cloud.user.service.UserNotificationService;
@@ -129,7 +129,7 @@ public class UserNotificationServiceImpl implements UserNotificationService {
     } catch (EntityNotFoundException e) {
       log.warn("User is not available for notification, userId={}", userId);
       return null;
-    } catch (BusinessException e) {
+    } catch (BizException e) {
       log.warn("User is not available for notification, userId={}", userId);
       return null;
     } catch (Exception e) {
