@@ -59,40 +59,4 @@ public class MerchantException extends BizException {
       super(403, message);
     }
   }
-
-  public static class MerchantCreateFailedException extends MerchantException {
-    public MerchantCreateFailedException(String message) {
-      super(500, "Merchant creation failed: " + message);
-    }
-  }
-
-  public static class MerchantUpdateFailedException extends MerchantException {
-    public MerchantUpdateFailedException(String message) {
-      super(500, "Merchant update failed: " + message);
-    }
-  }
-
-  public static class MerchantDeleteFailedException extends MerchantException {
-    public MerchantDeleteFailedException(String message) {
-      super(500, "Merchant deletion failed: " + message);
-    }
-  }
-
-  public static class MerchantStatusErrorException extends MerchantException {
-    public MerchantStatusErrorException(String message) {
-      super(400, "Merchant status error: " + message);
-    }
-  }
-
-  public static class MerchantQueryFailedException extends MerchantException {
-    public MerchantQueryFailedException(String message) {
-      super(500, "Merchant query failed: " + message);
-    }
-  }
-
-  public static class UserNotMerchantException extends MerchantException {
-    public UserNotMerchantException(String message) {
-      super(400, "User is not a merchant: " + message);
-    }
-  }
 }
