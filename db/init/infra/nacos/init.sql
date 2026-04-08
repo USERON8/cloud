@@ -1,4 +1,4 @@
--- MySQL dump 10.13  Distrib 8.0.42, for Win64 (x86_64)
+﻿-- MySQL dump 10.13  Distrib 8.0.42, for Win64 (x86_64)
 --
 -- Host: 127.0.0.1    Database: nacos
 -- ------------------------------------------------------
@@ -33,18 +33,18 @@ CREATE TABLE `config_info`
     `group_id`           varchar(128) COLLATE utf8mb3_bin           DEFAULT NULL COMMENT 'group_id',
     `content`            longtext COLLATE utf8mb3_bin      NOT NULL COMMENT 'content',
     `md5`                varchar(32) COLLATE utf8mb3_bin            DEFAULT NULL COMMENT 'md5',
-    `gmt_create`         datetime                          NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    `gmt_modified`       datetime                          NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '修改时间',
+    `gmt_create`         datetime                          NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '鍒涘缓鏃堕棿',
+    `gmt_modified`       datetime                          NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '淇敼鏃堕棿',
     `src_user`           text COLLATE utf8mb3_bin COMMENT 'source user',
     `src_ip`             varchar(50) COLLATE utf8mb3_bin            DEFAULT NULL COMMENT 'source ip',
     `app_name`           varchar(128) COLLATE utf8mb3_bin           DEFAULT NULL COMMENT 'app_name',
-    `tenant_id`          varchar(128) COLLATE utf8mb3_bin           DEFAULT '' COMMENT '租户字段',
+    `tenant_id`          varchar(128) COLLATE utf8mb3_bin           DEFAULT '' COMMENT '绉熸埛瀛楁',
     `c_desc`             varchar(256) COLLATE utf8mb3_bin           DEFAULT NULL COMMENT 'configuration description',
     `c_use`              varchar(64) COLLATE utf8mb3_bin            DEFAULT NULL COMMENT 'configuration usage',
-    `effect`             varchar(64) COLLATE utf8mb3_bin            DEFAULT NULL COMMENT '配置生效的描述',
-    `type`               varchar(64) COLLATE utf8mb3_bin            DEFAULT NULL COMMENT '配置的类型',
-    `c_schema`           text COLLATE utf8mb3_bin COMMENT '配置的模式',
-    `encrypted_data_key` varchar(1024) COLLATE utf8mb3_bin NOT NULL DEFAULT '' COMMENT '密钥',
+    `effect`             varchar(64) COLLATE utf8mb3_bin            DEFAULT NULL COMMENT '閰嶇疆鐢熸晥鐨勬弿杩?,
+    `type`               varchar(64) COLLATE utf8mb3_bin            DEFAULT NULL COMMENT '閰嶇疆鐨勭被鍨?,
+    `c_schema`           text COLLATE utf8mb3_bin COMMENT '閰嶇疆鐨勬ā寮?,
+    `encrypted_data_key` varchar(1024) COLLATE utf8mb3_bin NOT NULL DEFAULT '' COMMENT '瀵嗛挜',
     PRIMARY KEY (`id`),
     UNIQUE KEY `uk_configinfo_datagrouptenant` (`data_id`, `group_id`, `tenant_id`)
 ) ENGINE = InnoDB
@@ -70,37 +70,37 @@ VALUES (1, 'common.yaml', 'DEFAULT_GROUP',
         NULL, '2025-07-21 13:39:22', '2025-07-21 13:39:22', 'nacos', '192.168.43.215', '',
         'public', NULL, NULL, NULL, 'yaml', NULL, ''),
        (3, 'gateway.yaml', 'DEFAULT_GROUP',
-        'SERVICE_LOCAL_URL: http://127.0.0.1:8080\r\nSERVICE_VIEW_URL: http://127.0.0.1:18080\r\nSERVICE_PUBLIC_URL: http://6e314e0f.r6.cpolar.cn\r\nCPOLAR_DOMAIN: http://6e314e0f.r6.cpolar.cn\r\nCPOLAR_PUBLIC_BASE_URL: http://6e314e0f.r6.cpolar.cn\r\nCPOLAR_FRONTEND_BASE_URL: http://6e314e0f.r6.cpolar.cn\r\nAPP_SECURITY_CORS_ALLOWED_ORIGIN_PATTERNS: http://127.0.0.1:*,https://127.0.0.1:*,http://localhost:*,https://localhost:*,http://6e314e0f.r6.cpolar.cn,https://6e314e0f.r6.cpolar.cn\r\nAPP_SENTINEL_GATEWAY_SEARCH_QPS: 120\r\nAPP_SECURITY_SEARCH_RATE_LIMIT_REPLENISH_RATE: 120\r\nAPP_SECURITY_SEARCH_RATE_LIMIT_BURST_CAPACITY: 240\r\nAPP_SECURITY_SEARCH_RATE_LIMIT_REQUESTED_TOKENS: 1\r\nGATEWAY_HTTPCLIENT_CONNECT_TIMEOUT_MS: 5000\r\nGATEWAY_HTTPCLIENT_RESPONSE_TIMEOUT: 20s\r\nAPP_REMOTE_HTTP_CONNECT_TIMEOUT_MS: 5000\r\nAPP_REMOTE_HTTP_RESPONSE_TIMEOUT_MS: 8000\r\nAPP_REMOTE_HTTP_READ_TIMEOUT_MS: 8000\r\nAPP_REMOTE_HTTP_WRITE_TIMEOUT_MS: 8000\r\nSEARCH_FALLBACK_TIMEOUT_MS: 2000',
+        'SERVICE_LOCAL_URL: http://127.0.0.1:8080\r\nSERVICE_VIEW_URL: http://127.0.0.1:18080\r\nSERVICE_PUBLIC_URL: http://2d91127a.r6.cpolar.cn\r\nCPOLAR_DOMAIN: http://2d91127a.r6.cpolar.cn\r\nCPOLAR_PUBLIC_BASE_URL: http://2d91127a.r6.cpolar.cn\r\nCPOLAR_FRONTEND_BASE_URL: http://2d91127a.r6.cpolar.cn\r\nAPP_SECURITY_CORS_ALLOWED_ORIGIN_PATTERNS: http://127.0.0.1:*,https://127.0.0.1:*,http://localhost:*,https://localhost:*,http://2d91127a.r6.cpolar.cn,http://2d91127a.r6.cpolar.cn\r\nAPP_SENTINEL_GATEWAY_SEARCH_QPS: 120\r\nAPP_SECURITY_SEARCH_RATE_LIMIT_REPLENISH_RATE: 120\r\nAPP_SECURITY_SEARCH_RATE_LIMIT_BURST_CAPACITY: 240\r\nAPP_SECURITY_SEARCH_RATE_LIMIT_REQUESTED_TOKENS: 1\r\nGATEWAY_HTTPCLIENT_CONNECT_TIMEOUT_MS: 5000\r\nGATEWAY_HTTPCLIENT_RESPONSE_TIMEOUT: 20s\r\nAPP_REMOTE_HTTP_CONNECT_TIMEOUT_MS: 5000\r\nAPP_REMOTE_HTTP_RESPONSE_TIMEOUT_MS: 8000\r\nAPP_REMOTE_HTTP_READ_TIMEOUT_MS: 8000\r\nAPP_REMOTE_HTTP_WRITE_TIMEOUT_MS: 8000\r\nSEARCH_FALLBACK_TIMEOUT_MS: 2000',
         NULL, '2026-04-07 20:20:00', '2026-04-07 20:20:00', 'codex', '127.0.0.1', '',
-        'public', 'gateway custom config', 'service', 'yaml', NULL, ''),
+        'public', 'gateway custom config', 'service', NULL, 'yaml', NULL, ''),
        (4, 'auth-service.yaml', 'DEFAULT_GROUP',
-        'SERVICE_LOCAL_URL: http://127.0.0.1:8081\r\nSERVICE_VIEW_URL: http://127.0.0.1:18080\r\nSERVICE_PUBLIC_URL: http://6e314e0f.r6.cpolar.cn\r\nCPOLAR_PUBLIC_BASE_URL: http://6e314e0f.r6.cpolar.cn\r\nCPOLAR_FRONTEND_BASE_URL: http://6e314e0f.r6.cpolar.cn\r\nGITHUB_REDIRECT_URI: http://6e314e0f.r6.cpolar.cn/login/oauth2/code/github\r\nAPP_OAUTH2_GITHUB_ERROR_URL: http://6e314e0f.r6.cpolar.cn/auth/error\r\nAPP_OAUTH2_WEB_REDIRECT_URIS: http://6e314e0f.r6.cpolar.cn/callback,http://127.0.0.1:18080/callback,http://127.0.0.1:3000/callback,http://127.0.0.1:5173/callback,http://localhost:5173/callback',
+        'SERVICE_LOCAL_URL: http://127.0.0.1:8081\r\nSERVICE_VIEW_URL: http://127.0.0.1:18080\r\nSERVICE_PUBLIC_URL: http://2d91127a.r6.cpolar.cn\r\nCPOLAR_PUBLIC_BASE_URL: http://2d91127a.r6.cpolar.cn\r\nCPOLAR_FRONTEND_BASE_URL: http://2d91127a.r6.cpolar.cn\r\nGITHUB_REDIRECT_URI: http://2d91127a.r6.cpolar.cn/login/oauth2/code/github\r\nAPP_OAUTH2_GITHUB_ERROR_URL: http://2d91127a.r6.cpolar.cn/auth/error\r\nAPP_OAUTH2_WEB_REDIRECT_URIS: http://2d91127a.r6.cpolar.cn/callback,http://127.0.0.1:18080/callback,http://127.0.0.1:3000/callback,http://127.0.0.1:5173/callback,http://localhost:5173/callback',
         NULL, '2026-04-07 20:20:00', '2026-04-07 20:20:00', 'codex', '127.0.0.1', '',
-        'public', 'auth service custom config', 'service', 'yaml', NULL, ''),
+        'public', 'auth service custom config', 'service', NULL, 'yaml', NULL, ''),
        (5, 'user-service.yaml', 'DEFAULT_GROUP',
-        'SERVICE_LOCAL_URL: http://127.0.0.1:8082\r\nSERVICE_VIEW_URL: http://127.0.0.1:18080\r\nSERVICE_PUBLIC_URL: http://6e314e0f.r6.cpolar.cn',
+        'SERVICE_LOCAL_URL: http://127.0.0.1:8082\r\nSERVICE_VIEW_URL: http://127.0.0.1:18080\r\nSERVICE_PUBLIC_URL: http://2d91127a.r6.cpolar.cn',
         NULL, '2026-04-07 20:20:00', '2026-04-07 20:20:00', 'codex', '127.0.0.1', '',
-        'public', 'user service custom config', 'service', 'yaml', NULL, ''),
+        'public', 'user service custom config', 'service', NULL, 'yaml', NULL, ''),
        (6, 'product-service.yaml', 'DEFAULT_GROUP',
-        'SERVICE_LOCAL_URL: http://127.0.0.1:8084\r\nSERVICE_VIEW_URL: http://127.0.0.1:18080\r\nSERVICE_PUBLIC_URL: http://6e314e0f.r6.cpolar.cn',
+        'SERVICE_LOCAL_URL: http://127.0.0.1:8084\r\nSERVICE_VIEW_URL: http://127.0.0.1:18080\r\nSERVICE_PUBLIC_URL: http://2d91127a.r6.cpolar.cn',
         NULL, '2026-04-07 20:20:00', '2026-04-07 20:20:00', 'codex', '127.0.0.1', '',
-        'public', 'product service custom config', 'service', 'yaml', NULL, ''),
+        'public', 'product service custom config', 'service', NULL, 'yaml', NULL, ''),
        (7, 'order-service.yaml', 'DEFAULT_GROUP',
-        'SERVICE_LOCAL_URL: http://127.0.0.1:8085\r\nSERVICE_VIEW_URL: http://127.0.0.1:18080\r\nSERVICE_PUBLIC_URL: http://6e314e0f.r6.cpolar.cn',
+        'SERVICE_LOCAL_URL: http://127.0.0.1:8085\r\nSERVICE_VIEW_URL: http://127.0.0.1:18080\r\nSERVICE_PUBLIC_URL: http://2d91127a.r6.cpolar.cn',
         NULL, '2026-04-07 20:20:00', '2026-04-07 20:20:00', 'codex', '127.0.0.1', '',
-        'public', 'order service custom config', 'service', 'yaml', NULL, ''),
+        'public', 'order service custom config', 'service', NULL, 'yaml', NULL, ''),
        (8, 'payment-service.yaml', 'DEFAULT_GROUP',
-        'SERVICE_LOCAL_URL: http://127.0.0.1:8086\r\nSERVICE_VIEW_URL: http://127.0.0.1:18080\r\nSERVICE_PUBLIC_URL: http://6e314e0f.r6.cpolar.cn\r\nALIPAY_NOTIFY_URL: http://6e314e0f.r6.cpolar.cn/api/v1/payment/alipay/notify\r\nALIPAY_RETURN_URL: http://6e314e0f.r6.cpolar.cn/#/pages/app/payments/index',
+        'SERVICE_LOCAL_URL: http://127.0.0.1:8086\r\nSERVICE_VIEW_URL: http://127.0.0.1:18080\r\nSERVICE_PUBLIC_URL: http://2d91127a.r6.cpolar.cn\r\nALIPAY_NOTIFY_URL: http://2d91127a.r6.cpolar.cn/api/v1/payment/alipay/notify\r\nALIPAY_RETURN_URL: http://2d91127a.r6.cpolar.cn/#/pages/app/payments/index',
         NULL, '2026-04-07 20:20:00', '2026-04-07 20:20:00', 'codex', '127.0.0.1', '',
-        'public', 'payment service custom config', 'service', 'yaml', NULL, ''),
+        'public', 'payment service custom config', 'service', NULL, 'yaml', NULL, ''),
        (9, 'search-service.yaml', 'DEFAULT_GROUP',
-        'SERVICE_LOCAL_URL: http://127.0.0.1:8087\r\nSERVICE_VIEW_URL: http://127.0.0.1:18080\r\nSERVICE_PUBLIC_URL: http://6e314e0f.r6.cpolar.cn\r\nSEARCH_ES_REQUEST_TIMEOUT_MS: 1500',
+        'SERVICE_LOCAL_URL: http://127.0.0.1:8087\r\nSERVICE_VIEW_URL: http://127.0.0.1:18080\r\nSERVICE_PUBLIC_URL: http://2d91127a.r6.cpolar.cn\r\nSEARCH_ES_REQUEST_TIMEOUT_MS: 1500',
         NULL, '2026-04-07 20:20:00', '2026-04-07 20:20:00', 'codex', '127.0.0.1', '',
-        'public', 'search service custom config', 'service', 'yaml', NULL, ''),
+        'public', 'search service custom config', 'service', NULL, 'yaml', NULL, ''),
        (10, 'stock-service.yaml', 'DEFAULT_GROUP',
-        'SERVICE_LOCAL_URL: http://127.0.0.1:8088\r\nSERVICE_VIEW_URL: http://127.0.0.1:18080\r\nSERVICE_PUBLIC_URL: http://6e314e0f.r6.cpolar.cn',
+        'SERVICE_LOCAL_URL: http://127.0.0.1:8088\r\nSERVICE_VIEW_URL: http://127.0.0.1:18080\r\nSERVICE_PUBLIC_URL: http://2d91127a.r6.cpolar.cn',
         NULL, '2026-04-07 20:20:00', '2026-04-07 20:20:00', 'codex', '127.0.0.1', '',
-        'public', 'stock service custom config', 'service', 'yaml', NULL, '');
+        'public', 'stock service custom config', 'service', NULL, 'yaml', NULL, '');
 /*!40000 ALTER TABLE `config_info`
     ENABLE KEYS */;
 UNLOCK TABLES;
@@ -162,7 +162,7 @@ CREATE TABLE `config_tags_relation`
     `data_id`   varchar(255) COLLATE utf8mb3_bin NOT NULL COMMENT 'data_id',
     `group_id`  varchar(128) COLLATE utf8mb3_bin NOT NULL COMMENT 'group_id',
     `tenant_id` varchar(128) COLLATE utf8mb3_bin DEFAULT '' COMMENT 'tenant_id',
-    `nid`       bigint                           NOT NULL AUTO_INCREMENT COMMENT 'nid, 自增长标识',
+    `nid`       bigint                           NOT NULL AUTO_INCREMENT COMMENT 'nid, 鑷闀挎爣璇?,
     PRIMARY KEY (`nid`),
     UNIQUE KEY `uk_configtagrelation_configidtag` (`id`, `tag_name`, `tag_type`),
     KEY `idx_tenant_id` (`tenant_id`)
@@ -191,22 +191,22 @@ DROP TABLE IF EXISTS `group_capacity`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `group_capacity`
 (
-    `id`                bigint unsigned                  NOT NULL AUTO_INCREMENT COMMENT '主键ID',
-    `group_id`          varchar(128) COLLATE utf8mb3_bin NOT NULL DEFAULT '' COMMENT 'Group ID，空字符表示整个集群',
-    `quota`             int unsigned                     NOT NULL DEFAULT '0' COMMENT '配额，0表示使用默认值',
-    `usage`             int unsigned                     NOT NULL DEFAULT '0' COMMENT '使用量',
-    `max_size`          int unsigned                     NOT NULL DEFAULT '0' COMMENT '单个配置大小上限，单位为字节，0表示使用默认值',
-    `max_aggr_count`    int unsigned                     NOT NULL DEFAULT '0' COMMENT '聚合子配置最大个数，，0表示使用默认值',
-    `max_aggr_size`     int unsigned                     NOT NULL DEFAULT '0' COMMENT '单个聚合数据的子配置大小上限，单位为字节，0表示使用默认值',
-    `max_history_count` int unsigned                     NOT NULL DEFAULT '0' COMMENT '最大变更历史数量',
-    `gmt_create`        datetime                         NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    `gmt_modified`      datetime                         NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '修改时间',
+    `id`                bigint unsigned                  NOT NULL AUTO_INCREMENT COMMENT '涓婚敭ID',
+    `group_id`          varchar(128) COLLATE utf8mb3_bin NOT NULL DEFAULT '' COMMENT 'Group ID锛岀┖瀛楃琛ㄧず鏁翠釜闆嗙兢',
+    `quota`             int unsigned                     NOT NULL DEFAULT '0' COMMENT '閰嶉锛?琛ㄧず浣跨敤榛樿鍊?,
+    `usage`             int unsigned                     NOT NULL DEFAULT '0' COMMENT '浣跨敤閲?,
+    `max_size`          int unsigned                     NOT NULL DEFAULT '0' COMMENT '鍗曚釜閰嶇疆澶у皬涓婇檺锛屽崟浣嶄负瀛楄妭锛?琛ㄧず浣跨敤榛樿鍊?,
+    `max_aggr_count`    int unsigned                     NOT NULL DEFAULT '0' COMMENT '鑱氬悎瀛愰厤缃渶澶т釜鏁帮紝锛?琛ㄧず浣跨敤榛樿鍊?,
+    `max_aggr_size`     int unsigned                     NOT NULL DEFAULT '0' COMMENT '鍗曚釜鑱氬悎鏁版嵁鐨勫瓙閰嶇疆澶у皬涓婇檺锛屽崟浣嶄负瀛楄妭锛?琛ㄧず浣跨敤榛樿鍊?,
+    `max_history_count` int unsigned                     NOT NULL DEFAULT '0' COMMENT '鏈€澶у彉鏇村巻鍙叉暟閲?,
+    `gmt_create`        datetime                         NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '鍒涘缓鏃堕棿',
+    `gmt_modified`      datetime                         NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '淇敼鏃堕棿',
     PRIMARY KEY (`id`),
     UNIQUE KEY `uk_group_id` (`group_id`)
 ) ENGINE = InnoDB
   AUTO_INCREMENT = 2
   DEFAULT CHARSET = utf8mb3
-  COLLATE = utf8mb3_bin COMMENT ='集群、各Group容量信息表';
+  COLLATE = utf8mb3_bin COMMENT ='闆嗙兢銆佸悇Group瀹归噺淇℃伅琛?;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -232,19 +232,19 @@ DROP TABLE IF EXISTS `his_config_info`;
 CREATE TABLE `his_config_info`
 (
     `id`                 bigint unsigned                   NOT NULL COMMENT 'id',
-    `nid`                bigint unsigned                   NOT NULL AUTO_INCREMENT COMMENT 'nid, 自增标识',
+    `nid`                bigint unsigned                   NOT NULL AUTO_INCREMENT COMMENT 'nid, 鑷鏍囪瘑',
     `data_id`            varchar(255) COLLATE utf8mb3_bin  NOT NULL COMMENT 'data_id',
     `group_id`           varchar(128) COLLATE utf8mb3_bin  NOT NULL COMMENT 'group_id',
     `app_name`           varchar(128) COLLATE utf8mb3_bin           DEFAULT NULL COMMENT 'app_name',
     `content`            longtext COLLATE utf8mb3_bin      NOT NULL COMMENT 'content',
     `md5`                varchar(32) COLLATE utf8mb3_bin            DEFAULT NULL COMMENT 'md5',
-    `gmt_create`         datetime                          NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    `gmt_modified`       datetime                          NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '修改时间',
+    `gmt_create`         datetime                          NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '鍒涘缓鏃堕棿',
+    `gmt_modified`       datetime                          NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '淇敼鏃堕棿',
     `src_user`           text COLLATE utf8mb3_bin COMMENT 'source user',
     `src_ip`             varchar(50) COLLATE utf8mb3_bin            DEFAULT NULL COMMENT 'source ip',
     `op_type`            char(10) COLLATE utf8mb3_bin               DEFAULT NULL COMMENT 'operation type',
-    `tenant_id`          varchar(128) COLLATE utf8mb3_bin           DEFAULT '' COMMENT '租户字段',
-    `encrypted_data_key` varchar(1024) COLLATE utf8mb3_bin NOT NULL DEFAULT '' COMMENT '密钥',
+    `tenant_id`          varchar(128) COLLATE utf8mb3_bin           DEFAULT '' COMMENT '绉熸埛瀛楁',
+    `encrypted_data_key` varchar(1024) COLLATE utf8mb3_bin NOT NULL DEFAULT '' COMMENT '瀵嗛挜',
     `publish_type`       varchar(50) COLLATE utf8mb3_bin            DEFAULT 'formal' COMMENT 'publish type gray or formal',
     `gray_name`          varchar(50) COLLATE utf8mb3_bin            DEFAULT NULL COMMENT 'gray name',
     `ext_info`           longtext COLLATE utf8mb3_bin COMMENT 'ext info',
@@ -255,7 +255,7 @@ CREATE TABLE `his_config_info`
 ) ENGINE = InnoDB
   AUTO_INCREMENT = 2
   DEFAULT CHARSET = utf8mb3
-  COLLATE = utf8mb3_bin COMMENT ='多租户改造';
+  COLLATE = utf8mb3_bin COMMENT ='澶氱鎴锋敼閫?;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -342,22 +342,22 @@ DROP TABLE IF EXISTS `tenant_capacity`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `tenant_capacity`
 (
-    `id`                bigint unsigned                  NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+    `id`                bigint unsigned                  NOT NULL AUTO_INCREMENT COMMENT '涓婚敭ID',
     `tenant_id`         varchar(128) COLLATE utf8mb3_bin NOT NULL DEFAULT '' COMMENT 'Tenant ID',
-    `quota`             int unsigned                     NOT NULL DEFAULT '0' COMMENT '配额，0表示使用默认值',
-    `usage`             int unsigned                     NOT NULL DEFAULT '0' COMMENT '使用量',
-    `max_size`          int unsigned                     NOT NULL DEFAULT '0' COMMENT '单个配置大小上限，单位为字节，0表示使用默认值',
-    `max_aggr_count`    int unsigned                     NOT NULL DEFAULT '0' COMMENT '聚合子配置最大个数',
-    `max_aggr_size`     int unsigned                     NOT NULL DEFAULT '0' COMMENT '单个聚合数据的子配置大小上限，单位为字节，0表示使用默认值',
-    `max_history_count` int unsigned                     NOT NULL DEFAULT '0' COMMENT '最大变更历史数量',
-    `gmt_create`        datetime                         NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    `gmt_modified`      datetime                         NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '修改时间',
+    `quota`             int unsigned                     NOT NULL DEFAULT '0' COMMENT '閰嶉锛?琛ㄧず浣跨敤榛樿鍊?,
+    `usage`             int unsigned                     NOT NULL DEFAULT '0' COMMENT '浣跨敤閲?,
+    `max_size`          int unsigned                     NOT NULL DEFAULT '0' COMMENT '鍗曚釜閰嶇疆澶у皬涓婇檺锛屽崟浣嶄负瀛楄妭锛?琛ㄧず浣跨敤榛樿鍊?,
+    `max_aggr_count`    int unsigned                     NOT NULL DEFAULT '0' COMMENT '鑱氬悎瀛愰厤缃渶澶т釜鏁?,
+    `max_aggr_size`     int unsigned                     NOT NULL DEFAULT '0' COMMENT '鍗曚釜鑱氬悎鏁版嵁鐨勫瓙閰嶇疆澶у皬涓婇檺锛屽崟浣嶄负瀛楄妭锛?琛ㄧず浣跨敤榛樿鍊?,
+    `max_history_count` int unsigned                     NOT NULL DEFAULT '0' COMMENT '鏈€澶у彉鏇村巻鍙叉暟閲?,
+    `gmt_create`        datetime                         NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '鍒涘缓鏃堕棿',
+    `gmt_modified`      datetime                         NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '淇敼鏃堕棿',
     PRIMARY KEY (`id`),
     UNIQUE KEY `uk_tenant_id` (`tenant_id`)
 ) ENGINE = InnoDB
   AUTO_INCREMENT = 2
   DEFAULT CHARSET = utf8mb3
-  COLLATE = utf8mb3_bin COMMENT ='租户容量信息表';
+  COLLATE = utf8mb3_bin COMMENT ='绉熸埛瀹归噺淇℃伅琛?;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -388,8 +388,8 @@ CREATE TABLE `tenant_info`
     `tenant_name`   varchar(128) COLLATE utf8mb3_bin DEFAULT '' COMMENT 'tenant_name',
     `tenant_desc`   varchar(256) COLLATE utf8mb3_bin DEFAULT NULL COMMENT 'tenant_desc',
     `create_source` varchar(32) COLLATE utf8mb3_bin  DEFAULT NULL COMMENT 'create_source',
-    `gmt_create`    bigint                           NOT NULL COMMENT '创建时间',
-    `gmt_modified`  bigint                           NOT NULL COMMENT '修改时间',
+    `gmt_create`    bigint                           NOT NULL COMMENT '鍒涘缓鏃堕棿',
+    `gmt_modified`  bigint                           NOT NULL COMMENT '淇敼鏃堕棿',
     PRIMARY KEY (`id`),
     UNIQUE KEY `uk_tenant_info_kptenantid` (`kp`, `tenant_id`),
     KEY `idx_tenant_id` (`tenant_id`)
@@ -450,3 +450,5 @@ UNLOCK TABLES;
 /*!40111 SET SQL_NOTES = @OLD_SQL_NOTES */;
 
 -- Dump completed on 2025-07-22 16:09:54
+
+

@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, onMounted } from "vue";
 import { logout } from "../api/auth";
 import { useRole, type UserRole } from "../auth/permission";
-import { clearSession, sessionState } from "../auth/session";
+import { clearSession, isAuthenticated, sessionState } from "../auth/session";
 import { type Locale, useLocale } from "../i18n/locale";
 import { currentRoutePath, navigateTo, redirectTo } from "../router/navigation";
 import { Routes, type RoutePath } from "../router/routes";
@@ -168,12 +168,37 @@ const roleLabel = computed(
     () => roleTextMap[role.value]?.[locale.value] ?? role.value,
 );
 
+const publicPaths = new Set(
+    navItems.filter((item) => item.public).map((item) => item.path),
+);
+
 function isActive(path: string): boolean {
     const current = currentRoutePath();
     if (!current) {
         return false;
     }
     return current === path.replace(/^\//, "") || current === path;
+}
+
+function ensureCurrentRouteAccess(): void {
+    const currentPath = currentRoutePath();
+    if (!currentPath || publicPaths.has(currentPath as RoutePath)) {
+        return;
+    }
+
+    if (!isAuthenticated()) {
+        redirectTo(Routes.login, { redirect: currentPath });
+        return;
+    }
+
+    const matchedItem = navItems.find((item) => item.path === currentPath);
+    if (
+        matchedItem &&
+        !matchedItem.public &&
+        !matchedItem.roles.includes(role.value)
+    ) {
+        redirectTo(Routes.forbidden);
+    }
 }
 
 function handleNav(item: NavItem): void {
@@ -194,6 +219,10 @@ async function handleLogout(): Promise<void> {
         redirectTo(Routes.login);
     }
 }
+
+onMounted(() => {
+    ensureCurrentRouteAccess();
+});
 </script>
 
 <template>

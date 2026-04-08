@@ -59,9 +59,15 @@ export async function resolveCartSkuId(
       toast('SKU information is unavailable')
       return null
     }
-    skuIdCache.set(item.id, null)
-    toast('This product has multiple variants and cannot be added from the list view')
-    return null
+    const selectedSkuId = availableSkus[0]?.skuId
+    if (typeof selectedSkuId !== 'number') {
+      skuIdCache.set(item.id, null)
+      toast('SKU information is unavailable')
+      return null
+    }
+    skuIdCache.set(item.id, selectedSkuId)
+    toast('Selected the default variant automatically')
+    return selectedSkuId
   })().finally(() => {
     skuLookupCache.delete(item.id)
   })

@@ -65,7 +65,8 @@ CREATE TABLE IF NOT EXISTS sku
     deleted          TINYINT         NOT NULL DEFAULT 0,
     version          INT             NOT NULL DEFAULT 0,
     UNIQUE KEY uk_sku_code (sku_code),
-    INDEX idx_sku_spu_status_deleted (spu_id, status, deleted)
+    INDEX idx_sku_spu_status_deleted (spu_id, status, deleted),
+    INDEX idx_sku_spu_deleted (spu_id, deleted)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci;

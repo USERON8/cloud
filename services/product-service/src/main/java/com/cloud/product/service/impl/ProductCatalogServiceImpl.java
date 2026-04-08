@@ -197,9 +197,11 @@ public class ProductCatalogServiceImpl implements ProductCatalogService {
     if (skuIds == null || skuIds.isEmpty()) {
       return Collections.emptyList();
     }
-    List<Sku> skus =
-        skuMapper.selectList(
-            new LambdaQueryWrapper<Sku>().in(Sku::getId, skuIds).eq(Sku::getDeleted, 0));
+    List<Long> safeSkuIds = skuIds.stream().filter(id -> id != null).distinct().toList();
+    if (safeSkuIds.isEmpty()) {
+      return Collections.emptyList();
+    }
+    List<Sku> skus = skuMapper.selectActiveByIds(safeSkuIds);
     if (skus == null || skus.isEmpty()) {
       return Collections.emptyList();
     }
@@ -289,9 +291,7 @@ public class ProductCatalogServiceImpl implements ProductCatalogService {
     if (spu == null || spu.getDeleted() == 1) {
       return null;
     }
-    List<Sku> skus =
-        skuMapper.selectList(
-            new LambdaQueryWrapper<Sku>().eq(Sku::getSpuId, spuId).eq(Sku::getDeleted, 0));
+    List<Sku> skus = skuMapper.selectActiveBySpuId(spuId);
     Map<Long, Category> categoryById = loadCategoryMap(List.of(spu));
     Map<Long, Brand> brandById = loadBrandMap(List.of(spu));
     Map<Long, Shop> shopByMerchantId = loadShopMap(List.of(spu));
@@ -312,9 +312,7 @@ public class ProductCatalogServiceImpl implements ProductCatalogService {
     List<Long> spuIds = spus.stream().map(Spu::getId).filter(id -> id != null).toList();
     Map<Long, List<Sku>> skusBySpuId = new LinkedHashMap<>();
     if (!spuIds.isEmpty()) {
-      List<Sku> skus =
-          skuMapper.selectList(
-              new LambdaQueryWrapper<Sku>().in(Sku::getSpuId, spuIds).eq(Sku::getDeleted, 0));
+      List<Sku> skus = skuMapper.selectActiveBySpuIds(spuIds);
       for (Sku sku : skus) {
         if (sku.getSpuId() == null) {
           continue;
@@ -378,11 +376,7 @@ public class ProductCatalogServiceImpl implements ProductCatalogService {
       return Collections.emptyMap();
     }
     Map<Long, Shop> shopByMerchantId = new HashMap<>(merchantIds.size());
-    List<Shop> shops =
-        shopMapper.selectList(
-            new LambdaQueryWrapper<Shop>()
-                .in(Shop::getMerchantId, merchantIds)
-                .eq(Shop::getDeleted, 0));
+    List<Shop> shops = shopMapper.selectActiveByMerchantIds(merchantIds);
     if (shops == null || shops.isEmpty()) {
       return shopByMerchantId;
     }
@@ -440,12 +434,7 @@ public class ProductCatalogServiceImpl implements ProductCatalogService {
     }
 
     List<ProductReview> reviews =
-        productReviewMapper.selectList(
-            new LambdaQueryWrapper<ProductReview>()
-                .in(ProductReview::getSpuId, spuIds)
-                .eq(ProductReview::getDeleted, 0)
-                .eq(ProductReview::getAuditStatus, "APPROVED")
-                .eq(ProductReview::getIsVisible, 1));
+        productReviewMapper.selectVisibleApprovedBySpuIds(spuIds, "APPROVED", 1);
     if (reviews == null || reviews.isEmpty()) {
       return Collections.emptyMap();
     }

@@ -269,7 +269,11 @@ onShow(() => {
                         </button>
                         <button
                             class="btn-secondary"
-                            @click="navigateTo(Routes.appCatalog)"
+                            @click="
+                                navigateTo(Routes.appCatalog, undefined, {
+                                    requiresAuth: true,
+                                })
+                            "
                         >
                             {{ copy.catalog }}
                         </button>

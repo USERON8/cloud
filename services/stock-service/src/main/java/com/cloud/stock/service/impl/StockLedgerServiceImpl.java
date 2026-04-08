@@ -2,7 +2,7 @@ package com.cloud.stock.service.impl;
 
 import com.cloud.common.domain.dto.stock.StockOperateCommandDTO;
 import com.cloud.common.domain.vo.stock.StockLedgerVO;
-import com.cloud.common.exception.BusinessException;
+import com.cloud.common.exception.BizException;
 import com.cloud.common.metrics.TradeMetrics;
 import com.cloud.stock.mapper.StockReservationMapper;
 import com.cloud.stock.mapper.StockSegmentMapper;
@@ -70,7 +70,7 @@ public class StockLedgerServiceImpl implements StockLedgerService {
     validateCommand(command);
     try {
       if (!Boolean.TRUE.equals(preCheck(List.of(command)))) {
-        throw new BusinessException("insufficient available stock");
+        throw new BizException("insufficient available stock");
       }
       List<StockReservation> existing = listReservations(command);
       if (isReserveCompleted(existing, command)) {
@@ -78,7 +78,7 @@ public class StockLedgerServiceImpl implements StockLedgerService {
         return true;
       }
       if (!existing.isEmpty()) {
-        throw new BusinessException(
+        throw new BizException(
             "reservation already exists for subOrderNo=" + command.getSubOrderNo());
       }
 
@@ -119,14 +119,14 @@ public class StockLedgerServiceImpl implements StockLedgerService {
         continue;
       }
       if (!STATUS_LOCKED.equals(reservation.getStatus())) {
-        throw new BusinessException(
+        throw new BizException(
             "reservation status invalid for confirm: " + reservation.getStatus());
       }
       int updated =
           stockSegmentMapper.confirmLockedOnSegment(
               reservation.getSkuId(), reservation.getSegmentId(), reservation.getQuantity());
       if (updated != 1) {
-        throw new BusinessException("confirm stock failed");
+        throw new BizException("confirm stock failed");
       }
       reservation.setStatus(STATUS_SOLD);
       stockReservationMapper.updateById(reservation);
@@ -158,14 +158,14 @@ public class StockLedgerServiceImpl implements StockLedgerService {
           continue;
         }
         if (!STATUS_LOCKED.equals(reservation.getStatus())) {
-          throw new BusinessException(
+          throw new BizException(
               "reservation status invalid for release: " + reservation.getStatus());
         }
         int updated =
             stockSegmentMapper.releaseOnSegment(
                 reservation.getSkuId(), reservation.getSegmentId(), reservation.getQuantity());
         if (updated != 1) {
-          throw new BusinessException("release stock failed");
+          throw new BizException("release stock failed");
         }
         reservation.setStatus(STATUS_RELEASED);
         stockReservationMapper.updateById(reservation);
@@ -235,7 +235,7 @@ public class StockLedgerServiceImpl implements StockLedgerService {
             stockSegmentMapper.releaseOnSegment(
                 reservation.getSkuId(), reservation.getSegmentId(), movable);
         if (updated != 1) {
-          throw new BusinessException("rollback locked stock failed");
+          throw new BizException("rollback locked stock failed");
         }
         restoredFromLocked += movable;
       } else if (STATUS_SOLD.equals(reservation.getStatus())) {
@@ -243,11 +243,11 @@ public class StockLedgerServiceImpl implements StockLedgerService {
             stockSegmentMapper.restoreSoldOnSegment(
                 reservation.getSkuId(), reservation.getSegmentId(), movable);
         if (updated != 1) {
-          throw new BusinessException("rollback sold stock failed");
+          throw new BizException("rollback sold stock failed");
         }
         restoredFromSold += movable;
       } else {
-        throw new BusinessException(
+        throw new BizException(
             "reservation status invalid for rollback: " + reservation.getStatus());
       }
       remaining -= movable;
@@ -259,7 +259,7 @@ public class StockLedgerServiceImpl implements StockLedgerService {
       writeTxn(command, reservation.getSegmentId(), movable, "ROLLBACK", command.getReason());
     }
     if (remaining > 0) {
-      throw new BusinessException(
+      throw new BizException(
           "rollback quantity exceeds reserved quantity for subOrderNo=" + command.getSubOrderNo());
     }
     if (restoredFromLocked > 0 || restoredFromSold > 0) {
@@ -273,7 +273,7 @@ public class StockLedgerServiceImpl implements StockLedgerService {
   private List<SegmentAllocation> allocate(StockOperateCommandDTO command) {
     List<StockSegment> segments = stockSegmentMapper.listActiveSegmentsBySkuId(command.getSkuId());
     if (segments == null || segments.isEmpty()) {
-      throw new BusinessException("stock segment not found for skuId=" + command.getSkuId());
+      throw new BizException("stock segment not found for skuId=" + command.getSkuId());
     }
     List<StockSegment> orderedSegments = reorderSegments(segments, command.getSubOrderNo());
     int remaining = command.getQuantity();
@@ -299,7 +299,7 @@ public class StockLedgerServiceImpl implements StockLedgerService {
       }
     }
     if (remaining > 0) {
-      throw new BusinessException("insufficient available stock");
+      throw new BizException("insufficient available stock");
     }
     return allocations;
   }
@@ -335,7 +335,7 @@ public class StockLedgerServiceImpl implements StockLedgerService {
   private List<StockReservation> requireReservations(StockOperateCommandDTO command) {
     List<StockReservation> reservations = listReservations(command);
     if (reservations.isEmpty()) {
-      throw new BusinessException("stock reservation not found");
+      throw new BizException("stock reservation not found");
     }
     int totalQuantity =
         reservations.stream()
@@ -343,7 +343,7 @@ public class StockLedgerServiceImpl implements StockLedgerService {
             .mapToInt(item -> defaultZero(item.getQuantity()))
             .sum();
     if (totalQuantity < command.getQuantity()) {
-      throw new BusinessException(
+      throw new BizException(
           "reservation quantity mismatch for subOrderNo=" + command.getSubOrderNo());
     }
     return reservations;
@@ -374,13 +374,13 @@ public class StockLedgerServiceImpl implements StockLedgerService {
 
   private void validateCommand(StockOperateCommandDTO command) {
     if (command == null || command.getSkuId() == null || command.getQuantity() == null) {
-      throw new BusinessException("stock command is invalid");
+      throw new BizException("stock command is invalid");
     }
     if (command.getQuantity() <= 0) {
-      throw new BusinessException("stock quantity must be greater than 0");
+      throw new BizException("stock quantity must be greater than 0");
     }
     if (command.getSubOrderNo() == null || command.getSubOrderNo().isBlank()) {
-      throw new BusinessException("subOrderNo is required");
+      throw new BizException("subOrderNo is required");
     }
   }
 

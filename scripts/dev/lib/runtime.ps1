@@ -102,26 +102,8 @@ function Resolve-PublicBaseUrl {
     $trimmedUrl = $Url.Trim()
     try {
         $uri = [System.Uri]$trimmedUrl
-        if (
-            $uri.Scheme -eq "http" -and
-            -not $uri.IsLoopback -and
-            $uri.Host -notin @("localhost", "127.0.0.1") -and
-            $uri.Host -notlike "192.168.*" -and
-            $uri.Host -notlike "10.*" -and
-            $uri.Host -notlike "172.16.*" -and
-            $uri.Host -notlike "172.17.*" -and
-            $uri.Host -notlike "172.18.*" -and
-            $uri.Host -notlike "172.19.*" -and
-            $uri.Host -notlike "172.2?.*" -and
-            $uri.Host -notlike "172.30.*" -and
-            $uri.Host -notlike "172.31.*"
-        ) {
-            $builder = New-Object System.UriBuilder($uri)
-            $builder.Scheme = "https"
-            if ($builder.Port -eq 80) {
-                $builder.Port = -1
-            }
-            return $builder.Uri.GetLeftPart([System.UriPartial]::Authority)
+        if ($uri.IsAbsoluteUri) {
+            return $uri.GetLeftPart([System.UriPartial]::Authority).TrimEnd("/")
         }
     } catch {
     }

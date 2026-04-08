@@ -1,6 +1,5 @@
 package com.cloud.order.service.impl;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.cloud.api.product.ProductDubboApi;
 import com.cloud.common.domain.vo.product.SpuDetailVO;
 import com.cloud.common.exception.BizException;
@@ -130,14 +129,7 @@ public class CartServiceImpl implements CartService {
   }
 
   private Cart findOrCreateActiveCart(Long userId, boolean createIfMissing) {
-    Cart cart =
-        cartMapper.selectOne(
-            new LambdaQueryWrapper<Cart>()
-                .eq(Cart::getUserId, userId)
-                .eq(Cart::getDeleted, 0)
-                .eq(Cart::getCartStatus, CART_STATUS_ACTIVE)
-                .orderByDesc(Cart::getId)
-                .last("LIMIT 1"));
+    Cart cart = cartMapper.selectActiveByUserId(userId);
     if (cart != null || !createIfMissing) {
       return cart;
     }
@@ -155,14 +147,7 @@ public class CartServiceImpl implements CartService {
     if (cartId == null || userId == null) {
       return List.of();
     }
-    List<CartItem> items =
-        cartItemMapper.selectList(
-            new LambdaQueryWrapper<CartItem>()
-                .eq(CartItem::getCartId, cartId)
-                .eq(CartItem::getUserId, userId)
-                .eq(CartItem::getDeleted, 0)
-                .eq(CartItem::getCheckedOut, 0)
-                .orderByAsc(CartItem::getId));
+    List<CartItem> items = cartItemMapper.listActiveByCartIdAndUserId(cartId, userId);
     return items == null ? List.of() : items;
   }
 

@@ -32,18 +32,18 @@ VALUES (100, 0, 'Electronics', 1, '/100', 1, 1, 0, 0),
        (400, 110, 'Kitchen Appliance', 2, '/110/400', 1, 1, 0, 0),
        (410, 400, 'Coffee Appliance', 3, '/110/400/410', 1, 1, 0, 0);
 
-INSERT INTO brand (id, brand_name, brand_name_en, logo_url, description, official_website, country, founded_year, status,
+INSERT INTO brand (id, brand_name, brand_name_en, logo_url, description, brand_story, official_website, country, founded_year, status,
                    is_hot, is_recommended, product_count, sort_order, seo_keywords, seo_description, deleted, version)
 VALUES (7001, 'Cloud Mobile', 'Cloud Mobile', 'https://img.example.com/brand-7001.png', 'Cloud Mobile flagship handset brand.',
-        'https://mobile.example.com', 'China', 2015, 1, 1, 1, 2, 1, 'cloud phone,smart phone', 'Cloud Mobile phones and flagship devices.', 0, 0),
+        NULL, 'https://mobile.example.com', 'China', 2015, 1, 1, 1, 2, 1, 'cloud phone,smart phone', 'Cloud Mobile phones and flagship devices.', 0, 0),
        (7002, 'Cloud Fold', 'Cloud Fold', 'https://img.example.com/brand-7002.png', 'Foldable devices built for productivity.',
-        'https://fold.example.com', 'China', 2019, 1, 1, 1, 1, 'foldable phone,large screen phone', 'Cloud Fold premium foldable devices.', 0, 0),
+        NULL, 'https://fold.example.com', 'China', 2019, 1, 1, 1, 1, 1, 'foldable phone,large screen phone', 'Cloud Fold premium foldable devices.', 0, 0),
        (7003, 'Cloud Wear', 'Cloud Wear', 'https://img.example.com/brand-7003.png', 'Wearable devices for sports and wellness.',
-        'https://wear.example.com', 'China', 2018, 1, 1, 1, 1, 2, 'smart watch,fitness watch', 'Cloud Wear smart watches and wearables.', 0, 0),
+        NULL, 'https://wear.example.com', 'China', 2018, 1, 1, 1, 1, 2, 'smart watch,fitness watch', 'Cloud Wear smart watches and wearables.', 0, 0),
        (7004, 'Cloud Audio', 'Cloud Audio', 'https://img.example.com/brand-7004.png', 'Wireless audio devices for daily listening.',
-        'https://audio.example.com', 'China', 2017, 1, 0, 1, 1, 3, 'wireless earbuds,audio', 'Cloud Audio wireless earbuds and accessories.', 0, 0),
+        NULL, 'https://audio.example.com', 'China', 2017, 1, 0, 1, 1, 3, 'wireless earbuds,audio', 'Cloud Audio wireless earbuds and accessories.', 0, 0),
        (7005, 'Cloud Home', 'Cloud Home', 'https://img.example.com/brand-7005.png', 'Compact home appliances for modern kitchens.',
-        'https://home.example.com', 'China', 2016, 1, 0, 1, 1, 4, 'coffee machine,home appliance', 'Cloud Home compact appliances for daily use.', 0, 0);
+        NULL, 'https://home.example.com', 'China', 2016, 1, 0, 1, 1, 4, 'coffee machine,home appliance', 'Cloud Home compact appliances for daily use.', 0, 0);
 
 INSERT INTO brand_authorization (id, brand_id, brand_name, merchant_id, merchant_name, auth_type, auth_status, certificate_url,
                                  start_time, end_time, deleted, version)
