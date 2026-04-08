@@ -44,12 +44,6 @@ public class AdminException extends BizException {
     }
   }
 
-  public static class AdminPermissionException extends AdminException {
-    public AdminPermissionException(String message) {
-      super(403, message);
-    }
-  }
-
   public static class AdminPasswordException extends AdminException {
     public AdminPasswordException(String message) {
       super(400, message);

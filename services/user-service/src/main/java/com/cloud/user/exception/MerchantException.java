@@ -53,10 +53,4 @@ public class MerchantException extends BizException {
       super(400, "Merchant audit failed. ID: " + merchantId + ", reason: " + reason);
     }
   }
-
-  public static class MerchantPermissionException extends MerchantException {
-    public MerchantPermissionException(String message) {
-      super(403, message);
-    }
-  }
 }
