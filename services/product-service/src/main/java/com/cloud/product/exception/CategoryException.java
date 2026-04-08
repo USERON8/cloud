@@ -1,10 +1,10 @@
 package com.cloud.product.exception;
 
-import com.cloud.common.exception.BusinessException;
+import com.cloud.common.exception.BizException;
 import lombok.Getter;
 
 @Getter
-public class CategoryException extends BusinessException {
+public class CategoryException extends BizException {
 
   public CategoryException(int code, String message) {
     super(code, message);

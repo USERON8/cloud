@@ -1,9 +1,9 @@
 package com.cloud.product.exception;
 
 import com.cloud.common.enums.ResultCode;
-import com.cloud.common.exception.BusinessException;
+import com.cloud.common.exception.BizException;
 
-public class ProductServiceException extends BusinessException {
+public class ProductServiceException extends BizException {
 
   public ProductServiceException(int code, String message) {
     super(code, message);
@@ -26,7 +26,7 @@ public class ProductServiceException extends BusinessException {
   }
 
   public ProductServiceException(ResultCode resultCode, Throwable cause) {
-    super(resultCode, cause);
+    super(resultCode, null, cause);
   }
 
   public ProductServiceException(int code, String message, Throwable cause) {
