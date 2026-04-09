@@ -1,6 +1,6 @@
 package com.cloud.user.service.impl;
 
-import com.cloud.common.utils.UserContextUtils;
+import com.cloud.common.security.SecurityPermissionUtils;
 import com.cloud.user.mapper.UserMapper;
 import com.cloud.user.module.entity.User;
 import com.cloud.user.service.MinioService;
@@ -204,7 +204,7 @@ public class MinioServiceImpl implements MinioService {
   }
 
   private Long getCurrentUserId() {
-    String userId = UserContextUtils.getCurrentUserId();
+    String userId = SecurityPermissionUtils.getCurrentUserId();
     if (userId == null) {
       throw new IllegalStateException("current user id is missing");
     }
