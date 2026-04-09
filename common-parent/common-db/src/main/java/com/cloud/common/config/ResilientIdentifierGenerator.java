@@ -33,10 +33,6 @@ public class ResilientIdentifierGenerator implements IdentifierGenerator {
   private long sequence;
   private long lastTimestamp = -1L;
 
-  public ResilientIdentifierGenerator() {
-    this(resolveNodeIds(true), System::currentTimeMillis);
-  }
-
   public ResilientIdentifierGenerator(
       Long workerId, Long datacenterId, boolean allowRandomFallback) {
     this(resolveNodeIds(workerId, datacenterId, allowRandomFallback), System::currentTimeMillis);

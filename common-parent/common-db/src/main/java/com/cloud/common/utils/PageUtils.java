@@ -23,8 +23,4 @@ public class PageUtils {
       return new Page<>(1, 10);
     }
   }
-
-  public static <T> Page<T> buildPage(long current, long size) {
-    return new Page<>(current, size);
-  }
 }
