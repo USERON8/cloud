@@ -58,12 +58,6 @@ public class ExceptionReporter {
     log.warn("[{}] method={} uri={} msg={}", category, method, uri, message);
   }
 
-  public void reportError(String category, HttpServletRequest request, Throwable e) {
-    String method = safeMethod(request);
-    String uri = safeUri(request);
-    log.error("[{}] method={} uri={}", category, method, uri, e);
-  }
-
   private void increment(String name, String... tags) {
     if (meterRegistry == null) {
       return;
