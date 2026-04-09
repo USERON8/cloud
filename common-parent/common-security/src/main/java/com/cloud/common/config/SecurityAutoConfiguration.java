@@ -22,7 +22,6 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @EnableConfigurationProperties(PermissionConfig.class)
 @Import({
   BaseResourceServerConfig.class,
-  PermissionChecker.class,
   PermissionManager.class,
   GlobalPermissionExceptionHandler.class
 })
