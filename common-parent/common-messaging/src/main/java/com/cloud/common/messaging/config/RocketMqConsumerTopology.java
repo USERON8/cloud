@@ -6,8 +6,6 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.TreeSet;
 import lombok.Getter;
 import org.apache.rocketmq.spring.annotation.RocketMQMessageListener;
 import org.springframework.beans.factory.ListableBeanFactory;
@@ -54,14 +52,6 @@ public class RocketMqConsumerTopology {
             .thenComparing(ConsumerTarget::getConsumerGroup)
             .thenComparing(ConsumerTarget::getBeanName));
     return targets;
-  }
-
-  public Set<String> discoveredTopics() {
-    Set<String> topics = new TreeSet<>();
-    for (ConsumerTarget target : discoverConsumers()) {
-      topics.add(target.getTopic());
-    }
-    return topics;
   }
 
   private long resolveLagThreshold(MessageProperties.TargetConfig targetConfig) {
