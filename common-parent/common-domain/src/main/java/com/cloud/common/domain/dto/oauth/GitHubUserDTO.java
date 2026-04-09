@@ -66,10 +66,6 @@ public class GitHubUserDTO implements Serializable {
   @Schema(description = "Updated at")
   private LocalDateTime updatedAt;
 
-  public String buildSystemUsername() {
-    return "github_" + this.login;
-  }
-
   public String getDisplayName() {
     return (name != null && !name.trim().isEmpty()) ? name : login;
   }
