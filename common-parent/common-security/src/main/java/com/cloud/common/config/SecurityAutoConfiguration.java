@@ -4,7 +4,6 @@ import com.cloud.common.exception.GlobalPermissionExceptionHandler;
 import com.cloud.common.security.UserContextInterceptor;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -35,14 +34,5 @@ public class SecurityAutoConfiguration implements WebMvcConfigurer {
   @Override
   public void addInterceptors(InterceptorRegistry registry) {
     registry.addInterceptor(userContextInterceptor()).addPathPatterns("/**");
-  }
-
-  @Bean("securityExpressions")
-  @ConditionalOnProperty(
-      name = "app.security.expressions.enabled",
-      havingValue = "true",
-      matchIfMissing = true)
-  public UnifiedSecurityExpressions securityExpressions() {
-    return new UnifiedSecurityExpressions();
   }
 }
