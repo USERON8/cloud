@@ -17,24 +17,20 @@ public class ActuatorConfig {
       @Override
       public Health health() {
         try {
-
           String serviceName =
               environment.getProperty("spring.application.name", "unknown-service");
           String profile = String.join(",", environment.getActiveProfiles());
           String serverPort = environment.getProperty("server.port", "unknown");
-
           boolean isHealthy = checkServiceHealth();
-
           Health.Builder builder = isHealthy ? Health.up() : Health.down();
 
           return builder
               .withDetail("service", serviceName)
               .withDetail("profile", profile)
               .withDetail("port", serverPort)
-              .withDetail("status", isHealthy ? "杩愯姝ｅ父" : "杩愯寮傚父")
+              .withDetail("status", isHealthy ? "UP" : "DOWN")
               .withDetail("timestamp", System.currentTimeMillis())
               .build();
-
         } catch (Exception e) {
           return Health.down()
               .withDetail("error", e.getMessage())
@@ -44,12 +40,10 @@ public class ActuatorConfig {
       }
 
       private boolean checkServiceHealth() {
-
         Runtime runtime = Runtime.getRuntime();
         long totalMemory = runtime.totalMemory();
         long freeMemory = runtime.freeMemory();
         double memoryUsage = (double) (totalMemory - freeMemory) / totalMemory;
-
         return memoryUsage < 0.9;
       }
     };
