@@ -2,9 +2,7 @@ package com.cloud.common.config;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -38,9 +36,5 @@ public class PermissionConfig {
         .map(String::trim)
         .distinct()
         .toList();
-  }
-
-  public Set<String> getAllPermissions() {
-    return new HashSet<>(defaultPermissions);
   }
 }
