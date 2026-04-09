@@ -39,17 +39,11 @@ public class RedissonClientConfiguration {
   @Value("${spring.data.redis.lettuce.pool.max-active:50}")
   private int maxActive;
 
-  @Value("${spring.data.redis.lettuce.pool.max-idle:20}")
-  private int maxIdle;
-
   @Value("${spring.data.redis.lettuce.pool.min-idle:5}")
   private int minIdle;
 
   @Value("${spring.redis.cluster.nodes:}")
   private String clusterNodes;
-
-  @Value("${spring.redis.cluster.max-redirects:3}")
-  private int maxRedirects;
 
   @Value("${spring.redis.sentinel.nodes:}")
   private String sentinelNodes;
@@ -86,9 +80,7 @@ public class RedissonClientConfiguration {
       config.setCodec(new JsonJacksonCodec());
     }
 
-    RedissonClient redissonClient = Redisson.create(config);
-
-    return redissonClient;
+    return Redisson.create(config);
   }
 
   private void configureSingle(Config config) {
@@ -184,24 +176,13 @@ public class RedissonClientConfiguration {
 
     try {
       int value = Integer.parseInt(cleanValue);
-
       if (timeoutStr.contains("s") && !timeoutStr.contains("ms")) {
         value *= 1000;
       }
       return value;
     } catch (NumberFormatException e) {
-      log.warn(": {}, ?000ms", timeoutStr);
+      log.warn("Invalid redis timeout value: {}, fallback to 3000ms", timeoutStr);
       return 3000;
-    }
-  }
-
-  private String getMode() {
-    if (StrUtil.isNotBlank(clusterNodes)) {
-      return "闆嗙兢妯″紡";
-    } else if (StrUtil.isNotBlank(sentinelNodes) && StrUtil.isNotBlank(sentinelMaster)) {
-      return "鍝ㄥ叺妯″紡";
-    } else {
-      return "鍗曟満妯″紡";
     }
   }
 }
