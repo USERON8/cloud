@@ -15,25 +15,25 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 public class GlobalPermissionExceptionHandler {
 
   @ExceptionHandler(AuthenticationException.class)
-  public ResponseEntity<Result<Void>> handleAuthenticationException(AuthenticationException ex) {
+  ResponseEntity<Result<Void>> handleAuthenticationException(AuthenticationException ex) {
     log.warn("Authentication failed: {}", ex.getMessage());
     return buildResponse(401, Result.error(401, "Authentication failed: " + ex.getMessage()));
   }
 
   @ExceptionHandler(AccessDeniedException.class)
-  public ResponseEntity<Result<Void>> handleAccessDeniedException(AccessDeniedException ex) {
+  ResponseEntity<Result<Void>> handleAccessDeniedException(AccessDeniedException ex) {
     log.warn("Access denied: {}", ex.getMessage());
     return buildResponse(403, Result.error(403, "Access denied: " + ex.getMessage()));
   }
 
   @ExceptionHandler(SecurityException.class)
-  public ResponseEntity<Result<Void>> handleSecurityException(SecurityException ex) {
+  ResponseEntity<Result<Void>> handleSecurityException(SecurityException ex) {
     log.warn("Security exception: {}", ex.getMessage());
     return buildResponse(403, Result.error(403, "Security error: " + ex.getMessage()));
   }
 
   @ExceptionHandler(org.springframework.security.oauth2.jwt.JwtException.class)
-  public ResponseEntity<Result<Void>> handleJwtException(
+  ResponseEntity<Result<Void>> handleJwtException(
       org.springframework.security.oauth2.jwt.JwtException ex) {
     log.warn("JWT exception: {}", ex.getMessage());
     return buildResponse(401, Result.error(401, "Invalid JWT token: " + ex.getMessage()));
