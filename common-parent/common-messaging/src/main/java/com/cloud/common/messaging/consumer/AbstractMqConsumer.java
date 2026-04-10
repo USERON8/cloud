@@ -147,7 +147,7 @@ public abstract class AbstractMqConsumer<T> implements RocketMQListener<MessageE
     return 16;
   }
 
-  protected String resolveTopic(MessageExt msgExt) {
+  private String resolveTopic(MessageExt msgExt) {
     if (msgExt == null || msgExt.getTopic() == null || msgExt.getTopic().isBlank()) {
       return "unknown";
     }
@@ -162,18 +162,18 @@ public abstract class AbstractMqConsumer<T> implements RocketMQListener<MessageE
     return msgId == null ? "" : msgId;
   }
 
-  protected int resolveReconsumeTimes(MessageExt msgExt) {
+  private int resolveReconsumeTimes(MessageExt msgExt) {
     if (msgExt == null) {
       return 0;
     }
     return Math.max(0, msgExt.getReconsumeTimes());
   }
 
-  protected void onDeserializeFail(MessageExt msgExt, Exception ex) {}
+  private void onDeserializeFail(MessageExt msgExt, Exception ex) {}
 
-  protected void onDuplicate(MessageExt msgExt, T payload, String idempotentKey) {}
+  private void onDuplicate(MessageExt msgExt, T payload, String idempotentKey) {}
 
-  protected void onMaxReconsume(MessageExt msgExt, T payload, int reconsumeTimes) {}
+  private void onMaxReconsume(MessageExt msgExt, T payload, int reconsumeTimes) {}
 
   protected void onConsumeSuccess(MessageExt msgExt, T payload) {}
 
@@ -182,7 +182,7 @@ public abstract class AbstractMqConsumer<T> implements RocketMQListener<MessageE
   protected void onSystemException(
       MessageExt msgExt, T payload, SystemException ex, boolean retryable) {}
 
-  protected void onRemoteException(MessageExt msgExt, T payload, RemoteException ex) {}
+  private void onRemoteException(MessageExt msgExt, T payload, RemoteException ex) {}
 
   protected void onUnknownException(MessageExt msgExt, T payload, Exception ex) {}
 
