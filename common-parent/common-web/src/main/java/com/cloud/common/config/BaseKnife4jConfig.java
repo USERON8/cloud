@@ -55,7 +55,7 @@ public abstract class BaseKnife4jConfig {
   }
 
   @Bean
-  public OpenAPI defaultOpenAPI() {
+  OpenAPI defaultOpenAPI() {
     return createOpenAPI(getServiceTitle(), getServiceDescription(), getServiceVersion());
   }
 }

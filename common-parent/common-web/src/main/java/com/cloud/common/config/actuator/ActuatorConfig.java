@@ -12,7 +12,7 @@ import org.springframework.core.env.Environment;
 public class ActuatorConfig {
 
   @Bean
-  public HealthIndicator cloudServiceHealthIndicator(Environment environment) {
+  HealthIndicator cloudServiceHealthIndicator(Environment environment) {
     return new HealthIndicator() {
       @Override
       public Health health() {
@@ -50,7 +50,7 @@ public class ActuatorConfig {
   }
 
   @Bean
-  public MeterRegistryCustomizer<MeterRegistry> metricsCommonTags(Environment environment) {
+  MeterRegistryCustomizer<MeterRegistry> metricsCommonTags(Environment environment) {
     return registry -> {
       String serviceName = environment.getProperty("spring.application.name", "unknown-service");
       String profile = String.join(",", environment.getActiveProfiles());

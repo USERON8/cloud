@@ -18,8 +18,7 @@ import org.springframework.core.env.Environment;
 public class XxlJobExecutorConfig {
 
   @Bean
-  public XxlJobSpringExecutor xxlJobSpringExecutor(
-      XxlJobProperties properties, Environment environment) {
+  XxlJobSpringExecutor xxlJobSpringExecutor(XxlJobProperties properties, Environment environment) {
     XxlJobProperties.Executor executorProperties = properties.getExecutor();
     String appName =
         firstNonBlank(
