@@ -28,7 +28,7 @@ public final class JwtAuthorityUtils {
     return converter;
   }
 
-  public static Converter<Jwt, Collection<GrantedAuthority>> buildAuthoritiesConverter(
+  private static Converter<Jwt, Collection<GrantedAuthority>> buildAuthoritiesConverter(
       boolean lowerCaseScope,
       boolean includeAuthoritiesClaim,
       BiConsumer<Set<GrantedAuthority>, Jwt> customizer) {

@@ -236,7 +236,7 @@ public class BaseResourceServerConfig {
     return serviceSecurityCustomizer.buildJwtAuthenticationConverter();
   }
 
-  public GatewayInternalAuthenticationFilter gatewayInternalAuthenticationFilter(
+  private GatewayInternalAuthenticationFilter gatewayInternalAuthenticationFilter(
       JwtAuthenticationConverter jwtAuthenticationConverter) {
     return new GatewayInternalAuthenticationFilter(
         jwtAuthenticationConverter,
