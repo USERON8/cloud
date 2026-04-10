@@ -27,7 +27,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 public class SecurityAutoConfiguration implements WebMvcConfigurer {
 
   @Bean
-  public UserContextInterceptor userContextInterceptor() {
+  UserContextInterceptor userContextInterceptor() {
     return new UserContextInterceptor();
   }
 
