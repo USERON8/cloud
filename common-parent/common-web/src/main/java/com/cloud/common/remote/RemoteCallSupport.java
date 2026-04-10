@@ -33,15 +33,6 @@ public class RemoteCallSupport {
     return execute("command", target, action, null);
   }
 
-  public void command(String target, Runnable action) {
-    command(
-        target,
-        () -> {
-          action.run();
-          return null;
-        });
-  }
-
   private <T> T execute(
       String kind,
       String target,

@@ -4,7 +4,7 @@ import com.cloud.auth.service.support.AuthIdentityService;
 import com.cloud.common.domain.dto.oauth.GitHubUserDTO;
 import com.cloud.common.domain.dto.user.UserDTO;
 import com.cloud.common.enums.ResultCode;
-import com.cloud.common.exception.OAuth2Exception;
+import com.cloud.common.exception.BizException;
 import com.cloud.common.exception.SystemException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -132,13 +132,13 @@ public class GitHubUserInfoService {
   public UserDTO getAuthorizedUser(
       Principal principal, OAuth2AuthorizedClientService authorizedClientService) {
     if (principal == null) {
-      throw new OAuth2Exception(ResultCode.UNAUTHORIZED, "Not authenticated");
+      throw new BizException(ResultCode.UNAUTHORIZED, "Not authenticated");
     }
 
     OAuth2AuthorizedClient authorizedClient =
         authorizedClientService.loadAuthorizedClient(OAUTH_PROVIDER_GITHUB, principal.getName());
     if (authorizedClient == null) {
-      throw new OAuth2Exception(ResultCode.UNAUTHORIZED, "GitHub authorization not found");
+      throw new BizException(ResultCode.UNAUTHORIZED, "GitHub authorization not found");
     }
 
     UserDTO userDTO = getOrCreateUser(authorizedClient);

@@ -7,7 +7,7 @@ import org.springframework.stereotype.Component;
 @Component("permissionManager")
 public class PermissionManager {
 
-  public boolean hasAdminAccess(Authentication authentication) {
+  private boolean hasAdminAccess(Authentication authentication) {
     return SecurityPermissionUtils.hasRole(authentication, "ADMIN");
   }
 

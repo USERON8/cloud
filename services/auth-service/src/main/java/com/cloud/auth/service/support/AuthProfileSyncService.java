@@ -11,7 +11,6 @@ import com.cloud.common.domain.dto.user.UserProfileDTO;
 import com.cloud.common.domain.dto.user.UserProfileUpsertDTO;
 import com.cloud.common.messaging.event.UserProfileSyncEvent;
 import com.cloud.common.remote.RemoteCallSupport;
-import java.util.function.Supplier;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.dubbo.config.annotation.DubboReference;
@@ -60,19 +59,6 @@ public class AuthProfileSyncService {
 
     publishUpsert(profile);
     return authUserConverter.toProfileDTO(profile);
-  }
-
-  private <T> T invokeUserService(String action, Supplier<T> supplier) {
-    return remoteCallSupport.query("user-service." + action, supplier);
-  }
-
-  private void runUserService(String action, Runnable runnable) {
-    invokeUserService(
-        action,
-        () -> {
-          runnable.run();
-          return null;
-        });
   }
 
   private void publishUpsert(UserProfileUpsertDTO profileUpsertDTO) {
