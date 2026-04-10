@@ -21,21 +21,21 @@ public class ExceptionReporter {
     this.meterRegistry = meterRegistry;
   }
 
-  public void reportBiz(BizException e, HttpServletRequest request) {
+  void reportBiz(BizException e, HttpServletRequest request) {
     String method = safeMethod(request);
     String uri = safeUri(request);
     log.warn("[BIZ] method={} uri={} code={} msg={}", method, uri, e.getCode(), e.getMessage());
     increment("exception.biz", "code", String.valueOf(e.getCode()), "uri", sanitizeUri(uri));
   }
 
-  public void reportSystem(SystemException e, HttpServletRequest request) {
+  void reportSystem(SystemException e, HttpServletRequest request) {
     String method = safeMethod(request);
     String uri = safeUri(request);
     log.error("[SYS] method={} uri={} code={} msg={}", method, uri, e.getCode(), e.getMessage(), e);
     increment("exception.system", "code", String.valueOf(e.getCode()), "service", serviceName);
   }
 
-  public void reportRemote(RemoteException e, HttpServletRequest request) {
+  void reportRemote(RemoteException e, HttpServletRequest request) {
     String method = safeMethod(request);
     String uri = safeUri(request);
     log.error(
@@ -43,7 +43,7 @@ public class ExceptionReporter {
     increment("exception.remote", "code", String.valueOf(e.getCode()), "service", serviceName);
   }
 
-  public void reportSystem(
+  void reportSystem(
       ResultCode resultCode, Throwable e, HttpServletRequest request, String message) {
     String method = safeMethod(request);
     String uri = safeUri(request);
@@ -52,7 +52,7 @@ public class ExceptionReporter {
     increment("exception.system", "code", String.valueOf(code), "service", serviceName);
   }
 
-  public void reportWarn(String category, HttpServletRequest request, String message) {
+  void reportWarn(String category, HttpServletRequest request, String message) {
     String method = safeMethod(request);
     String uri = safeUri(request);
     log.warn("[{}] method={} uri={} msg={}", category, method, uri, message);
