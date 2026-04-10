@@ -21,7 +21,7 @@ import org.springframework.stereotype.Component;
 public class ServiceExceptionAspect {
 
   @Pointcut("within(@org.springframework.stereotype.Service *)")
-  public void serviceLayer() {}
+  private void serviceLayer() {}
 
   @Pointcut(
       "within(com.cloud..infrastructure..*)"
@@ -36,7 +36,7 @@ public class ServiceExceptionAspect {
           + " || within(com.cloud.gateway.config..*)"
           + " || within(com.cloud.gateway.controller..*)"
           + " || within(com.cloud.gateway.cache..*)")
-  public void excludedPackages() {}
+  private void excludedPackages() {}
 
   @Around("serviceLayer() && !excludedPackages()")
   public Object intercept(ProceedingJoinPoint pjp) throws Throwable {
