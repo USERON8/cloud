@@ -98,7 +98,7 @@ public class BaseResourceServerConfig {
 
   @Bean
   @Order(100)
-  public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtDecoder jwtDecoder)
+  SecurityFilterChain securityFilterChain(HttpSecurity http, JwtDecoder jwtDecoder)
       throws Exception {
     http.csrf(AbstractHttpConfigurer::disable)
         .cors(
@@ -193,7 +193,7 @@ public class BaseResourceServerConfig {
     return http.build();
   }
 
-  protected void configurePublicEndpoints(
+  private void configurePublicEndpoints(
       org.springframework.security.config.annotation.web.configurers
                       .AuthorizeHttpRequestsConfigurer<
                   HttpSecurity>
@@ -212,13 +212,12 @@ public class BaseResourceServerConfig {
   }
 
   @Bean
-  public OAuth2TokenValidator<Jwt> blacklistTokenValidator(
-      RedisTemplate<String, Object> redisTemplate) {
+  OAuth2TokenValidator<Jwt> blacklistTokenValidator(RedisTemplate<String, Object> redisTemplate) {
     return new JwtBlacklistTokenValidator(redisTemplate);
   }
 
   @Bean
-  public JwtDecoder jwtDecoder(OAuth2TokenValidator<Jwt> blacklistTokenValidator) {
+  JwtDecoder jwtDecoder(OAuth2TokenValidator<Jwt> blacklistTokenValidator) {
     NimbusJwtDecoder decoder = NimbusJwtDecoder.withJwkSetUri(jwkSetUri).build();
     OAuth2TokenValidator<Jwt> withIssuer = JwtValidators.createDefaultWithIssuer(issuerUri);
     OAuth2TokenValidator<Jwt> withAudience =
@@ -232,7 +231,7 @@ public class BaseResourceServerConfig {
   }
 
   @Bean
-  public JwtAuthenticationConverter jwtAuthenticationConverter() {
+  JwtAuthenticationConverter jwtAuthenticationConverter() {
     return serviceSecurityCustomizer.buildJwtAuthenticationConverter();
   }
 

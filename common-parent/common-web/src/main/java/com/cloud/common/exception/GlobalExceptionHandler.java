@@ -26,35 +26,34 @@ public class GlobalExceptionHandler {
   @Autowired private ExceptionReporter exceptionReporter;
 
   @ExceptionHandler(UsernameNotFoundException.class)
-  public ResponseEntity<Result<String>> handleUsernameNotFoundException(
+  ResponseEntity<Result<String>> handleUsernameNotFoundException(
       UsernameNotFoundException e, HttpServletRequest request) {
     exceptionReporter.reportWarn("AUTH", request, "Username not found: " + e.getMessage());
     return buildResponse(404, Result.error(ResultCode.USER_NOT_FOUND));
   }
 
   @ExceptionHandler(BadCredentialsException.class)
-  public ResponseEntity<Result<String>> handleBadCredentialsException(
+  ResponseEntity<Result<String>> handleBadCredentialsException(
       BadCredentialsException e, HttpServletRequest request) {
     exceptionReporter.reportWarn("AUTH", request, "Bad credentials: " + e.getMessage());
     return buildResponse(401, Result.error(ResultCode.USERNAME_OR_PASSWORD_ERROR));
   }
 
   @ExceptionHandler(BizException.class)
-  public ResponseEntity<Result<String>> handleBizException(
-      BizException e, HttpServletRequest request) {
+  ResponseEntity<Result<String>> handleBizException(BizException e, HttpServletRequest request) {
     exceptionReporter.reportBiz(e, request);
     return buildResponse(e.getHttpStatus(), Result.error(e.getCode(), e.getMessage()));
   }
 
   @ExceptionHandler(SystemException.class)
-  public ResponseEntity<Result<String>> handleSystemException(
+  ResponseEntity<Result<String>> handleSystemException(
       SystemException e, HttpServletRequest request) {
     exceptionReporter.reportSystem(e, request);
     return buildResponse(500, Result.error(e.getCode(), "System is busy, please retry later"));
   }
 
   @ExceptionHandler(RemoteException.class)
-  public ResponseEntity<Result<String>> handleRemoteException(
+  ResponseEntity<Result<String>> handleRemoteException(
       RemoteException e, HttpServletRequest request) {
     exceptionReporter.reportRemote(e, request);
     int httpStatus = resolveRemoteHttpStatus(e);
@@ -63,14 +62,14 @@ public class GlobalExceptionHandler {
   }
 
   @ExceptionHandler(ValidationException.class)
-  public ResponseEntity<Result<String>> handleValidationException(
+  ResponseEntity<Result<String>> handleValidationException(
       ValidationException e, HttpServletRequest request) {
     exceptionReporter.reportWarn("VALIDATION", request, "Validation exception: " + e.getMessage());
     return buildResponse(400, Result.error(e.getCode(), e.getMessage()));
   }
 
   @ExceptionHandler(ResourceNotFoundException.class)
-  public ResponseEntity<Result<String>> handleResourceNotFoundException(
+  ResponseEntity<Result<String>> handleResourceNotFoundException(
       ResourceNotFoundException e, HttpServletRequest request) {
     exceptionReporter.reportWarn(
         "RESOURCE",
@@ -80,7 +79,7 @@ public class GlobalExceptionHandler {
   }
 
   @ExceptionHandler(MethodArgumentNotValidException.class)
-  public ResponseEntity<Result<String>> handleMethodArgumentNotValidException(
+  ResponseEntity<Result<String>> handleMethodArgumentNotValidException(
       MethodArgumentNotValidException e, HttpServletRequest request) {
     List<String> errors =
         e.getBindingResult().getAllErrors().stream()
@@ -100,7 +99,7 @@ public class GlobalExceptionHandler {
   }
 
   @ExceptionHandler(HandlerMethodValidationException.class)
-  public ResponseEntity<Result<String>> handleHandlerMethodValidationException(
+  ResponseEntity<Result<String>> handleHandlerMethodValidationException(
       HandlerMethodValidationException e, HttpServletRequest request) {
     List<String> errors =
         e.getParameterValidationResults().stream()
@@ -139,7 +138,7 @@ public class GlobalExceptionHandler {
   }
 
   @ExceptionHandler(ConstraintViolationException.class)
-  public ResponseEntity<Result<String>> handleConstraintViolationException(
+  ResponseEntity<Result<String>> handleConstraintViolationException(
       ConstraintViolationException e, HttpServletRequest request) {
     Set<ConstraintViolation<?>> violations = e.getConstraintViolations();
     List<String> errors =
@@ -154,28 +153,28 @@ public class GlobalExceptionHandler {
   }
 
   @ExceptionHandler(IllegalArgumentException.class)
-  public ResponseEntity<Result<String>> handleIllegalArgumentException(
+  ResponseEntity<Result<String>> handleIllegalArgumentException(
       IllegalArgumentException e, HttpServletRequest request) {
     exceptionReporter.reportWarn("VALIDATION", request, "Illegal argument: " + e.getMessage());
     return buildResponse(400, Result.paramError("Illegal argument: " + e.getMessage()));
   }
 
   @ExceptionHandler(NullPointerException.class)
-  public ResponseEntity<Result<String>> handleNullPointerException(
+  ResponseEntity<Result<String>> handleNullPointerException(
       NullPointerException e, HttpServletRequest request) {
     exceptionReporter.reportSystem(ResultCode.SYSTEM_ERROR, e, request, "Null pointer");
     return buildResponse(500, Result.systemError("System is busy, please retry later"));
   }
 
   @ExceptionHandler(org.springframework.dao.DataAccessException.class)
-  public ResponseEntity<Result<String>> handleDataAccessException(
+  ResponseEntity<Result<String>> handleDataAccessException(
       org.springframework.dao.DataAccessException e, HttpServletRequest request) {
     exceptionReporter.reportSystem(ResultCode.DB_ERROR, e, request, "Data access exception");
     return buildResponse(500, Result.error(ResultCode.DB_ERROR));
   }
 
   @ExceptionHandler(org.springframework.web.HttpRequestMethodNotSupportedException.class)
-  public ResponseEntity<Result<String>> handleHttpRequestMethodNotSupportedException(
+  ResponseEntity<Result<String>> handleHttpRequestMethodNotSupportedException(
       org.springframework.web.HttpRequestMethodNotSupportedException e,
       HttpServletRequest request) {
     exceptionReporter.reportWarn(
@@ -186,7 +185,7 @@ public class GlobalExceptionHandler {
   }
 
   @ExceptionHandler(org.springframework.web.HttpMediaTypeNotSupportedException.class)
-  public ResponseEntity<Result<String>> handleHttpMediaTypeNotSupportedException(
+  ResponseEntity<Result<String>> handleHttpMediaTypeNotSupportedException(
       org.springframework.web.HttpMediaTypeNotSupportedException e, HttpServletRequest request) {
     exceptionReporter.reportWarn(
         "HTTP", request, "Unsupported media type: " + request.getContentType());
@@ -194,14 +193,14 @@ public class GlobalExceptionHandler {
   }
 
   @ExceptionHandler(com.fasterxml.jackson.core.JsonProcessingException.class)
-  public ResponseEntity<Result<String>> handleJsonProcessingException(
+  ResponseEntity<Result<String>> handleJsonProcessingException(
       com.fasterxml.jackson.core.JsonProcessingException e, HttpServletRequest request) {
     exceptionReporter.reportWarn("JSON", request, "Invalid JSON payload: " + e.getMessage());
     return buildResponse(400, Result.error("Invalid JSON payload"));
   }
 
   @ExceptionHandler(org.springframework.http.converter.HttpMessageNotReadableException.class)
-  public ResponseEntity<Result<String>> handleHttpMessageNotReadableException(
+  ResponseEntity<Result<String>> handleHttpMessageNotReadableException(
       org.springframework.http.converter.HttpMessageNotReadableException e,
       HttpServletRequest request) {
     exceptionReporter.reportWarn("JSON", request, "Unreadable HTTP message: " + e.getMessage());
@@ -210,7 +209,7 @@ public class GlobalExceptionHandler {
   }
 
   @ExceptionHandler(org.springframework.web.bind.MissingServletRequestParameterException.class)
-  public ResponseEntity<Result<String>> handleMissingServletRequestParameterException(
+  ResponseEntity<Result<String>> handleMissingServletRequestParameterException(
       org.springframework.web.bind.MissingServletRequestParameterException e,
       HttpServletRequest request) {
     exceptionReporter.reportWarn(
@@ -220,7 +219,7 @@ public class GlobalExceptionHandler {
   }
 
   @ExceptionHandler(org.springframework.validation.BindException.class)
-  public ResponseEntity<Result<String>> handleBindException(
+  ResponseEntity<Result<String>> handleBindException(
       org.springframework.validation.BindException e, HttpServletRequest request) {
     List<String> errors =
         e.getBindingResult().getAllErrors().stream()
@@ -239,7 +238,7 @@ public class GlobalExceptionHandler {
   }
 
   @ExceptionHandler(Exception.class)
-  public ResponseEntity<Result<String>> handleException(Exception e, HttpServletRequest request) {
+  ResponseEntity<Result<String>> handleException(Exception e, HttpServletRequest request) {
     exceptionReporter.reportSystem(ResultCode.SYSTEM_ERROR, e, request, "Unhandled exception");
     return buildResponse(500, Result.systemError("System is busy, please retry later"));
   }
