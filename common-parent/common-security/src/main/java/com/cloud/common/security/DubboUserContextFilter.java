@@ -5,12 +5,10 @@ import com.cloud.common.context.UserContextHolder;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.dubbo.common.constants.CommonConstants;
 import org.apache.dubbo.common.extension.Activate;
 import org.apache.dubbo.rpc.*;
 
-@Slf4j
 @Activate(
     group = {CommonConstants.CONSUMER, CommonConstants.PROVIDER},
     order = -10000)

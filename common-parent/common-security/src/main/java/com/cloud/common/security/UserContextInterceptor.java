@@ -9,10 +9,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.servlet.HandlerInterceptor;
 
-@Slf4j
 public class UserContextInterceptor implements HandlerInterceptor {
 
   @Override
