@@ -39,7 +39,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 @RestController
-@RequestMapping("/api/merchant/auth")
+@RequestMapping("/api/app/merchant/auth")
 @RequiredArgsConstructor
 @Tag(name = "Merchant Auth", description = "Merchant authentication APIs")
 @Validated

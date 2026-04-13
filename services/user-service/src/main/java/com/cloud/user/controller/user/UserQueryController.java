@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/query/users")
+@RequestMapping("/api/admin/query/users")
 @RequiredArgsConstructor
 @Validated
 @Tag(name = "User Query", description = "User query APIs")

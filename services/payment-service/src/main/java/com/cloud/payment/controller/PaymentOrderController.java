@@ -33,7 +33,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/payments")
+@RequestMapping("/api/app/payments")
 @RequiredArgsConstructor
 @Validated
 @Tag(name = "Payment API", description = "Payment order and refund APIs")

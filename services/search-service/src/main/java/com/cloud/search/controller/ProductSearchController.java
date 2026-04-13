@@ -28,7 +28,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/search")
+@RequestMapping("/api/public/search")
 @RequiredArgsConstructor
 @Tag(name = "Product Search", description = "Product search and filter APIs")
 @Validated
@@ -250,7 +250,7 @@ public class ProductSearchController {
 
   @Operation(
       summary = "Basic API search",
-      description = "Compatibility alias of /api/search/search")
+      description = "Compatibility alias of /api/public/search/search")
   @GetMapping("/basic")
   public Result<SearchResultDTO<ProductDocument>> basicSearch(
       @Parameter(description = "Keyword") @RequestParam(required = false) String keyword,
@@ -275,7 +275,7 @@ public class ProductSearchController {
 
   @Operation(
       summary = "Filter by category",
-      description = "Compatibility alias of /api/search/filter for category-only filters")
+      description = "Compatibility alias of /api/public/search/filter for category-only filters")
   @GetMapping("/filter/category/{categoryId}")
   public Result<SearchResultDTO<ProductDocument>> filterByCategory(
       @Parameter(description = "Category id") @PathVariable Long categoryId,
@@ -291,7 +291,7 @@ public class ProductSearchController {
 
   @Operation(
       summary = "Filter by brand",
-      description = "Compatibility alias of /api/search/filter for brand-only filters")
+      description = "Compatibility alias of /api/public/search/filter for brand-only filters")
   @GetMapping("/filter/brand/{brandId}")
   public Result<SearchResultDTO<ProductDocument>> filterByBrand(
       @Parameter(description = "Brand id") @PathVariable Long brandId,
@@ -307,7 +307,7 @@ public class ProductSearchController {
 
   @Operation(
       summary = "Filter by price",
-      description = "Compatibility alias of /api/search/filter for price filters")
+      description = "Compatibility alias of /api/public/search/filter for price filters")
   @GetMapping("/filter/price")
   public Result<SearchResultDTO<ProductDocument>> filterByPrice(
       @Parameter(description = "Min price") @RequestParam(required = false) BigDecimal minPrice,
@@ -324,7 +324,7 @@ public class ProductSearchController {
 
   @Operation(
       summary = "Filter by shop",
-      description = "Compatibility alias of /api/search/filter for shop-only filters")
+      description = "Compatibility alias of /api/public/search/filter for shop-only filters")
   @GetMapping("/filter/shop/{shopId}")
   public Result<SearchResultDTO<ProductDocument>> filterByShop(
       @Parameter(description = "Shop id") @PathVariable Long shopId,

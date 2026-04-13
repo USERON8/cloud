@@ -41,7 +41,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/merchant")
+@RequestMapping("/api/app/merchant")
 @RequiredArgsConstructor
 @Tag(name = "Merchant Management", description = "Merchant REST APIs")
 @Validated

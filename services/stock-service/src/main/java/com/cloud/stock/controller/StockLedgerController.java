@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/stocks")
+@RequestMapping("/api/admin/stocks")
 @RequiredArgsConstructor
 @Tag(name = "Stock API", description = "Stock reservation and ledger APIs")
 public class StockLedgerController {

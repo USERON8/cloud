@@ -46,7 +46,7 @@ import org.springframework.util.StringUtils;
 public class PaymentOrderServiceImpl implements PaymentOrderService {
 
   private static final Set<String> COUNTED_REFUND_STATUSES = Set.of("REFUNDING", "REFUNDED");
-  private static final String CHECKOUT_PATH_PREFIX = "/api/payments/checkout/";
+  private static final String CHECKOUT_PATH_PREFIX = "/api/app/payments/checkout/";
 
   private final PaymentOrderMapper paymentOrderMapper;
   private final PaymentRefundMapper paymentRefundMapper;

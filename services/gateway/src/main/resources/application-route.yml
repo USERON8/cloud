@@ -29,7 +29,6 @@ spring:
                     redis-rate-limiter.replenishRate: ${app.security.rate-limit.replenish-rate}
                     redis-rate-limiter.burstCapacity: ${app.security.rate-limit.burst-capacity}
                     redis-rate-limiter.requestedTokens: ${app.security.rate-limit.requested-tokens}
-                - RewritePath=/api/admin/(?<segment>.*), /api/${segment}
 
             - id: user-service-admin
               uri: ${GATEWAY_ROUTE_USER_URI:lb://user-service}
@@ -56,7 +55,6 @@ spring:
                     redis-rate-limiter.replenishRate: ${app.security.rate-limit.replenish-rate}
                     redis-rate-limiter.burstCapacity: ${app.security.rate-limit.burst-capacity}
                     redis-rate-limiter.requestedTokens: ${app.security.rate-limit.requested-tokens}
-                - RewritePath=/api/app/(?<segment>.*), /api/${segment}
 
             - id: product-service-app
               uri: ${GATEWAY_ROUTE_PRODUCT_URI:lb://product-service}
@@ -70,21 +68,6 @@ spring:
                     redis-rate-limiter.replenishRate: ${app.security.rate-limit.replenish-rate}
                     redis-rate-limiter.burstCapacity: ${app.security.rate-limit.burst-capacity}
                     redis-rate-limiter.requestedTokens: ${app.security.rate-limit.requested-tokens}
-                - RewritePath=/api/app/(?<segment>.*), /api/${segment}
-
-            - id: product-service-public
-              uri: ${GATEWAY_ROUTE_PRODUCT_URI:lb://product-service}
-              order: 20
-              predicates:
-                - Path=/api/public/product/**,/api/public/category/**
-              filters:
-                - name: RequestRateLimiter
-                  args:
-                    key-resolver: "#{@userIpPathKeyResolver}"
-                    redis-rate-limiter.replenishRate: ${app.security.rate-limit.replenish-rate}
-                    redis-rate-limiter.burstCapacity: ${app.security.rate-limit.burst-capacity}
-                    redis-rate-limiter.requestedTokens: ${app.security.rate-limit.requested-tokens}
-                - RewritePath=/api/public/(?<segment>.*), /api/${segment}
 
             - id: order-service-app
               uri: ${GATEWAY_ROUTE_ORDER_URI:lb://order-service}
@@ -98,7 +81,6 @@ spring:
                     redis-rate-limiter.replenishRate: ${app.security.rate-limit.replenish-rate}
                     redis-rate-limiter.burstCapacity: ${app.security.rate-limit.burst-capacity}
                     redis-rate-limiter.requestedTokens: ${app.security.rate-limit.requested-tokens}
-                - RewritePath=/api/app/(?<segment>.*), /api/${segment}
 
             - id: payment-service-app
               uri: ${GATEWAY_ROUTE_PAYMENT_URI:lb://payment-service}
@@ -112,7 +94,6 @@ spring:
                     redis-rate-limiter.replenishRate: ${app.security.rate-limit.replenish-rate}
                     redis-rate-limiter.burstCapacity: ${app.security.rate-limit.burst-capacity}
                     redis-rate-limiter.requestedTokens: ${app.security.rate-limit.requested-tokens}
-                - RewritePath=/api/app/(?<segment>.*), /api/${segment}
 
             - id: payment-service-callback
               uri: ${GATEWAY_ROUTE_PAYMENT_URI:lb://payment-service}
@@ -139,7 +120,6 @@ spring:
                     redis-rate-limiter.replenishRate: ${app.security.rate-limit.replenish-rate}
                     redis-rate-limiter.burstCapacity: ${app.security.rate-limit.burst-capacity}
                     redis-rate-limiter.requestedTokens: ${app.security.rate-limit.requested-tokens}
-                - RewritePath=/api/admin/(?<segment>.*), /api/${segment}
 
             - id: search-service-public
               uri: ${GATEWAY_ROUTE_SEARCH_URI:lb://search-service}
@@ -153,7 +133,6 @@ spring:
                     redis-rate-limiter.replenishRate: ${APP_SECURITY_SEARCH_RATE_LIMIT_REPLENISH_RATE:120}
                     redis-rate-limiter.burstCapacity: ${APP_SECURITY_SEARCH_RATE_LIMIT_BURST_CAPACITY:240}
                     redis-rate-limiter.requestedTokens: ${APP_SECURITY_SEARCH_RATE_LIMIT_REQUESTED_TOKENS:1}
-                - RewritePath=/api/public/(?<segment>.*), /api/${segment}
 
           discovery:
             locator:

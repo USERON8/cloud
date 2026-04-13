@@ -24,7 +24,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/search/shops")
+@RequestMapping("/api/public/search/shops")
 @RequiredArgsConstructor
 @Tag(name = "Shop Search", description = "Shop search APIs")
 @Validated

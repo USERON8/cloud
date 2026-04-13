@@ -21,14 +21,17 @@ public class ResourceServerConfig {
         authz
             .requestMatchers(
                 "/api/admin/**",
-                "/api/manage/users/**",
-                "/api/query/users/**",
-                "/api/statistics/**",
-                "/api/thread-pool/**")
+                "/api/admin/manage/users/**",
+                "/api/admin/query/users/**",
+                "/api/admin/statistics/**",
+                "/api/admin/thread-pool/**")
             .hasRole("ADMIN")
-            .requestMatchers("/api/user/notification/**")
+            .requestMatchers("/api/app/user/notification/**")
             .hasAuthority("admin:all")
-            .requestMatchers("/api/user/profile/**", "/api/user/address/**", "/api/merchant/**")
+            .requestMatchers(
+                "/api/app/user/profile/**",
+                "/api/app/user/address/**",
+                "/api/app/merchant/**")
             .authenticated();
       }
 

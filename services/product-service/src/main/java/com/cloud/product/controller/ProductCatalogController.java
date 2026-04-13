@@ -29,7 +29,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/product")
+@RequestMapping("/api/app/product")
 @RequiredArgsConstructor
 @Tag(name = "Product Catalog API", description = "SPU/SKU catalog management APIs")
 public class ProductCatalogController {

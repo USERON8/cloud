@@ -29,7 +29,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 @RestController
-@RequestMapping("/api/user/profile")
+@RequestMapping("/api/app/user/profile")
 @RequiredArgsConstructor
 @Tag(name = "User Profile", description = "Current user profile APIs")
 public class UserProfileController {

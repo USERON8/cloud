@@ -43,7 +43,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/orders")
+@RequestMapping("/api/app/orders")
 @RequiredArgsConstructor
 @Validated
 @Tag(name = "Order API", description = "Order creation and after-sale APIs")
