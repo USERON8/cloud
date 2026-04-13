@@ -19,9 +19,7 @@ public class ResourceServerConfig {
               authz) {
         authz
             .requestMatchers(HttpMethod.GET, "/api/stocks/ledger/**")
-            .hasRole("ADMIN")
-            .requestMatchers("/api/stocks/**")
-            .hasAuthority("SCOPE_internal");
+            .hasRole("ADMIN");
       }
     };
   }
