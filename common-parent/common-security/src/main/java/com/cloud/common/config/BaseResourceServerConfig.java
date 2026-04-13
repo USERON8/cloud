@@ -1,18 +1,10 @@
 package com.cloud.common.config;
 
 import com.cloud.common.security.AudienceTokenValidator;
-import com.cloud.common.security.GatewayInternalAuthenticationFilter;
 import com.cloud.common.security.InternalScopeClientValidator;
 import com.cloud.common.security.JwtBlacklistTokenValidator;
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.time.Instant;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,26 +16,19 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplicat
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
-import org.springframework.core.env.Environment;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
 import org.springframework.security.oauth2.core.OAuth2TokenValidator;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtValidators;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.security.oauth2.server.resource.web.BearerTokenAuthenticationEntryPoint;
 import org.springframework.security.oauth2.server.resource.web.access.BearerTokenAccessDeniedHandler;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.web.filter.OncePerRequestFilter;
 
 @Slf4j
 @Configuration(proxyBeanMethods = false)
@@ -68,12 +53,6 @@ public class BaseResourceServerConfig {
   @Value("${app.security.jwt.internal-client-ids:client-service}")
   private String allowedInternalClientIds;
 
-  @Value("${app.security.testenv-bypass-enabled:false}")
-  private boolean securityTestMode;
-
-  @Value("${app.security.test-token-value:TEST_ENV_PERMANENT_TOKEN}")
-  private String securityTestTokenValue;
-
   @Value("${app.security.public-actuator-enabled:false}")
   private boolean publicActuatorEnabled;
 
@@ -84,16 +63,6 @@ public class BaseResourceServerConfig {
       "${app.security.cors.allowed-origin-patterns:http://127.0.0.1:*,https://127.0.0.1:*,http://localhost:*,https://localhost:*}")
   private String corsAllowedOriginPatterns;
 
-  @Value("${app.security.internal-identity.enabled:true}")
-  private boolean internalIdentityEnabled;
-
-  @Value("${app.security.internal-identity.secret:${GATEWAY_INTERNAL_IDENTITY_SECRET:}}")
-  private String internalIdentitySecret;
-
-  @Value("${app.security.internal-identity.timestamp-skew-seconds:30}")
-  private long internalIdentityTimestampSkewSeconds;
-
-  private final Environment environment;
   private final ServiceSecurityCustomizer serviceSecurityCustomizer;
 
   @Bean
@@ -121,29 +90,6 @@ public class BaseResourceServerConfig {
     if (serviceSecurityCustomizer.isStatelessSession()) {
       http.sessionManagement(
           session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
-    }
-
-    if (securityTestMode) {
-      if (isProtectedProfile()) {
-        throw new IllegalStateException(
-            "app.security.testenv-bypass-enabled cannot be true in protected profiles");
-      }
-      log.warn(
-          "Security test mode is enabled. JWT validation is bypassed and all endpoints are permitAll.");
-      http.addFilterBefore(
-          testAuthenticationBypassFilter(), UsernamePasswordAuthenticationFilter.class);
-      http.authorizeHttpRequests(authz -> authz.anyRequest().permitAll());
-      return http.build();
-    }
-
-    if (internalIdentityEnabled) {
-      if (internalIdentitySecret == null || internalIdentitySecret.isBlank()) {
-        throw new IllegalStateException(
-            "GATEWAY_INTERNAL_IDENTITY_SECRET must be configured when internal identity is enabled");
-      }
-      http.addFilterBefore(
-          gatewayInternalAuthenticationFilter(jwtAuthenticationConverter()),
-          UsernamePasswordAuthenticationFilter.class);
     }
 
     http.authorizeHttpRequests(
@@ -233,76 +179,6 @@ public class BaseResourceServerConfig {
   @Bean
   JwtAuthenticationConverter jwtAuthenticationConverter() {
     return serviceSecurityCustomizer.buildJwtAuthenticationConverter();
-  }
-
-  private GatewayInternalAuthenticationFilter gatewayInternalAuthenticationFilter(
-      JwtAuthenticationConverter jwtAuthenticationConverter) {
-    return new GatewayInternalAuthenticationFilter(
-        jwtAuthenticationConverter,
-        internalIdentityEnabled,
-        internalIdentitySecret,
-        internalIdentityTimestampSkewSeconds);
-  }
-
-  private boolean isProtectedProfile() {
-    for (String profile : environment.getActiveProfiles()) {
-      if ("prod".equalsIgnoreCase(profile) || "staging".equalsIgnoreCase(profile)) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  private OncePerRequestFilter testAuthenticationBypassFilter() {
-    List<SimpleGrantedAuthority> authorities =
-        List.of(
-            new SimpleGrantedAuthority("ROLE_ADMIN"),
-            new SimpleGrantedAuthority("ROLE_MERCHANT"),
-            new SimpleGrantedAuthority("ROLE_USER"),
-            new SimpleGrantedAuthority("SCOPE_internal"),
-            new SimpleGrantedAuthority("admin:all"),
-            new SimpleGrantedAuthority("merchant:manage"),
-            new SimpleGrantedAuthority("merchant:audit"),
-            new SimpleGrantedAuthority("user:profile"),
-            new SimpleGrantedAuthority("user:address"),
-            new SimpleGrantedAuthority("order:create"),
-            new SimpleGrantedAuthority("order:cancel"),
-            new SimpleGrantedAuthority("order:query"),
-            new SimpleGrantedAuthority("order:refund"),
-            new SimpleGrantedAuthority("product:view"),
-            new SimpleGrantedAuthority("product:create"),
-            new SimpleGrantedAuthority("product:edit"),
-            new SimpleGrantedAuthority("product:delete"));
-
-    Jwt testJwt =
-        Jwt.withTokenValue(securityTestTokenValue)
-            .header("alg", "none")
-            .issuer("http://test-env.local")
-            .subject("test-user")
-            .issuedAt(Instant.now())
-            .expiresAt(Instant.parse("2099-12-31T23:59:59Z"))
-            .claim("user_id", "999999")
-            .claim("username", "test-user")
-            .claim("roles", List.of("ADMIN", "MERCHANT", "USER"))
-            .claim("aud", List.of("gateway", "internal-api"))
-            .claim("scope", "internal")
-            .build();
-
-    return new OncePerRequestFilter() {
-      @Override
-      protected void doFilterInternal(
-          HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
-          throws ServletException, IOException {
-        JwtAuthenticationToken authentication =
-            new JwtAuthenticationToken(testJwt, authorities, "test-user");
-        SecurityContextHolder.getContext().setAuthentication(authentication);
-        try {
-          filterChain.doFilter(request, response);
-        } finally {
-          SecurityContextHolder.clearContext();
-        }
-      }
-    };
   }
 
   private Set<String> parseCsv(String raw) {
