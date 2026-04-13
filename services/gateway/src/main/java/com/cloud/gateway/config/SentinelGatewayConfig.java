@@ -56,11 +56,11 @@ public class SentinelGatewayConfig {
   @Value("${app.sentinel.gateway.user-interval-sec:1}")
   private int userIntervalSec;
 
-  @Value("${app.sentinel.gateway.search-route-ids:search-service-api-v2}")
+  @Value("${app.sentinel.gateway.search-route-ids:search-service-public}")
   private String searchRouteIds;
 
   @Value(
-      "${app.sentinel.gateway.route-ids:user-service-api-v2,product-service-api-v2,order-service-api-v2,payment-service-api-v2,stock-service-api-v2,search-service-api-v2}")
+      "${app.sentinel.gateway.route-ids:auth-service-api,user-service-app,user-service-admin,product-service-app,order-service-app,payment-service-app,stock-service-admin,search-service-public}")
   private String routeIds;
 
   @PostConstruct
@@ -103,13 +103,13 @@ public class SentinelGatewayConfig {
 
   private Set<ApiDefinition> buildApiDefinitions() {
     Set<ApiDefinition> definitions = new LinkedHashSet<>();
-    definitions.add(api("/api/auth", "/auth"));
-    definitions.add(api("/api/user"));
-    definitions.add(api("/api/product", "/api/category"));
-    definitions.add(api("/api/orders", "/api/order", "/api/cart"));
-    definitions.add(api("/api/payment", "/api/payments"));
-    definitions.add(api("/api/stocks", "/api/stock"));
-    definitions.add(api("/api/search"));
+    definitions.add(api("/auth"));
+    definitions.add(api("/api/app/user", "/api/app/merchant"));
+    definitions.add(api("/api/app/product", "/api/app/category"));
+    definitions.add(api("/api/app/orders", "/api/app/cart"));
+    definitions.add(api("/api/app/payments"));
+    definitions.add(api("/api/admin"));
+    definitions.add(api("/api/public/search"));
     return definitions;
   }
 

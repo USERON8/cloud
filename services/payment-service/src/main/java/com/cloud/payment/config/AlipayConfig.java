@@ -19,6 +19,8 @@ public class AlipayConfig {
   @NotBlank(message = "Alipay appId cannot be blank")
   private String appId;
 
+  private String merchantId;
+
   @NotBlank(message = "Alipay merchant private key cannot be blank")
   private String merchantPrivateKey;
 

@@ -14,7 +14,6 @@ DELETE FROM merchant_auth;
 DELETE FROM merchant;
 DELETE FROM admin;
 DELETE FROM users;
-DELETE FROM test_access_token WHERE id = 1;
 
 -- index optimization
 ALTER TABLE users
@@ -127,9 +126,9 @@ VALUES (23001, 20001, 50001, 51001, 'ACTIVE', 0, 0),
 INSERT INTO admin (id, username, real_name, phone, role, status, deleted, version)
 VALUES (24001, 't_admin_24001', 'Platform Admin', '13900010001', 'ADMIN', 1, 0, 0);
 
-INSERT INTO merchant (id, username, merchant_name, phone, status, audit_status, deleted, version)
-VALUES (30001, 't_merchant_30001', 'Cloud Devices Flagship', '13900020001', 1, 1, 0, 0),
-       (30002, 't_merchant_30002', 'Cloud Life Store', '13900020002', 1, 1, 0, 0);
+INSERT INTO merchant (id, owner_user_id, username, merchant_name, phone, status, audit_status, deleted, version)
+VALUES (30001, 30001, 't_merchant_30001', 'Cloud Devices Flagship', '13900020001', 1, 1, 0, 0),
+       (30002, 30002, 't_merchant_30002', 'Cloud Life Store', '13900020002', 1, 1, 0, 0);
 
 INSERT INTO merchant_auth (id, merchant_id, business_license_number, business_license_url, id_card_front_url,
                            id_card_back_url, contact_phone, contact_address, auth_status, auth_remark, deleted, version)
@@ -140,5 +139,3 @@ VALUES (25001, 30001, 'BL-TEST-30001', 'https://example.com/license-30001.png',
         'https://example.com/idf-30002.png', 'https://example.com/idb-30002.png',
         '13900020002', 'Hangzhou Test Street 8', 1, 'approved', 0, 0);
 
-INSERT INTO test_access_token (id, token_value, token_owner, expires_at, is_active)
-VALUES (1, 'TEST_ENV_PERMANENT_TOKEN', 'test-user', '2099-12-31 23:59:59', 1);

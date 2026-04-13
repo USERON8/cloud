@@ -161,6 +161,7 @@ redisson:
 
 alipay:
   app-id: ${ALIPAY_APP_ID:2021000122671234}
+  merchant-id: ${ALIPAY_MERCHANT_ID:${ALIPAY_APP_ID:2021000122671234}}
   merchant-private-key: ${ALIPAY_PRIVATE_KEY:MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC...}
   alipay-public-key: ${ALIPAY_PUBLIC_KEY:MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA...}
   gateway-url: ${ALIPAY_GATEWAY_URL:https://openapi-sandbox.dl.alipaydev.com/gateway.do}

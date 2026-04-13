@@ -9,11 +9,15 @@ import com.cloud.common.domain.vo.payment.PaymentOrderVO;
 import com.cloud.common.domain.vo.payment.PaymentRefundVO;
 import com.cloud.common.enums.ResultCode;
 import com.cloud.common.exception.BizException;
+import com.cloud.common.exception.SystemException;
+import com.cloud.common.messaging.event.PaymentSuccessEvent;
 import com.cloud.common.metrics.TradeMetrics;
+import com.cloud.payment.config.AlipayConfig;
 import com.cloud.payment.converter.PaymentOrderConverter;
 import com.cloud.payment.mapper.PaymentCallbackLogMapper;
 import com.cloud.payment.mapper.PaymentOrderMapper;
 import com.cloud.payment.mapper.PaymentRefundMapper;
+import com.cloud.payment.messaging.PaymentMessageProducer;
 import com.cloud.payment.module.entity.PaymentCallbackLogEntity;
 import com.cloud.payment.module.entity.PaymentOrderEntity;
 import com.cloud.payment.module.entity.PaymentRefundEntity;
@@ -21,8 +25,12 @@ import com.cloud.payment.service.PaymentCompensationService;
 import com.cloud.payment.service.PaymentOrderService;
 import com.cloud.payment.service.provider.PaymentProviderGateway;
 import com.cloud.payment.service.support.OrderStatusRemoteService;
+import com.cloud.payment.service.support.PaymentCallbackContext;
+import com.cloud.payment.service.support.PaymentCallbackVerificationResult;
+import com.cloud.payment.service.support.PaymentCallbackVerifier;
 import com.cloud.payment.service.support.PaymentOrderStateSupport;
 import com.cloud.payment.service.support.PaymentSecurityCacheService;
+import com.cloud.payment.service.support.PaymentStateMachine;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -38,14 +46,18 @@ import org.springframework.util.StringUtils;
 public class PaymentOrderServiceImpl implements PaymentOrderService {
 
   private static final Set<String> COUNTED_REFUND_STATUSES = Set.of("REFUNDING", "REFUNDED");
-  private static final String CHECKOUT_PATH_PREFIX = "/api/payments/checkout/";
+  private static final String CHECKOUT_PATH_PREFIX = "/api/app/payments/checkout/";
 
   private final PaymentOrderMapper paymentOrderMapper;
   private final PaymentRefundMapper paymentRefundMapper;
   private final PaymentCallbackLogMapper paymentCallbackLogMapper;
   private final PaymentOrderConverter paymentOrderConverter;
   private final PaymentCompensationService paymentCompensationService;
+  private final AlipayConfig alipayConfig;
+  private final PaymentMessageProducer paymentMessageProducer;
   private final OrderStatusRemoteService orderStatusRemoteService;
+  private final PaymentCallbackVerifier paymentCallbackVerifier;
+  private final PaymentStateMachine paymentStateMachine;
   private final PaymentOrderStateSupport paymentOrderStateSupport;
   private final PaymentSecurityCacheService paymentSecurityCacheService;
   private final List<PaymentProviderGateway> providerGateways;
@@ -110,6 +122,7 @@ public class PaymentOrderServiceImpl implements PaymentOrderService {
     }
 
     PaymentOrderEntity entity = paymentOrderConverter.toEntity(command);
+    applyProviderFields(entity, command.getChannel(), buildOrderKey(command));
     entity.setStatus("CREATED");
     paymentCompensationService.initializePaymentOrderCompensation(entity);
     paymentOrderMapper.insert(entity);
@@ -210,7 +223,8 @@ public class PaymentOrderServiceImpl implements PaymentOrderService {
 
   @Override
   @Transactional(rollbackFor = Exception.class)
-  public Boolean handlePaymentCallback(PaymentCallbackCommandDTO command) {
+  public Boolean handlePaymentCallback(
+      PaymentCallbackCommandDTO command, PaymentCallbackContext context) {
     try {
       if (findCallbackLogByCallbackNo(command.getCallbackNo()) != null
           || findCallbackLogByIdempotencyKey(command.getIdempotencyKey()) != null) {
@@ -224,19 +238,21 @@ public class PaymentOrderServiceImpl implements PaymentOrderService {
                   .eq(PaymentOrderEntity::getPaymentNo, command.getPaymentNo())
                   .eq(PaymentOrderEntity::getDeleted, 0)
                   .last("LIMIT 1"));
-      if (order == null) {
-        throw new BizException("payment order not found");
-      }
-      validateCallbackAgainstOrder(order, command);
+      PaymentCallbackVerificationResult verificationResult =
+          paymentCallbackVerifier.verify(order, command, context);
       String previousStatus = order.getStatus();
-      String normalizedStatus = normalizeCallbackStatus(command.getCallbackStatus());
 
       PaymentCallbackLogEntity log = new PaymentCallbackLogEntity();
       log.setPaymentNo(command.getPaymentNo());
+      log.setProvider(verificationResult.provider());
       log.setCallbackNo(command.getCallbackNo());
-      log.setCallbackStatus(normalizedStatus);
-      log.setProviderTxnNo(command.getProviderTxnNo());
-      log.setPayload(command.getPayload());
+      log.setCallbackStatus(verificationResult.normalizedStatus());
+      log.setProviderEventType(verificationResult.providerEventType());
+      log.setProviderTxnNo(verificationResult.providerTxnNo());
+      log.setVerifiedAppId(verificationResult.verifiedAppId());
+      log.setVerifiedSellerId(verificationResult.verifiedSellerId());
+      log.setPayload(verificationResult.payload());
+      log.setRawPayloadHash(resolveRawPayloadHash(verificationResult));
       log.setIdempotencyKey(command.getIdempotencyKey());
       paymentCallbackLogMapper.insert(log);
 
@@ -245,16 +261,13 @@ public class PaymentOrderServiceImpl implements PaymentOrderService {
         return true;
       }
 
-      if ("SUCCESS".equals(normalizedStatus)) {
-        paymentOrderStateSupport.markPaid(order, command.getProviderTxnNo(), LocalDateTime.now());
-      } else if ("FAIL".equals(normalizedStatus)) {
-        paymentOrderStateSupport.markFailed(order);
-      }
+      paymentStateMachine.apply(order, verificationResult, LocalDateTime.now());
       order.setNextPollAt(null);
       order.setLastPolledAt(LocalDateTime.now());
       order.setLastPollError(null);
       paymentOrderMapper.updateById(order);
       paymentOrderStateSupport.handlePersistedState(order, previousStatus);
+      publishPaymentSuccessIfNeeded(order, previousStatus);
       tradeMetrics.incrementPaymentCallback("success");
       return true;
     } catch (Exception ex) {
@@ -297,6 +310,7 @@ public class PaymentOrderServiceImpl implements PaymentOrderService {
     validateRefundRequest(command, paymentOrder);
 
     PaymentRefundEntity entity = paymentOrderConverter.toEntity(command);
+    applyProviderFields(entity, paymentOrder);
     entity.setStatus("REFUNDING");
     entity.setRetryCount(0);
     entity.setNextRetryAt(LocalDateTime.now());
@@ -552,28 +566,119 @@ public class PaymentOrderServiceImpl implements PaymentOrderService {
             .last("LIMIT 1"));
   }
 
-  private void validateCallbackAgainstOrder(
-      PaymentOrderEntity order, PaymentCallbackCommandDTO command) {
-    if (command.getAmount() != null
-        && order.getAmount() != null
-        && order.getAmount().compareTo(command.getAmount()) != 0) {
-      throw new BizException("payment callback amount does not match order amount");
+  private void applyProviderFields(PaymentOrderEntity entity, String channel, String bizOrderKey) {
+    String provider = normalizeProvider(channel);
+    entity.setProvider(provider);
+    entity.setProviderAppId(resolveProviderAppId(provider));
+    entity.setProviderMerchantId(resolveProviderMerchantId(provider));
+    entity.setBizType(resolveBizType(provider));
+    entity.setBizOrderKey(bizOrderKey);
+  }
+
+  private void applyProviderFields(PaymentRefundEntity refund, PaymentOrderEntity order) {
+    String provider = firstNonBlank(order.getProvider(), order.getChannel());
+    refund.setProvider(provider);
+    refund.setProviderAppId(resolveProviderAppId(provider, order));
+    refund.setProviderMerchantId(resolveProviderMerchantId(provider, order));
+  }
+
+  private String resolveProviderAppId(String provider) {
+    return resolveProviderAppId(provider, null);
+  }
+
+  private String resolveProviderAppId(String provider, PaymentOrderEntity order) {
+    if ("ALIPAY".equalsIgnoreCase(provider)) {
+      return firstNonBlank(
+          alipayConfig.getAppId(), order == null ? null : order.getProviderAppId());
     }
-    if (StringUtils.hasText(order.getProviderTxnNo())
-        && StringUtils.hasText(command.getProviderTxnNo())
-        && !order.getProviderTxnNo().equals(command.getProviderTxnNo())) {
-      throw new BizException("payment callback provider transaction does not match order");
+    return order == null ? null : order.getProviderAppId();
+  }
+
+  private String resolveProviderMerchantId(String provider) {
+    return resolveProviderMerchantId(provider, null);
+  }
+
+  private String resolveProviderMerchantId(String provider, PaymentOrderEntity order) {
+    if ("ALIPAY".equalsIgnoreCase(provider)) {
+      return firstNonBlank(
+          alipayConfig.getMerchantId(), order == null ? null : order.getProviderMerchantId());
+    }
+    return order == null ? null : order.getProviderMerchantId();
+  }
+
+  private String resolveBizType(String provider) {
+    if (provider == null) {
+      return null;
+    }
+    return provider.equalsIgnoreCase("ALIPAY") ? "SUB_ORDER" : provider;
+  }
+
+  private String resolveRawPayloadHash(PaymentCallbackVerificationResult verificationResult) {
+    if (verificationResult == null) {
+      return null;
+    }
+    if (StringUtils.hasText(verificationResult.rawPayloadHash())) {
+      return verificationResult.rawPayloadHash();
+    }
+    return hashPayload(verificationResult.payload());
+  }
+
+  private String normalizeProvider(String channel) {
+    if (!StringUtils.hasText(channel)) {
+      return null;
+    }
+    return channel.trim().toUpperCase();
+  }
+
+  private String firstNonBlank(String... values) {
+    if (values == null) {
+      return null;
+    }
+    for (String value : values) {
+      if (StringUtils.hasText(value)) {
+        return value;
+      }
+    }
+    return null;
+  }
+
+  private void publishPaymentSuccessIfNeeded(PaymentOrderEntity order, String previousStatus) {
+    if (PaymentOrderStateSupport.ORDER_STATUS_PAID.equals(previousStatus)) {
+      return;
+    }
+    if (!PaymentOrderStateSupport.ORDER_STATUS_PAID.equals(order.getStatus())) {
+      return;
+    }
+    PaymentSuccessEvent event =
+        PaymentSuccessEvent.builder()
+            .paymentId(order.getId())
+            .orderNo(order.getMainOrderNo())
+            .subOrderNo(order.getSubOrderNo())
+            .userId(order.getUserId())
+            .amount(order.getAmount())
+            .paymentMethod(order.getChannel())
+            .transactionNo(order.getProviderTxnNo())
+            .build();
+    if (!paymentMessageProducer.sendPaymentSuccessEvent(event)) {
+      throw new SystemException("failed to enqueue payment success event");
     }
   }
 
-  private String normalizeCallbackStatus(String callbackStatus) {
-    if (!StringUtils.hasText(callbackStatus)) {
-      throw new BizException("payment callback status is required");
+  private String hashPayload(String payload) {
+    if (!StringUtils.hasText(payload)) {
+      return null;
     }
-    String normalized = callbackStatus.trim().toUpperCase();
-    if ("SUCCESS".equals(normalized) || "FAIL".equals(normalized)) {
-      return normalized;
+    try {
+      java.security.MessageDigest digest = java.security.MessageDigest.getInstance("SHA-256");
+      byte[] hashed = digest.digest(payload.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+      StringBuilder builder = new StringBuilder(hashed.length * 2);
+      for (byte b : hashed) {
+        builder.append(Character.forDigit((b >>> 4) & 0x0F, 16));
+        builder.append(Character.forDigit(b & 0x0F, 16));
+      }
+      return builder.toString();
+    } catch (java.security.NoSuchAlgorithmException ex) {
+      throw new IllegalStateException("Failed to hash payment callback payload", ex);
     }
-    throw new BizException("unsupported payment callback status: " + callbackStatus);
   }
 }

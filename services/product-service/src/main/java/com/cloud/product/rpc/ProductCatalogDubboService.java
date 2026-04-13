@@ -1,10 +1,12 @@
 package com.cloud.product.rpc;
 
 import com.cloud.api.product.ProductDubboApi;
+import com.cloud.common.domain.dto.product.ProductSearchItemDTO;
 import com.cloud.common.domain.dto.product.SpuCreateRequestDTO;
 import com.cloud.common.domain.vo.product.SkuDetailVO;
 import com.cloud.common.domain.vo.product.SpuDetailVO;
 import com.cloud.product.service.ProductCatalogService;
+import com.cloud.product.service.ProductQueryService;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +17,7 @@ import org.apache.dubbo.config.annotation.DubboService;
 public class ProductCatalogDubboService implements ProductDubboApi {
 
   private final ProductCatalogService productCatalogService;
+  private final ProductQueryService productQueryService;
 
   @Override
   public Long createSpu(SpuCreateRequestDTO request) {
@@ -44,6 +47,16 @@ public class ProductCatalogDubboService implements ProductDubboApi {
   @Override
   public List<SkuDetailVO> listSkuByIds(List<Long> skuIds) {
     return productCatalogService.listSkuByIds(skuIds);
+  }
+
+  @Override
+  public List<ProductSearchItemDTO> searchProducts(String name, Integer size) {
+    return productQueryService.searchProductItems(name, size);
+  }
+
+  @Override
+  public List<String> suggestProducts(String keyword, Integer size) {
+    return productQueryService.suggestProducts(keyword, size);
   }
 
   @Override

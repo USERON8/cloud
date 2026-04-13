@@ -4,22 +4,6 @@ spring:
       server:
         webflux:
           routes:
-            - id: oauth2-endpoints
-              uri: ${GATEWAY_ROUTE_AUTH_URI:lb://auth-service}
-              order: 10
-              predicates:
-                - Path=/oauth2/**
-              filters:
-                - PreserveHostHeader
-
-            - id: oidc-endpoints
-              uri: ${GATEWAY_ROUTE_AUTH_URI:lb://auth-service}
-              order: 10
-              predicates:
-                - Path=/.well-known/**,/connect/**,/userinfo
-              filters:
-                - PreserveHostHeader
-
             - id: auth-service-api
               uri: ${GATEWAY_ROUTE_AUTH_URI:lb://auth-service}
               order: 10
@@ -33,11 +17,24 @@ spring:
                     redis-rate-limiter.burstCapacity: ${app.security.auth-rate-limit.burst-capacity}
                     redis-rate-limiter.requestedTokens: ${app.security.auth-rate-limit.requested-tokens}
 
-            - id: user-service-api-v2
+            - id: user-service-admin-alias
+              uri: ${GATEWAY_ROUTE_USER_URI:lb://user-service}
+              order: 19
+              predicates:
+                - Path=/api/admin/manage/users/**,/api/admin/query/users/**,/api/admin/statistics/**,/api/admin/thread-pool/**,/api/admin/merchant/**,/api/admin/merchant/auth/**
+              filters:
+                - name: RequestRateLimiter
+                  args:
+                    key-resolver: "#{@userIpPathKeyResolver}"
+                    redis-rate-limiter.replenishRate: ${app.security.rate-limit.replenish-rate}
+                    redis-rate-limiter.burstCapacity: ${app.security.rate-limit.burst-capacity}
+                    redis-rate-limiter.requestedTokens: ${app.security.rate-limit.requested-tokens}
+
+            - id: user-service-admin
               uri: ${GATEWAY_ROUTE_USER_URI:lb://user-service}
               order: 20
               predicates:
-                - Path=/api/manage/users/**,/api/query/users/**,/api/user/address/**,/api/user/profile/**,/api/user/notification/**,/api/merchant/**,/api/admin/**,/api/statistics/**,/api/thread-pool/**
+                - Path=/api/admin/**
               filters:
                 - name: RequestRateLimiter
                   args:
@@ -46,11 +43,24 @@ spring:
                     redis-rate-limiter.burstCapacity: ${app.security.rate-limit.burst-capacity}
                     redis-rate-limiter.requestedTokens: ${app.security.rate-limit.requested-tokens}
 
-            - id: product-service-api-v2
+            - id: user-service-app
+              uri: ${GATEWAY_ROUTE_USER_URI:lb://user-service}
+              order: 20
+              predicates:
+                - Path=/api/app/user/**,/api/app/merchant/**,/api/app/merchant/auth/**
+              filters:
+                - name: RequestRateLimiter
+                  args:
+                    key-resolver: "#{@userIpPathKeyResolver}"
+                    redis-rate-limiter.replenishRate: ${app.security.rate-limit.replenish-rate}
+                    redis-rate-limiter.burstCapacity: ${app.security.rate-limit.burst-capacity}
+                    redis-rate-limiter.requestedTokens: ${app.security.rate-limit.requested-tokens}
+
+            - id: product-service-app
               uri: ${GATEWAY_ROUTE_PRODUCT_URI:lb://product-service}
               order: 20
               predicates:
-                - Path=/api/product,/api/product/**,/api/category,/api/category/**
+                - Path=/api/app/product/**,/api/app/category/**
               filters:
                 - name: RequestRateLimiter
                   args:
@@ -59,11 +69,11 @@ spring:
                     redis-rate-limiter.burstCapacity: ${app.security.rate-limit.burst-capacity}
                     redis-rate-limiter.requestedTokens: ${app.security.rate-limit.requested-tokens}
 
-            - id: order-service-api-v2
+            - id: order-service-app
               uri: ${GATEWAY_ROUTE_ORDER_URI:lb://order-service}
               order: 20
               predicates:
-                - Path=/api/orders/**,/api/cart/**,/api/v1/refund/**
+                - Path=/api/app/orders/**,/api/app/cart/**,/api/app/v1/refund/**
               filters:
                 - name: RequestRateLimiter
                   args:
@@ -72,11 +82,11 @@ spring:
                     redis-rate-limiter.burstCapacity: ${app.security.rate-limit.burst-capacity}
                     redis-rate-limiter.requestedTokens: ${app.security.rate-limit.requested-tokens}
 
-            - id: payment-service-api-v2
+            - id: payment-service-app
               uri: ${GATEWAY_ROUTE_PAYMENT_URI:lb://payment-service}
               order: 20
               predicates:
-                - Path=/api/payments/**,/api/v1/payment/alipay/**
+                - Path=/api/app/payments/**
               filters:
                 - name: RequestRateLimiter
                   args:
@@ -85,11 +95,24 @@ spring:
                     redis-rate-limiter.burstCapacity: ${app.security.rate-limit.burst-capacity}
                     redis-rate-limiter.requestedTokens: ${app.security.rate-limit.requested-tokens}
 
-            - id: stock-service-api-v2
+            - id: payment-service-callback
+              uri: ${GATEWAY_ROUTE_PAYMENT_URI:lb://payment-service}
+              order: 20
+              predicates:
+                - Path=/api/v1/payment/alipay/**
+              filters:
+                - name: RequestRateLimiter
+                  args:
+                    key-resolver: "#{@userIpPathKeyResolver}"
+                    redis-rate-limiter.replenishRate: ${app.security.rate-limit.replenish-rate}
+                    redis-rate-limiter.burstCapacity: ${app.security.rate-limit.burst-capacity}
+                    redis-rate-limiter.requestedTokens: ${app.security.rate-limit.requested-tokens}
+
+            - id: stock-service-admin
               uri: ${GATEWAY_ROUTE_STOCK_URI:lb://stock-service}
               order: 20
               predicates:
-                - Path=/api/stocks/**
+                - Path=/api/admin/stocks/ledger/**
               filters:
                 - name: RequestRateLimiter
                   args:
@@ -98,11 +121,11 @@ spring:
                     redis-rate-limiter.burstCapacity: ${app.security.rate-limit.burst-capacity}
                     redis-rate-limiter.requestedTokens: ${app.security.rate-limit.requested-tokens}
 
-            - id: search-service-api-v2
+            - id: search-service-public
               uri: ${GATEWAY_ROUTE_SEARCH_URI:lb://search-service}
               order: 20
               predicates:
-                - Path=/api/search,/api/search/**
+                - Path=/api/public/search/**,/api/public/search/shops/**
               filters:
                 - name: RequestRateLimiter
                   args:

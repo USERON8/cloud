@@ -120,8 +120,6 @@ app:
       route-ids: ${APP_SENTINEL_GATEWAY_ROUTE_IDS:user-service-api-v2,product-service-api-v2,order-service-api-v2,payment-service-api-v2,stock-service-api-v2,search-service-api-v2}
   security:
     enable-test-api: false
-    internal-identity:
-      secret: ${GATEWAY_INTERNAL_IDENTITY_SECRET:${GATEWAY_SIGNATURE_SECRET}}
     jwt:
       blacklist-fail-closed: ${APP_SECURITY_JWT_BLACKLIST_FAIL_CLOSED:true}
     signature:
@@ -144,10 +142,6 @@ app:
   search:
     fallback:
       timeout-ms: ${SEARCH_FALLBACK_TIMEOUT_MS:2000}
-      product-service-base-url: ${SEARCH_FALLBACK_PRODUCT_BASE_URL:http://product-service}
-      routes:
-        search-path: ${SEARCH_FALLBACK_SEARCH_PATH:/api/product/search}
-        suggestions-path: ${SEARCH_FALLBACK_SUGGESTIONS_PATH:/api/product/suggestions}
       cache:
         enabled: ${SEARCH_FALLBACK_CACHE_ENABLED:true}
         max-size: ${SEARCH_FALLBACK_CACHE_MAX_SIZE:1000}

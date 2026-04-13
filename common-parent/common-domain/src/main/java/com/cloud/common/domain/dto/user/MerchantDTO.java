@@ -19,6 +19,8 @@ public class MerchantDTO implements Serializable {
 
   private String phone;
 
+  private Long ownerUserId;
+
   private List<String> roles;
 
   private Integer status;

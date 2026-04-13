@@ -16,7 +16,7 @@ public class ResourceServerConfig {
       public void configureServiceEndpoints(
           AuthorizeHttpRequestsConfigurer<HttpSecurity>.AuthorizationManagerRequestMatcherRegistry
               authz) {
-        authz.requestMatchers("/api/**").authenticated();
+        authz.requestMatchers("/api/app/**").authenticated();
       }
     };
   }

@@ -87,6 +87,10 @@
             <artifactId>common-security</artifactId>
         </dependency>
         <dependency>
+            <groupId>com.cloud</groupId>
+            <artifactId>common-api</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.swagger.core.v3</groupId>
             <artifactId>swagger-annotations-jakarta</artifactId>
         </dependency>

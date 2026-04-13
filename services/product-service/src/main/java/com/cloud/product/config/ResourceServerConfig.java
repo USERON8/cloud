@@ -18,25 +18,23 @@ public class ResourceServerConfig {
           AuthorizeHttpRequestsConfigurer<HttpSecurity>.AuthorizationManagerRequestMatcherRegistry
               authz) {
         authz
-            .requestMatchers("/api/product/search")
-            .permitAll()
-            .requestMatchers(HttpMethod.POST, "/api/product/spu")
+            .requestMatchers(HttpMethod.POST, "/api/app/product/spu")
             .hasAuthority("product:create")
-            .requestMatchers(HttpMethod.PUT, "/api/product/spu/*")
+            .requestMatchers(HttpMethod.PUT, "/api/app/product/spu/*")
             .hasAuthority("product:edit")
-            .requestMatchers(HttpMethod.PATCH, "/api/product/spu/*/status")
+            .requestMatchers(HttpMethod.PATCH, "/api/app/product/spu/*/status")
             .hasAuthority("product:edit")
-            .requestMatchers(HttpMethod.GET, "/api/product/**", "/api/category/**")
+            .requestMatchers(HttpMethod.GET, "/api/app/product/**", "/api/app/category/**")
             .hasAuthority("product:view")
-            .requestMatchers(HttpMethod.POST, "/api/product/**", "/api/category/**")
+            .requestMatchers(HttpMethod.POST, "/api/app/product/**", "/api/app/category/**")
             .hasAuthority("product:create")
-            .requestMatchers(HttpMethod.PUT, "/api/product/**", "/api/category/**")
+            .requestMatchers(HttpMethod.PUT, "/api/app/product/**", "/api/app/category/**")
             .hasAuthority("product:edit")
-            .requestMatchers(HttpMethod.PATCH, "/api/product/**", "/api/category/**")
+            .requestMatchers(HttpMethod.PATCH, "/api/app/product/**", "/api/app/category/**")
             .hasAuthority("product:edit")
-            .requestMatchers(HttpMethod.DELETE, "/api/product/**", "/api/category/**")
+            .requestMatchers(HttpMethod.DELETE, "/api/app/product/**", "/api/app/category/**")
             .hasAuthority("product:delete")
-            .requestMatchers("/api/product/**", "/api/category/**")
+            .requestMatchers("/api/app/product/**", "/api/app/category/**")
             .authenticated();
       }
     };

@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/thread-pool")
+@RequestMapping("/api/admin/thread-pool")
 @Tag(name = "Thread Pool Monitor", description = "Thread pool monitoring APIs")
 @RequiredArgsConstructor
 public class ThreadPoolMonitorController {

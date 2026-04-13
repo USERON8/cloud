@@ -18,7 +18,14 @@ public interface MerchantService extends IService<Merchant> {
   MerchantDTO getMerchantByName(String merchantName)
       throws MerchantException.MerchantNotFoundException;
 
+  MerchantDTO getMerchantByOwnerUserId(Long ownerUserId)
+      throws MerchantException.MerchantNotFoundException;
+
+  Long findMerchantIdByOwnerUserId(Long ownerUserId);
+
   List<MerchantDTO> getMerchantsByIds(List<Long> ids);
+
+  boolean isMerchantOwner(Long merchantId, Long ownerUserId);
 
   Page<MerchantDTO> getMerchantsPage(
       Integer page, Integer size, Integer status, Integer auditStatus);

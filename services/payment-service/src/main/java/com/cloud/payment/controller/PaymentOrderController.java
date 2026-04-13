@@ -1,7 +1,6 @@
 package com.cloud.payment.controller;
 
 import com.cloud.common.annotation.RawResponse;
-import com.cloud.common.domain.dto.payment.PaymentCallbackCommandDTO;
 import com.cloud.common.domain.dto.payment.PaymentOrderCommandDTO;
 import com.cloud.common.domain.dto.payment.PaymentRefundCommandDTO;
 import com.cloud.common.domain.vo.payment.PaymentCheckoutSessionVO;
@@ -34,7 +33,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/payments")
+@RequestMapping("/api/app/payments")
 @RequiredArgsConstructor
 @Validated
 @Tag(name = "Payment API", description = "Payment order and refund APIs")
@@ -151,13 +150,6 @@ public class PaymentOrderController {
         Map.of(
             "paymentNo", order.getPaymentNo(),
             "status", order.getStatus()));
-  }
-
-  @PostMapping("/callbacks")
-  @PreAuthorize("hasAuthority('order:refund')")
-  @Operation(summary = "Handle internal payment callback")
-  public Result<Boolean> handleCallback(@Valid @RequestBody PaymentCallbackCommandDTO command) {
-    return Result.success(paymentOrderService.handleInternalPaymentCallback(command));
   }
 
   @PostMapping("/refunds")

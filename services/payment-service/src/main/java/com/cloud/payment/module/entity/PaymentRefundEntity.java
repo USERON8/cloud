@@ -19,6 +19,15 @@ public class PaymentRefundEntity extends BaseEntity<PaymentRefundEntity> {
   @TableField("payment_no")
   private String paymentNo;
 
+  @TableField("provider")
+  private String provider;
+
+  @TableField("provider_app_id")
+  private String providerAppId;
+
+  @TableField("provider_merchant_id")
+  private String providerMerchantId;
+
   @TableField("after_sale_no")
   private String afterSaleNo;
 

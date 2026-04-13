@@ -1,5 +1,6 @@
 package com.cloud.product.converter;
 
+import com.cloud.common.domain.dto.product.ProductSearchItemDTO;
 import com.cloud.product.dto.ProductItemDTO;
 import com.cloud.product.module.entity.Sku;
 import com.cloud.product.module.entity.Spu;
@@ -20,4 +21,12 @@ public interface ProductItemConverter {
   @Mapping(target = "status", source = "spu.status")
   @Mapping(target = "imageUrl", source = "sku.imageUrl")
   ProductItemDTO toDTO(Spu spu, Sku sku);
+
+  @Mapping(target = "id", source = "spu.id")
+  @Mapping(target = "shopId", source = "spu.merchantId")
+  @Mapping(target = "name", source = "spu.spuName")
+  @Mapping(target = "price", source = "sku.salePrice")
+  @Mapping(target = "status", source = "spu.status")
+  @Mapping(target = "imageUrl", source = "sku.imageUrl")
+  ProductSearchItemDTO toSearchItemDTO(Spu spu, Sku sku);
 }

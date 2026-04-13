@@ -17,7 +17,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.env.Environment;
 import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
@@ -45,7 +44,6 @@ public class ResourceServerConfig {
   private static final Duration LOCAL_BLACKLIST_GRACE_PERIOD = Duration.ofMinutes(10);
 
   private final ReactiveStringRedisTemplate reactiveStringRedisTemplate;
-  private final Environment environment;
   private final GatewayResponseWriter gatewayResponseWriter;
   private final ConcurrentMap<String, Instant> localBlacklistCache = new ConcurrentHashMap<>();
 
@@ -66,9 +64,6 @@ public class ResourceServerConfig {
   @Value("${app.security.enable-test-api:false}")
   private boolean enableTestApi;
 
-  @Value("${app.security.testenv-bypass-enabled:false}")
-  private boolean securityTestMode;
-
   @Value("${app.security.public-actuator-enabled:false}")
   private boolean publicActuatorEnabled;
 
@@ -84,19 +79,6 @@ public class ResourceServerConfig {
 
   @Bean
   public SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity http) {
-    if (securityTestMode) {
-      if (isProtectedProfile()) {
-        throw new IllegalStateException(
-            "app.security.testenv-bypass-enabled cannot be true in protected profiles");
-      }
-      log.warn(
-          "Gateway security test mode is enabled. JWT validation is bypassed and all exchanges are permitAll.");
-      http.csrf(ServerHttpSecurity.CsrfSpec::disable)
-          .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-          .authorizeExchange(exchanges -> exchanges.anyExchange().permitAll());
-      return http.build();
-    }
-
     http.csrf(ServerHttpSecurity.CsrfSpec::disable)
         .cors(cors -> cors.configurationSource(corsConfigurationSource()))
         .authorizeExchange(
@@ -109,23 +91,13 @@ public class ResourceServerConfig {
                       .permitAll()
                       .pathMatchers("/auth/**")
                       .permitAll()
-                      .pathMatchers("/oauth2/**", "/.well-known/**", "/userinfo")
-                      .permitAll()
-                      .pathMatchers("/connect/**")
-                      .permitAll()
-                      .pathMatchers("/oauth2/authorization/**", "/login/oauth2/**")
-                      .permitAll()
                       .pathMatchers("/ws/**")
                       .authenticated()
                       .pathMatchers(HttpMethod.POST, "/api/v1/payment/alipay/notify")
                       .permitAll()
                       .pathMatchers(HttpMethod.GET, "/api/v1/payment/alipay/return")
                       .permitAll()
-                      .pathMatchers(HttpMethod.GET, "/api/payments/checkout/**")
-                      .permitAll()
-                      .pathMatchers("/auth/oauth2/github/**")
-                      .permitAll()
-                      .pathMatchers("/login/**")
+                      .pathMatchers(HttpMethod.GET, "/api/app/payments/checkout/**")
                       .permitAll()
                       .pathMatchers("/health/**", "/metrics/**")
                       .permitAll()
@@ -184,50 +156,48 @@ public class ResourceServerConfig {
               }
 
               authExchanges
-                  .pathMatchers("/api/product/*/view")
+                  .pathMatchers("/api/public/**")
                   .permitAll()
-                  .pathMatchers("/api/search/**")
-                  .permitAll()
-                  .pathMatchers("/api/user/notification/**")
+                  .pathMatchers("/api/app/user/notification/**")
                   .hasAuthority("admin:all")
-                  .pathMatchers("/api/user/profile/**", "/api/user/address/**")
+                  .pathMatchers("/api/app/user/profile/**", "/api/app/user/address/**")
                   .authenticated()
-                  .pathMatchers("/api/cart/**")
+                  .pathMatchers("/api/app/cart/**")
                   .authenticated()
-                  .pathMatchers(HttpMethod.POST, "/api/orders")
+                  .pathMatchers(HttpMethod.POST, "/api/app/orders")
                   .hasAuthority("order:create")
-                  .pathMatchers("/api/orders/**")
+                  .pathMatchers("/api/app/orders/**")
                   .hasAuthority("order:query")
-                  .pathMatchers(HttpMethod.GET, "/api/product/**")
+                  .pathMatchers("/api/app/v1/refund/**")
+                  .hasAuthority("order:query")
+                  .pathMatchers(HttpMethod.GET, "/api/app/product/**")
                   .hasAuthority("product:view")
-                  .pathMatchers(HttpMethod.POST, "/api/product/**")
+                  .pathMatchers(HttpMethod.POST, "/api/app/product/**")
                   .hasAuthority("product:create")
-                  .pathMatchers(HttpMethod.PUT, "/api/product/**")
+                  .pathMatchers(HttpMethod.PUT, "/api/app/product/**")
                   .hasAuthority("product:edit")
-                  .pathMatchers(HttpMethod.DELETE, "/api/product/**")
+                  .pathMatchers(HttpMethod.DELETE, "/api/app/product/**")
                   .hasAuthority("product:delete")
-                  .pathMatchers(HttpMethod.GET, "/api/category/**")
+                  .pathMatchers(HttpMethod.GET, "/api/app/category/**")
                   .hasAuthority("product:view")
-                  .pathMatchers(HttpMethod.POST, "/api/category/**")
+                  .pathMatchers(HttpMethod.POST, "/api/app/category/**")
                   .hasAuthority("product:create")
-                  .pathMatchers(HttpMethod.PUT, "/api/category/**")
+                  .pathMatchers(HttpMethod.PUT, "/api/app/category/**")
                   .hasAuthority("product:edit")
-                  .pathMatchers(HttpMethod.PATCH, "/api/category/**")
+                  .pathMatchers(HttpMethod.PATCH, "/api/app/category/**")
                   .hasAuthority("product:edit")
-                  .pathMatchers(HttpMethod.DELETE, "/api/category/**")
+                  .pathMatchers(HttpMethod.DELETE, "/api/app/category/**")
                   .hasAuthority("product:delete")
-                  .pathMatchers("/api/merchant/manage/**")
+                  .pathMatchers("/api/app/merchant/auth/review/**")
+                  .hasAuthority("merchant:audit")
+                  .pathMatchers("/api/app/merchant/**")
                   .hasRole("MERCHANT")
                   .pathMatchers("/api/admin/**")
                   .hasRole("ADMIN")
-                  .pathMatchers("/api/merchant/auth/review/**")
-                  .hasAuthority("merchant:audit")
-                  .pathMatchers("/api/payments/**")
+                  .pathMatchers("/api/app/payments/**")
                   .hasAnyRole("USER", "MERCHANT", "ADMIN")
-                  .pathMatchers(HttpMethod.GET, "/api/stocks/ledger/**")
+                  .pathMatchers(HttpMethod.GET, "/api/admin/stocks/ledger/**")
                   .hasRole("ADMIN")
-                  .pathMatchers("/api/stocks/**")
-                  .hasAuthority("SCOPE_internal")
                   .anyExchange()
                   .authenticated();
             })
@@ -324,15 +294,6 @@ public class ResourceServerConfig {
   }
 
   // Token value is used directly as blacklist key suffix to match auth:blacklist:{token} design.
-
-  private boolean isProtectedProfile() {
-    for (String profile : environment.getActiveProfiles()) {
-      if ("prod".equalsIgnoreCase(profile) || "staging".equalsIgnoreCase(profile)) {
-        return true;
-      }
-    }
-    return false;
-  }
 
   private Set<String> parseCsv(String raw) {
     if (raw == null || raw.isBlank()) {

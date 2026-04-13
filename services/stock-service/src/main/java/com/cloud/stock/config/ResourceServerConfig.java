@@ -18,10 +18,8 @@ public class ResourceServerConfig {
           AuthorizeHttpRequestsConfigurer<HttpSecurity>.AuthorizationManagerRequestMatcherRegistry
               authz) {
         authz
-            .requestMatchers(HttpMethod.GET, "/api/stocks/ledger/**")
-            .hasRole("ADMIN")
-            .requestMatchers("/api/stocks/**")
-            .hasAuthority("SCOPE_internal");
+            .requestMatchers(HttpMethod.GET, "/api/admin/stocks/ledger/**")
+            .hasRole("ADMIN");
       }
     };
   }

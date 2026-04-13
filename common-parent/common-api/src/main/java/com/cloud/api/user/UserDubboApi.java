@@ -7,6 +7,10 @@ public interface UserDubboApi {
 
   UserProfileDTO findById(Long id);
 
+  Boolean isMerchantOwner(Long merchantId, Long userId);
+
+  Long findMerchantIdByOwnerUserId(Long userId);
+
   Long create(UserProfileUpsertDTO profileUpsertDTO);
 
   Boolean update(UserProfileUpsertDTO profileUpsertDTO);

@@ -21,9 +21,9 @@ public class ResourceServerConfig {
         authz
             .requestMatchers("/api/v1/payment/alipay/notify")
             .permitAll()
-            .requestMatchers("/api/payments/checkout/**")
+            .requestMatchers("/api/app/payments/checkout/**")
             .permitAll()
-            .requestMatchers("/api/payments/**")
+            .requestMatchers("/api/app/payments/**")
             .authenticated();
       }
 

@@ -6,6 +6,7 @@ import com.cloud.common.domain.dto.payment.PaymentRefundCommandDTO;
 import com.cloud.common.domain.vo.payment.PaymentCheckoutSessionVO;
 import com.cloud.common.domain.vo.payment.PaymentOrderVO;
 import com.cloud.common.domain.vo.payment.PaymentRefundVO;
+import com.cloud.payment.service.support.PaymentCallbackContext;
 
 public interface PaymentOrderService {
 
@@ -19,7 +20,11 @@ public interface PaymentOrderService {
 
   String renderCheckoutPage(String ticket);
 
-  Boolean handlePaymentCallback(PaymentCallbackCommandDTO command);
+  default Boolean handlePaymentCallback(PaymentCallbackCommandDTO command) {
+    return handlePaymentCallback(command, null);
+  }
+
+  Boolean handlePaymentCallback(PaymentCallbackCommandDTO command, PaymentCallbackContext context);
 
   Boolean handleInternalPaymentCallback(PaymentCallbackCommandDTO command);
 

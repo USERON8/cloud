@@ -3,6 +3,7 @@ package com.cloud.product.service.impl;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.cloud.common.domain.dto.product.ProductSearchItemDTO;
 import com.cloud.common.result.PageResult;
 import com.cloud.product.converter.ProductItemConverter;
 import com.cloud.product.dto.ProductItemDTO;
@@ -76,23 +77,26 @@ public class ProductQueryServiceImpl implements ProductQueryService {
 
   @Override
   public List<ProductItemDTO> searchProducts(String name, Integer size) {
-    if (StrUtil.isBlank(name)) {
+    return buildProductItems(queryActiveSpusByName(name, size));
+  }
+
+  @Override
+  public List<ProductSearchItemDTO> searchProductItems(String name, Integer size) {
+    return buildProductSearchItems(queryActiveSpusByName(name, size));
+  }
+
+  @Override
+  public List<String> suggestProducts(String keyword, Integer size) {
+    if (StrUtil.isBlank(keyword)) {
       return List.of();
     }
-    int safeSize = size == null || size <= 0 ? 10 : size;
-    int maxSize = maxListSize == null || maxListSize <= 0 ? 100 : maxListSize;
-    safeSize = Math.min(safeSize, maxSize);
-
-    LambdaQueryWrapper<Spu> wrapper =
-        new LambdaQueryWrapper<Spu>()
-            .eq(Spu::getDeleted, 0)
-            .eq(Spu::getStatus, ACTIVE_STATUS)
-            .like(Spu::getSpuName, name.trim())
-            .orderByDesc(Spu::getId)
-            .last("LIMIT " + safeSize);
-
-    List<Spu> spus = spuMapper.selectList(wrapper);
-    return buildProductItems(spus);
+    int safeSize = normalizeSearchSize(size);
+    return queryActiveSpusByName(keyword, safeSize).stream()
+        .map(Spu::getSpuName)
+        .filter(StrUtil::isNotBlank)
+        .distinct()
+        .limit(safeSize)
+        .toList();
   }
 
   private List<ProductItemDTO> buildProductItems(List<Spu> spus) {
@@ -100,24 +104,7 @@ public class ProductQueryServiceImpl implements ProductQueryService {
       return List.of();
     }
     List<Long> spuIds = spus.stream().map(Spu::getId).filter(id -> id != null).toList();
-    Map<Long, Sku> minSkuBySpu = new HashMap<>();
-    if (!spuIds.isEmpty()) {
-      List<Sku> skus =
-          skuMapper.selectList(
-              new LambdaQueryWrapper<Sku>()
-                  .in(Sku::getSpuId, spuIds)
-                  .eq(Sku::getDeleted, 0)
-                  .eq(Sku::getStatus, ACTIVE_STATUS));
-      for (Sku sku : skus) {
-        if (sku == null || sku.getSpuId() == null) {
-          continue;
-        }
-        Sku current = minSkuBySpu.get(sku.getSpuId());
-        if (shouldReplaceSku(current, sku)) {
-          minSkuBySpu.put(sku.getSpuId(), sku);
-        }
-      }
-    }
+    Map<Long, Sku> minSkuBySpu = loadMinSkuBySpu(spuIds);
 
     List<ProductItemDTO> items = new ArrayList<>(spus.size());
     for (Spu spu : spus) {
@@ -135,6 +122,75 @@ public class ProductQueryServiceImpl implements ProductQueryService {
       items.add(item);
     }
     return items;
+  }
+
+  private List<ProductSearchItemDTO> buildProductSearchItems(List<Spu> spus) {
+    if (spus == null || spus.isEmpty()) {
+      return List.of();
+    }
+    List<Long> spuIds = spus.stream().map(Spu::getId).filter(id -> id != null).toList();
+    Map<Long, Sku> minSkuBySpu = loadMinSkuBySpu(spuIds);
+
+    List<ProductSearchItemDTO> items = new ArrayList<>(spus.size());
+    for (Spu spu : spus) {
+      if (spu == null) {
+        continue;
+      }
+      Sku sku = minSkuBySpu.get(spu.getId());
+      if (sku == null) {
+        continue;
+      }
+      ProductSearchItemDTO item = productItemConverter.toSearchItemDTO(spu, sku);
+      if (item.getImageUrl() == null) {
+        item.setImageUrl(spu.getMainImage());
+      }
+      items.add(item);
+    }
+    return items;
+  }
+
+  private List<Spu> queryActiveSpusByName(String name, Integer size) {
+    if (StrUtil.isBlank(name)) {
+      return List.of();
+    }
+    int safeSize = normalizeSearchSize(size);
+    LambdaQueryWrapper<Spu> wrapper =
+        new LambdaQueryWrapper<Spu>()
+            .eq(Spu::getDeleted, 0)
+            .eq(Spu::getStatus, ACTIVE_STATUS)
+            .like(Spu::getSpuName, name.trim())
+            .orderByDesc(Spu::getId)
+            .last("LIMIT " + safeSize);
+    return spuMapper.selectList(wrapper);
+  }
+
+  private int normalizeSearchSize(Integer size) {
+    int safeSize = size == null || size <= 0 ? 10 : size;
+    int maxSize = maxListSize == null || maxListSize <= 0 ? 100 : maxListSize;
+    return Math.min(safeSize, maxSize);
+  }
+
+  private Map<Long, Sku> loadMinSkuBySpu(List<Long> spuIds) {
+    Map<Long, Sku> minSkuBySpu = new HashMap<>();
+    if (spuIds == null || spuIds.isEmpty()) {
+      return minSkuBySpu;
+    }
+    List<Sku> skus =
+        skuMapper.selectList(
+            new LambdaQueryWrapper<Sku>()
+                .in(Sku::getSpuId, spuIds)
+                .eq(Sku::getDeleted, 0)
+                .eq(Sku::getStatus, ACTIVE_STATUS));
+    for (Sku sku : skus) {
+      if (sku == null || sku.getSpuId() == null) {
+        continue;
+      }
+      Sku current = minSkuBySpu.get(sku.getSpuId());
+      if (shouldReplaceSku(current, sku)) {
+        minSkuBySpu.put(sku.getSpuId(), sku);
+      }
+    }
+    return minSkuBySpu;
   }
 
   private boolean shouldReplaceSku(Sku current, Sku candidate) {

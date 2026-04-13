@@ -1,5 +1,0 @@
-app:
-  security:
-    testenv-bypass-enabled: true
-    enable-test-api: true
-
