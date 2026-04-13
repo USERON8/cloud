@@ -10,6 +10,7 @@ import com.cloud.common.result.PageResult;
 import com.cloud.common.result.Result;
 import com.cloud.common.security.SecurityPermissionUtils;
 import com.cloud.user.service.MerchantService;
+import com.cloud.user.service.support.MerchantAuthorizationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -54,6 +55,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class MerchantController {
 
   private final MerchantService merchantService;
+  private final MerchantAuthorizationService merchantAuthorizationService;
 
   @GetMapping
   @PreAuthorize("hasAuthority('admin:all') or hasAuthority('merchant:manage')")
@@ -83,8 +85,8 @@ public class MerchantController {
         throw new BizException(ResultCode.UNAUTHORIZED, "current user is not available");
       }
 
-      Long merchantId = Long.parseLong(currentUserId);
-      MerchantDTO merchant = merchantService.getMerchantById(merchantId);
+      Long ownerUserId = Long.parseLong(currentUserId);
+      MerchantDTO merchant = merchantService.getMerchantByOwnerUserId(ownerUserId);
       List<MerchantDTO> records = List.of();
       if (merchant != null
           && (status == null || status.equals(merchant.getStatus()))
@@ -120,6 +122,7 @@ public class MerchantController {
           @Positive(message = "merchant id must be positive")
           Long id,
       Authentication authentication) {
+    merchantAuthorizationService.assertCanReadMerchant(authentication, id);
     MerchantDTO merchant = merchantService.getMerchantById(id);
     if (merchant == null) {
       throw new BizException(ResultCode.NOT_FOUND, "merchant not found");
@@ -158,6 +161,7 @@ public class MerchantController {
           @NotNull(message = "merchant payload is required")
           MerchantUpsertRequestDTO requestDTO,
       Authentication authentication) {
+    merchantAuthorizationService.assertCanWriteMerchant(authentication, id);
     boolean result = merchantService.updateMerchant(id, requestDTO);
     return Result.success("merchant updated", result);
   }
@@ -234,6 +238,7 @@ public class MerchantController {
           @Positive(message = "merchant id must be positive")
           Long id,
       Authentication authentication) {
+    merchantAuthorizationService.assertCanReadMerchant(authentication, id);
     Object statistics = merchantService.getMerchantStatistics(id);
     return Result.success("query successful", statistics);
   }

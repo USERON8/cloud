@@ -28,6 +28,7 @@ public class TransactionalMerchantCacheService {
   private static final String FIELD_USERNAME = "username";
   private static final String FIELD_MERCHANT_NAME = "merchantName";
   private static final String FIELD_PHONE = "phone";
+  private static final String FIELD_OWNER_USER_ID = "ownerUserId";
   private static final String FIELD_STATUS = "status";
   private static final String FIELD_AUDIT_STATUS = "auditStatus";
 
@@ -152,6 +153,9 @@ public class TransactionalMerchantCacheService {
     putIfNotBlank(fields, FIELD_USERNAME, merchant.getUsername());
     putIfNotBlank(fields, FIELD_MERCHANT_NAME, merchant.getMerchantName());
     putIfNotBlank(fields, FIELD_PHONE, merchant.getPhone());
+    if (merchant.getOwnerUserId() != null) {
+      fields.put(FIELD_OWNER_USER_ID, String.valueOf(merchant.getOwnerUserId()));
+    }
     if (merchant.getStatus() != null) {
       fields.put(FIELD_STATUS, String.valueOf(merchant.getStatus()));
     }
@@ -177,6 +181,7 @@ public class TransactionalMerchantCacheService {
         parseString(map.get(FIELD_USERNAME)),
         parseString(map.get(FIELD_MERCHANT_NAME)),
         parseString(map.get(FIELD_PHONE)),
+        parseLong(map.get(FIELD_OWNER_USER_ID)),
         parseInteger(map.get(FIELD_STATUS)),
         parseInteger(map.get(FIELD_AUDIT_STATUS)));
   }
@@ -228,6 +233,7 @@ public class TransactionalMerchantCacheService {
       String username,
       String merchantName,
       String phone,
+      Long ownerUserId,
       Integer status,
       Integer auditStatus) {}
 }

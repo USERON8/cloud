@@ -1,6 +1,7 @@
 package com.cloud.user.service.impl;
 
 import cn.hutool.core.util.StrUtil;
+import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.cloud.common.annotation.DistributedLock;
@@ -112,11 +113,47 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant>
 
   @Override
   @Transactional(readOnly = true)
+  public MerchantDTO getMerchantByOwnerUserId(Long ownerUserId)
+      throws MerchantException.MerchantNotFoundException {
+    if (ownerUserId == null) {
+      throw new IllegalArgumentException("ownerUserId is required");
+    }
+
+    Merchant merchant = lambdaQuery().eq(Merchant::getOwnerUserId, ownerUserId).one();
+    if (merchant == null) {
+      throw new MerchantException.MerchantNotFoundException(ownerUserId);
+    }
+    merchantCacheService.putTransactional(merchant);
+    return toEnrichedDTO(merchant);
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public Long findMerchantIdByOwnerUserId(Long ownerUserId) {
+    if (ownerUserId == null) {
+      return null;
+    }
+    Merchant merchant = lambdaQuery().eq(Merchant::getOwnerUserId, ownerUserId).one();
+    return merchant == null ? null : merchant.getId();
+  }
+
+  @Override
+  @Transactional(readOnly = true)
   public List<MerchantDTO> getMerchantsByIds(List<Long> ids) {
     if (CollectionUtils.isEmpty(ids)) {
       return List.of();
     }
     return toEnrichedDTOList(listByIds(ids));
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public boolean isMerchantOwner(Long merchantId, Long ownerUserId) {
+    if (merchantId == null || ownerUserId == null) {
+      return false;
+    }
+    Merchant merchant = getById(merchantId);
+    return merchant != null && ownerUserId.equals(merchant.getOwnerUserId());
   }
 
   @Override
@@ -169,6 +206,12 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant>
     }
 
     Merchant merchant = toMerchantEntity(requestDTO);
+    if (merchant.getId() == null) {
+      merchant.setId(IdWorker.getId());
+    }
+    if (merchant.getOwnerUserId() == null) {
+      merchant.setOwnerUserId(merchant.getId());
+    }
     if (merchant.getStatus() == null) {
       merchant.setStatus(STATUS_ENABLED);
     }
@@ -244,6 +287,9 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant>
     }
     if (merchant.getAuditStatus() == null) {
       merchant.setAuditStatus(existing.getAuditStatus());
+    }
+    if (merchant.getOwnerUserId() == null) {
+      merchant.setOwnerUserId(existing.getOwnerUserId());
     }
     boolean updated = updateById(merchant);
     if (updated) {
@@ -493,11 +539,15 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant>
       merchantDTO.setAuthStatus(merchantAuth.getAuthStatus());
     }
 
-    User user = userMapper.selectById(merchant.getId());
+    Long ownerUserId = merchant.getOwnerUserId();
+    if (ownerUserId == null) {
+      ownerUserId = merchant.getId();
+    }
+    User user = userMapper.selectById(ownerUserId);
     if (user != null) {
       merchantDTO.setEmail(user.getEmail());
     }
-    merchantDTO.setRoles(authPrincipalService.getRoleCodesByUserId(merchant.getId()));
+    merchantDTO.setRoles(authPrincipalService.getRoleCodesByUserId(ownerUserId));
 
     return merchantDTO;
   }
@@ -515,8 +565,8 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant>
         merchants.stream().map(Merchant::getId).filter(Objects::nonNull).toList();
 
     Map<Long, Integer> authStatusMap = loadAuthStatusMap(merchantIds);
-    Map<Long, String> emailMap = loadEmailMap(merchantIds);
-    Map<Long, List<String>> roleMap = loadRoleMap(merchantIds);
+    Map<Long, String> emailMap = loadEmailMap(merchants);
+    Map<Long, List<String>> roleMap = loadRoleMap(merchants);
 
     List<MerchantDTO> dtos =
         merchants.stream().map(merchantConverter::toDTO).collect(Collectors.toList());
@@ -549,26 +599,59 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant>
     return result;
   }
 
-  private Map<Long, String> loadEmailMap(List<Long> merchantIds) {
-    if (merchantIds == null || merchantIds.isEmpty()) {
+  private Map<Long, String> loadEmailMap(List<Merchant> merchants) {
+    if (merchants == null || merchants.isEmpty()) {
       return Map.of();
     }
-    List<User> users = userMapper.selectBatchIds(merchantIds);
-    Map<Long, String> result = new LinkedHashMap<>();
+    Map<Long, Long> merchantOwnerMap = new LinkedHashMap<>();
+    List<Long> ownerUserIds = new java.util.ArrayList<>();
+    for (Merchant merchant : merchants) {
+      if (merchant == null || merchant.getId() == null) {
+        continue;
+      }
+      Long ownerUserId =
+          merchant.getOwnerUserId() == null ? merchant.getId() : merchant.getOwnerUserId();
+      merchantOwnerMap.put(merchant.getId(), ownerUserId);
+      ownerUserIds.add(ownerUserId);
+    }
+    List<User> users = userMapper.selectBatchIds(ownerUserIds);
+    Map<Long, String> userEmailMap = new LinkedHashMap<>();
     for (User user : users) {
       if (user != null && user.getId() != null) {
-        result.put(user.getId(), user.getEmail());
+        userEmailMap.put(user.getId(), user.getEmail());
       }
+    }
+    Map<Long, String> result = new LinkedHashMap<>();
+    for (Map.Entry<Long, Long> entry : merchantOwnerMap.entrySet()) {
+      result.put(entry.getKey(), userEmailMap.get(entry.getValue()));
     }
     return result;
   }
 
-  private Map<Long, List<String>> loadRoleMap(List<Long> merchantIds) {
-    if (merchantIds == null || merchantIds.isEmpty()) {
+  private Map<Long, List<String>> loadRoleMap(List<Merchant> merchants) {
+    if (merchants == null || merchants.isEmpty()) {
       return Map.of();
     }
-    Map<Long, List<String>> roleMap = authPrincipalService.getRoleCodesByUserIds(merchantIds);
-    return roleMap == null ? Map.of() : roleMap;
+    Map<Long, Long> merchantOwnerMap = new LinkedHashMap<>();
+    List<Long> ownerUserIds = new java.util.ArrayList<>();
+    for (Merchant merchant : merchants) {
+      if (merchant == null || merchant.getId() == null) {
+        continue;
+      }
+      Long ownerUserId =
+          merchant.getOwnerUserId() == null ? merchant.getId() : merchant.getOwnerUserId();
+      merchantOwnerMap.put(merchant.getId(), ownerUserId);
+      ownerUserIds.add(ownerUserId);
+    }
+    Map<Long, List<String>> roleMap = authPrincipalService.getRoleCodesByUserIds(ownerUserIds);
+    if (roleMap == null || roleMap.isEmpty()) {
+      return Map.of();
+    }
+    Map<Long, List<String>> result = new LinkedHashMap<>();
+    for (Map.Entry<Long, Long> entry : merchantOwnerMap.entrySet()) {
+      result.put(entry.getKey(), roleMap.getOrDefault(entry.getValue(), List.of()));
+    }
+    return result;
   }
 
   private Merchant toMerchantEntity(MerchantUpsertRequestDTO requestDTO) {
@@ -588,11 +671,13 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant>
       merchantDTO.setAuthStatus(merchantAuth.getAuthStatus());
     }
 
-    User user = userMapper.selectById(merchantDTO.getId());
+    Long ownerUserId =
+        merchantDTO.getOwnerUserId() == null ? merchantDTO.getId() : merchantDTO.getOwnerUserId();
+    User user = userMapper.selectById(ownerUserId);
     if (user != null) {
       merchantDTO.setEmail(user.getEmail());
     }
-    merchantDTO.setRoles(authPrincipalService.getRoleCodesByUserId(merchantDTO.getId()));
+    merchantDTO.setRoles(authPrincipalService.getRoleCodesByUserId(ownerUserId));
     return merchantDTO;
   }
 
@@ -603,6 +688,7 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant>
     merged.setMerchantName(
         StrUtil.blankToDefault(requestDTO.getMerchantName(), existing.getMerchantName()));
     merged.setPhone(requestDTO.getPhone() == null ? existing.getPhone() : requestDTO.getPhone());
+    merged.setOwnerUserId(existing.getOwnerUserId());
     merged.setStatus(
         requestDTO.getStatus() == null ? existing.getStatus() : requestDTO.getStatus());
     return merged;

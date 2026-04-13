@@ -23,6 +23,9 @@ public class Merchant extends BaseEntity<Merchant> {
   @TableField(value = "email")
   private String email;
 
+  @TableField(value = "owner_user_id")
+  private Long ownerUserId;
+
   @TableField(value = "status")
   private Integer status;
 

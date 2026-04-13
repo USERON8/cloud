@@ -1,6 +1,7 @@
 package com.cloud.gateway.controller;
 
 import cn.hutool.core.util.StrUtil;
+import com.cloud.api.product.ProductDubboApi;
 import com.cloud.common.result.Result;
 import com.cloud.gateway.cache.SearchFallbackCache;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -20,6 +21,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.dubbo.config.annotation.DubboReference;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.support.ServerWebExchangeUtils;
 import org.springframework.http.MediaType;
@@ -29,7 +31,6 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
@@ -44,25 +45,17 @@ public class SearchFallbackController {
   private static final String FALLBACK_METRIC_COUNT = "gateway.search.fallback.count";
   private static final String FALLBACK_METRIC_LATENCY = "gateway.search.fallback.latency";
 
-  private final WebClient.Builder loadBalancedWebClientBuilder;
   private final ObjectMapper objectMapper;
   private final MeterRegistry meterRegistry;
   private final SearchFallbackCache searchFallbackCache;
   private final Map<String, Counter> fallbackCounters = new ConcurrentHashMap<>();
   private final Map<String, Timer> fallbackLatencyTimers = new ConcurrentHashMap<>();
-  private volatile WebClient productClient;
+
+  @DubboReference(check = false, timeout = 2000, retries = 0)
+  private ProductDubboApi productDubboApi;
 
   @Value("${app.search.fallback.timeout-ms:700}")
   private long fallbackTimeoutMs;
-
-  @Value("${app.search.fallback.product-service-base-url:http://product-service}")
-  private String productServiceBaseUrl;
-
-  @Value("${app.search.fallback.routes.search-path:/api/product/search}")
-  private String fallbackSearchPath;
-
-  @Value("${app.search.fallback.routes.suggestions-path:/api/product/suggestions}")
-  private String fallbackSuggestionsPath;
 
   @GetMapping("/gateway/fallback/search")
   @Operation(summary = "Search fallback handler")
@@ -120,23 +113,11 @@ public class SearchFallbackController {
       String json = toJson(Result.success("Search fallback applied with empty keyword", List.of()));
       return Mono.just(ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(json));
     }
-
-    return productClient()
-        .get()
-        .uri(uriBuilder -> uriBuilder.path(fallbackSearchPath).queryParam("name", keyword).build())
-        .accept(MediaType.APPLICATION_JSON)
-        .exchangeToMono(
-            response ->
-                response
-                    .toEntity(String.class)
-                    .map(
-                        entity -> {
-                          if (entity.getStatusCode().is2xxSuccessful()
-                              && isSuccessResult(entity.getBody())) {
-                            return entity;
-                          }
-                          return degradedResponse("search", "invalid downstream payload");
-                        }));
+    return Mono.fromSupplier(
+        () ->
+            ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(toJson(Result.success(productDubboApi.searchProducts(keyword, null)))));
   }
 
   private Mono<ResponseEntity<String>> fallbackSuggestions(
@@ -148,42 +129,11 @@ public class SearchFallbackController {
           toJson(Result.success("Suggestions fallback applied with empty keyword", List.of()));
       return Mono.just(ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(json));
     }
-
-    return productClient()
-        .get()
-        .uri(
-            uriBuilder ->
-                uriBuilder
-                    .path(fallbackSuggestionsPath)
-                    .queryParam("keyword", keyword)
-                    .queryParam("size", size)
-                    .build())
-        .accept(MediaType.APPLICATION_JSON)
-        .exchangeToMono(
-            response ->
-                response
-                    .toEntity(String.class)
-                    .map(
-                        entity -> {
-                          if (entity.getStatusCode().is2xxSuccessful()
-                              && isSuccessResult(entity.getBody())) {
-                            return entity;
-                          }
-                          return degradedResponse("suggestions", "invalid downstream payload");
-                        }));
-  }
-
-  private WebClient productClient() {
-    WebClient local = productClient;
-    if (local != null) {
-      return local;
-    }
-    synchronized (this) {
-      if (productClient == null) {
-        productClient = loadBalancedWebClientBuilder.baseUrl(productServiceBaseUrl).build();
-      }
-      return productClient;
-    }
+    return Mono.fromSupplier(
+        () ->
+            ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(toJson(Result.success(productDubboApi.suggestProducts(keyword, size)))));
   }
 
   private Counter counter(String routeType, String result) {

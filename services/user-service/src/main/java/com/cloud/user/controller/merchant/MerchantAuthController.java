@@ -6,10 +6,10 @@ import com.cloud.common.domain.dto.user.MerchantAuthRequestDTO;
 import com.cloud.common.enums.ResultCode;
 import com.cloud.common.exception.BizException;
 import com.cloud.common.result.Result;
-import com.cloud.common.security.SecurityPermissionUtils;
 import com.cloud.user.service.MerchantAuthService;
 import com.cloud.user.service.MerchantService;
 import com.cloud.user.service.MinioService;
+import com.cloud.user.service.support.MerchantAuthorizationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -25,6 +25,7 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -60,6 +61,7 @@ public class MerchantAuthController {
   private final MerchantAuthService merchantAuthService;
   private final MerchantService merchantService;
   private final MinioService minioService;
+  private final MerchantAuthorizationService merchantAuthorizationService;
 
   @Value("${user.auth.list.max-size:200}")
   private Integer authListMaxSize;
@@ -85,10 +87,9 @@ public class MerchantAuthController {
           @Parameter(description = "Merchant auth request body")
           @Valid
           @NotNull(message = "merchant auth request is required")
-          MerchantAuthRequestDTO merchantAuthRequestDTO) {
-    if (!SecurityPermissionUtils.isAdminOrMerchantOwner(merchantId)) {
-      throw new BizException(ResultCode.FORBIDDEN, "no permission to apply merchant auth");
-    }
+          MerchantAuthRequestDTO merchantAuthRequestDTO,
+      Authentication authentication) {
+    merchantAuthorizationService.assertCanWriteMerchant(authentication, merchantId);
     if (merchantService.getById(merchantId) == null) {
       throw new BizException(ResultCode.NOT_FOUND, "merchant not found");
     }
@@ -134,10 +135,9 @@ public class MerchantAuthController {
           @NotNull(message = "merchant id is required")
           @Positive(message = "merchant id must be positive")
           Long merchantId,
-      @RequestPart("file") @NotNull(message = "file is required") MultipartFile file) {
-    if (!SecurityPermissionUtils.isAdminOrMerchantOwner(merchantId)) {
-      throw new BizException(ResultCode.FORBIDDEN, "no permission to upload business license");
-    }
+      @RequestPart("file") @NotNull(message = "file is required") MultipartFile file,
+      Authentication authentication) {
+    merchantAuthorizationService.assertCanWriteMerchant(authentication, merchantId);
     if (merchantService.getById(merchantId) == null) {
       throw new BizException(ResultCode.NOT_FOUND, "merchant not found");
     }
@@ -167,10 +167,9 @@ public class MerchantAuthController {
           @Parameter(description = "Merchant ID")
           @NotNull(message = "merchant id is required")
           @Positive(message = "merchant id must be positive")
-          Long merchantId) {
-    if (!SecurityPermissionUtils.isAdminOrMerchantOwner(merchantId)) {
-      throw new BizException(ResultCode.FORBIDDEN, "no permission to query merchant auth");
-    }
+          Long merchantId,
+      Authentication authentication) {
+    merchantAuthorizationService.assertCanReadMerchant(authentication, merchantId);
 
     MerchantAuthDTO merchantAuth =
         merchantAuthService.getMerchantAuthByMerchantIdWithCache(merchantId);
@@ -193,10 +192,9 @@ public class MerchantAuthController {
           @Parameter(description = "Merchant ID")
           @NotNull(message = "merchant id is required")
           @Positive(message = "merchant id must be positive")
-          Long merchantId) {
-    if (!SecurityPermissionUtils.isAdminOrMerchantOwner(merchantId)) {
-      throw new BizException(ResultCode.FORBIDDEN, "no permission to revoke merchant auth");
-    }
+          Long merchantId,
+      Authentication authentication) {
+    merchantAuthorizationService.assertCanWriteMerchant(authentication, merchantId);
     boolean removed = merchantAuthService.removeByMerchantId(merchantId);
     if (!removed) {
       return Result.success("merchant auth not found", false);
