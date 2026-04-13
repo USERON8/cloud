@@ -10,6 +10,11 @@ CREATE TABLE IF NOT EXISTS payment_order
     sub_order_no      VARCHAR(64)     NOT NULL,
     user_id           BIGINT UNSIGNED NOT NULL,
     amount            DECIMAL(12, 2)  NOT NULL,
+    provider          VARCHAR(32)     NULL,
+    provider_app_id   VARCHAR(64)     NULL,
+    provider_merchant_id VARCHAR(64)  NULL,
+    biz_type          VARCHAR(32)     NULL,
+    biz_order_key     VARCHAR(128)    NULL,
     channel           VARCHAR(32)     NOT NULL,
     status            VARCHAR(32)     NOT NULL DEFAULT 'CREATED',
     provider_txn_no   VARCHAR(128)    NULL,
@@ -27,6 +32,9 @@ CREATE TABLE IF NOT EXISTS payment_order
     UNIQUE KEY uk_payment_order_idem (idempotency_key),
     INDEX idx_payment_order_main_sub_deleted (main_order_no, sub_order_no, deleted),
     INDEX idx_payment_order_user_status_deleted (user_id, status, deleted),
+    INDEX idx_payment_order_provider_deleted (provider, deleted),
+    INDEX idx_payment_order_provider_txn_deleted (provider_txn_no, deleted),
+    INDEX idx_payment_order_biz_key_deleted (biz_type, biz_order_key, deleted),
     INDEX idx_payment_order_status_poll_deleted (status, next_poll_at, deleted)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
@@ -37,6 +45,9 @@ CREATE TABLE IF NOT EXISTS payment_refund
     id                BIGINT UNSIGNED PRIMARY KEY,
     refund_no         VARCHAR(64)     NOT NULL,
     payment_no        VARCHAR(64)     NOT NULL,
+    provider          VARCHAR(32)     NULL,
+    provider_app_id   VARCHAR(64)     NULL,
+    provider_merchant_id VARCHAR(64)  NULL,
     after_sale_no     VARCHAR(64)     NOT NULL,
     refund_amount     DECIMAL(12, 2)  NOT NULL,
     status            VARCHAR(32)     NOT NULL DEFAULT 'REFUNDING',
@@ -55,6 +66,7 @@ CREATE TABLE IF NOT EXISTS payment_refund
     UNIQUE KEY uk_payment_refund_idem (idempotency_key),
     INDEX idx_payment_refund_payment_deleted (payment_no, deleted),
     INDEX idx_payment_refund_after_sale_deleted (after_sale_no, deleted),
+    INDEX idx_payment_refund_provider_deleted (provider, deleted),
     INDEX idx_payment_refund_status_retry_deleted (status, next_retry_at, deleted)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
@@ -64,10 +76,15 @@ CREATE TABLE IF NOT EXISTS payment_callback_log
 (
     id                BIGINT UNSIGNED PRIMARY KEY,
     payment_no        VARCHAR(64)     NOT NULL,
+    provider          VARCHAR(32)     NULL,
     callback_no       VARCHAR(64)     NOT NULL,
     callback_status   VARCHAR(32)     NOT NULL,
+    provider_event_type VARCHAR(64)   NULL,
     provider_txn_no   VARCHAR(128)    NULL,
+    verified_app_id   VARCHAR(64)     NULL,
+    verified_seller_id VARCHAR(64)    NULL,
     payload           TEXT            NULL,
+    raw_payload_hash  VARCHAR(128)    NULL,
     idempotency_key   VARCHAR(128)    NOT NULL,
     created_at        DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at        DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -75,7 +92,10 @@ CREATE TABLE IF NOT EXISTS payment_callback_log
     version           INT             NOT NULL DEFAULT 0,
     UNIQUE KEY uk_payment_callback_no (callback_no),
     UNIQUE KEY uk_payment_callback_idem (idempotency_key),
-    INDEX idx_payment_callback_payment_deleted (payment_no, deleted)
+    INDEX idx_payment_callback_payment_deleted (payment_no, deleted),
+    INDEX idx_payment_callback_provider_deleted (provider, deleted),
+    INDEX idx_payment_callback_provider_txn_deleted (provider_txn_no, deleted),
+    INDEX idx_payment_callback_verified_app_deleted (verified_app_id, deleted)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci;

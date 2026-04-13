@@ -245,6 +245,7 @@ CREATE TABLE IF NOT EXISTS admin
 CREATE TABLE IF NOT EXISTS merchant
 (
     id            BIGINT UNSIGNED PRIMARY KEY,
+    owner_user_id BIGINT UNSIGNED NOT NULL COMMENT 'Owner user id',
     username      VARCHAR(50)  NOT NULL,
     merchant_name VARCHAR(100) NOT NULL,
     phone         VARCHAR(20)  NULL,
@@ -257,6 +258,7 @@ CREATE TABLE IF NOT EXISTS merchant
     version       INT          NOT NULL DEFAULT 0,
     UNIQUE KEY uk_merchant_username_deleted (username, deleted),
     INDEX idx_merchant_deleted (deleted),
+    INDEX idx_merchant_owner_user_deleted (owner_user_id, deleted),
     INDEX idx_merchant_status_deleted (status, deleted),
     INDEX idx_merchant_audit_status_deleted (audit_status, deleted)
 ) ENGINE = InnoDB
@@ -280,7 +282,8 @@ CREATE TABLE IF NOT EXISTS merchant_auth
     deleted                 TINYINT         NOT NULL DEFAULT 0,
     version                 INT             NOT NULL DEFAULT 0,
     UNIQUE KEY uk_merchant_auth_merchant_id (merchant_id),
-    INDEX idx_merchant_auth_status_deleted (auth_status, deleted)
+    INDEX idx_merchant_auth_status_deleted (auth_status, deleted),
+    INDEX idx_merchant_auth_merchant_status_deleted (merchant_id, auth_status, deleted)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci;
@@ -365,24 +368,3 @@ CREATE TABLE IF NOT EXISTS inbox_consume_log
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS test_access_token
-(
-    id          BIGINT UNSIGNED PRIMARY KEY,
-    token_value VARCHAR(255) NOT NULL,
-    token_owner VARCHAR(64)  NOT NULL DEFAULT 'test-user',
-    expires_at  DATETIME     NOT NULL,
-    is_active   TINYINT      NOT NULL DEFAULT 1,
-    created_at  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    UNIQUE KEY uk_test_access_token_value (token_value),
-    INDEX idx_test_access_token_active_expires (is_active, expires_at)
-) ENGINE = InnoDB
-  DEFAULT CHARSET = utf8mb4
-  COLLATE = utf8mb4_unicode_ci;
-
-INSERT INTO test_access_token (id, token_value, token_owner, expires_at, is_active)
-VALUES (1, 'TEST_ENV_PERMANENT_TOKEN', 'test-user', '2099-12-31 23:59:59', 1)
-ON DUPLICATE KEY UPDATE token_value = VALUES(token_value),
-                        token_owner = VALUES(token_owner),
-                        expires_at  = VALUES(expires_at),
-                        is_active   = VALUES(is_active);
