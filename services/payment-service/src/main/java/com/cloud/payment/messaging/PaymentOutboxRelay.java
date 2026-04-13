@@ -1,5 +1,6 @@
 package com.cloud.payment.messaging;
 
+import com.cloud.common.messaging.event.PaymentSuccessEvent;
 import com.cloud.common.messaging.event.RefundCompletedEvent;
 import com.cloud.common.messaging.outbox.AbstractOutboxRelay;
 import com.cloud.common.messaging.outbox.OutboxEvent;
@@ -11,7 +12,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.stream.function.StreamBridge;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
-import com.cloud.common.messaging.event.PaymentSuccessEvent;
 
 @Slf4j
 @Component

@@ -1,5 +1,6 @@
 package com.cloud.payment.messaging;
 
+import com.cloud.common.messaging.event.PaymentSuccessEvent;
 import com.cloud.common.messaging.event.RefundCompletedEvent;
 import com.cloud.common.messaging.outbox.OutboxEventService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -7,7 +8,6 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-import com.cloud.common.messaging.event.PaymentSuccessEvent;
 
 @Slf4j
 @Component

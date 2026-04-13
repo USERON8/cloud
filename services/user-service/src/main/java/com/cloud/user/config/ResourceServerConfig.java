@@ -29,9 +29,7 @@ public class ResourceServerConfig {
             .requestMatchers("/api/app/user/notification/**")
             .hasAuthority("admin:all")
             .requestMatchers(
-                "/api/app/user/profile/**",
-                "/api/app/user/address/**",
-                "/api/app/merchant/**")
+                "/api/app/user/profile/**", "/api/app/user/address/**", "/api/app/merchant/**")
             .authenticated();
       }
 

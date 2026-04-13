@@ -104,8 +104,7 @@ public class PaymentCallbackVerifier {
     if (StringUtils.hasText(order.getProviderMerchantId())) {
       return order.getProviderMerchantId().trim();
     }
-    if ("ALIPAY".equalsIgnoreCase(provider)
-        && StringUtils.hasText(alipayConfig.getMerchantId())) {
+    if ("ALIPAY".equalsIgnoreCase(provider) && StringUtils.hasText(alipayConfig.getMerchantId())) {
       return alipayConfig.getMerchantId().trim();
     }
     throw new BizException("payment callback seller id is required");

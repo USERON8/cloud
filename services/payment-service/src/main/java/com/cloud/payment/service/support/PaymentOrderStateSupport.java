@@ -31,5 +31,4 @@ public class PaymentOrderStateSupport {
   public boolean isTerminalStatus(String status) {
     return ORDER_STATUS_PAID.equals(status) || ORDER_STATUS_FAILED.equals(status);
   }
-
 }
