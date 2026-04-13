@@ -2,6 +2,7 @@ package com.cloud.payment.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.cloud.common.exception.SystemException;
+import com.cloud.common.messaging.event.PaymentSuccessEvent;
 import com.cloud.common.messaging.event.RefundCompletedEvent;
 import com.cloud.payment.config.PaymentCompensationProperties;
 import com.cloud.payment.mapper.PaymentOrderMapper;
@@ -13,7 +14,9 @@ import com.cloud.payment.service.PaymentCompensationService;
 import com.cloud.payment.service.provider.PaymentProviderGateway;
 import com.cloud.payment.service.provider.model.PaymentOrderQueryResult;
 import com.cloud.payment.service.provider.model.PaymentRefundResult;
+import com.cloud.payment.service.support.PaymentCallbackVerificationResult;
 import com.cloud.payment.service.support.PaymentOrderStateSupport;
+import com.cloud.payment.service.support.PaymentStateMachine;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -36,6 +39,7 @@ public class PaymentCompensationServiceImpl implements PaymentCompensationServic
   private final List<PaymentProviderGateway> providerGateways;
   private final PaymentMessageProducer paymentMessageProducer;
   private final PaymentOrderStateSupport paymentOrderStateSupport;
+  private final PaymentStateMachine paymentStateMachine;
 
   @Override
   public void initializePaymentOrderCompensation(PaymentOrderEntity order) {
@@ -123,12 +127,34 @@ public class PaymentCompensationServiceImpl implements PaymentCompensationServic
 
     switch (result.status()) {
       case PAID -> {
-        paymentOrderStateSupport.markPaid(order, result.providerTxnNo(), result.paidAt());
+        PaymentCallbackVerificationResult verificationResult =
+            new PaymentCallbackVerificationResult(
+                "SUCCESS",
+                order.getProvider(),
+                null,
+                order.getProviderAppId(),
+                order.getProviderMerchantId(),
+                result.providerTxnNo(),
+                order.getAmount(),
+                null,
+                null);
+        paymentStateMachine.apply(order, verificationResult, result.paidAt());
         order.setNextPollAt(null);
         order.setLastPollError(null);
       }
       case FAILED -> {
-        paymentOrderStateSupport.markFailed(order);
+        PaymentCallbackVerificationResult verificationResult =
+            new PaymentCallbackVerificationResult(
+                "FAIL",
+                order.getProvider(),
+                null,
+                order.getProviderAppId(),
+                order.getProviderMerchantId(),
+                result.providerTxnNo(),
+                order.getAmount(),
+                null,
+                null);
+        paymentStateMachine.apply(order, verificationResult, result.paidAt());
         order.setNextPollAt(null);
         order.setLastPollError(truncate(result.message()));
       }
@@ -144,6 +170,7 @@ public class PaymentCompensationServiceImpl implements PaymentCompensationServic
     }
     paymentOrderMapper.updateById(order);
     paymentOrderStateSupport.handlePersistedState(order, previousStatus);
+    publishPaymentSuccessIfNeeded(order, previousStatus);
   }
 
   private void applyRefundAttempt(
@@ -203,6 +230,28 @@ public class PaymentCompensationServiceImpl implements PaymentCompensationServic
             .build();
     if (!paymentMessageProducer.sendRefundCompletedEvent(event)) {
       throw new SystemException("failed to enqueue refund completed event");
+    }
+  }
+
+  private void publishPaymentSuccessIfNeeded(PaymentOrderEntity order, String previousStatus) {
+    if (PaymentOrderStateSupport.ORDER_STATUS_PAID.equals(previousStatus)) {
+      return;
+    }
+    if (!PaymentOrderStateSupport.ORDER_STATUS_PAID.equals(order.getStatus())) {
+      return;
+    }
+    PaymentSuccessEvent event =
+        PaymentSuccessEvent.builder()
+            .paymentId(order.getId())
+            .orderNo(order.getMainOrderNo())
+            .subOrderNo(order.getSubOrderNo())
+            .userId(order.getUserId())
+            .amount(order.getAmount())
+            .paymentMethod(order.getChannel())
+            .transactionNo(order.getProviderTxnNo())
+            .build();
+    if (!paymentMessageProducer.sendPaymentSuccessEvent(event)) {
+      throw new SystemException("failed to enqueue payment success event");
     }
   }
 

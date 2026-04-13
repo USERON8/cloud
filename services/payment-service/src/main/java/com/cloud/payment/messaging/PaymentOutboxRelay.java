@@ -11,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.stream.function.StreamBridge;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
+import com.cloud.common.messaging.event.PaymentSuccessEvent;
 
 @Slf4j
 @Component
@@ -39,6 +40,7 @@ public class PaymentOutboxRelay extends AbstractOutboxRelay {
 
     return switch (eventType) {
       case "REFUND_COMPLETED" -> sendRefundCompleted(event);
+      case "PAYMENT_SUCCESS" -> sendPaymentSuccess(event);
       default -> {
         log.warn(
             "Unknown outbox event type: eventId={}, eventType={}", event.getEventId(), eventType);
@@ -54,6 +56,17 @@ public class PaymentOutboxRelay extends AbstractOutboxRelay {
         payload,
         payload.getRefundNo(),
         "REFUND_COMPLETED",
+        payload.getEventId(),
+        payload.getEventType());
+  }
+
+  private boolean sendPaymentSuccess(OutboxEvent event) throws Exception {
+    PaymentSuccessEvent payload = readPayload(event, PaymentSuccessEvent.class);
+    return sendMessage(
+        "paymentSuccessProducer-out-0",
+        payload,
+        payload.getOrderNo(),
+        "PAYMENT_SUCCESS",
         payload.getEventId(),
         payload.getEventType());
   }

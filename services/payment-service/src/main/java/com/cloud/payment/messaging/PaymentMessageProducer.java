@@ -7,6 +7,7 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import com.cloud.common.messaging.event.PaymentSuccessEvent;
 
 @Slf4j
 @Component
@@ -37,6 +38,31 @@ public class PaymentMessageProducer {
       return true;
     } catch (Exception ex) {
       log.error("Send refund completed event failed: refundNo={}", event.getRefundNo(), ex);
+      return false;
+    }
+  }
+
+  public boolean sendPaymentSuccessEvent(PaymentSuccessEvent event) {
+    if (event == null) {
+      return false;
+    }
+    try {
+      if (event.getEventId() == null || event.getEventId().isBlank()) {
+        event.setEventId(UUID.randomUUID().toString());
+      }
+      if (event.getTimestamp() == null) {
+        event.setTimestamp(System.currentTimeMillis());
+      }
+      if (event.getEventType() == null || event.getEventType().isBlank()) {
+        event.setEventType("PAYMENT_SUCCESS");
+      }
+
+      String payload = objectMapper.writeValueAsString(event);
+      outboxEventService.enqueue(
+          "PAYMENT", event.getOrderNo(), event.getEventType(), payload, event.getEventId());
+      return true;
+    } catch (Exception ex) {
+      log.error("Send payment success event failed: orderNo={}", event.getOrderNo(), ex);
       return false;
     }
   }

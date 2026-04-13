@@ -6,11 +6,15 @@ import com.cloud.common.annotation.RawResponse;
 import com.cloud.common.domain.dto.payment.PaymentCallbackCommandDTO;
 import com.cloud.payment.config.AlipayConfig;
 import com.cloud.payment.service.PaymentOrderService;
+import com.cloud.payment.service.support.PaymentCallbackContext;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
@@ -41,12 +45,16 @@ public class AlipayCallbackController {
       if (!verifySignature(params) || !verifyAppId(params)) {
         return "failure";
       }
+      if (!verifySellerId(params)) {
+        return "failure";
+      }
       String callbackStatus = resolveCallbackStatus(params.get("trade_status"));
       if (callbackStatus == null) {
         return "success";
       }
       PaymentCallbackCommandDTO command = buildCommand(params, callbackStatus);
-      paymentOrderService.handlePaymentCallback(command);
+      paymentOrderService.handlePaymentCallback(
+          command, buildCallbackContext(params, command.getPayload()));
       return "success";
     } catch (Exception ex) {
       log.warn("Handle Alipay notify callback failed", ex);
@@ -70,6 +78,14 @@ public class AlipayCallbackController {
     return !StringUtils.hasText(appId) || alipayConfig.getAppId().equals(appId);
   }
 
+  private boolean verifySellerId(Map<String, String> params) {
+    String sellerId = params.get("seller_id");
+    String merchantId = alipayConfig.getMerchantId();
+    return !StringUtils.hasText(sellerId)
+        || !StringUtils.hasText(merchantId)
+        || merchantId.equals(sellerId);
+  }
+
   private PaymentCallbackCommandDTO buildCommand(Map<String, String> params, String callbackStatus)
       throws JsonProcessingException {
     PaymentCallbackCommandDTO command = new PaymentCallbackCommandDTO();
@@ -81,6 +97,15 @@ public class AlipayCallbackController {
     command.setAmount(parseAmount(params.get("total_amount")));
     command.setPayload(objectMapper.writeValueAsString(new LinkedHashMap<>(params)));
     return command;
+  }
+
+  private PaymentCallbackContext buildCallbackContext(Map<String, String> params, String payload) {
+    return new PaymentCallbackContext(
+        "ALIPAY",
+        params.get("trade_status"),
+        alipayConfig.getAppId(),
+        firstNonBlank(params.get("seller_id"), alipayConfig.getMerchantId()),
+        sha256Hex(payload));
   }
 
   private String requireParam(Map<String, String> params, String key) {
@@ -119,5 +144,35 @@ public class AlipayCallbackController {
       return null;
     }
     return new BigDecimal(amount.trim());
+  }
+
+  private String sha256Hex(String value) {
+    if (!StringUtils.hasText(value)) {
+      return null;
+    }
+    try {
+      MessageDigest digest = MessageDigest.getInstance("SHA-256");
+      byte[] hashed = digest.digest(value.getBytes(StandardCharsets.UTF_8));
+      StringBuilder builder = new StringBuilder(hashed.length * 2);
+      for (byte b : hashed) {
+        builder.append(Character.forDigit((b >>> 4) & 0x0F, 16));
+        builder.append(Character.forDigit(b & 0x0F, 16));
+      }
+      return builder.toString();
+    } catch (NoSuchAlgorithmException ex) {
+      throw new IllegalStateException("Failed to hash callback payload", ex);
+    }
+  }
+
+  private String firstNonBlank(String... values) {
+    if (values == null) {
+      return null;
+    }
+    for (String value : values) {
+      if (StringUtils.hasText(value)) {
+        return value;
+      }
+    }
+    return null;
   }
 }

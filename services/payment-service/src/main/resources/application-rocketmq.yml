@@ -2,6 +2,9 @@ spring:
   cloud:
     stream:
       bindings:
+        paymentSuccessProducer-out-0:
+          destination: payment-success
+          content-type: application/json
         refundCompletedProducer-out-0:
           destination: refund-completed
           content-type: application/json

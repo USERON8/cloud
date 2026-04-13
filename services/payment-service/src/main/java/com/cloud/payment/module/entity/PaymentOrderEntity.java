@@ -28,6 +28,21 @@ public class PaymentOrderEntity extends BaseEntity<PaymentOrderEntity> {
   @TableField("amount")
   private BigDecimal amount;
 
+  @TableField("provider")
+  private String provider;
+
+  @TableField("provider_app_id")
+  private String providerAppId;
+
+  @TableField("provider_merchant_id")
+  private String providerMerchantId;
+
+  @TableField("biz_type")
+  private String bizType;
+
+  @TableField("biz_order_key")
+  private String bizOrderKey;
+
   @TableField("channel")
   private String channel;
 
