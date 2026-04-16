@@ -115,11 +115,11 @@ app:
         clients:
             web:
                 id: ${APP_OAUTH2_WEB_CLIENT_ID:web-client}
-                secret: ${APP_OAUTH2_WEB_CLIENT_SECRET:cloud-shop-secret}
+                secret: ${APP_OAUTH2_WEB_CLIENT_SECRET}
                 redirect-uris: ${APP_OAUTH2_WEB_REDIRECT_URIS:http://127.0.0.1:${PORT_NGINX_HTTP:18080}/callback,http://127.0.0.1:3000/callback,http://127.0.0.1:5173/callback,http://localhost:5173/callback,http://127.0.0.1:5173/#/pages/oauth/success,http://localhost:5173/#/pages/oauth/success}
             mobile:
                 id: ${APP_OAUTH2_MOBILE_CLIENT_ID:mobile-client}
-                secret: ${APP_OAUTH2_MOBILE_CLIENT_SECRET:cloud-mini-secret}
+                secret: ${APP_OAUTH2_MOBILE_CLIENT_SECRET}
                 redirect-uris: ${APP_OAUTH2_MOBILE_REDIRECT_URIS:com.example.app://callback}
             internal:
                 id: ${APP_OAUTH2_INTERNAL_CLIENT_ID:client-service}

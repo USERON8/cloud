@@ -133,11 +133,11 @@ payment:
       max-requests: ${PAYMENT_RATE_LIMIT_MAX_REQUESTS:20}
 
 redis:
-  host: ${SPRING_REDIS_HOST:127.0.0.1}
-  port: ${SPRING_REDIS_PORT:16379}
-  password: ${SPRING_REDIS_PASSWORD:root}
-  database: ${SPRING_REDIS_DATABASE:1}
-  timeout: ${SPRING_REDIS_TIMEOUT:10000}
+  host: ${REDIS_HOST:127.0.0.1}
+  port: ${REDIS_PORT:16379}
+  password: ${REDIS_PASSWORD}
+  database: ${REDIS_DATABASE:1}
+  timeout: ${REDIS_TIMEOUT:10000}
   lettuce:
     pool:
       max-active: 20
@@ -160,10 +160,10 @@ redisson:
   client-name: payment-service
 
 alipay:
-  app-id: ${ALIPAY_APP_ID:2021000122671234}
-  merchant-id: ${ALIPAY_MERCHANT_ID:${ALIPAY_APP_ID:2021000122671234}}
-  merchant-private-key: ${ALIPAY_PRIVATE_KEY:MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC...}
-  alipay-public-key: ${ALIPAY_PUBLIC_KEY:MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA...}
+  app-id: ${ALIPAY_APP_ID}
+  merchant-id: ${ALIPAY_MERCHANT_ID}
+  merchant-private-key: ${ALIPAY_PRIVATE_KEY}
+  alipay-public-key: ${ALIPAY_PUBLIC_KEY}
   gateway-url: ${ALIPAY_GATEWAY_URL:https://openapi-sandbox.dl.alipaydev.com/gateway.do}
   app-encrypt-key: ${ALIPAY_APP_ENCRYPT_KEY:}
   sign-type: RSA2

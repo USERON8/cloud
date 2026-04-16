@@ -11,10 +11,10 @@ services:
         ipv4_address: 172.28.0.10
     mem_limit: 512m
     environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: nacos_config
-      MYSQL_USER: nacos
-      MYSQL_PASSWORD: nacos
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-nacos_config}
+      MYSQL_USER: ${MYSQL_USER:-nacos}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
       MYSQL_ONETIME_PASSWORD: ""
     volumes:
       - type: bind
@@ -53,10 +53,10 @@ services:
     networks:
       service_net:
         ipv4_address: 172.28.0.20
-    command: redis-server /usr/local/etc/redis/redis.conf --appendonly yes --requirepass root
+    command: redis-server /usr/local/etc/redis/redis.conf --appendonly yes --requirepass ${REDIS_PASSWORD}
     mem_limit: 256m
     environment:
-      REDIS_PASSWORD: root
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
     volumes:
       - type: bind
         source: ./docker-compose/redis/data
@@ -70,7 +70,7 @@ services:
     ports:
       - "${PORT_REDIS:-16379}:6379"
     healthcheck:
-      test: [ "CMD-SHELL", "redis-cli -a root ping | grep PONG" ]
+      test: [ "CMD-SHELL", "redis-cli -a ${REDIS_PASSWORD} ping | grep PONG" ]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -89,9 +89,9 @@ services:
       SPRING_DATASOURCE_PLATFORM: mysql
       MYSQL_SERVICE_HOST: mysql
       MYSQL_SERVICE_PORT: 3306
-      MYSQL_SERVICE_DB_NAME: nacos_config
-      MYSQL_SERVICE_USER: nacos
-      MYSQL_SERVICE_PASSWORD: nacos
+      MYSQL_SERVICE_DB_NAME: ${MYSQL_DATABASE:-nacos_config}
+      MYSQL_SERVICE_USER: ${MYSQL_USER:-nacos}
+      MYSQL_SERVICE_PASSWORD: ${MYSQL_PASSWORD}
       MYSQL_DATABASE_NUM: 1
       MYSQL_SERVICE_DB_PARAM: "characterEncoding=utf8&connectTimeout=1000&socketTimeout=3000&autoReconnect=true&useSSL=false"
 
@@ -102,14 +102,14 @@ services:
 
       # Compatibility note standardized.
       NACOS_AUTH_ENABLE: "true"  # Compatibility note standardized.
-      NACOS_AUTH_IDENTITY_KEY: ServerIdentity_Key  # Compatibility note standardized.
-      NACOS_AUTH_IDENTITY_VALUE: ServerIdentity_Value_123
-      NACOS_AUTH_TOKEN: VGhpc0lzTXlDdXN0b21TZWNyZXRLZXkwMTIzNDU2Nzg=  # Compatibility note standardized.
+      NACOS_AUTH_IDENTITY_KEY: ${NACOS_AUTH_IDENTITY_KEY:-ServerIdentity_Key}  # Compatibility note standardized.
+      NACOS_AUTH_IDENTITY_VALUE: ${NACOS_AUTH_IDENTITY_VALUE}
+      NACOS_AUTH_TOKEN: ${NACOS_AUTH_TOKEN}  # Compatibility note standardized.
       NACOS_SECURITY_IGNORE_URLS: "/,/error,/**/*.css,/**/*.js,/**/*.html,/**/*.map,/**/*.svg,/**/*.png,/**/*.ico,/console-ui/public/**,/v1/auth/**,/v1/console/health/**,/actuator/**,/v1/console/server/**"  # Compatibility note standardized.
 
       # Compatibility note standardized.
-      NACOS_SECURITY_ADMIN_USER: nacos  # Compatibility note standardized.
-      NACOS_SECURITY_ADMIN_PASSWORD: nacos
+      NACOS_SECURITY_ADMIN_USER: ${NACOS_ADMIN_USERNAME:-nacos}  # Compatibility note standardized.
+      NACOS_SECURITY_ADMIN_PASSWORD: ${NACOS_ADMIN_PASSWORD}
 
       # Compatibility note standardized.
       NACOS_CORE_AUTH_DEFAULT_ROLES: ADMIN
@@ -277,8 +277,8 @@ services:
       - "${PORT_MINIO_API:-19000}:9000"
       - "${PORT_MINIO_CONSOLE:-19001}:9001"
     environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
       MINIO_PROMETHEUS_AUTH_TYPE: public
     command: server /data --console-address ":9001"
     volumes:
@@ -422,7 +422,7 @@ services:
       MYSQL_PORT: 3306
       MYSQL_DATABASE: product_db
       MYSQL_USER: root
-      MYSQL_PASSWORD: root
+      MYSQL_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       ES_HOST: elasticsearch
       ES_PORT: 9200
       LS_JAVA_OPTS: "-Xms128m -Xmx256m"
@@ -498,8 +498,8 @@ services:
       - "${PORT_CANAL_ADMIN:-11110}:11110"
     environment:
       canal.instance.master.address: mysql:3306
-      canal.instance.dbUsername: root
-      canal.instance.dbPassword: root
+      canal.instance.dbUsername: ${MYSQL_ROOT_USERNAME:-root}
+      canal.instance.dbPassword: ${MYSQL_ROOT_PASSWORD}
       canal.instance.filter.regex: product_db\\..*
       canal.destinations: product
       canal.serverMode: tcp
@@ -612,8 +612,8 @@ services:
     environment:
       PARAMS: >-
         --spring.datasource.url=jdbc:mysql://mysql:3306/xxl_job?useUnicode=true&characterEncoding=UTF-8&autoReconnect=true&serverTimezone=Asia/Shanghai
-        --spring.datasource.username=root
-        --spring.datasource.password=root
+        --spring.datasource.username=${MYSQL_ROOT_USERNAME:-root}
+        --spring.datasource.password=${MYSQL_ROOT_PASSWORD}
         --xxl.job.accessToken=${XXL_JOB_ACCESS_TOKEN:-}
         --spring.mail.host=
         --spring.mail.port=
