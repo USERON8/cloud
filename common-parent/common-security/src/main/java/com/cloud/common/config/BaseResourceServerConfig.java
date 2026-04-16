@@ -1,6 +1,7 @@
 package com.cloud.common.config;
 
 import com.cloud.common.security.AudienceTokenValidator;
+import com.cloud.common.security.InternalRequestAuthenticationFilter;
 import com.cloud.common.security.InternalScopeClientValidator;
 import com.cloud.common.security.JwtBlacklistTokenValidator;
 import java.util.Arrays;
@@ -29,6 +30,7 @@ import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.web.BearerTokenAuthenticationEntryPoint;
 import org.springframework.security.oauth2.server.resource.web.access.BearerTokenAccessDeniedHandler;
+import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter;
 import org.springframework.security.web.SecurityFilterChain;
 
 @Slf4j
@@ -65,6 +67,7 @@ public class BaseResourceServerConfig {
   private String corsAllowedOriginPatterns;
 
   private final ServiceSecurityCustomizer serviceSecurityCustomizer;
+  private final InternalRequestAuthenticationFilter internalRequestAuthenticationFilter;
 
   @Bean
   @Order(100)
@@ -99,6 +102,8 @@ public class BaseResourceServerConfig {
           serviceSecurityCustomizer.configureServiceEndpoints(authz);
           authz.anyRequest().authenticated();
         });
+    http.addFilterBefore(
+        internalRequestAuthenticationFilter, BearerTokenAuthenticationFilter.class);
 
     http.oauth2ResourceServer(
         oauth2 -> {
