@@ -5,10 +5,14 @@ import com.cloud.api.stock.StockDubboApi;
 import com.cloud.api.user.AdminGovernanceDubboApi;
 import com.cloud.api.user.UserAdminGovernanceDubboApi;
 import com.cloud.api.user.UserGovernanceDubboApi;
+import com.cloud.api.user.UserNotificationGovernanceDubboApi;
 import com.cloud.common.domain.dto.user.AdminDTO;
 import com.cloud.common.domain.dto.user.AdminUpsertRequestDTO;
 import com.cloud.common.domain.dto.user.UserDTO;
+import com.cloud.common.domain.dto.user.UserNotificationBatchRequestDTO;
+import com.cloud.common.domain.dto.user.UserNotificationStatusChangeRequestDTO;
 import com.cloud.common.domain.dto.user.UserPageDTO;
+import com.cloud.common.domain.dto.user.UserSystemAnnouncementRequestDTO;
 import com.cloud.common.domain.dto.user.UserUpsertRequestDTO;
 import com.cloud.common.domain.vo.auth.AuthAuthorizationDetailVO;
 import com.cloud.common.domain.vo.auth.AuthTokenStorageStatsVO;
@@ -70,6 +74,9 @@ public class GovernanceController {
 
   @DubboReference(check = false, timeout = 5000, retries = 0)
   private UserAdminGovernanceDubboApi userAdminGovernanceDubboApi;
+
+  @DubboReference(check = false, timeout = 5000, retries = 0)
+  private UserNotificationGovernanceDubboApi userNotificationGovernanceDubboApi;
 
   @DubboReference(check = false, timeout = 5000, retries = 0)
   private StockDubboApi stockDubboApi;
@@ -505,5 +512,51 @@ public class GovernanceController {
   @Operation(summary = "Get Grafana observability entry metadata")
   public Result<Map<String, Object>> getGrafanaEntry() {
     return Result.success(observabilityEntryService.getGrafanaEntry());
+  }
+
+  @PostMapping("/notifications/welcome/{userId}")
+  @PreAuthorize("hasAuthority('SCOPE_internal')")
+  @Operation(summary = "Send welcome notification through governance-service")
+  public Result<Boolean> sendWelcomeNotification(@PathVariable @NotNull @Positive Long userId) {
+    return Result.success(
+        remoteCallSupport.command(
+            "user-service.governance.sendWelcomeNotification",
+            () -> userNotificationGovernanceDubboApi.sendWelcomeNotification(userId)));
+  }
+
+  @PostMapping("/notifications/status-change/{userId}")
+  @PreAuthorize("hasAuthority('SCOPE_internal')")
+  @Operation(summary = "Send status change notification through governance-service")
+  public Result<Boolean> sendStatusChangeNotification(
+      @PathVariable @NotNull @Positive Long userId,
+      @RequestBody @Validated UserNotificationStatusChangeRequestDTO requestDTO) {
+    return Result.success(
+        remoteCallSupport.command(
+            "user-service.governance.sendStatusChangeNotification",
+            () ->
+                userNotificationGovernanceDubboApi.sendStatusChangeNotification(
+                    userId, requestDTO)));
+  }
+
+  @PostMapping("/notifications/batch")
+  @PreAuthorize("hasAuthority('SCOPE_internal')")
+  @Operation(summary = "Send batch notification through governance-service")
+  public Result<Boolean> sendBatchNotification(
+      @RequestBody @Validated UserNotificationBatchRequestDTO requestDTO) {
+    return Result.success(
+        remoteCallSupport.command(
+            "user-service.governance.sendBatchNotification",
+            () -> userNotificationGovernanceDubboApi.sendBatchNotification(requestDTO)));
+  }
+
+  @PostMapping("/notifications/system")
+  @PreAuthorize("hasAuthority('SCOPE_internal')")
+  @Operation(summary = "Send system announcement through governance-service")
+  public Result<Boolean> sendSystemAnnouncement(
+      @RequestBody @Validated UserSystemAnnouncementRequestDTO requestDTO) {
+    return Result.success(
+        remoteCallSupport.command(
+            "user-service.governance.sendSystemAnnouncement",
+            () -> userNotificationGovernanceDubboApi.sendSystemAnnouncement(requestDTO)));
   }
 }

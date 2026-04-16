@@ -4,10 +4,14 @@ import com.cloud.api.auth.AuthGovernanceDubboApi;
 import com.cloud.api.user.AdminGovernanceDubboApi;
 import com.cloud.api.user.UserAdminGovernanceDubboApi;
 import com.cloud.api.user.UserGovernanceDubboApi;
+import com.cloud.api.user.UserNotificationGovernanceDubboApi;
 import com.cloud.common.domain.dto.user.AdminDTO;
 import com.cloud.common.domain.dto.user.AdminUpsertRequestDTO;
 import com.cloud.common.domain.dto.user.UserDTO;
+import com.cloud.common.domain.dto.user.UserNotificationBatchRequestDTO;
+import com.cloud.common.domain.dto.user.UserNotificationStatusChangeRequestDTO;
 import com.cloud.common.domain.dto.user.UserPageDTO;
+import com.cloud.common.domain.dto.user.UserSystemAnnouncementRequestDTO;
 import com.cloud.common.domain.dto.user.UserUpsertRequestDTO;
 import com.cloud.common.domain.vo.auth.AuthAuthorizationDetailVO;
 import com.cloud.common.domain.vo.auth.AuthTokenStorageStatsVO;
@@ -72,6 +76,9 @@ public class GovernanceAdminController {
 
   @DubboReference(check = false, timeout = 5000, retries = 0)
   private AuthGovernanceDubboApi authGovernanceDubboApi;
+
+  @DubboReference(check = false, timeout = 5000, retries = 0)
+  private UserNotificationGovernanceDubboApi userNotificationGovernanceDubboApi;
 
   private final RemoteCallSupport remoteCallSupport;
   private final MqGovernanceAggregationService mqGovernanceAggregationService;
@@ -589,6 +596,52 @@ public class GovernanceAdminController {
   @PreAuthorize("hasAuthority('admin:all')")
   public Result<Map<String, Object>> getGrafanaEntry() {
     return Result.success("query successful", observabilityEntryService.getGrafanaEntry());
+  }
+
+  @PostMapping("/api/app/user/notification/welcome/{userId}")
+  @PreAuthorize("hasAuthority('admin:all')")
+  public Result<Boolean> sendWelcomeNotification(@PathVariable @NotNull @Positive Long userId) {
+    return Result.success(
+        "welcome notification enqueued",
+        remoteCallSupport.command(
+            "user-service.governance.sendWelcomeNotification",
+            () -> userNotificationGovernanceDubboApi.sendWelcomeNotification(userId)));
+  }
+
+  @PostMapping("/api/app/user/notification/status-change/{userId}")
+  @PreAuthorize("hasAuthority('admin:all')")
+  public Result<Boolean> sendStatusChangeNotification(
+      @PathVariable @NotNull @Positive Long userId,
+      @RequestBody @Validated UserNotificationStatusChangeRequestDTO requestDTO) {
+    return Result.success(
+        "status change notification enqueued",
+        remoteCallSupport.command(
+            "user-service.governance.sendStatusChangeNotification",
+            () ->
+                userNotificationGovernanceDubboApi.sendStatusChangeNotification(
+                    userId, requestDTO)));
+  }
+
+  @PostMapping("/api/app/user/notification/batch")
+  @PreAuthorize("hasAuthority('admin:all')")
+  public Result<Boolean> sendBatchNotification(
+      @RequestBody @Validated UserNotificationBatchRequestDTO requestDTO) {
+    return Result.success(
+        "batch notification enqueued",
+        remoteCallSupport.command(
+            "user-service.governance.sendBatchNotification",
+            () -> userNotificationGovernanceDubboApi.sendBatchNotification(requestDTO)));
+  }
+
+  @PostMapping("/api/app/user/notification/system")
+  @PreAuthorize("hasAuthority('admin:all')")
+  public Result<Boolean> sendSystemAnnouncement(
+      @RequestBody @Validated UserSystemAnnouncementRequestDTO requestDTO) {
+    return Result.success(
+        "system announcement enqueued",
+        remoteCallSupport.command(
+            "user-service.governance.sendSystemAnnouncement",
+            () -> userNotificationGovernanceDubboApi.sendSystemAnnouncement(requestDTO)));
   }
 
   private void validateDateRange(LocalDate startDate, LocalDate endDate) {

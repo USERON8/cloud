@@ -20,8 +20,9 @@ Scope: backend refactor execution status for RPC, security boundary, merchant ow
 - `governance-service` now also aggregates MQ consumer topology and dead-letter handling across the business services through trusted internal HTTP.
 - `governance-service` now also aggregates outbox backlog, dead-event listing, and requeue control across the business services through trusted internal HTTP.
 - `governance-service` now exposes governed Grafana entry metadata so operators have one formal observability entrypoint instead of relying on ad-hoc local bookmarks.
+- `governance-service` now also aggregates admin notification and system announcement operations from `user-service` through Dubbo RPC while preserving the existing external admin notification paths.
 - Gateway now exposes `/api/admin/governance/**` as the admin-compatible proxy to the governance aggregation surface.
-- Gateway now also routes the governance-owned admin paths (`/api/admin/statistics/**`, `/api/admin/thread-pool/**`, `/api/admin/manage/users/**`, `/api/admin/query/users/**`, `/api/admin/mq/**`, `/api/admin/outbox/**`, `/api/admin/observability/**`, and `/auth/tokens/**`) to `governance-service` before business-service route matches.
+- Gateway now also routes the governance-owned admin paths (`/api/admin/statistics/**`, `/api/admin/thread-pool/**`, `/api/admin/manage/users/**`, `/api/admin/query/users/**`, `/api/admin/mq/**`, `/api/admin/outbox/**`, `/api/admin/observability/**`, `/api/app/user/notification/**`, and `/auth/tokens/**`) to `governance-service` before business-service route matches.
 - `GET /api/admin/stocks/ledger/{skuId}` is now routed to `governance-service` as the formal admin governance entrypoint instead of reaching `stock-service` directly.
 
 ### Partially Completed
@@ -130,11 +131,12 @@ Scope: backend refactor execution status for RPC, security boundary, merchant ow
 - Added admin governance aggregation under `/internal/governance/admins/**`, backed by `AdminGovernanceDubboApi`.
 - Added user query and user batch-management governance aggregation under `/internal/governance/users/**`, backed by `UserAdminGovernanceDubboApi`.
 - Added auth token governance aggregation under `/internal/governance/auth/tokens/**`, backed by `AuthGovernanceDubboApi`.
+- Added notification governance aggregation under `/internal/governance/notifications/**`, backed by `UserNotificationGovernanceDubboApi`.
 - Added MQ governance aggregation under `/internal/governance/mq/**`, backed by service discovery plus trusted internal HMAC-signed HTTP to the business services.
 - Added outbox governance aggregation under `/internal/governance/outbox/**`, backed by service discovery plus trusted internal HMAC-signed HTTP to the business services.
 - Added observability entry metadata under `/internal/governance/observability/grafana`, backed by `governance-service` configuration.
 - Added `/api/admin/governance/**` at gateway as the preferred admin-facing compatibility proxy for governance operations, reducing the need for operators to reach business-service admin paths directly.
-- Added governance-owned admin controller handling for statistics, thread-pool, admin management, user query, user batch management, MQ governance, outbox governance, observability entry metadata, and token governance paths directly in `governance-service`.
+- Added governance-owned admin controller handling for statistics, thread-pool, admin management, user query, user batch management, notification operations, MQ governance, outbox governance, observability entry metadata, and token governance paths directly in `governance-service`.
 - Added governance-owned admin stock ledger handling in `governance-service`, with `stock-service` retained only as the RPC provider and internal-scope surface.
 
 ### Remaining
@@ -161,10 +163,13 @@ Scope: backend refactor execution status for RPC, security boundary, merchant ow
 - `gateway/InternalIdentityPropagationFilter.java`
 - `common-api/AuthGovernanceDubboApi.java`
 - `common-api/AdminGovernanceDubboApi.java`
+- `common-api/UserNotificationGovernanceDubboApi.java`
 - `common-domain/vo/auth/*`
+- `common-domain/dto/user/UserNotification*.java`
 - `auth-service/AuthGovernanceService.java`
 - `auth-service/AuthGovernanceDubboService.java`
 - `user-service/AdminGovernanceDubboService.java`
+- `user-service/UserNotificationGovernanceDubboService.java`
 - `governance-service/GovernanceAdminController.java`
 - `governance-service/GovernanceStockAdminController.java`
 - `governance-service/MqGovernanceAggregationService.java`

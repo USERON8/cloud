@@ -241,7 +241,7 @@ Important behavior:
    - `POST /api/admin/manage/users/updateBatch`
    - `POST /api/admin/manage/users/updateStatusBatch`
 4. Notifications, statistics, and ops
-   - `/api/user/notification/*`
+   - `/api/app/user/notification/*`
    - `/auth/tokens/*`
    - `/api/admin/mq/*`
    - `/api/admin/outbox/*`
@@ -275,11 +275,15 @@ Important behavior:
    - `/internal/governance/mq/consumers`
    - `/internal/governance/mq/dead-letters/pending`
    - `/internal/governance/mq/dead-letters/handle`
-   - `/internal/governance/outbox/stats`
-   - `/internal/governance/outbox/pending`
-   - `/internal/governance/outbox/dead`
-   - `/internal/governance/outbox/requeue`
-   - `/internal/governance/observability/grafana`
+    - `/internal/governance/outbox/stats`
+    - `/internal/governance/outbox/pending`
+    - `/internal/governance/outbox/dead`
+    - `/internal/governance/outbox/requeue`
+    - `/internal/governance/observability/grafana`
+    - `/internal/governance/notifications/welcome/{userId}`
+    - `/internal/governance/notifications/status-change/{userId}`
+    - `/internal/governance/notifications/batch`
+    - `/internal/governance/notifications/system`
    - `/internal/governance/thread-pools`
    - `/internal/governance/thread-pools/{name}`
    - `/internal/governance/users/statistics/*`
@@ -287,7 +291,7 @@ Important behavior:
 
 Notes:
 - Merchant approval in the current frontend workflow is driven by `/api/merchant/auth/review/{merchantId}` because the UI reads `authStatus` from merchant auth records. `/api/merchant/{id}/approve|reject` still exists as a backend management API but is not the frontend source of truth for auth review state.
-- `/api/admin/statistics/**`, `/api/admin/thread-pool/**`, `/api/admin/manage/users/**`, `/api/admin/query/users/**`, `/api/admin/mq/**`, `/api/admin/outbox/**`, `/api/admin/observability/**`, `/auth/tokens/**`, and `GET /api/admin/stocks/ledger/{skuId}` are now governance-owned admin paths routed to `governance-service`.
+- `/api/admin/statistics/**`, `/api/admin/thread-pool/**`, `/api/admin/manage/users/**`, `/api/admin/query/users/**`, `/api/admin/mq/**`, `/api/admin/outbox/**`, `/api/admin/observability/**`, `/api/app/user/notification/**`, `/auth/tokens/**`, and `GET /api/admin/stocks/ledger/{skuId}` are now governance-owned admin paths routed to `governance-service`.
 - `/api/admin/governance/**` remains the explicit governance aggregation prefix for new admin-side callers, while the older admin-shaped paths above are now formal governance entries rather than business-service endpoints.
 - Internal callers should still prefer `/internal/governance/**` or the dedicated internal aliases when they need `SCOPE_internal` access.
 
@@ -461,6 +465,10 @@ Notes:
 | GET | `/internal/governance/outbox/dead` | Internal ops |
 | POST | `/internal/governance/outbox/requeue` | Internal ops |
 | GET | `/internal/governance/observability/grafana` | Internal ops |
+| POST | `/internal/governance/notifications/welcome/{userId}` | Internal ops |
+| POST | `/internal/governance/notifications/status-change/{userId}` | Internal ops |
+| POST | `/internal/governance/notifications/batch` | Internal ops |
+| POST | `/internal/governance/notifications/system` | Internal ops |
 
 ### Orders And After-Sale
 
@@ -539,10 +547,10 @@ Order list and order detail now return `OrderSummaryDTO` with these stable field
 | POST | `/api/admin/manage/users/deleteBatch` | `admin:all` |
 | POST | `/api/admin/manage/users/updateBatch` | `admin:all` |
 | POST | `/api/admin/manage/users/updateStatusBatch` | `admin:all` |
-| POST | `/api/user/notification/welcome/{userId}` | `admin:all` |
-| POST | `/api/user/notification/status-change/{userId}` | `admin:all` |
-| POST | `/api/user/notification/batch` | `admin:all` |
-| POST | `/api/user/notification/system` | `admin:all` |
+| POST | `/api/app/user/notification/welcome/{userId}` | `admin:all` |
+| POST | `/api/app/user/notification/status-change/{userId}` | `admin:all` |
+| POST | `/api/app/user/notification/batch` | `admin:all` |
+| POST | `/api/app/user/notification/system` | `admin:all` |
 | GET | `/api/admin/statistics/overview` | `admin:all` |
 | GET | `/api/admin/statistics/overview/async` | `admin:all` |
 | GET | `/api/admin/statistics/registration-trend` | `admin:all` |

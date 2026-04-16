@@ -169,7 +169,7 @@ Primary APIs:
 - Merchant auth: `/api/merchant/auth/**`
 - Admin: `/api/admin/**`
 - User management: `/api/admin/query/users/**`, `/api/admin/manage/users/**`
-- Notifications: `/api/user/notification/**`
+- Notifications: `/api/app/user/notification/**`
 - Statistics: `/api/admin/statistics/**`
 - Thread pool: `/api/admin/thread-pool/**`
 - MQ governance: `/api/admin/mq/**`
@@ -184,6 +184,7 @@ Notes:
 - Stock pre-check API (`POST /api/stocks/pre-check`) is available for batch stock validation before order creation.
 - Stock ledger responses expose integer `status` values from the backend. The stock page now renders `1` as `Active` and derives low-stock warnings from `availableQty` and `alertThreshold` instead of assuming string enums.
 - Admin workspace currently consumes `/api/admin`, `/api/admin/query/users/search`, `/api/merchant/auth/list`, `/api/merchant/auth/review/{merchantId}`, `/api/admin/statistics/overview`, and `/api/admin/thread-pool/info`.
+- Admin workspace notification operations should continue using `/api/app/user/notification/**`, which is now governance-owned behind gateway routing.
 - App shell navigation now hides `Payments` from `MERCHANT` and hides `Ops` from non-admin users because the current backend access policy only closes those pages for owner/admin payment reads and admin operational APIs.
 - Merchant-facing quick actions now avoid linking directly to the standalone payments page, and home quick links only surface `Payments` for roles that can complete the current payment-query flow.
 - Merchant review actions in the admin UI are now unified on `/api/merchant/auth/review/{merchantId}`. The merchant list is read-only for audit status and no longer calls `/api/merchant/{id}/approve|reject`.
