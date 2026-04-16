@@ -13,7 +13,9 @@ Source of truth: `services/**/controller/*.java`, gateway security rules, and cu
 
 ## Authorization Model
 
-- Public traffic is authenticated and normalized at `gateway` first; downstream services restore trusted identity from gateway-signed internal headers.
+- Public traffic is authenticated and normalized at `gateway` first.
+- For authenticated routed traffic, gateway strips the public bearer token before forwarding, injects trusted internal identity headers, and signs them with shared HMAC.
+- Downstream servlet services restore trusted identity from those gateway-signed internal headers.
 - `Public`: no explicit controller restriction.
 - `Authenticated`: `isAuthenticated()`.
 - `Admin`: `hasAuthority('admin:all')` or `ROLE_ADMIN` where noted.
@@ -21,6 +23,27 @@ Source of truth: `services/**/controller/*.java`, gateway security rules, and cu
 - `Order`: `order:create`, `order:query`, `order:cancel`, `order:refund`.
 - `Product`: `product:create`, `product:edit`, `product:delete`.
 - `Internal`: `hasAuthority('SCOPE_internal')`.
+
+## Internal Header Contract
+
+The following headers are internal-only and must never be produced by public clients:
+
+- `X-Internal-Request`
+- `X-Internal-Subject`
+- `X-Internal-User-Id`
+- `X-Internal-Username`
+- `X-Internal-Client-Id`
+- `X-Internal-Roles`
+- `X-Internal-Permissions`
+- `X-Internal-Scopes`
+- `X-Internal-Timestamp`
+- `X-Internal-Signature`
+
+Rules:
+
+- Downstream services accept these headers only when HMAC verification succeeds.
+- Bearer token requests bypass internal HMAC verification and follow the normal public JWT path.
+- Public clients should continue sending only bearer tokens or the existing public request signature headers where applicable.
 
 ## End-to-End Chains
 
@@ -92,6 +115,14 @@ Notes:
    - `POST /auth/tokens/blacklist/add`
    - `GET /auth/tokens/blacklist/check`
    - `POST /auth/tokens/blacklist/cleanup`
+6. Internal governance token operations
+   - `GET /internal/governance/auth/tokens/stats`
+   - `GET /internal/governance/auth/tokens/authorization/{id}`
+   - `POST /internal/governance/auth/tokens/authorization/{id}/revoke`
+   - `GET /internal/governance/auth/tokens/blacklist/stats`
+   - `POST /internal/governance/auth/tokens/blacklist/add`
+   - `GET /internal/governance/auth/tokens/blacklist/check`
+   - `POST /internal/governance/auth/tokens/blacklist/cleanup`
 
 ### 3. User Profile And Address Chain
 
@@ -202,21 +233,52 @@ Important behavior:
    - `DELETE /api/admin/{id}`
    - `PATCH /api/admin/{id}/status`
    - `POST /api/admin/{id}/reset-password`
-   - `GET /api/query/users`
-   - `GET /api/query/users/search`
-   - `PUT /api/manage/users/{id}`
-   - `POST /api/manage/users/delete`
-   - `POST /api/manage/users/deleteBatch`
-   - `POST /api/manage/users/updateBatch`
-   - `POST /api/manage/users/updateStatusBatch`
+   - `GET /api/admin/query/users`
+   - `GET /api/admin/query/users/search`
+   - `PUT /api/admin/manage/users/{id}`
+   - `POST /api/admin/manage/users/delete`
+   - `POST /api/admin/manage/users/deleteBatch`
+   - `POST /api/admin/manage/users/updateBatch`
+   - `POST /api/admin/manage/users/updateStatusBatch`
 4. Notifications, statistics, and ops
    - `/api/user/notification/*`
-   - `/api/statistics/*`
-   - `/api/thread-pool/info*`
    - `/auth/tokens/*`
+5. Internal governance aliases
+   - `/api/admin/thread-pool/internal/*`
+   - `/api/admin/statistics/internal/*`
+   - `/api/admin/stocks/internal/ledger/*`
+6. Admin governance proxy
+   - `/api/admin/governance/admins`
+   - `/api/admin/governance/admins/{id}`
+   - `/api/admin/governance/admins/{id}/status`
+   - `/api/admin/governance/admins/{id}/reset-password`
+   - `/api/admin/governance/auth/tokens/*`
+   - `/api/admin/governance/thread-pools`
+   - `/api/admin/governance/thread-pools/{name}`
+   - `/api/admin/governance/users/statistics/*`
+   - `/api/admin/governance/stocks/ledger/{skuId}`
+7. Governance aggregation
+   - `/internal/governance/admins`
+   - `/internal/governance/admins/{id}`
+   - `/internal/governance/admins/{id}/status`
+   - `/internal/governance/admins/{id}/reset-password`
+   - `/internal/governance/users/query`
+   - `/internal/governance/users/search`
+   - `/internal/governance/users/{id}`
+   - `/internal/governance/users/delete-batch`
+   - `/internal/governance/users/update-batch`
+   - `/internal/governance/users/status-batch`
+   - `/internal/governance/auth/tokens/*`
+   - `/internal/governance/thread-pools`
+   - `/internal/governance/thread-pools/{name}`
+   - `/internal/governance/users/statistics/*`
+   - `/internal/governance/stocks/ledger/{skuId}`
 
 Notes:
 - Merchant approval in the current frontend workflow is driven by `/api/merchant/auth/review/{merchantId}` because the UI reads `authStatus` from merchant auth records. `/api/merchant/{id}/approve|reject` still exists as a backend management API but is not the frontend source of truth for auth review state.
+- `/api/admin/statistics/**`, `/api/admin/thread-pool/**`, `/api/admin/manage/users/**`, `/api/admin/query/users/**`, `/auth/tokens/**`, and `GET /api/admin/stocks/ledger/{skuId}` are now governance-owned admin paths routed to `governance-service`.
+- `/api/admin/governance/**` remains the explicit governance aggregation prefix for new admin-side callers, while the older admin-shaped paths above are now formal governance entries rather than business-service endpoints.
+- Internal callers should still prefer `/internal/governance/**` or the dedicated internal aliases when they need `SCOPE_internal` access.
 
 ### 8. Internal Inventory And Gateway Utility Chain
 
@@ -238,11 +300,19 @@ Notes:
 
 Notes:
 - Stock ledger reads require admin.
+- Admin stock ledger reads now terminate at `governance-service`, which queries `stock-service` over Dubbo.
+- Stock ledger internal governance reads are also available under `/api/admin/stocks/internal/ledger/*` for trusted internal callers.
 - Stock mutation endpoints require internal scope.
 - Stock ledger `status` is the raw integer segment status aggregated from active rows. Current live ledger reads return active inventory only, so callers should treat `1` as `Active` and derive low-stock warnings from `availableQty` versus `alertThreshold`.
 - Gateway fallback is a degradation utility endpoint, not a primary client search API.
 - MQ governance endpoints are internal operational endpoints and should be exposed only to trusted callers.
 - User statistics, thread-pool monitor, and token management endpoints are admin-only operational APIs.
+- Thread-pool monitor and user statistics now also expose internal governance aliases under `/api/admin/thread-pool/internal/**` and `/api/admin/statistics/internal/**` to decouple future governance callers from the public admin API surface.
+- Gateway now authorizes `/api/admin/thread-pool/internal/**`, `/api/admin/statistics/internal/**`, and `/api/admin/stocks/internal/**` with `SCOPE_internal` before the broader admin route match.
+- Gateway now also exposes `/api/admin/governance/**` as the admin-facing governance proxy and rewrites it to `/internal/governance/**`.
+- Gateway now routes statistics, thread-pool, user-management, user-query, and token-governance admin paths to `governance-service` with higher priority than the business-service routes.
+- These internal governance aliases are now served by dedicated internal controllers instead of being mixed into the public admin controllers.
+- `governance-service` now aggregates stable internal governance capabilities behind `/internal/governance/**` and should be preferred by trusted callers over reaching into business services directly.
 
 ## Endpoint Index
 
@@ -429,13 +499,13 @@ Order list and order detail now return `OrderSummaryDTO` with these stable field
 | DELETE | `/api/admin/{id}` | `admin:all` |
 | PATCH | `/api/admin/{id}/status` | `admin:all` |
 | POST | `/api/admin/{id}/reset-password` | `admin:all` |
-| GET | `/api/query/users` | `admin:all` |
-| GET | `/api/query/users/search` | `admin:all` |
-| PUT | `/api/manage/users/{id}` | `admin:all` |
-| POST | `/api/manage/users/delete` | `admin:all` |
-| POST | `/api/manage/users/deleteBatch` | `admin:all` |
-| POST | `/api/manage/users/updateBatch` | `admin:all` |
-| POST | `/api/manage/users/updateStatusBatch` | `admin:all` |
+| GET | `/api/admin/query/users` | `admin:all` |
+| GET | `/api/admin/query/users/search` | `admin:all` |
+| PUT | `/api/admin/manage/users/{id}` | `admin:all` |
+| POST | `/api/admin/manage/users/delete` | `admin:all` |
+| POST | `/api/admin/manage/users/deleteBatch` | `admin:all` |
+| POST | `/api/admin/manage/users/updateBatch` | `admin:all` |
+| POST | `/api/admin/manage/users/updateStatusBatch` | `admin:all` |
 | POST | `/api/user/notification/welcome/{userId}` | `admin:all` |
 | POST | `/api/user/notification/status-change/{userId}` | `admin:all` |
 | POST | `/api/user/notification/batch` | `admin:all` |
