@@ -1,9 +1,8 @@
-package com.cloud.stock.config;
+package com.cloud.governance.config;
 
 import com.cloud.common.config.ServiceSecurityCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AuthorizeHttpRequestsConfigurer;
 
@@ -18,10 +17,11 @@ public class ResourceServerConfig {
           AuthorizeHttpRequestsConfigurer<HttpSecurity>.AuthorizationManagerRequestMatcherRegistry
               authz) {
         authz
-            .requestMatchers(HttpMethod.GET, "/api/admin/stocks/internal/ledger/**")
-            .hasAuthority("SCOPE_internal")
-            .requestMatchers(HttpMethod.GET, "/api/admin/stocks/ledger/**")
-            .hasRole("ADMIN");
+            .requestMatchers("/internal/governance/**")
+            .hasAnyAuthority("SCOPE_internal", "admin:all", "ROLE_ADMIN");
+        authz
+            .requestMatchers("/api/admin", "/api/admin/**", "/auth/tokens/**")
+            .hasAnyAuthority("admin:all", "ROLE_ADMIN");
       }
     };
   }

@@ -17,12 +17,39 @@ spring:
                     redis-rate-limiter.burstCapacity: ${app.security.auth-rate-limit.burst-capacity}
                     redis-rate-limiter.requestedTokens: ${app.security.auth-rate-limit.requested-tokens}
 
+            - id: governance-service-admin
+              uri: ${GATEWAY_ROUTE_GOVERNANCE_URI:lb://governance-service}
+              order: 9
+              predicates:
+                - Path=/auth/tokens/**,/api/admin/thread-pool/info,/api/admin/thread-pool/info/detail,/api/admin/statistics/overview,/api/admin/statistics/overview/async,/api/admin/statistics/registration-trend,/api/admin/statistics/registration-trend/async,/api/admin/statistics/role-distribution,/api/admin/statistics/status-distribution,/api/admin/statistics/active-users,/api/admin/statistics/growth-rate,/api/admin/statistics/activity-ranking,/api/admin/statistics/refresh-cache,/api/admin/manage/users/**,/api/admin/query/users/**
+              filters:
+                - name: RequestRateLimiter
+                  args:
+                    key-resolver: "#{@userIpPathKeyResolver}"
+                    redis-rate-limiter.replenishRate: ${app.security.rate-limit.replenish-rate}
+                    redis-rate-limiter.burstCapacity: ${app.security.rate-limit.burst-capacity}
+                    redis-rate-limiter.requestedTokens: ${app.security.rate-limit.requested-tokens}
+
             - id: user-service-admin-alias
               uri: ${GATEWAY_ROUTE_USER_URI:lb://user-service}
               order: 19
               predicates:
-                - Path=/api/admin/manage/users/**,/api/admin/query/users/**,/api/admin/statistics/**,/api/admin/thread-pool/**,/api/admin/merchant/**,/api/admin/merchant/auth/**
+                - Path=/api/admin/merchant/**,/api/admin/merchant/auth/**
               filters:
+                - name: RequestRateLimiter
+                  args:
+                    key-resolver: "#{@userIpPathKeyResolver}"
+                    redis-rate-limiter.replenishRate: ${app.security.rate-limit.replenish-rate}
+                    redis-rate-limiter.burstCapacity: ${app.security.rate-limit.burst-capacity}
+                    redis-rate-limiter.requestedTokens: ${app.security.rate-limit.requested-tokens}
+
+            - id: governance-service-admin-proxy
+              uri: ${GATEWAY_ROUTE_GOVERNANCE_URI:lb://governance-service}
+              order: 19
+              predicates:
+                - Path=/api/admin/governance/**
+              filters:
+                - RewritePath=/api/admin/governance/?(?<segment>.*), /internal/governance/$\{segment}
                 - name: RequestRateLimiter
                   args:
                     key-resolver: "#{@userIpPathKeyResolver}"
@@ -112,7 +139,33 @@ spring:
               uri: ${GATEWAY_ROUTE_STOCK_URI:lb://stock-service}
               order: 20
               predicates:
+                - Path=/api/admin/stocks/internal/**
+              filters:
+                - name: RequestRateLimiter
+                  args:
+                    key-resolver: "#{@userIpPathKeyResolver}"
+                    redis-rate-limiter.replenishRate: ${app.security.rate-limit.replenish-rate}
+                    redis-rate-limiter.burstCapacity: ${app.security.rate-limit.burst-capacity}
+                    redis-rate-limiter.requestedTokens: ${app.security.rate-limit.requested-tokens}
+
+            - id: governance-service-admin-stock
+              uri: ${GATEWAY_ROUTE_GOVERNANCE_URI:lb://governance-service}
+              order: 19
+              predicates:
                 - Path=/api/admin/stocks/ledger/**
+              filters:
+                - name: RequestRateLimiter
+                  args:
+                    key-resolver: "#{@userIpPathKeyResolver}"
+                    redis-rate-limiter.replenishRate: ${app.security.rate-limit.replenish-rate}
+                    redis-rate-limiter.burstCapacity: ${app.security.rate-limit.burst-capacity}
+                    redis-rate-limiter.requestedTokens: ${app.security.rate-limit.requested-tokens}
+
+            - id: governance-service-internal
+              uri: ${GATEWAY_ROUTE_GOVERNANCE_URI:lb://governance-service}
+              order: 20
+              predicates:
+                - Path=/internal/governance/**
               filters:
                 - name: RequestRateLimiter
                   args:

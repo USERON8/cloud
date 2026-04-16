@@ -20,6 +20,9 @@ public class ResourceServerConfig {
               authz) {
         authz
             .requestMatchers(
+                "/api/admin/thread-pool/internal/**", "/api/admin/statistics/internal/**")
+            .hasAuthority("SCOPE_internal")
+            .requestMatchers(
                 "/api/admin/**",
                 "/api/admin/manage/users/**",
                 "/api/admin/query/users/**",

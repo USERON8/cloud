@@ -23,5 +23,6 @@
         <module>payment-service</module>
         <module>search-service</module>
         <module>product-service</module>
+        <module>governance-service</module>
     </modules>
 </project>
