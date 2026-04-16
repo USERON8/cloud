@@ -93,6 +93,13 @@ Version: 1.1.0
 
 ## 快速启动
 
+## 环境文件
+
+- 启动本地服务前，先将 `.env.example` 复制为 `.env`。
+- 启动 Docker Compose 前，先将 `docker/.env.example` 复制为 `docker/.env`。
+- 真实 `.env` 只允许本地保留，不应提交到仓库。
+- 数据库密码、Redis 密码、OAuth 密钥、JWT 密钥、支付密钥等敏感配置统一从 `.env` 读取。
+
 1. 启动基础依赖（含端口占用清理）：
 
 ```bash

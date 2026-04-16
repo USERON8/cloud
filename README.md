@@ -95,6 +95,13 @@ Frontend: UniApp (Vue 3 + TypeScript).
 
 ## Quick Start
 
+## Environment Files
+
+- Copy `.env.example` to `.env` before starting local services.
+- Copy `docker/.env.example` to `docker/.env` before starting Docker Compose.
+- Real `.env` files are local-only and must not be committed.
+- Sensitive values such as database passwords, Redis passwords, OAuth client secrets, JWT keys, and payment keys are now loaded from `.env`.
+
 1. Start infrastructure:
 
 ```bash
