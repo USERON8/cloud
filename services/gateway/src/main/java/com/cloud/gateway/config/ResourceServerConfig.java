@@ -162,6 +162,10 @@ public class ResourceServerConfig {
                   .permitAll()
                   .pathMatchers("/api/admin/governance/**")
                   .hasRole("ADMIN")
+                  .pathMatchers("/api/admin/mq/**")
+                  .hasRole("ADMIN")
+                  .pathMatchers("/api/admin/outbox/**", "/api/admin/observability/**")
+                  .hasRole("ADMIN")
                   .pathMatchers(
                       "/api/admin/thread-pool/internal/**",
                       "/api/admin/statistics/internal/**",

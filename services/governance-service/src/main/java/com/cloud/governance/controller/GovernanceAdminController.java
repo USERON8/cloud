@@ -21,6 +21,9 @@ import com.cloud.common.enums.ResultCode;
 import com.cloud.common.exception.BizException;
 import com.cloud.common.remote.RemoteCallSupport;
 import com.cloud.common.result.Result;
+import com.cloud.governance.service.MqGovernanceAggregationService;
+import com.cloud.governance.service.ObservabilityEntryService;
+import com.cloud.governance.service.OutboxGovernanceAggregationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -71,6 +74,9 @@ public class GovernanceAdminController {
   private AuthGovernanceDubboApi authGovernanceDubboApi;
 
   private final RemoteCallSupport remoteCallSupport;
+  private final MqGovernanceAggregationService mqGovernanceAggregationService;
+  private final OutboxGovernanceAggregationService outboxGovernanceAggregationService;
+  private final ObservabilityEntryService observabilityEntryService;
 
   @GetMapping("/api/admin/statistics/overview")
   @PreAuthorize("hasAuthority('admin:all')")
@@ -523,6 +529,66 @@ public class GovernanceAdminController {
     payload.put("message", "Blacklist cleanup completed");
     payload.put("cleanupTime", Instant.now());
     return Result.success(payload);
+  }
+
+  @GetMapping("/api/admin/mq/consumers")
+  @PreAuthorize("hasAuthority('admin:all')")
+  public Result<List<Map<String, Object>>> getMqConsumers() {
+    return Result.success("query successful", mqGovernanceAggregationService.listConsumers());
+  }
+
+  @GetMapping("/api/admin/mq/dead-letters/pending")
+  @PreAuthorize("hasAuthority('admin:all')")
+  public Result<List<Map<String, Object>>> getPendingDeadLetters(
+      @RequestParam(defaultValue = "20") @Min(1) @Max(100) Integer limit) {
+    return Result.success(
+        "query successful", mqGovernanceAggregationService.listPendingDeadLetters(limit));
+  }
+
+  @PostMapping("/api/admin/mq/dead-letters/handle")
+  @PreAuthorize("hasAuthority('admin:all')")
+  public Result<Boolean> handleDeadLetter(
+      @RequestParam @NotBlank String serviceId,
+      @RequestParam @NotBlank String topic,
+      @RequestParam @NotBlank String msgId) {
+    return Result.success(
+        "dead letter marked as handled",
+        mqGovernanceAggregationService.markDeadLetterHandled(serviceId, topic, msgId));
+  }
+
+  @GetMapping("/api/admin/outbox/stats")
+  @PreAuthorize("hasAuthority('admin:all')")
+  public Result<List<Map<String, Object>>> getOutboxStats() {
+    return Result.success("query successful", outboxGovernanceAggregationService.getStats());
+  }
+
+  @GetMapping("/api/admin/outbox/pending")
+  @PreAuthorize("hasAuthority('admin:all')")
+  public Result<List<Map<String, Object>>> getPendingOutboxEvents(
+      @RequestParam(defaultValue = "20") @Min(1) @Max(100) Integer limit) {
+    return Result.success(
+        "query successful", outboxGovernanceAggregationService.listPending(limit));
+  }
+
+  @GetMapping("/api/admin/outbox/dead")
+  @PreAuthorize("hasAuthority('admin:all')")
+  public Result<List<Map<String, Object>>> getDeadOutboxEvents(
+      @RequestParam(defaultValue = "20") @Min(1) @Max(100) Integer limit) {
+    return Result.success("query successful", outboxGovernanceAggregationService.listDead(limit));
+  }
+
+  @PostMapping("/api/admin/outbox/requeue")
+  @PreAuthorize("hasAuthority('admin:all')")
+  public Result<Boolean> requeueOutboxEvent(
+      @RequestParam @NotBlank String serviceId, @RequestParam @NotNull @Positive Long id) {
+    return Result.success(
+        "outbox event requeued", outboxGovernanceAggregationService.requeue(serviceId, id));
+  }
+
+  @GetMapping("/api/admin/observability/grafana")
+  @PreAuthorize("hasAuthority('admin:all')")
+  public Result<Map<String, Object>> getGrafanaEntry() {
+    return Result.success("query successful", observabilityEntryService.getGrafanaEntry());
   }
 
   private void validateDateRange(LocalDate startDate, LocalDate endDate) {

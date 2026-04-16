@@ -53,4 +53,30 @@ public interface OutboxEventMapper extends BaseMapper<OutboxEvent> {
           + "FROM outbox_event WHERE deleted = 0 AND status IN ('NEW','FAILED','PROCESSING')")
   @InterceptorIgnore(illegalSql = "1")
   long oldestPendingAgeSeconds();
+
+  @Select("SELECT COUNT(1) FROM outbox_event WHERE deleted = 0 AND status = #{status}")
+  @InterceptorIgnore(illegalSql = "1")
+  long countByStatus(@Param("status") String status);
+
+  @Select({
+    "<script>",
+    "SELECT id, event_id, aggregate_type, aggregate_id, event_type, payload, status, retry_count, next_retry_at, ",
+    "created_at, updated_at, deleted, version ",
+    "FROM outbox_event ",
+    "WHERE deleted = 0 AND status IN ",
+    "<foreach collection='statuses' item='status' open='(' separator=',' close=')'>",
+    "#{status}",
+    "</foreach>",
+    "ORDER BY created_at ASC ",
+    "LIMIT #{limit}",
+    "</script>"
+  })
+  @InterceptorIgnore(illegalSql = "1")
+  List<OutboxEvent> selectByStatuses(
+      @Param("statuses") List<String> statuses, @Param("limit") int limit);
+
+  @Update(
+      "UPDATE outbox_event SET status = 'NEW', retry_count = 0, next_retry_at = NOW(), updated_at = NOW() "
+          + "WHERE id = #{id} AND deleted = 0 AND status IN ('FAILED','DEAD')")
+  int requeue(@Param("id") Long id);
 }

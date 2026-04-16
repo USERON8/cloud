@@ -5,6 +5,8 @@ import com.cloud.common.config.properties.MessageProperties;
 import com.cloud.common.messaging.MessageIdempotencyService;
 import com.cloud.common.messaging.deadletter.DeadLetterOpsService;
 import com.cloud.common.messaging.outbox.OutboxEventMapper;
+import com.cloud.common.messaging.outbox.OutboxGovernanceController;
+import com.cloud.common.messaging.outbox.OutboxGovernanceService;
 import com.cloud.common.messaging.outbox.OutboxProperties;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.beans.factory.ListableBeanFactory;
@@ -72,5 +74,26 @@ public class MessagingSupportAutoConfiguration {
   public OutboxMetricsMonitor outboxMetricsMonitor(
       OutboxEventMapper outboxEventMapper, MeterRegistry meterRegistry) {
     return new OutboxMetricsMonitor(outboxEventMapper, meterRegistry);
+  }
+
+  @Bean
+  @ConditionalOnProperty(
+      name = "app.message.monitor.admin-endpoint-enabled",
+      havingValue = "true",
+      matchIfMissing = true)
+  @ConditionalOnBean(OutboxEventMapper.class)
+  public OutboxGovernanceService outboxGovernanceService(OutboxEventMapper outboxEventMapper) {
+    return new OutboxGovernanceService(outboxEventMapper);
+  }
+
+  @Bean
+  @ConditionalOnProperty(
+      name = "app.message.monitor.admin-endpoint-enabled",
+      havingValue = "true",
+      matchIfMissing = true)
+  @ConditionalOnBean(OutboxGovernanceService.class)
+  public OutboxGovernanceController outboxGovernanceController(
+      OutboxGovernanceService outboxGovernanceService) {
+    return new OutboxGovernanceController(outboxGovernanceService);
   }
 }

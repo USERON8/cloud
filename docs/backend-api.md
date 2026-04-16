@@ -243,6 +243,9 @@ Important behavior:
 4. Notifications, statistics, and ops
    - `/api/user/notification/*`
    - `/auth/tokens/*`
+   - `/api/admin/mq/*`
+   - `/api/admin/outbox/*`
+   - `/api/admin/observability/*`
 5. Internal governance aliases
    - `/api/admin/thread-pool/internal/*`
    - `/api/admin/statistics/internal/*`
@@ -269,6 +272,14 @@ Important behavior:
    - `/internal/governance/users/update-batch`
    - `/internal/governance/users/status-batch`
    - `/internal/governance/auth/tokens/*`
+   - `/internal/governance/mq/consumers`
+   - `/internal/governance/mq/dead-letters/pending`
+   - `/internal/governance/mq/dead-letters/handle`
+   - `/internal/governance/outbox/stats`
+   - `/internal/governance/outbox/pending`
+   - `/internal/governance/outbox/dead`
+   - `/internal/governance/outbox/requeue`
+   - `/internal/governance/observability/grafana`
    - `/internal/governance/thread-pools`
    - `/internal/governance/thread-pools/{name}`
    - `/internal/governance/users/statistics/*`
@@ -276,7 +287,7 @@ Important behavior:
 
 Notes:
 - Merchant approval in the current frontend workflow is driven by `/api/merchant/auth/review/{merchantId}` because the UI reads `authStatus` from merchant auth records. `/api/merchant/{id}/approve|reject` still exists as a backend management API but is not the frontend source of truth for auth review state.
-- `/api/admin/statistics/**`, `/api/admin/thread-pool/**`, `/api/admin/manage/users/**`, `/api/admin/query/users/**`, `/auth/tokens/**`, and `GET /api/admin/stocks/ledger/{skuId}` are now governance-owned admin paths routed to `governance-service`.
+- `/api/admin/statistics/**`, `/api/admin/thread-pool/**`, `/api/admin/manage/users/**`, `/api/admin/query/users/**`, `/api/admin/mq/**`, `/api/admin/outbox/**`, `/api/admin/observability/**`, `/auth/tokens/**`, and `GET /api/admin/stocks/ledger/{skuId}` are now governance-owned admin paths routed to `governance-service`.
 - `/api/admin/governance/**` remains the explicit governance aggregation prefix for new admin-side callers, while the older admin-shaped paths above are now formal governance entries rather than business-service endpoints.
 - Internal callers should still prefer `/internal/governance/**` or the dedicated internal aliases when they need `SCOPE_internal` access.
 
@@ -294,9 +305,23 @@ Notes:
    - `/gateway/fallback/payment`
    - `/gateway/fallback/user`
 3. MQ governance and dead-letter utilities
-   - `GET /internal/mq/governance/consumers`
-   - `GET /internal/mq/dead-letters/pending`
-   - `POST /internal/mq/dead-letters/handle`
+   - `GET /internal/governance/mq/consumers`
+   - `GET /internal/governance/mq/dead-letters/pending`
+   - `POST /internal/governance/mq/dead-letters/handle`
+   - `GET /api/admin/mq/consumers`
+   - `GET /api/admin/mq/dead-letters/pending`
+   - `POST /api/admin/mq/dead-letters/handle`
+4. Outbox governance and observability entry
+   - `GET /internal/governance/outbox/stats`
+   - `GET /internal/governance/outbox/pending`
+   - `GET /internal/governance/outbox/dead`
+   - `POST /internal/governance/outbox/requeue`
+   - `GET /internal/governance/observability/grafana`
+   - `GET /api/admin/outbox/stats`
+   - `GET /api/admin/outbox/pending`
+   - `GET /api/admin/outbox/dead`
+   - `POST /api/admin/outbox/requeue`
+   - `GET /api/admin/observability/grafana`
 
 Notes:
 - Stock ledger reads require admin.
@@ -305,12 +330,15 @@ Notes:
 - Stock mutation endpoints require internal scope.
 - Stock ledger `status` is the raw integer segment status aggregated from active rows. Current live ledger reads return active inventory only, so callers should treat `1` as `Active` and derive low-stock warnings from `availableQty` versus `alertThreshold`.
 - Gateway fallback is a degradation utility endpoint, not a primary client search API.
-- MQ governance endpoints are internal operational endpoints and should be exposed only to trusted callers.
+- MQ governance aggregation now terminates at `governance-service`.
+- Service-local `/internal/mq/**` endpoints still exist behind each business service as infrastructure support endpoints, but callers should prefer the governance aggregation paths.
+- Service-local `/internal/outbox/governance/**` endpoints now exist behind each business service as infrastructure support endpoints, but callers should prefer the governance aggregation paths.
+- Grafana remains the observability system of record. `governance-service` only exposes governed entry metadata and dashboard deeplinks.
 - User statistics, thread-pool monitor, and token management endpoints are admin-only operational APIs.
 - Thread-pool monitor and user statistics now also expose internal governance aliases under `/api/admin/thread-pool/internal/**` and `/api/admin/statistics/internal/**` to decouple future governance callers from the public admin API surface.
 - Gateway now authorizes `/api/admin/thread-pool/internal/**`, `/api/admin/statistics/internal/**`, and `/api/admin/stocks/internal/**` with `SCOPE_internal` before the broader admin route match.
 - Gateway now also exposes `/api/admin/governance/**` as the admin-facing governance proxy and rewrites it to `/internal/governance/**`.
-- Gateway now routes statistics, thread-pool, user-management, user-query, and token-governance admin paths to `governance-service` with higher priority than the business-service routes.
+- Gateway now routes statistics, thread-pool, user-management, user-query, MQ-governance, and token-governance admin paths to `governance-service` with higher priority than the business-service routes.
 - These internal governance aliases are now served by dedicated internal controllers instead of being mixed into the public admin controllers.
 - `governance-service` now aggregates stable internal governance capabilities behind `/internal/governance/**` and should be preferred by trusted callers over reaching into business services directly.
 
@@ -425,9 +453,14 @@ Notes:
 | GET | `/api/search/shops/recommended` | Public |
 | GET | `/api/search/shops/by-location` | Public |
 | GET | `/gateway/fallback/search` | Gateway utility |
-| GET | `/internal/mq/governance/consumers` | Internal ops |
-| GET | `/internal/mq/dead-letters/pending` | Internal ops |
-| POST | `/internal/mq/dead-letters/handle` | Internal ops |
+| GET | `/internal/governance/mq/consumers` | Internal ops |
+| GET | `/internal/governance/mq/dead-letters/pending` | Internal ops |
+| POST | `/internal/governance/mq/dead-letters/handle` | Internal ops |
+| GET | `/internal/governance/outbox/stats` | Internal ops |
+| GET | `/internal/governance/outbox/pending` | Internal ops |
+| GET | `/internal/governance/outbox/dead` | Internal ops |
+| POST | `/internal/governance/outbox/requeue` | Internal ops |
+| GET | `/internal/governance/observability/grafana` | Internal ops |
 
 ### Orders And After-Sale
 
@@ -510,18 +543,26 @@ Order list and order detail now return `OrderSummaryDTO` with these stable field
 | POST | `/api/user/notification/status-change/{userId}` | `admin:all` |
 | POST | `/api/user/notification/batch` | `admin:all` |
 | POST | `/api/user/notification/system` | `admin:all` |
-| GET | `/api/statistics/overview` | `admin:all` |
-| GET | `/api/statistics/overview/async` | `admin:all` |
-| GET | `/api/statistics/registration-trend` | `admin:all` |
-| GET | `/api/statistics/registration-trend/async` | `admin:all` |
-| GET | `/api/statistics/role-distribution` | `admin:all` |
-| GET | `/api/statistics/status-distribution` | `admin:all` |
-| GET | `/api/statistics/active-users` | `admin:all` |
-| GET | `/api/statistics/growth-rate` | `admin:all` |
-| GET | `/api/statistics/activity-ranking` | `admin:all` |
-| POST | `/api/statistics/refresh-cache` | `admin:all` |
-| GET | `/api/thread-pool/info` | `admin:all` |
-| GET | `/api/thread-pool/info/detail` | `admin:all` |
+| GET | `/api/admin/statistics/overview` | `admin:all` |
+| GET | `/api/admin/statistics/overview/async` | `admin:all` |
+| GET | `/api/admin/statistics/registration-trend` | `admin:all` |
+| GET | `/api/admin/statistics/registration-trend/async` | `admin:all` |
+| GET | `/api/admin/statistics/role-distribution` | `admin:all` |
+| GET | `/api/admin/statistics/status-distribution` | `admin:all` |
+| GET | `/api/admin/statistics/active-users` | `admin:all` |
+| GET | `/api/admin/statistics/growth-rate` | `admin:all` |
+| GET | `/api/admin/statistics/activity-ranking` | `admin:all` |
+| POST | `/api/admin/statistics/refresh-cache` | `admin:all` |
+| GET | `/api/admin/thread-pool/info` | `admin:all` |
+| GET | `/api/admin/thread-pool/info/detail` | `admin:all` |
+| GET | `/api/admin/mq/consumers` | `admin:all` |
+| GET | `/api/admin/mq/dead-letters/pending` | `admin:all` |
+| POST | `/api/admin/mq/dead-letters/handle` | `admin:all` |
+| GET | `/api/admin/outbox/stats` | `admin:all` |
+| GET | `/api/admin/outbox/pending` | `admin:all` |
+| GET | `/api/admin/outbox/dead` | `admin:all` |
+| POST | `/api/admin/outbox/requeue` | `admin:all` |
+| GET | `/api/admin/observability/grafana` | `admin:all` |
 | GET | `/auth/tokens/stats` | `admin:all` |
 | GET | `/auth/tokens/authorization/{id}` | `admin:all` |
 | DELETE | `/auth/tokens/authorization/{id}` | `admin:all` |

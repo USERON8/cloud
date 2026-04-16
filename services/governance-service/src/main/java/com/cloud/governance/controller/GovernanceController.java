@@ -21,6 +21,9 @@ import com.cloud.common.domain.vo.user.UserPageVO;
 import com.cloud.common.domain.vo.user.UserStatisticsVO;
 import com.cloud.common.remote.RemoteCallSupport;
 import com.cloud.common.result.Result;
+import com.cloud.governance.service.MqGovernanceAggregationService;
+import com.cloud.governance.service.ObservabilityEntryService;
+import com.cloud.governance.service.OutboxGovernanceAggregationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -72,6 +75,9 @@ public class GovernanceController {
   private StockDubboApi stockDubboApi;
 
   private final RemoteCallSupport remoteCallSupport;
+  private final MqGovernanceAggregationService mqGovernanceAggregationService;
+  private final OutboxGovernanceAggregationService outboxGovernanceAggregationService;
+  private final ObservabilityEntryService observabilityEntryService;
 
   @GetMapping("/users/statistics/overview")
   @PreAuthorize("hasAuthority('SCOPE_internal')")
@@ -435,5 +441,69 @@ public class GovernanceController {
     return Result.success(
         remoteCallSupport.command(
             "auth-service.governance.cleanupBlacklist", authGovernanceDubboApi::cleanupBlacklist));
+  }
+
+  @GetMapping("/mq/consumers")
+  @PreAuthorize("hasAuthority('SCOPE_internal')")
+  @Operation(summary = "List MQ consumers across business services")
+  public Result<List<Map<String, Object>>> getMqConsumers() {
+    return Result.success(mqGovernanceAggregationService.listConsumers());
+  }
+
+  @GetMapping("/mq/dead-letters/pending")
+  @PreAuthorize("hasAuthority('SCOPE_internal')")
+  @Operation(summary = "List pending dead letters across business services")
+  public Result<List<Map<String, Object>>> getPendingDeadLetters(
+      @RequestParam(defaultValue = "20") @Min(1) @Max(100) Integer limit) {
+    return Result.success(mqGovernanceAggregationService.listPendingDeadLetters(limit));
+  }
+
+  @PostMapping("/mq/dead-letters/handle")
+  @PreAuthorize("hasAuthority('SCOPE_internal')")
+  @Operation(summary = "Mark a dead letter as handled in one business service")
+  public Result<Boolean> handleDeadLetter(
+      @RequestParam @NotBlank String serviceId,
+      @RequestParam @NotBlank String topic,
+      @RequestParam @NotBlank String msgId) {
+    return Result.success(
+        mqGovernanceAggregationService.markDeadLetterHandled(serviceId, topic, msgId));
+  }
+
+  @GetMapping("/outbox/stats")
+  @PreAuthorize("hasAuthority('SCOPE_internal')")
+  @Operation(summary = "Get outbox stats across business services")
+  public Result<List<Map<String, Object>>> getOutboxStats() {
+    return Result.success(outboxGovernanceAggregationService.getStats());
+  }
+
+  @GetMapping("/outbox/pending")
+  @PreAuthorize("hasAuthority('SCOPE_internal')")
+  @Operation(summary = "List pending outbox events across business services")
+  public Result<List<Map<String, Object>>> getPendingOutboxEvents(
+      @RequestParam(defaultValue = "20") @Min(1) @Max(100) Integer limit) {
+    return Result.success(outboxGovernanceAggregationService.listPending(limit));
+  }
+
+  @GetMapping("/outbox/dead")
+  @PreAuthorize("hasAuthority('SCOPE_internal')")
+  @Operation(summary = "List dead outbox events across business services")
+  public Result<List<Map<String, Object>>> getDeadOutboxEvents(
+      @RequestParam(defaultValue = "20") @Min(1) @Max(100) Integer limit) {
+    return Result.success(outboxGovernanceAggregationService.listDead(limit));
+  }
+
+  @PostMapping("/outbox/requeue")
+  @PreAuthorize("hasAuthority('SCOPE_internal')")
+  @Operation(summary = "Requeue one outbox event in one business service")
+  public Result<Boolean> requeueOutboxEvent(
+      @RequestParam @NotBlank String serviceId, @RequestParam @NotNull @Positive Long id) {
+    return Result.success(outboxGovernanceAggregationService.requeue(serviceId, id));
+  }
+
+  @GetMapping("/observability/grafana")
+  @PreAuthorize("hasAuthority('SCOPE_internal')")
+  @Operation(summary = "Get Grafana observability entry metadata")
+  public Result<Map<String, Object>> getGrafanaEntry() {
+    return Result.success(observabilityEntryService.getGrafanaEntry());
   }
 }
