@@ -279,6 +279,7 @@ Important behavior:
     - `/internal/governance/outbox/pending`
     - `/internal/governance/outbox/dead`
     - `/internal/governance/outbox/requeue`
+    - `/internal/governance/outbox/requeue-batch`
     - `/internal/governance/observability/grafana`
     - `/internal/governance/notifications/welcome/{userId}`
     - `/internal/governance/notifications/status-change/{userId}`
@@ -320,11 +321,13 @@ Notes:
    - `GET /internal/governance/outbox/pending`
    - `GET /internal/governance/outbox/dead`
    - `POST /internal/governance/outbox/requeue`
+   - `POST /internal/governance/outbox/requeue-batch`
    - `GET /internal/governance/observability/grafana`
    - `GET /api/admin/outbox/stats`
    - `GET /api/admin/outbox/pending`
    - `GET /api/admin/outbox/dead`
    - `POST /api/admin/outbox/requeue`
+   - `POST /api/admin/outbox/requeue-batch`
    - `GET /api/admin/observability/grafana`
 
 Notes:
@@ -464,6 +467,7 @@ Notes:
 | GET | `/internal/governance/outbox/pending` | Internal ops |
 | GET | `/internal/governance/outbox/dead` | Internal ops |
 | POST | `/internal/governance/outbox/requeue` | Internal ops |
+| POST | `/internal/governance/outbox/requeue-batch` | Internal ops |
 | GET | `/internal/governance/observability/grafana` | Internal ops |
 | POST | `/internal/governance/notifications/welcome/{userId}` | Internal ops |
 | POST | `/internal/governance/notifications/status-change/{userId}` | Internal ops |
@@ -570,6 +574,7 @@ Order list and order detail now return `OrderSummaryDTO` with these stable field
 | GET | `/api/admin/outbox/pending` | `admin:all` |
 | GET | `/api/admin/outbox/dead` | `admin:all` |
 | POST | `/api/admin/outbox/requeue` | `admin:all` |
+| POST | `/api/admin/outbox/requeue-batch` | `admin:all` |
 | GET | `/api/admin/observability/grafana` | `admin:all` |
 | GET | `/auth/tokens/stats` | `admin:all` |
 | GET | `/auth/tokens/authorization/{id}` | `admin:all` |

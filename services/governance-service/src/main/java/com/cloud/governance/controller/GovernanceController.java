@@ -6,6 +6,7 @@ import com.cloud.api.user.AdminGovernanceDubboApi;
 import com.cloud.api.user.UserAdminGovernanceDubboApi;
 import com.cloud.api.user.UserGovernanceDubboApi;
 import com.cloud.api.user.UserNotificationGovernanceDubboApi;
+import com.cloud.common.domain.dto.governance.OutboxBatchRequeueRequestDTO;
 import com.cloud.common.domain.dto.user.AdminDTO;
 import com.cloud.common.domain.dto.user.AdminUpsertRequestDTO;
 import com.cloud.common.domain.dto.user.UserDTO;
@@ -505,6 +506,16 @@ public class GovernanceController {
   public Result<Boolean> requeueOutboxEvent(
       @RequestParam @NotBlank String serviceId, @RequestParam @NotNull @Positive Long id) {
     return Result.success(outboxGovernanceAggregationService.requeue(serviceId, id));
+  }
+
+  @PostMapping("/outbox/requeue-batch")
+  @PreAuthorize("hasAuthority('SCOPE_internal')")
+  @Operation(summary = "Requeue outbox events in batch for one business service")
+  public Result<Integer> requeueOutboxEventsBatch(
+      @RequestParam @NotBlank String serviceId,
+      @RequestBody @Validated OutboxBatchRequeueRequestDTO requestDTO) {
+    return Result.success(
+        outboxGovernanceAggregationService.requeueBatch(serviceId, requestDTO.getIds()));
   }
 
   @GetMapping("/observability/grafana")

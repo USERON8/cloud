@@ -1,5 +1,6 @@
 package com.cloud.governance.service;
 
+import com.cloud.common.domain.dto.governance.OutboxBatchRequeueRequestDTO;
 import com.cloud.common.messaging.outbox.OutboxEvent;
 import com.cloud.common.result.Result;
 import java.net.URI;
@@ -24,6 +25,9 @@ public class OutboxGovernanceAggregationService {
       OUTBOX_LIST_RESULT_TYPE = new ParameterizedTypeReference<>() {};
 
   private static final ParameterizedTypeReference<Result<Boolean>> BOOLEAN_RESULT_TYPE =
+      new ParameterizedTypeReference<>() {};
+
+  private static final ParameterizedTypeReference<Result<Integer>> INTEGER_RESULT_TYPE =
       new ParameterizedTypeReference<>() {};
 
   private final InternalOperationsClientSupport clientSupport;
@@ -61,6 +65,18 @@ public class OutboxGovernanceAggregationService {
             Map.of("id", String.valueOf(id)),
             BOOLEAN_RESULT_TYPE);
     return Boolean.TRUE.equals(result.getData());
+  }
+
+  public int requeueBatch(String serviceId, List<Long> ids) {
+    OutboxBatchRequeueRequestDTO requestDTO = new OutboxBatchRequeueRequestDTO();
+    requestDTO.setIds(ids);
+    Result<Integer> result =
+        postBodyForResult(
+            serviceId,
+            "/internal/outbox/governance/requeue-batch",
+            requestDTO,
+            INTEGER_RESULT_TYPE);
+    return result.getData() == null ? 0 : result.getData();
   }
 
   private List<Map<String, Object>> listEvents(String path, int limit) {
@@ -119,6 +135,28 @@ public class OutboxGovernanceAggregationService {
               .post()
               .uri(uri)
               .headers(headers -> clientSupport.applyInternalHeaders(headers, "POST", path))
+              .retrieve()
+              .body(responseType);
+      return clientSupport.assertSuccess(result, serviceId, path);
+    } catch (Exception ex) {
+      throw clientSupport.translateRemoteError(serviceId, path, ex);
+    }
+  }
+
+  private <T> Result<T> postBodyForResult(
+      String serviceId,
+      String path,
+      Object body,
+      ParameterizedTypeReference<Result<T>> responseType) {
+    URI uri = clientSupport.resolveUri(serviceId, path, Map.of());
+    try {
+      Result<T> result =
+          clientSupport
+              .restClient()
+              .post()
+              .uri(uri)
+              .headers(headers -> clientSupport.applyInternalHeaders(headers, "POST", path))
+              .body(body)
               .retrieve()
               .body(responseType);
       return clientSupport.assertSuccess(result, serviceId, path);

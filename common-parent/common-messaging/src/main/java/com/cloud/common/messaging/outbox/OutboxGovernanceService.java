@@ -46,6 +46,18 @@ public class OutboxGovernanceService {
     return outboxEventMapper.requeue(id) > 0;
   }
 
+  public int requeueBatch(List<Long> ids) {
+    if (ids == null || ids.isEmpty()) {
+      return 0;
+    }
+    List<Long> sanitizedIds =
+        ids.stream().filter(id -> id != null && id > 0).distinct().limit(100).toList();
+    if (sanitizedIds.isEmpty()) {
+      return 0;
+    }
+    return outboxEventMapper.requeueBatch(sanitizedIds);
+  }
+
   private int sanitizeLimit(int limit) {
     return Math.max(1, Math.min(limit, 100));
   }

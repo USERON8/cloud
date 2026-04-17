@@ -79,4 +79,16 @@ public interface OutboxEventMapper extends BaseMapper<OutboxEvent> {
       "UPDATE outbox_event SET status = 'NEW', retry_count = 0, next_retry_at = NOW(), updated_at = NOW() "
           + "WHERE id = #{id} AND deleted = 0 AND status IN ('FAILED','DEAD')")
   int requeue(@Param("id") Long id);
+
+  @Update({
+    "<script>",
+    "UPDATE outbox_event ",
+    "SET status = 'NEW', retry_count = 0, next_retry_at = NOW(), updated_at = NOW() ",
+    "WHERE deleted = 0 AND status IN ('FAILED','DEAD') AND id IN ",
+    "<foreach collection='ids' item='id' open='(' separator=',' close=')'>",
+    "#{id}",
+    "</foreach>",
+    "</script>"
+  })
+  int requeueBatch(@Param("ids") List<Long> ids);
 }
