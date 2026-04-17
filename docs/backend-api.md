@@ -297,6 +297,7 @@ Notes:
 - `/api/admin/governance/**` remains the explicit governance aggregation prefix for new admin-side callers, while the older admin-shaped paths above are now formal governance entries rather than business-service endpoints.
 - Internal callers should still prefer `/internal/governance/**` or the dedicated internal aliases when they need `SCOPE_internal` access.
 - Grafana open endpoints only allow dashboards declared in `governance-service` observability configuration. Unknown dashboard UIDs are rejected instead of being forwarded.
+- Merchant admin and merchant-auth paths remain intentionally routed to `user-service` in this phase and are not governance-owned paths.
 
 ### 8. Internal Inventory And Gateway Utility Chain
 

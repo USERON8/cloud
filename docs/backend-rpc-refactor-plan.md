@@ -30,14 +30,14 @@ Scope: backend refactor execution status for RPC, security boundary, merchant ow
 ### Partially Completed
 
 - Merchant ownership model has moved to `merchant.owner_user_id`, and the main write paths already validate ownership through `user-service`, but some business APIs still expose merchant-facing REST surfaces directly.
-- Gateway and service responsibilities are cleaner on the security side, but some operational and admin APIs are still hosted inside business services.
+- Gateway and service responsibilities are cleaner on the security side, but merchant-domain management APIs intentionally remain inside the original business service.
 - Pure internal RPC is established on key chains, but the project still keeps many REST controllers that should eventually be reduced to public-edge responsibilities only.
 - Internal governance aliases now exist for thread-pool monitor, user statistics, and stock ledger so trusted callers no longer need to depend on the public admin API shapes for those operations.
 
 ### Not Completed
 
-- Governance and operations surfaces have not been split into an isolated service/module.
-- `/api/admin/**` and several merchant/admin management APIs are still routed directly to business services through gateway.
+- Governance and operations surfaces have not been split into an isolated deployment boundary; they are implemented as a dedicated `governance-service` module inside the current repository and service set.
+- Merchant-domain admin surfaces such as `/api/admin/merchant/**` and `/api/admin/merchant/auth/**` remain intentionally routed to `user-service` and are outside the governance migration scope for this phase.
 - The repository still contains compatibility-era public REST shapes that should be revisited in a later cleanup phase.
 
 ## Architecture Target
@@ -82,8 +82,8 @@ Scope: backend refactor execution status for RPC, security boundary, merchant ow
 
 ### Remaining
 
-- Move admin, thread-pool, MQ governance, token ops, and other operational surfaces out of business services.
-- Reduce direct gateway exposure of business-internal management endpoints.
+- Reduce direct gateway exposure of any future business-internal management endpoints that are not explicitly retained in the merchant domain.
+- Keep merchant-domain admin/auth APIs in `user-service` unless a later phase explicitly changes that boundary.
 
 ## Pure RPC Internal Call Rules
 
@@ -108,6 +108,7 @@ Scope: backend refactor execution status for RPC, security boundary, merchant ow
 ### Remaining
 
 - Continue auditing merchant-facing controllers and services for any compatibility assumptions that still blur merchant id and owner user id.
+- Merchant certification and shop certification workflows remain intentionally hosted in the original `user-service` admin surface for this phase.
 
 ## Payment Chain
 
@@ -145,8 +146,8 @@ Scope: backend refactor execution status for RPC, security boundary, merchant ow
 
 ### Remaining
 
-- Decide whether Grafana should stay as a pure deeplink target or later gain a controlled reverse-proxy facade for enterprise deployments.
-- Grafana still remains a governed redirect target rather than a reverse-proxy or SSO surface.
+- Decide whether Grafana should later gain a controlled reverse-proxy facade or SSO surface for enterprise deployments.
+- Grafana currently remains a governed whitelist-based redirect target rather than a reverse-proxy or SSO surface.
 
 ## Database Refactor Notes
 
@@ -191,7 +192,7 @@ Scope: backend refactor execution status for RPC, security boundary, merchant ow
 
 ## Recommended Next Steps
 
-1. Split operational/admin APIs into a dedicated governance surface.
-2. Shrink gateway exposure for business-internal management endpoints.
-3. Audit merchant/business controllers for any remaining ownership compatibility shortcuts.
-4. Re-run end-to-end verification for gateway -> service authentication and order/payment flows in an integration environment.
+1. Re-run end-to-end verification for gateway -> governance-service -> business-service flows in an integration environment.
+2. Audit merchant/business controllers for any remaining ownership compatibility shortcuts.
+3. Decide whether Grafana needs SSO or reverse-proxy capability in a later operations phase.
+4. Review compatibility-era public REST shapes and remove only the ones no longer needed by frontend or ops clients.
