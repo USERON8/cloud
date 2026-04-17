@@ -1,92 +1,195 @@
 # Full Project Audit
 
-Audit date: `2026-04-06`
+Audit date: `2026-04-17`
 
 Scope:
-- UniApp pages under `my-shop-uniapp/src/pages/app`
-- Frontend API modules under `my-shop-uniapp/src/api`
-- Service controllers under `services/*-service/src/main/java`
-- Current docs and Postman assets under `docs/*`
+- Gateway route ownership and security boundary
+- Governance aggregation and operations surface split
+- Core business services under `services/*-service`
+- Shared security and messaging modules under `common-parent/*`
+- Current reference docs under `docs/*`
 
-## Closed Front-to-Back Chains
+## Executive Summary
 
-- Catalog browse and keyword search pages use the documented category, product, and search endpoints.
-- Address book page uses the backend address CRUD endpoints and owner-scoped address access rules.
-- Merchant center uses merchant profile, merchant auth, merchant statistics, and license upload endpoints.
-- Admin center uses merchant review, merchant listing, user query, admin listing, and statistics overview endpoints.
-- Operations center now compiles against the current admin toolchain APIs for token management, category maintenance, catalog maintenance, search utilities, shop search, payment helpers, statistics, and thread-pool inspection.
-- Cart checkout, order creation, order query, payment lookup, and refund lookup remain aligned with the previously closed transaction chain audit.
-- Profile page now calls `/api/user/profile/current`, `/api/user/profile/current/password`, and `/api/user/profile/current/avatar` directly instead of rendering JWT claim snapshots only.
+- The public authentication boundary is now effectively centralized at `gateway`, with trusted internal identity propagation and downstream HMAC verification in place.
+- A dedicated `governance-service` now owns the main non-merchant operational surfaces: statistics, thread-pool inspection, user/admin governance, token governance, MQ governance, outbox governance, notification operations, stock ledger reads, and Grafana governed entrypoints.
+- Merchant-domain admin paths remain intentionally hosted in `user-service` for this phase, including merchant certification and shop certification flows.
+- Order and payment have completed the key RPC-driven refactor path and no longer rely on ad-hoc internal HTTP for their core business interaction.
+- The repository now compiles successfully with `mvn -DskipTests compile`.
+
+## Service Audit
+
+### gateway
+
+Status:
+- Completed for the current phase
+
+Findings:
+- Public JWT validation remains at gateway and is now paired with internal identity header propagation.
+- Governance-owned admin paths are routed to `governance-service` with higher priority than the old business-service routes.
+- Merchant-domain admin/auth paths are intentionally preserved on `user-service`.
+
+Current governance-owned routes:
+- `/api/admin/statistics/**`
+- `/api/admin/thread-pool/**`
+- `/api/admin/manage/users/**`
+- `/api/admin/query/users/**`
+- `/api/admin/mq/**`
+- `/api/admin/outbox/**`
+- `/api/admin/observability/**`
+- `/api/app/user/notification/**`
+- `/auth/tokens/**`
+- `/api/admin/stocks/ledger/**`
+
+Intentional non-migration routes:
+- `/api/admin/merchant/**`
+- `/api/admin/merchant/auth/**`
+
+### governance-service
+
+Status:
+- Completed as the governance aggregation module for this phase
+
+Findings:
+- Internal governance aggregation is stable under `/internal/governance/**`.
+- Admin governance entrypoints are stable under the routed admin shapes and `/api/admin/governance/**`.
+- MQ dead-letter handling, outbox backlog inspection, single-event requeue, bounded batch requeue, and Grafana governed entry are all centralized here.
+- Grafana now supports governed redirect entrypoints with dashboard whitelist enforcement.
+
+Current limitations:
+- Grafana integration is still redirect-based, not reverse-proxy and not SSO.
+- Governance is a dedicated module/service in the repository, but not a separately isolated deployment program or operations platform.
+
+### user-service
+
+Status:
+- Partially migrated
+
+Findings:
+- Merchant ownership has been normalized onto `merchant.owner_user_id`.
+- User statistics, thread-pool inspection, admin management, user query/manage, and notification operations are now exported to governance through Dubbo or internal governance paths.
+- Merchant management and merchant certification remain intentionally hosted here.
+
+Intentional retained scope:
+- Merchant profile management
+- Merchant certification
+- Shop certification review chain
+- Merchant-facing REST surfaces
+
+Audit concern still open:
+- Merchant-facing controllers and services should continue to be reviewed for any remaining compatibility assumptions that blur merchant id and owner user id.
+
+### auth-service
+
+Status:
+- Completed for the current governance scope
+
+Findings:
+- Token governance capabilities are exported to `governance-service`.
+- Admin token tooling now has both governance-owned admin paths and internal governance paths.
+- No additional governance split is currently required here beyond integration verification.
+
+### stock-service
+
+Status:
+- Partially migrated
+
+Findings:
+- Stock ledger admin entry has been moved to `governance-service`.
+- `stock-service` now primarily acts as the RPC provider for ledger reads and the internal-scope provider for inventory mutation endpoints.
+
+Intentional retained scope:
+- Internal stock mutation endpoints
+- Service-local stock governance support paths
+
+### order-service
+
+Status:
+- Completed for the key RPC refactor scope
+
+Findings:
+- Core order/payment interaction is RPC-based.
+- Compatibility endpoints still exist in some REST shapes, but direct pay mutation is intentionally blocked in business logic.
+- The main remaining work here is compatibility cleanup, not architecture correction.
+
+### payment-service
+
+Status:
+- Completed for the key payment-chain refactor scope
+
+Findings:
+- Payment orders, callback logs, outbox relay, and refund handling reflect the new payment domain shape.
+- Redis usage remains constrained to idempotency, rate limiting, and short-lived helper state.
+- Verified payment confirmation is the only path to close the order payment state machine.
+
+### product-service
+
+Status:
+- Stable, not a governance migration target
+
+Findings:
+- Merchant ownership checks now depend on canonical merchant ownership from `user-service`.
+- No governance migration is required beyond standard API and ownership consistency.
+
+### search-service
+
+Status:
+- Stable, not a governance migration target
+
+Findings:
+- Search remains a public/business capability outside governance migration scope.
+- Gateway fallback and public search paths are still correctly documented as non-governance surfaces.
+
+### common-security
+
+Status:
+- Completed for the current security refactor scope
+
+Findings:
+- Shared internal request headers, signer, and downstream authentication filter are in place.
+- Downstream bearer-token bypass for trusted public JWT traffic remains supported as designed.
+
+### common-messaging
+
+Status:
+- Completed for the current operations refactor scope
+
+Findings:
+- Shared outbox governance endpoints now exist behind each service.
+- Single-event and bounded batch requeue are both available for governance aggregation.
+- MQ governance support remains layered on service-local infrastructure endpoints plus governance aggregation.
 
 ## Documentation Sync In This Round
 
 - `docs/backend-api.md`
+- `docs/backend-rpc-refactor-plan.md`
 - `docs/frontend-api.md`
+- `docs/observability-stack.md`
+- `docs/project-closeout.md`
 
-## High-Signal Findings Resolved In This Round
+## Scope Decisions Frozen In This Phase
 
-### 1. Profile page was session-only
+- Merchant admin paths remain in `user-service`.
+- Merchant certification and shop certification remain in `user-service`.
+- Grafana remains a governed redirect target, not reverse-proxy and not SSO.
+- Governance migration in this phase targets operational/admin tooling, not all business REST surfaces.
 
-- Previous behavior: `my-shop-uniapp/src/pages/app/profile/index.vue` rendered session claims only and did not exercise the backend profile APIs already documented.
-- Current behavior: the page refreshes current profile data from the backend, supports profile updates, password changes, and avatar upload.
+## Remaining Work
 
-### 2. Broader operational API coverage was under-documented
+### Real remaining items
 
-- Authentication docs now call out admin token-management endpoints under `/auth/tokens/*`.
-- Frontend docs now state that the admin workspace consumes statistics and thread-pool monitor endpoints, and that auth-token operations are admin-only tools.
+- Run end-to-end verification for gateway -> governance-service -> business-service chains in an integration environment.
+- Continue merchant-domain ownership audit for any leftover compatibility shortcuts.
+- Revisit compatibility-era public REST shapes and remove only the ones no longer required by frontend or operations clients.
 
-### 3. Operations workspace had broken API imports
+### Explicitly not in this phase
 
-- Previous behavior: `my-shop-uniapp/src/pages/app/ops/index.vue` referenced token, category, product-catalog, and thread-pool helpers that were not imported from the frontend API modules, leaving the page in a compile-time broken state.
-- Current behavior: the page imports the full current helper set from `src/api/auth-tokens.ts`, `src/api/category.ts`, `src/api/product-catalog.ts`, and `src/api/thread-pool.ts`, and the H5 frontend build succeeds again.
+- Moving merchant certification or shop certification into `governance-service`
+- Turning Grafana into an SSO or reverse-proxy surface
+- Eliminating every business REST endpoint in favor of RPC-only internal topology
 
-### 4. Search and shop docs drifted from the real frontend API surface
+## Final Assessment
 
-- Previous behavior: `src/api/shop-search.ts` exposed a `searchAfter` field that the backend shop-search request model does not accept, and the frontend API guide did not list `src/api/shop-search.ts`, `src/api/product-catalog.ts`, or the full set of public search and shop endpoints already wrapped by the frontend.
-- Current behavior: the fake `searchAfter` field is removed, and the frontend API guide now points to the real module boundaries and public endpoint surface for search, filters, shop discovery, and product-catalog maintenance.
-
-### 5. Stock ledger page assumed a string status contract
-
-- Previous behavior: `my-shop-uniapp/src/pages/app/stock/index.vue` treated `ledger.status` as a string enum such as `HEALTHY` or `LOW`, but the backend `StockLedgerVO` exposes an integer status and currently returns active rows only.
-- Current behavior: the page now renders numeric status values correctly, maps `1` to `Active`, and computes low-stock warnings from `availableQty` and `alertThreshold`.
-
-### 6. Admin merchant review mixed incompatible status chains
-
-- Previous behavior: the admin page exposed both `/api/merchant/auth/review/{merchantId}` and `/api/merchant/{id}/approve|reject`, while the UI rendered `authStatus` from merchant-auth data. This let operators click actions that updated `auditStatus` but left the displayed auth review state stale.
-- Current behavior: the admin workspace keeps review actions only on the merchant-auth review queue, the merchant list is read-only for audit visibility, and reject actions now require a non-empty reason before submission.
-
-### 7. Merchant auth attachments were only partially preview-safe
-
-- Previous behavior: merchant auth reads only converted business-license object keys into presigned URLs. ID card attachment fields could still come back as raw object keys, which broke direct preview in the frontend.
-- Current behavior: merchant auth reads normalize all certificate attachment fields to presigned URLs when the stored value belongs to the cert bucket.
-
-### 8. Admin center could reach merchant panels but backend rejected pure admin callers
-
-- Previous behavior: the admin page loaded `/api/merchant`, `/api/merchant/auth/list`, and `/api/merchant/auth/review/{merchantId}`, but the backend guarded those endpoints with merchant-only authorities. A pure `ADMIN` account could open the page and still hit predictable `403` responses.
-- Current behavior: merchant listing and merchant-auth review endpoints now allow `admin:all`, which closes the admin-center read and review path without broadening merchant-facing access.
-
-### 9. Navigation exposed pages that the backend would reject for merchant users
-
-- Previous behavior: the app shell exposed `Payments` and `Ops` to `MERCHANT`, while the backend payment-query path is owner/admin only and the operations toolchain is admin-oriented. This created visible dead-end navigation.
-- Current behavior: the shell now keeps `Payments` for `USER` and `ADMIN`, and keeps `Ops` for `ADMIN` only, matching the current backend permission boundary.
-
-### 10. Admin pending-review overview could drift after queue filters changed
-
-- Previous behavior: the admin page overwrote `overview.pendingReviews` with the currently selected review queue length. Switching from `Pending` to `Approved` or `Rejected` made the dashboard card report the wrong pending count.
-- Current behavior: the pending-review metric is refreshed only from the pending queue path, and `init()` resets the page to the pending queue before loading the overview.
-
-### 11. Merchant and home quick actions still leaked into the payment page
-
-- Previous behavior: even after shell navigation was tightened, the merchant center still exposed a direct `Payments` shortcut and the home dashboard still rendered the payment quick link for merchant sessions. Those links could still send a merchant into a page whose backend read path is not closed for merchant users.
-- Current behavior: merchant quick actions no longer link to the standalone payment page, and the home dashboard only shows the payment quick link for roles that can complete the current payment-query flow.
-
-### 12. Catalog page still contained broken Chinese copy
-
-- Previous behavior: `my-shop-uniapp/src/pages/app/catalog/index.vue` still contained mojibake in the Chinese locale block, which made the catalog page inconsistent with the rest of the audited frontend.
-- Current behavior: the catalog page now uses clean UTF-8 Chinese copy, with the same search and cart behavior preserved.
-
-## Current Boundary
-
-- The main user-facing and operational pages present in the UniApp app now have traced backend contracts and synced documentation.
-- This audit does not claim exhaustive browser-level execution for every page against live services in one environment.
-- Environment-bound integrations, including payment callback runtime wiring and external object storage reachability, remain deployment prerequisites rather than repository contract gaps.
+- If the acceptance bar is "has the governance and security refactor landed in code": yes.
+- If the acceptance bar is "has every operational/admin capability outside the merchant domain been centralized": mostly yes.
+- If the acceptance bar is "has the original plan been finished with no remaining cleanup or future-phase decisions": not fully; the remaining items are now mostly boundary confirmation, compatibility cleanup, and environment validation rather than missing core architecture work.

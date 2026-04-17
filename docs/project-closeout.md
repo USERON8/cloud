@@ -11,6 +11,8 @@ This note captures the current frozen state of the repository before the project
 - SkyWalking is auto-wired for Java services on startup and now exposes HTTP, Dubbo, Redis, and JDBC/MyBatis traces in the local stack
 - Order/payment/stock messaging uses `outbox_event` + scheduled relay for reliable delivery
 - Thread pools default to fast-fail on saturation (`FAST_FAIL`)
+- Governance operations are now centralized in `governance-service` for statistics, thread-pool inspection, user/admin governance, token governance, MQ governance, outbox governance, notification operations, stock ledger reads, and governed Grafana entrypoints
+- Merchant certification and shop certification intentionally remain on the original `user-service` admin surface in this frozen state
 - Local performance numbers need re-baselining after recent changes (see `docs/performance-baseline.md`)
 
 ## Current Local Runbook
