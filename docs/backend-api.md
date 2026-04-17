@@ -296,6 +296,7 @@ Notes:
 - `/api/admin/statistics/**`, `/api/admin/thread-pool/**`, `/api/admin/manage/users/**`, `/api/admin/query/users/**`, `/api/admin/mq/**`, `/api/admin/outbox/**`, `/api/admin/observability/**`, `/api/app/user/notification/**`, `/auth/tokens/**`, and `GET /api/admin/stocks/ledger/{skuId}` are now governance-owned admin paths routed to `governance-service`.
 - `/api/admin/governance/**` remains the explicit governance aggregation prefix for new admin-side callers, while the older admin-shaped paths above are now formal governance entries rather than business-service endpoints.
 - Internal callers should still prefer `/internal/governance/**` or the dedicated internal aliases when they need `SCOPE_internal` access.
+- Grafana open endpoints only allow dashboards declared in `governance-service` observability configuration. Unknown dashboard UIDs are rejected instead of being forwarded.
 
 ### 8. Internal Inventory And Gateway Utility Chain
 

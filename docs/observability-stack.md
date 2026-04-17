@@ -137,6 +137,7 @@ In SkyWalking UI, focus first on:
   - `GET /internal/governance/observability/grafana/open`
   - `GET /api/admin/observability/grafana/open`
   - Optional query parameter: `dashboardUid`
+- Redirect targets are restricted to the configured Grafana dashboard whitelist under `app.governance.observability.grafana.allowed-dashboards`
 - Admin governance entrypoints are also available through:
   - `GET /api/admin/mq/consumers`
   - `GET /api/admin/mq/dead-letters/pending`
