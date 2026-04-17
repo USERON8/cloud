@@ -3,11 +3,14 @@ package com.cloud.governance.service;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 @Service
 public class ObservabilityEntryService {
+
+  private static final Pattern DASHBOARD_UID_PATTERN = Pattern.compile("^[A-Za-z0-9_-]{1,120}$");
 
   @Value("${app.governance.observability.grafana.base-url:http://127.0.0.1:13000}")
   private String grafanaBaseUrl;
@@ -39,8 +42,18 @@ public class ObservabilityEntryService {
         "notes",
         List.of(
             "Grafana remains the observability system of record",
-            "governance-service only exposes governed entry metadata",
+            "governance-service exposes both governed entry metadata and controlled jump URLs",
             "prefer dashboard drill-down for outbox and MQ backlog investigation"));
     return result;
+  }
+
+  public String resolveGrafanaUrl(String dashboardUid) {
+    if (dashboardUid == null || dashboardUid.isBlank()) {
+      return grafanaBaseUrl + "/d/" + defaultDashboardUid;
+    }
+    if (!DASHBOARD_UID_PATTERN.matcher(dashboardUid).matches()) {
+      throw new IllegalArgumentException("dashboard uid is invalid");
+    }
+    return grafanaBaseUrl + "/d/" + dashboardUid;
   }
 }

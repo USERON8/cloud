@@ -20,6 +20,7 @@ Scope: backend refactor execution status for RPC, security boundary, merchant ow
 - `governance-service` now also aggregates MQ consumer topology and dead-letter handling across the business services through trusted internal HTTP.
 - `governance-service` now also aggregates outbox backlog, dead-event listing, single-event requeue, and bounded batch requeue control across the business services through trusted internal HTTP.
 - `governance-service` now exposes governed Grafana entry metadata so operators have one formal observability entrypoint instead of relying on ad-hoc local bookmarks.
+- `governance-service` now also exposes governed Grafana redirect entrypoints so operators can open Grafana through a stable governance URL instead of constructing dashboard links manually.
 - `governance-service` now also aggregates admin notification and system announcement operations from `user-service` through Dubbo RPC while preserving the existing external admin notification paths.
 - Gateway now exposes `/api/admin/governance/**` as the admin-compatible proxy to the governance aggregation surface.
 - Gateway now also routes the governance-owned admin paths (`/api/admin/statistics/**`, `/api/admin/thread-pool/**`, `/api/admin/manage/users/**`, `/api/admin/query/users/**`, `/api/admin/mq/**`, `/api/admin/outbox/**`, `/api/admin/observability/**`, `/api/app/user/notification/**`, and `/auth/tokens/**`) to `governance-service` before business-service route matches.
@@ -136,6 +137,7 @@ Scope: backend refactor execution status for RPC, security boundary, merchant ow
 - Added outbox governance aggregation under `/internal/governance/outbox/**`, backed by service discovery plus trusted internal HMAC-signed HTTP to the business services.
 - Added bounded batch outbox requeue APIs under both `/internal/governance/outbox/requeue-batch` and `/api/admin/outbox/requeue-batch`.
 - Added observability entry metadata under `/internal/governance/observability/grafana`, backed by `governance-service` configuration.
+- Added governed Grafana redirect entrypoints under `/internal/governance/observability/grafana/open` and `/api/admin/observability/grafana/open`.
 - Added `/api/admin/governance/**` at gateway as the preferred admin-facing compatibility proxy for governance operations, reducing the need for operators to reach business-service admin paths directly.
 - Added governance-owned admin controller handling for statistics, thread-pool, admin management, user query, user batch management, notification operations, MQ governance, outbox governance, observability entry metadata, and token governance paths directly in `governance-service`.
 - Added governance-owned admin stock ledger handling in `governance-service`, with `stock-service` retained only as the RPC provider and internal-scope surface.
@@ -143,7 +145,7 @@ Scope: backend refactor execution status for RPC, security boundary, merchant ow
 ### Remaining
 
 - Decide whether Grafana should stay as a pure deeplink target or later gain a controlled reverse-proxy facade for enterprise deployments.
-- Grafana still remains a governed deeplink target rather than a reverse-proxy or SSO surface.
+- Grafana still remains a governed redirect target rather than a reverse-proxy or SSO surface.
 
 ## Database Refactor Notes
 

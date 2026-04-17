@@ -192,6 +192,7 @@ Notes:
 - Token management utilities exposed in `src/api/auth-tokens.ts` are admin-only operational tools rather than normal user flows.
 - Operations workspace now closes the current admin toolchain for `/auth/tokens/**`, `/api/category/**`, `/api/product/spu/**`, `/api/search/**`, `/api/search/shops/**`, `/api/admin/thread-pool/**`, `/api/admin/statistics/**`, `/api/admin/mq/**`, `/api/admin/outbox/**`, `/api/admin/observability/**`, and payment admin helpers already exposed in the frontend API layer.
 - Outbox governance now supports both single-event requeue and bounded batch requeue under `/api/admin/outbox/requeue` and `/api/admin/outbox/requeue-batch`.
+- Grafana can now be opened through the governed redirect endpoint `/api/admin/observability/grafana/open`, so the admin workspace does not need to construct Grafana dashboard URLs itself.
 
 ## Request And Behavior Notes
 

@@ -37,6 +37,7 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
+import java.net.URI;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
@@ -44,6 +45,8 @@ import lombok.RequiredArgsConstructor;
 import org.apache.dubbo.config.annotation.DubboReference;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.format.annotation.DateTimeFormat.ISO;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -523,6 +526,15 @@ public class GovernanceController {
   @Operation(summary = "Get Grafana observability entry metadata")
   public Result<Map<String, Object>> getGrafanaEntry() {
     return Result.success(observabilityEntryService.getGrafanaEntry());
+  }
+
+  @GetMapping("/observability/grafana/open")
+  @PreAuthorize("hasAuthority('SCOPE_internal')")
+  @Operation(summary = "Open Grafana through governance-service controlled redirect")
+  public ResponseEntity<Void> openGrafana(@RequestParam(required = false) String dashboardUid) {
+    return ResponseEntity.status(HttpStatus.FOUND)
+        .location(URI.create(observabilityEntryService.resolveGrafanaUrl(dashboardUid)))
+        .build();
   }
 
   @PostMapping("/notifications/welcome/{userId}")

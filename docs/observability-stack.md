@@ -133,6 +133,10 @@ In SkyWalking UI, focus first on:
 - Governed Grafana entry metadata is available through:
   - `GET /internal/governance/observability/grafana`
   - `GET /api/admin/observability/grafana`
+- Governed Grafana redirect entrypoints are available through:
+  - `GET /internal/governance/observability/grafana/open`
+  - `GET /api/admin/observability/grafana/open`
+  - Optional query parameter: `dashboardUid`
 - Admin governance entrypoints are also available through:
   - `GET /api/admin/mq/consumers`
   - `GET /api/admin/mq/dead-letters/pending`

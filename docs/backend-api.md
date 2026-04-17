@@ -281,6 +281,7 @@ Important behavior:
     - `/internal/governance/outbox/requeue`
     - `/internal/governance/outbox/requeue-batch`
     - `/internal/governance/observability/grafana`
+    - `/internal/governance/observability/grafana/open`
     - `/internal/governance/notifications/welcome/{userId}`
     - `/internal/governance/notifications/status-change/{userId}`
     - `/internal/governance/notifications/batch`
@@ -323,12 +324,14 @@ Notes:
    - `POST /internal/governance/outbox/requeue`
    - `POST /internal/governance/outbox/requeue-batch`
    - `GET /internal/governance/observability/grafana`
+   - `GET /internal/governance/observability/grafana/open`
    - `GET /api/admin/outbox/stats`
    - `GET /api/admin/outbox/pending`
    - `GET /api/admin/outbox/dead`
    - `POST /api/admin/outbox/requeue`
    - `POST /api/admin/outbox/requeue-batch`
    - `GET /api/admin/observability/grafana`
+   - `GET /api/admin/observability/grafana/open`
 
 Notes:
 - Stock ledger reads require admin.
@@ -469,6 +472,7 @@ Notes:
 | POST | `/internal/governance/outbox/requeue` | Internal ops |
 | POST | `/internal/governance/outbox/requeue-batch` | Internal ops |
 | GET | `/internal/governance/observability/grafana` | Internal ops |
+| GET | `/internal/governance/observability/grafana/open` | Internal ops |
 | POST | `/internal/governance/notifications/welcome/{userId}` | Internal ops |
 | POST | `/internal/governance/notifications/status-change/{userId}` | Internal ops |
 | POST | `/internal/governance/notifications/batch` | Internal ops |
@@ -576,6 +580,7 @@ Order list and order detail now return `OrderSummaryDTO` with these stable field
 | POST | `/api/admin/outbox/requeue` | `admin:all` |
 | POST | `/api/admin/outbox/requeue-batch` | `admin:all` |
 | GET | `/api/admin/observability/grafana` | `admin:all` |
+| GET | `/api/admin/observability/grafana/open` | `admin:all` |
 | GET | `/auth/tokens/stats` | `admin:all` |
 | GET | `/auth/tokens/authorization/{id}` | `admin:all` |
 | DELETE | `/auth/tokens/authorization/{id}` | `admin:all` |
