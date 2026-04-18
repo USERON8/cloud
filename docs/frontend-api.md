@@ -246,5 +246,4 @@ The admin UI now depends on:
 
 The backend reference is maintained in `docs/backend-api.md`.
 The Postman collection under `docs/postman/cloud-shop.postman_collection.json` follows the same chain order used here.
-Detailed chain audit findings are maintained in `docs/order-chain-audit.md`.
-Broader module audit findings are maintained in `docs/full-project-audit.md`.
+Consolidated status and audit findings are maintained in `docs/backend-rpc-refactor-plan.md`.

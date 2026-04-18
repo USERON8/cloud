@@ -692,7 +692,7 @@ Example order detail response shape:
 
 - Collection: `docs/postman/cloud-shop.postman_collection.json`
 - Local environment: `docs/postman/cloud-shop.local.postman_environment.json`
-- Detailed chain audit: `docs/order-chain-audit.md`
+- Consolidated status reference: `docs/backend-rpc-refactor-plan.md`
 
 Use the collection for chain-level smoke tests. The collection is intentionally aligned to current gateway routes and removes old order endpoints that no longer exist.
 - The collection includes both direct-buy and cart-checkout order creation examples.

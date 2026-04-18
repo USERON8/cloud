@@ -5,6 +5,23 @@ Scope: backend refactor execution status for RPC, security boundary, merchant ow
 
 ## Current Status Summary
 
+### Canonical Scope
+
+- This file is the canonical status and audit reference for the backend refactor.
+- The current frozen scope is:
+  - non-merchant governance and operations live behind `governance-service`,
+  - merchant admin, merchant certification, and shop certification remain in `user-service`,
+  - Grafana remains a governed redirect target instead of an SSO or reverse-proxy surface.
+- The repository currently validates with `mvn -DskipTests compile`.
+- Companion docs that should stay in sync with this file are:
+  - `docs/backend-api.md`
+  - `docs/frontend-api.md`
+  - `docs/dev-startup.md`
+  - `docs/observability-stack.md`
+  - `docs/performance-baseline.md`
+  - `docs/transaction-strategy.md`
+  - `docs/TEST_SCRIPT_INDEX.md`
+
 ### Completed
 
 - Internal service-to-service RPC contracts are in place under `common-parent/common-api`.
