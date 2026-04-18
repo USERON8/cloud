@@ -16,7 +16,7 @@ Scope:
 - `GET /api/orders` and `GET /api/orders/{orderId}` now return `OrderSummaryDTO` with `items[]`, `items[].skuSnapshot`, and optional `items[].latestProduct`.
 - User and merchant order pages now consume `OrderSummaryDTO` and render item-level snapshot data.
 - Payment creation and checkout must go through `/api/payments/orders` and `/api/payments/orders/{paymentNo}/checkout-session`.
-- `/api/orders/{orderId}/pay` and `/api/orders/batch/pay` still exist but are compatibility routes only. Current business flow should not rely on them.
+- Legacy order pay compatibility routes have been removed. Payment confirmation must come from the payment chain.
 
 ## Environment Preconditions
 
@@ -34,7 +34,7 @@ The docs now reflect:
 - the new cart lookup and full-sync endpoints
 - required `clientOrderId`
 - order query response with `items[]`, `skuSnapshot`, and optional `latestProduct`
-- compatibility-only order pay endpoints
+- removed compatibility-only order pay endpoints
 - the current frontend cart checkout and order summary consumption behavior
 
 ## Suggested Next Closure Work

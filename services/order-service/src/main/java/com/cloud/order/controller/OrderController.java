@@ -108,13 +108,10 @@ public class OrderController {
       @RequestParam(required = false) Integer size,
       @RequestParam(required = false) Long userId,
       @RequestParam(required = false) Long merchantId,
-      @RequestParam(name = "shopId", required = false) Long legacyShopId,
       @RequestParam(required = false) Integer status,
       Authentication authentication) {
-    Long effectiveMerchantId = resolveMerchantId(merchantId, legacyShopId);
     return Result.success(
-        orderQueryService.listOrders(
-            authentication, page, size, userId, effectiveMerchantId, status));
+        orderQueryService.listOrders(authentication, page, size, userId, merchantId, status));
   }
 
   @GetMapping("/{orderId}")
@@ -123,14 +120,6 @@ public class OrderController {
   public Result<OrderSummaryDTO> getOrder(
       @PathVariable Long orderId, Authentication authentication) {
     return Result.success(orderQueryService.getOrderSummary(orderId, authentication));
-  }
-
-  @PostMapping("/{orderId}/pay")
-  @PreAuthorize("hasAuthority('order:create')")
-  @Operation(summary = "Pay order")
-  public Result<Boolean> payOrder(@PathVariable Long orderId, Authentication authentication) {
-    orderBatchService.applyOrderAction(orderId, authentication, OrderAction.PAY, null, null, null);
-    return Result.success(true);
   }
 
   @PostMapping("/{orderId}/cancel")
@@ -167,14 +156,6 @@ public class OrderController {
   public Result<Boolean> completeOrder(@PathVariable Long orderId, Authentication authentication) {
     orderBatchService.applyOrderAction(orderId, authentication, OrderAction.DONE, null, null, null);
     return Result.success(true);
-  }
-
-  @PostMapping("/batch/pay")
-  @PreAuthorize("hasAuthority('order:create')")
-  @Operation(summary = "Batch pay orders")
-  public Result<Integer> batchPay(@RequestBody List<Long> orderIds, Authentication authentication) {
-    return Result.success(
-        orderBatchService.batchApply(orderIds, authentication, OrderAction.PAY, null, null, null));
   }
 
   @PostMapping("/batch/cancel")
@@ -299,14 +280,6 @@ public class OrderController {
       throw new BizException(ResultCode.BAD_REQUEST, fieldName + " is required");
     }
     return value.trim();
-  }
-
-  private Long resolveMerchantId(Long merchantId, Long legacyShopId) {
-    if (merchantId != null && legacyShopId != null && !Objects.equals(merchantId, legacyShopId)) {
-      throw new BizException(
-          ResultCode.BAD_REQUEST, "merchantId and shopId must match when both are provided");
-    }
-    return merchantId != null ? merchantId : legacyShopId;
   }
 
   private Long requireCurrentUserId(Authentication authentication) {

@@ -177,7 +177,6 @@ Notes:
    - `POST /api/orders/after-sales/{afterSaleId}/actions/{action}`
 
 Important behavior:
-- `POST /api/orders/{orderId}/pay` and `POST /api/orders/batch/pay` still exist for compatibility but direct pay transitions are disabled in business logic. Verified payment confirmation must come from the payment chain.
 - Shipping now requires explicit `shippingCompany` and `trackingNumber`.
 - Merchant users cannot force `complete`; completion is limited to the order owner or admin.
 
@@ -201,7 +200,6 @@ Important behavior:
 
 Important behavior:
 - Regular users can create payment orders only for themselves; the controller now binds request `userId` to the authenticated owner.
-- Internal callback mutation endpoint `/api/payments/callbacks` still exists for controlled internal callers, but business logic rejects state mutation through the old direct internal callback path.
 - Checkout is public only at the ticketed HTML endpoint; all order and refund reads remain owner/admin restricted.
 
 ### 7. Merchant And Admin Operations Chain
@@ -485,13 +483,11 @@ Notes:
 | Method | Path | Access | Notes |
 | --- | --- | --- | --- |
 | POST | `/api/orders` | `order:create` | Requires `Idempotency-Key` header and `clientOrderId` body field. |
-| GET | `/api/orders` | `order:query` | `shopId` is a legacy alias of `merchantId`. |
+| GET | `/api/orders` | `order:query` | Supports `merchantId` filtering for merchant/admin views. |
 | GET | `/api/orders/{orderId}` | `order:query` |  |
-| POST | `/api/orders/{orderId}/pay` | `order:create` | Intentionally blocked in service layer. |
 | POST | `/api/orders/{orderId}/cancel` | `order:cancel` |  |
 | POST | `/api/orders/{orderId}/ship` | Merchant or admin | Requires `shippingCompany` and `trackingNumber`. |
 | POST | `/api/orders/{orderId}/complete` | `order:query` | Merchant callers are blocked in service layer. |
-| POST | `/api/orders/batch/pay` | `order:create` | Intentionally blocked in service layer. |
 | POST | `/api/orders/batch/cancel` | `order:cancel` |  |
 | POST | `/api/orders/batch/ship` | Merchant or admin | Requires `shippingCompany` and `trackingNumber`. |
 | POST | `/api/orders/batch/complete` | `order:query` | Merchant callers are blocked in service layer. |
@@ -514,7 +510,6 @@ Order list and order detail now return `OrderSummaryDTO` with these stable field
 | GET | `/api/payments/orders/by-order` | Authenticated | Owner/admin only. |
 | POST | `/api/payments/orders/{paymentNo}/checkout-session` | Authenticated | Owner/admin only. |
 | GET | `/api/payments/orders/{paymentNo}/status` | Authenticated | Owner/admin only. |
-| POST | `/api/payments/callbacks` | `order:refund` | Legacy compatibility endpoint. Business mutation through this path is intentionally rejected. |
 | POST | `/api/payments/refunds` | `order:refund` | Refund creation path for already-paid payment orders only. |
 | GET | `/api/payments/refunds/{refundNo}` | Authenticated | Owner/admin only. |
 | GET | `/api/payments/checkout/{ticket}` | Public | Ticketed checkout HTML. |

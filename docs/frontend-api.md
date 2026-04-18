@@ -126,6 +126,7 @@ Primary APIs:
 Notes:
 - Real payment starts from the payment module after order creation.
 - The frontend no longer exports direct order pay helpers. Current payment flow must go through the payment module.
+- `GET /api/orders` now sends merchant filtering only through `merchantId`. The old `shopId` query alias has been removed from the frontend contract.
 - `createOrder(payload)` in `src/api/order.ts` currently implements direct-buy only. It auto-generates `clientOrderId` when the caller does not provide one.
 - `createCartOrder(payload)` now implements cart checkout through backend `cartId`.
 - `listOrders` and `getOrderById` now return `items[]`. Each item includes immutable `skuSnapshot` data and an optional `latestProduct` view when the backend can still resolve the SKU.
