@@ -422,7 +422,7 @@
           "name": "Search Products",
           "request": {
             "method": "GET",
-            "url": "{{baseUrl}}/api/search/search?keyword={{searchKeyword}}&page=0&size=20"
+            "url": "{{baseUrl}}/api/search/products?keyword={{searchKeyword}}&page=0&size=20"
           }
         },
         {
@@ -436,56 +436,56 @@
           "name": "Search Suggestions",
           "request": {
             "method": "GET",
-            "url": "{{baseUrl}}/api/search/suggestions?keyword={{searchKeyword}}&size=10"
+            "url": "{{baseUrl}}/api/search/products/suggestions?keyword={{searchKeyword}}&size=10"
           }
         },
         {
           "name": "Hot Keywords",
           "request": {
             "method": "GET",
-            "url": "{{baseUrl}}/api/search/hot-keywords?size=10"
+            "url": "{{baseUrl}}/api/search/products/keywords/hot?size=10"
           }
         },
         {
           "name": "Keyword Recommendations",
           "request": {
             "method": "GET",
-            "url": "{{baseUrl}}/api/search/keyword-recommendations?keyword={{searchKeyword}}&size=10"
+            "url": "{{baseUrl}}/api/search/products/keywords/recommendations?keyword={{searchKeyword}}&size=10"
           }
         },
         {
           "name": "Recommended Products",
           "request": {
             "method": "GET",
-            "url": "{{baseUrl}}/api/search/recommended?page=0&size=20"
+            "url": "{{baseUrl}}/api/search/products/recommendations?page=0&size=20"
           }
         },
         {
           "name": "New Products",
           "request": {
             "method": "GET",
-            "url": "{{baseUrl}}/api/search/new?page=0&size=20"
+            "url": "{{baseUrl}}/api/search/products/latest?page=0&size=20"
           }
         },
         {
           "name": "Hot Selling Products",
           "request": {
             "method": "GET",
-            "url": "{{baseUrl}}/api/search/hot?page=0&size=20"
+            "url": "{{baseUrl}}/api/search/products/popular?page=0&size=20"
           }
         },
         {
           "name": "Today Hot Selling Products",
           "request": {
             "method": "GET",
-            "url": "{{baseUrl}}/api/search/hot/today?page=0&size=20"
+            "url": "{{baseUrl}}/api/search/products/popular/today?page=0&size=20"
           }
         },
         {
           "name": "Complex Product Search",
           "request": {
             "method": "POST",
-            "url": "{{baseUrl}}/api/search/complex-search",
+            "url": "{{baseUrl}}/api/search/products/searches",
             "header": [
               {
                 "key": "Content-Type",
@@ -507,14 +507,14 @@
           "name": "Recommended Shops",
           "request": {
             "method": "GET",
-            "url": "{{baseUrl}}/api/search/shops/recommended?page=0&size=20"
+            "url": "{{baseUrl}}/api/search/shops/recommendations?page=0&size=20"
           }
         },
         {
           "name": "Shop Filters",
           "request": {
             "method": "POST",
-            "url": "{{baseUrl}}/api/search/shops/filters",
+            "url": "{{baseUrl}}/api/search/shops/filter-groups",
             "header": [
               {
                 "key": "Content-Type",
@@ -536,7 +536,7 @@
           "name": "Complex Shop Search",
           "request": {
             "method": "POST",
-            "url": "{{baseUrl}}/api/search/shops/complex-search",
+            "url": "{{baseUrl}}/api/search/shops/searches",
             "header": [
               {
                 "key": "Content-Type",
@@ -565,7 +565,7 @@
           "name": "Hot Shops",
           "request": {
             "method": "GET",
-            "url": "{{baseUrl}}/api/search/shops/hot-shops?size=10"
+            "url": "{{baseUrl}}/api/search/shops/popular?size=10"
           }
         },
         {
@@ -579,7 +579,7 @@
           "name": "Shops By Location",
           "request": {
             "method": "GET",
-            "url": "{{baseUrl}}/api/search/shops/by-location?location={{searchKeyword}}&page=0&size=20"
+            "url": "{{baseUrl}}/api/search/shops/nearby?location={{searchKeyword}}&page=0&size=20"
           }
         }
       ]

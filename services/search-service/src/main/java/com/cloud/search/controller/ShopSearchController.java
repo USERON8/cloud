@@ -33,7 +33,7 @@ public class ShopSearchController {
   private final ShopSearchService shopSearchService;
 
   @Operation(summary = "Complex shop search", description = "Search shops with rich conditions")
-  @PostMapping("/complex-search")
+  @PostMapping("/searches")
   public Result<SearchResultDTO<ShopDocument>> complexSearch(
       @Valid @RequestBody ShopSearchRequest request) {
     normalizePublicStatus(request);
@@ -42,7 +42,7 @@ public class ShopSearchController {
   }
 
   @Operation(summary = "Shop filter data", description = "Get shop filters by request")
-  @PostMapping("/filters")
+  @PostMapping("/filter-groups")
   public Result<SearchResultDTO<ShopDocument>> getShopFilters(
       @Valid @RequestBody ShopSearchRequest request) {
     normalizePublicStatus(request);
@@ -61,7 +61,7 @@ public class ShopSearchController {
   }
 
   @Operation(summary = "Hot shops", description = "Get hot shops")
-  @GetMapping("/hot-shops")
+  @GetMapping("/popular")
   public Result<List<ShopDocument>> getHotShops(
       @Parameter(description = "Size") @RequestParam(defaultValue = "10") Integer size) {
 
@@ -81,7 +81,7 @@ public class ShopSearchController {
   }
 
   @Operation(summary = "Recommended shops", description = "Get recommended shops")
-  @GetMapping("/recommended")
+  @GetMapping("/recommendations")
   public Result<SearchResultDTO<ShopDocument>> getRecommendedShops(
       @Parameter(description = "Page") @RequestParam(defaultValue = "0") Integer page,
       @Parameter(description = "Size") @RequestParam(defaultValue = "20") Integer size) {
@@ -99,7 +99,7 @@ public class ShopSearchController {
   }
 
   @Operation(summary = "Search shops by location", description = "Search shops by address keyword")
-  @GetMapping("/by-location")
+  @GetMapping("/nearby")
   public Result<SearchResultDTO<ShopDocument>> searchShopsByLocation(
       @Parameter(description = "Location keyword") @RequestParam String location,
       @Parameter(description = "Page") @RequestParam(defaultValue = "0") Integer page,

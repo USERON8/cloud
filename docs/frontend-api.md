@@ -74,26 +74,28 @@ Primary APIs:
 - `GET /api/product/spu/{spuId}`
 - `GET /api/product/spu/category/{categoryId}`
 - `GET /api/product/sku/batch`
-- `GET /api/search/search`
-- `GET /api/search/smart-search`
-- `POST /api/search/complex-search`
-- `POST /api/search/filter`
-- `POST /api/search/filters`
-- `GET /api/search/recommended`
-- `GET /api/search/new`
-- `GET /api/search/hot`
-- `GET /api/search/hot/today`
-- `GET /api/search/shops/recommended`
+- `GET /api/search/products`
+- `GET /api/search/products/optimized-searches`
+- `POST /api/search/products/searches`
+- `POST /api/search/products/filtered-searches`
+- `POST /api/search/products/filter-groups`
+- `GET /api/search/products/recommendations`
+- `GET /api/search/products/latest`
+- `GET /api/search/products/popular`
+- `GET /api/search/products/popular/today`
+- `GET /api/search/categories/{categoryId}/products`
+- `GET /api/search/shops/{shopId}/products`
+- `GET /api/search/shops/recommendations`
 - `GET /api/search/shops/suggestions`
-- `GET /api/search/shops/hot-shops`
+- `GET /api/search/shops/popular`
 - `GET /api/search/shops/{shopId}`
-- `GET /api/search/shops/by-location`
-- `POST /api/search/shops/complex-search`
-- `POST /api/search/shops/filters`
+- `GET /api/search/shops/nearby`
+- `POST /api/search/shops/searches`
+- `POST /api/search/shops/filter-groups`
 
 Notes:
-- Empty-keyword market landing now prefers `GET /api/search/hot/today`.
-- Search APIs now use canonical keyword GET routes plus request-body `complex-search` and `filter` operations for focused search variants.
+- Empty-keyword market landing now prefers `GET /api/search/products/popular/today`.
+- Search APIs now follow resource-oriented naming under `/api/search/products/**` and `/api/search/shops/**`.
 - Merchant catalog management now uses `GET /api/product/manage` so unpublished products remain visible to the merchant owner and can be published again.
 - `src/api/product-catalog.ts` is the frontend entry for SPU and SKU maintenance APIs.
 - `src/api/shop-search.ts` is the frontend entry for shop discovery and recommendation APIs.

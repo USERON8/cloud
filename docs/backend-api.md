@@ -63,26 +63,28 @@ Rules:
 3. Product management discovery
    - `GET /api/product/manage`
 4. Search discovery
-   - `GET /api/search/search`
-   - `GET /api/search/smart-search`
-   - `GET /api/search/suggestions`
-   - `GET /api/search/hot-keywords`
-   - `GET /api/search/keyword-recommendations`
-   - `GET /api/search/recommended`
-   - `GET /api/search/new`
-   - `GET /api/search/hot`
-   - `GET /api/search/hot/today`
-   - `POST /api/search/complex-search`
-   - `POST /api/search/filters`
-   - `POST /api/search/filter`
+   - `GET /api/search/products`
+   - `GET /api/search/products/optimized-searches`
+   - `GET /api/search/products/suggestions`
+   - `GET /api/search/products/keywords/hot`
+   - `GET /api/search/products/keywords/recommendations`
+   - `GET /api/search/products/recommendations`
+   - `GET /api/search/products/latest`
+   - `GET /api/search/products/popular`
+   - `GET /api/search/products/popular/today`
+   - `POST /api/search/products/searches`
+   - `POST /api/search/products/filter-groups`
+   - `POST /api/search/products/filtered-searches`
+   - `GET /api/search/categories/{categoryId}/products`
+   - `GET /api/search/shops/{shopId}/products`
 4. Shop discovery
-   - `POST /api/search/shops/complex-search`
-   - `POST /api/search/shops/filters`
+   - `POST /api/search/shops/searches`
+   - `POST /api/search/shops/filter-groups`
    - `GET /api/search/shops/suggestions`
-   - `GET /api/search/shops/hot-shops`
+   - `GET /api/search/shops/popular`
    - `GET /api/search/shops/{shopId}`
-   - `GET /api/search/shops/recommended`
-   - `GET /api/search/shops/by-location`
+   - `GET /api/search/shops/recommendations`
+   - `GET /api/search/shops/nearby`
 
 Notes:
 - Public product and shop search only supports active records.
@@ -433,27 +435,27 @@ Notes:
 
 | Method | Path | Access |
 | --- | --- | --- |
-| POST | `/api/search/complex-search` | Public |
-| POST | `/api/search/filters` | Public |
-| GET | `/api/search/suggestions` | Public |
-| GET | `/api/search/hot-keywords` | Public |
-| GET | `/api/search/keyword-recommendations` | Public |
-| GET | `/api/search/search` | Public |
-| GET | `/api/search/search/category/{categoryId}` | Public |
-| GET | `/api/search/search/shop/{shopId}` | Public |
-| GET | `/api/search/smart-search` | Public |
-| GET | `/api/search/recommended` | Public |
-| GET | `/api/search/new` | Public |
-| GET | `/api/search/hot` | Public |
-| GET | `/api/search/hot/today` | Public |
-| POST | `/api/search/filter` | Public |
-| POST | `/api/search/shops/complex-search` | Public |
-| POST | `/api/search/shops/filters` | Public |
+| GET | `/api/search/products` | Public |
+| GET | `/api/search/products/optimized-searches` | Public |
+| POST | `/api/search/products/searches` | Public |
+| POST | `/api/search/products/filter-groups` | Public |
+| POST | `/api/search/products/filtered-searches` | Public |
+| GET | `/api/search/products/suggestions` | Public |
+| GET | `/api/search/products/keywords/hot` | Public |
+| GET | `/api/search/products/keywords/recommendations` | Public |
+| GET | `/api/search/categories/{categoryId}/products` | Public |
+| GET | `/api/search/shops/{shopId}/products` | Public |
+| GET | `/api/search/products/recommendations` | Public |
+| GET | `/api/search/products/latest` | Public |
+| GET | `/api/search/products/popular` | Public |
+| GET | `/api/search/products/popular/today` | Public |
+| POST | `/api/search/shops/searches` | Public |
+| POST | `/api/search/shops/filter-groups` | Public |
 | GET | `/api/search/shops/suggestions` | Public |
-| GET | `/api/search/shops/hot-shops` | Public |
+| GET | `/api/search/shops/popular` | Public |
 | GET | `/api/search/shops/{shopId}` | Public |
-| GET | `/api/search/shops/recommended` | Public |
-| GET | `/api/search/shops/by-location` | Public |
+| GET | `/api/search/shops/recommendations` | Public |
+| GET | `/api/search/shops/nearby` | Public |
 | GET | `/gateway/fallback/search` | Gateway utility |
 | GET | `/internal/governance/mq/consumers` | Internal ops |
 | GET | `/internal/governance/mq/dead-letters/pending` | Internal ops |

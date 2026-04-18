@@ -17,7 +17,7 @@ export function listManageProducts(params: ProductQuery = {}): Promise<ProductPa
 
 export function searchProducts(name: string): Promise<ProductItem[]> {
   // Search service returns a SearchResult payload, so map from its list field.
-  return http.get<SearchResult<ProductDocument>, SearchResult<ProductDocument>>('/api/search/search', {
+  return http.get<SearchResult<ProductDocument>, SearchResult<ProductDocument>>('/api/search/products', {
     params: { keyword: name, page: 0, size: 20 }
   }).then(result => result.list.map(doc => ({
     id: doc.productId || 0,

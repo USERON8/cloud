@@ -43,7 +43,7 @@ public class ProductSearchController {
   private final SearchFacadeService searchFacadeService;
 
   @Operation(summary = "Complex search", description = "Run full search by request payload")
-  @PostMapping("/complex-search")
+  @PostMapping("/products/searches")
   public Result<SearchResultDTO<ProductDocument>> complexSearch(
       @Valid @RequestBody ProductSearchRequest request,
       @Parameter(description = "search_after values, json array or comma separated")
@@ -57,7 +57,7 @@ public class ProductSearchController {
   @Operation(
       summary = "Get filter data",
       description = "Return available filter data for current search")
-  @PostMapping("/filters")
+  @PostMapping("/products/filter-groups")
   public Result<SearchResultDTO<ProductDocument>> getProductFilters(
       @Valid @RequestBody ProductSearchRequest request,
       @Parameter(description = "search_after values, json array or comma separated")
@@ -69,7 +69,7 @@ public class ProductSearchController {
   }
 
   @Operation(summary = "Search suggestions", description = "Get search suggestions by keyword")
-  @GetMapping("/suggestions")
+  @GetMapping("/products/suggestions")
   public Result<List<String>> getSearchSuggestions(
       @Parameter(description = "Keyword") @RequestParam String keyword,
       @Parameter(description = "Result size") @RequestParam(defaultValue = "10") Integer size) {
@@ -78,7 +78,7 @@ public class ProductSearchController {
   }
 
   @Operation(summary = "Hot keywords", description = "Get hot keywords")
-  @GetMapping("/hot-keywords")
+  @GetMapping("/products/keywords/hot")
   public Result<List<String>> getHotSearchKeywords(
       @Parameter(description = "Result size") @RequestParam(defaultValue = "10") Integer size) {
     return Result.success(
@@ -88,7 +88,7 @@ public class ProductSearchController {
   @Operation(
       summary = "Keyword recommendations",
       description = "Get recommended keywords for search bar")
-  @GetMapping("/keyword-recommendations")
+  @GetMapping("/products/keywords/recommendations")
   public Result<List<String>> getKeywordRecommendations(
       @Parameter(description = "Keyword prefix") @RequestParam(required = false) String keyword,
       @Parameter(description = "Result size") @RequestParam(defaultValue = "10") Integer size) {
@@ -98,7 +98,7 @@ public class ProductSearchController {
   }
 
   @Operation(summary = "Basic search", description = "Search products by keyword and pagination")
-  @GetMapping("/search")
+  @GetMapping("/products")
   public Result<SearchResultDTO<ProductDocument>> searchProducts(
       @Parameter(description = "Keyword") @RequestParam String keyword,
       @Parameter(description = "Page number, starts from 0") @RequestParam(defaultValue = "0")
@@ -118,7 +118,7 @@ public class ProductSearchController {
   @Operation(
       summary = "Search by category",
       description = "Search products by category and optional keyword")
-  @GetMapping("/search/category/{categoryId}")
+  @GetMapping("/categories/{categoryId}/products")
   public Result<SearchResultDTO<ProductDocument>> searchByCategory(
       @Parameter(description = "Category id") @PathVariable Long categoryId,
       @Parameter(description = "Keyword") @RequestParam(required = false) String keyword,
@@ -135,7 +135,7 @@ public class ProductSearchController {
   @Operation(
       summary = "Search by shop",
       description = "Search products by shop and optional keyword")
-  @GetMapping("/search/shop/{shopId}")
+  @GetMapping("/shops/{shopId}/products")
   public Result<SearchResultDTO<ProductDocument>> searchByShop(
       @Parameter(description = "Shop id") @PathVariable Long shopId,
       @Parameter(description = "Keyword") @RequestParam(required = false) String keyword,
@@ -152,7 +152,7 @@ public class ProductSearchController {
   @Operation(
       summary = "Smart search",
       description = "Compatibility alias of complex search for optimized query parameters")
-  @GetMapping("/smart-search")
+  @GetMapping("/products/optimized-searches")
   public Result<ElasticsearchOptimizedService.SearchResultDTO> smartSearch(
       @Parameter(description = "Keyword") @RequestParam(required = false) String keyword,
       @Parameter(description = "Category id") @RequestParam(required = false) Long categoryId,
@@ -181,7 +181,7 @@ public class ProductSearchController {
   }
 
   @Operation(summary = "Recommended products", description = "Get recommended products")
-  @GetMapping("/recommended")
+  @GetMapping("/products/recommendations")
   public Result<SearchResultDTO<ProductDocument>> getRecommendedProducts(
       @Parameter(description = "Page number") @RequestParam(defaultValue = "0") int page,
       @Parameter(description = "Page size") @RequestParam(defaultValue = "20") int size,
@@ -194,7 +194,7 @@ public class ProductSearchController {
   }
 
   @Operation(summary = "New products", description = "Get new products")
-  @GetMapping("/new")
+  @GetMapping("/products/latest")
   public Result<SearchResultDTO<ProductDocument>> getNewProducts(
       @Parameter(description = "Page number") @RequestParam(defaultValue = "0") int page,
       @Parameter(description = "Page size") @RequestParam(defaultValue = "20") int size,
@@ -206,7 +206,7 @@ public class ProductSearchController {
   }
 
   @Operation(summary = "Flagged hot products", description = "Get products marked as hot")
-  @GetMapping("/hot")
+  @GetMapping("/products/popular")
   public Result<SearchResultDTO<ProductDocument>> getHotProducts(
       @Parameter(description = "Page number") @RequestParam(defaultValue = "0") int page,
       @Parameter(description = "Page size") @RequestParam(defaultValue = "20") int size,
@@ -220,7 +220,7 @@ public class ProductSearchController {
   @Operation(
       summary = "Today hot selling products",
       description = "Get products ranked by today's completed sales")
-  @GetMapping("/hot/today")
+  @GetMapping("/products/popular/today")
   public Result<SearchResultDTO<ProductDocument>> getTodayHotSellingProducts(
       @Parameter(description = "Page number") @RequestParam(defaultValue = "0") int page,
       @Parameter(description = "Page size") @RequestParam(defaultValue = "20") int size) {
@@ -230,7 +230,7 @@ public class ProductSearchController {
   }
 
   @Operation(summary = "Filter search", description = "Search products with filter payload")
-  @PostMapping("/filter")
+  @PostMapping("/products/filtered-searches")
   public Result<SearchResultDTO<ProductDocument>> filterSearch(
       @Valid @RequestBody ProductFilterRequest request,
       @Parameter(description = "search_after values, json array or comma separated")
