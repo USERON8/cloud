@@ -504,41 +504,6 @@
           }
         },
         {
-          "name": "Filter Products By Category",
-          "request": {
-            "method": "GET",
-            "url": "{{baseUrl}}/api/search/filter/category/{{categoryId}}?page=0&size=20"
-          }
-        },
-        {
-          "name": "Filter Products By Brand",
-          "request": {
-            "method": "GET",
-            "url": "{{baseUrl}}/api/search/filter/brand/{{brandId}}?page=0&size=20"
-          }
-        },
-        {
-          "name": "Filter Products By Price",
-          "request": {
-            "method": "GET",
-            "url": "{{baseUrl}}/api/search/filter/price?minPrice=10&maxPrice=100&page=0&size=20"
-          }
-        },
-        {
-          "name": "Filter Products By Shop",
-          "request": {
-            "method": "GET",
-            "url": "{{baseUrl}}/api/search/filter/shop/{{shopId}}?page=0&size=20"
-          }
-        },
-        {
-          "name": "Combined Product Filter",
-          "request": {
-            "method": "GET",
-            "url": "{{baseUrl}}/api/search/filter/combined?keyword={{searchKeyword}}&categoryId={{categoryId}}&brandId={{brandId}}&shopId={{shopId}}&page=0&size=20"
-          }
-        },
-        {
           "name": "Recommended Shops",
           "request": {
             "method": "GET",

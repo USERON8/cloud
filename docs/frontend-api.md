@@ -76,7 +76,6 @@ Primary APIs:
 - `GET /api/product/sku/batch`
 - `GET /api/search/search`
 - `GET /api/search/smart-search`
-- `GET /api/search/basic`
 - `POST /api/search/complex-search`
 - `POST /api/search/filter`
 - `POST /api/search/filters`
@@ -84,11 +83,6 @@ Primary APIs:
 - `GET /api/search/new`
 - `GET /api/search/hot`
 - `GET /api/search/hot/today`
-- `GET /api/search/filter/category/{categoryId}`
-- `GET /api/search/filter/brand/{brandId}`
-- `GET /api/search/filter/price`
-- `GET /api/search/filter/shop/{shopId}`
-- `GET /api/search/filter/combined`
 - `GET /api/search/shops/recommended`
 - `GET /api/search/shops/suggestions`
 - `GET /api/search/shops/hot-shops`
@@ -99,7 +93,7 @@ Primary APIs:
 
 Notes:
 - Empty-keyword market landing now prefers `GET /api/search/hot/today`.
-- Search APIs are split between lightweight aliases and rich request-body operations.
+- Search APIs now use canonical keyword GET routes plus request-body `complex-search` and `filter` operations for focused search variants.
 - Merchant catalog management now uses `GET /api/product/manage` so unpublished products remain visible to the merchant owner and can be published again.
 - `src/api/product-catalog.ts` is the frontend entry for SPU and SKU maintenance APIs.
 - `src/api/shop-search.ts` is the frontend entry for shop discovery and recommendation APIs.

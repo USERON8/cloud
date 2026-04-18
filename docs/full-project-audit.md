@@ -109,8 +109,8 @@ Status:
 
 Findings:
 - Core order/payment interaction is RPC-based.
-- Compatibility endpoints still exist in some REST shapes, but direct pay mutation is intentionally blocked in business logic.
-- The main remaining work here is compatibility cleanup, not architecture correction.
+- Legacy order pay compatibility routes have been removed, so payment confirmation now stays fully on the payment chain.
+- The remaining cleanup here is mostly merchant-domain boundary review rather than order-payment architecture correction.
 
 ### payment-service
 
@@ -180,7 +180,7 @@ Findings:
 
 - Run end-to-end verification for gateway -> governance-service -> business-service chains in an integration environment.
 - Continue merchant-domain ownership audit for any leftover compatibility shortcuts.
-- Revisit compatibility-era public REST shapes and remove only the ones no longer required by frontend or operations clients.
+- Revisit the remaining compatibility-era public REST shapes and remove only the ones no longer required by frontend or operations clients.
 
 ### Explicitly not in this phase
 

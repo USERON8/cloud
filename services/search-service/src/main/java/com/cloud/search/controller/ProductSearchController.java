@@ -15,7 +15,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import java.math.BigDecimal;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
@@ -151,24 +150,6 @@ public class ProductSearchController {
   }
 
   @Operation(
-      summary = "Advanced search",
-      description = "Compatibility alias of complex search for keyword and price range")
-  @GetMapping("/search/advanced")
-  public Result<SearchResultDTO<ProductDocument>> advancedSearch(
-      @Parameter(description = "Keyword") @RequestParam String keyword,
-      @Parameter(description = "Min price") @RequestParam(required = false) BigDecimal minPrice,
-      @Parameter(description = "Max price") @RequestParam(required = false) BigDecimal maxPrice,
-      @Parameter(description = "Page number") @RequestParam(defaultValue = "0") int page,
-      @Parameter(description = "Page size") @RequestParam(defaultValue = "20") int size,
-      @Parameter(description = "search_after values, json array or comma separated")
-          @RequestParam(required = false)
-          String searchAfter) {
-    return Result.success(
-        "Search success",
-        searchFacadeService.advancedSearch(keyword, minPrice, maxPrice, page, size, searchAfter));
-  }
-
-  @Operation(
       summary = "Smart search",
       description = "Compatibility alias of complex search for optimized query parameters")
   @GetMapping("/smart-search")
@@ -248,21 +229,6 @@ public class ProductSearchController {
         searchFacadeService.getTodayHotSellingProducts(page, size));
   }
 
-  @Operation(
-      summary = "Basic API search",
-      description = "Compatibility alias of /api/public/search/search")
-  @GetMapping("/basic")
-  public Result<SearchResultDTO<ProductDocument>> basicSearch(
-      @Parameter(description = "Keyword") @RequestParam(required = false) String keyword,
-      @Parameter(description = "Page number") @RequestParam(defaultValue = "0") Integer page,
-      @Parameter(description = "Page size") @RequestParam(defaultValue = "20") Integer size,
-      @Parameter(description = "search_after values, json array or comma separated")
-          @RequestParam(required = false)
-          String searchAfter) {
-    return Result.success(
-        "Search success", searchFacadeService.basicSearch(keyword, page, size, searchAfter));
-  }
-
   @Operation(summary = "Filter search", description = "Search products with filter payload")
   @PostMapping("/filter")
   public Result<SearchResultDTO<ProductDocument>> filterSearch(
@@ -271,104 +237,6 @@ public class ProductSearchController {
           @RequestParam(required = false)
           String searchAfter) {
     return Result.success("Search success", searchFacadeService.filterSearch(request, searchAfter));
-  }
-
-  @Operation(
-      summary = "Filter by category",
-      description = "Compatibility alias of /api/public/search/filter for category-only filters")
-  @GetMapping("/filter/category/{categoryId}")
-  public Result<SearchResultDTO<ProductDocument>> filterByCategory(
-      @Parameter(description = "Category id") @PathVariable Long categoryId,
-      @Parameter(description = "Page number") @RequestParam(defaultValue = "0") Integer page,
-      @Parameter(description = "Page size") @RequestParam(defaultValue = "20") Integer size,
-      @Parameter(description = "search_after values, json array or comma separated")
-          @RequestParam(required = false)
-          String searchAfter) {
-    return Result.success(
-        "Filter success",
-        searchFacadeService.searchByCategoryFilter(categoryId, page, size, searchAfter));
-  }
-
-  @Operation(
-      summary = "Filter by brand",
-      description = "Compatibility alias of /api/public/search/filter for brand-only filters")
-  @GetMapping("/filter/brand/{brandId}")
-  public Result<SearchResultDTO<ProductDocument>> filterByBrand(
-      @Parameter(description = "Brand id") @PathVariable Long brandId,
-      @Parameter(description = "Page number") @RequestParam(defaultValue = "0") Integer page,
-      @Parameter(description = "Page size") @RequestParam(defaultValue = "20") Integer size,
-      @Parameter(description = "search_after values, json array or comma separated")
-          @RequestParam(required = false)
-          String searchAfter) {
-    return Result.success(
-        "Filter success",
-        searchFacadeService.searchByBrandFilter(brandId, page, size, searchAfter));
-  }
-
-  @Operation(
-      summary = "Filter by price",
-      description = "Compatibility alias of /api/public/search/filter for price filters")
-  @GetMapping("/filter/price")
-  public Result<SearchResultDTO<ProductDocument>> filterByPrice(
-      @Parameter(description = "Min price") @RequestParam(required = false) BigDecimal minPrice,
-      @Parameter(description = "Max price") @RequestParam(required = false) BigDecimal maxPrice,
-      @Parameter(description = "Page number") @RequestParam(defaultValue = "0") Integer page,
-      @Parameter(description = "Page size") @RequestParam(defaultValue = "20") Integer size,
-      @Parameter(description = "search_after values, json array or comma separated")
-          @RequestParam(required = false)
-          String searchAfter) {
-    return Result.success(
-        "Filter success",
-        searchFacadeService.searchByPriceFilter(minPrice, maxPrice, page, size, searchAfter));
-  }
-
-  @Operation(
-      summary = "Filter by shop",
-      description = "Compatibility alias of /api/public/search/filter for shop-only filters")
-  @GetMapping("/filter/shop/{shopId}")
-  public Result<SearchResultDTO<ProductDocument>> filterByShop(
-      @Parameter(description = "Shop id") @PathVariable Long shopId,
-      @Parameter(description = "Page number") @RequestParam(defaultValue = "0") Integer page,
-      @Parameter(description = "Page size") @RequestParam(defaultValue = "20") Integer size,
-      @Parameter(description = "search_after values, json array or comma separated")
-          @RequestParam(required = false)
-          String searchAfter) {
-    return Result.success(
-        "Filter success", searchFacadeService.searchByShopFilter(shopId, page, size, searchAfter));
-  }
-
-  @Operation(
-      summary = "Combined filter",
-      description = "Compatibility alias of complex search for combined filter conditions")
-  @GetMapping("/filter/combined")
-  public Result<SearchResultDTO<ProductDocument>> combinedFilter(
-      @Parameter(description = "Keyword") @RequestParam(required = false) String keyword,
-      @Parameter(description = "Category id") @RequestParam(required = false) Long categoryId,
-      @Parameter(description = "Brand id") @RequestParam(required = false) Long brandId,
-      @Parameter(description = "Min price") @RequestParam(required = false) BigDecimal minPrice,
-      @Parameter(description = "Max price") @RequestParam(required = false) BigDecimal maxPrice,
-      @Parameter(description = "Shop id") @RequestParam(required = false) Long shopId,
-      @Parameter(description = "Sort field") @RequestParam(defaultValue = "hotScore") String sortBy,
-      @Parameter(description = "Sort order") @RequestParam(defaultValue = "desc") String sortOrder,
-      @Parameter(description = "Page number") @RequestParam(defaultValue = "0") Integer page,
-      @Parameter(description = "Page size") @RequestParam(defaultValue = "20") Integer size,
-      @Parameter(description = "search_after values, json array or comma separated")
-          @RequestParam(required = false)
-          String searchAfter) {
-    return Result.success(
-        "Filter success",
-        searchFacadeService.combinedSearch(
-            keyword,
-            categoryId,
-            brandId,
-            minPrice,
-            maxPrice,
-            shopId,
-            sortBy,
-            sortOrder,
-            page,
-            size,
-            searchAfter));
   }
 
   private void normalizePublicStatus(ProductSearchRequest request) {

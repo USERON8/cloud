@@ -65,7 +65,6 @@ Rules:
 4. Search discovery
    - `GET /api/search/search`
    - `GET /api/search/smart-search`
-   - `GET /api/search/basic`
    - `GET /api/search/suggestions`
    - `GET /api/search/hot-keywords`
    - `GET /api/search/keyword-recommendations`
@@ -442,19 +441,12 @@ Notes:
 | GET | `/api/search/search` | Public |
 | GET | `/api/search/search/category/{categoryId}` | Public |
 | GET | `/api/search/search/shop/{shopId}` | Public |
-| GET | `/api/search/search/advanced` | Public |
 | GET | `/api/search/smart-search` | Public |
 | GET | `/api/search/recommended` | Public |
 | GET | `/api/search/new` | Public |
 | GET | `/api/search/hot` | Public |
 | GET | `/api/search/hot/today` | Public |
-| GET | `/api/search/basic` | Public |
 | POST | `/api/search/filter` | Public |
-| GET | `/api/search/filter/category/{categoryId}` | Public |
-| GET | `/api/search/filter/brand/{brandId}` | Public |
-| GET | `/api/search/filter/price` | Public |
-| GET | `/api/search/filter/shop/{shopId}` | Public |
-| GET | `/api/search/filter/combined` | Public |
 | POST | `/api/search/shops/complex-search` | Public |
 | POST | `/api/search/shops/filters` | Public |
 | GET | `/api/search/shops/suggestions` | Public |

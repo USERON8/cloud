@@ -38,7 +38,7 @@ Scope: backend refactor execution status for RPC, security boundary, merchant ow
 
 - Governance and operations surfaces have not been split into an isolated deployment boundary; they are implemented as a dedicated `governance-service` module inside the current repository and service set.
 - Merchant-domain admin surfaces such as `/api/admin/merchant/**` and `/api/admin/merchant/auth/**` remain intentionally routed to `user-service` and are outside the governance migration scope for this phase.
-- The repository still contains compatibility-era public REST shapes that should be revisited in a later cleanup phase.
+- The repository still contains some compatibility-era public REST shapes, but legacy order pay routes and search alias routes have already been reduced in this cleanup phase.
 
 ## Architecture Target
 
@@ -143,6 +143,7 @@ Scope: backend refactor execution status for RPC, security boundary, merchant ow
 - Added `/api/admin/governance/**` at gateway as the preferred admin-facing compatibility proxy for governance operations, reducing the need for operators to reach business-service admin paths directly.
 - Added governance-owned admin controller handling for statistics, thread-pool, admin management, user query, user batch management, notification operations, MQ governance, outbox governance, observability entry metadata, and token governance paths directly in `governance-service`.
 - Added governance-owned admin stock ledger handling in `governance-service`, with `stock-service` retained only as the RPC provider and internal-scope surface.
+- Removed legacy order pay compatibility routes and removed search compatibility alias routes that were no longer needed after frontend and Postman clients moved to canonical search APIs.
 
 ### Remaining
 
