@@ -44,6 +44,13 @@ Service process logs are written under `.tmp/service-runtime/<service>/stdout.lo
 Rolling application and error logs are written to `services/<service>/logs/` by default, or `.tmp/service-runtime/<service>/app-logs/` if the module log directory is not writable.
 SkyWalking agent logs are written under `.tmp/service-runtime/<service>/skywalking-agent/`.
 
+## Validated startup notes
+
+- The local Windows-oriented profile already avoids the reserved-port conflict that affected Canal in earlier runs; use the current `docker/.env` defaults instead of older screenshots or notes.
+- `start-services.*` now exports the Redis aliases required by both Spring Data Redis and Redisson, so host-started services no longer depend on manually prepared Redis env variables.
+- Local smoke and preflight scripts accept both current and older container aliases, so startup checks no longer depend on one exact compose naming variant.
+- First-time SkyWalking startup may still require network access to download the javaagent unless `.tmp/skywalking/` is already warm.
+
 ## Common flags
 
 - `--with-monitoring`: start Prometheus, Grafana, and exporters together with the base containers

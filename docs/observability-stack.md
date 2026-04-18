@@ -121,10 +121,28 @@ In SkyWalking UI, focus first on:
 - Remote call governance metrics are exposed through `remote.call` with labels `kind`, `target`, and `outcome`
 - Outbox health recommendation: track `NEW`, `FAILED`, and `DEAD` rows in `outbox_event` per database; `DEAD > 0` means the relay or MQ send path needs inspection
 - `OutboxMetricsMonitor` adds outbox backlog, oldest-age, retry, and success-oriented gauges/counters for shared monitoring
-- MQ governance support exists through:
-  - `GET /internal/mq/governance/consumers`
-  - `GET /internal/mq/dead-letters/pending`
-  - `POST /internal/mq/dead-letters/handle`
+- MQ governance support now aggregates through `governance-service`:
+  - `GET /internal/governance/mq/consumers`
+  - `GET /internal/governance/mq/dead-letters/pending`
+  - `POST /internal/governance/mq/dead-letters/handle`
+- Outbox governance support now aggregates through `governance-service`:
+  - `GET /internal/governance/outbox/stats`
+  - `GET /internal/governance/outbox/pending`
+  - `GET /internal/governance/outbox/dead`
+  - `POST /internal/governance/outbox/requeue`
+- Governed Grafana entry metadata is available through:
+  - `GET /internal/governance/observability/grafana`
+  - `GET /api/admin/observability/grafana`
+- Governed Grafana redirect entrypoints are available through:
+  - `GET /internal/governance/observability/grafana/open`
+  - `GET /api/admin/observability/grafana/open`
+  - Optional query parameter: `dashboardUid`
+- Redirect targets are restricted to the configured Grafana dashboard whitelist under `app.governance.observability.grafana.allowed-dashboards`
+- Admin governance entrypoints are also available through:
+  - `GET /api/admin/mq/consumers`
+  - `GET /api/admin/mq/dead-letters/pending`
+  - `POST /api/admin/mq/dead-letters/handle`
+- Service-local `/internal/mq/**` and `/internal/outbox/governance/**` endpoints remain as underlying infrastructure support endpoints behind each business service
 - RocketMQ lag monitoring uses `RocketMqConsumerTopology` + `RocketMqLagMonitor`, and thresholds are configured through `MessageProperties`
 - MQ trace note: consumer-side trace restoration is now wired in the shared messaging layer, but full producer-to-consumer continuity still depends on message headers being preserved consistently
 - Dead-letter monitoring note: failed consumers write into the `dead_letter` table, but Grafana does not visualize it by default; add a dedicated collector and dashboard if needed

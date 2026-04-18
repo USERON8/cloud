@@ -27,6 +27,10 @@ public final class SecurityPermissionUtils {
       }
       return userId;
     }
+    Object principal = authentication == null ? null : authentication.getPrincipal();
+    if (principal instanceof InternalAuthenticatedPrincipal internalPrincipal) {
+      return internalPrincipal.userId();
+    }
     return null;
   }
 
@@ -73,16 +77,7 @@ public final class SecurityPermissionUtils {
   }
 
   public static boolean isMerchantOwner(Authentication authentication, Long merchantId) {
-    if (authentication == null || merchantId == null) {
-      return false;
-    }
-
-    if (!isMerchant(authentication)) {
-      return false;
-    }
-
-    String currentUserId = getCurrentUserId(authentication);
-    return Objects.equals(currentUserId, merchantId.toString());
+    return false;
   }
 
   public static boolean isAdminOrOwner(Authentication authentication, Long resourceUserId) {
@@ -94,6 +89,6 @@ public final class SecurityPermissionUtils {
   }
 
   public static boolean isAdminOrMerchantOwner(Authentication authentication, Long merchantId) {
-    return isAdmin(authentication) || isMerchantOwner(authentication, merchantId);
+    return isAdmin(authentication);
   }
 }

@@ -2,9 +2,9 @@ spring:
   datasource:
     type: com.alibaba.druid.pool.DruidDataSource
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://127.0.0.1:13306/user_db?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=GMT%2B8
-    username: root
-    password: root
+    url: jdbc:mysql://${DB_HOST:127.0.0.1}:${DB_PORT:13306}/user_db?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=GMT%2B8
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
     druid:
       initial-size: 5
       min-idle: 5
@@ -20,9 +20,9 @@ spring:
       min-evictable-idle-time-millis: 300000
   data:
     redis:
-      host: 127.0.0.1
-      port: 16379
-      password: root
+      host: ${REDIS_HOST:127.0.0.1}
+      port: ${REDIS_PORT:16379}
+      password: ${REDIS_PASSWORD}
       database: 2
       timeout: 10000ms
       lettuce:
@@ -32,11 +32,11 @@ spring:
           max-idle: 8
           min-idle: 2
 minio:
-  endpoint: http://127.0.0.1:19000
-  access-key: ${MINIO_ACCESS_KEY:minioadmin}
-  secret-key: ${MINIO_SECRET_KEY:minioadmin}
-  bucket-name: user-avatars
-  public-endpoint: http://127.0.0.1:19000
+  endpoint: ${MINIO_ENDPOINT:http://127.0.0.1:19000}
+  access-key: ${MINIO_ACCESS_KEY}
+  secret-key: ${MINIO_SECRET_KEY}
+  bucket-name: ${MINIO_BUCKET_NAME:user-avatars}
+  public-endpoint: ${MINIO_PUBLIC_ENDPOINT:http://127.0.0.1:19000}
 logging:
   level:
     com.cloud.user: debug

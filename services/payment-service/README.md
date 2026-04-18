@@ -20,7 +20,6 @@ Payment service for payment order management, refund processing, and payment cha
 - Create payment order: `POST /api/payments/orders`
 - Query payment order: `GET /api/payments/orders/{paymentNo}`
 - Query payment status: `GET /api/payments/orders/{paymentNo}/status`
-- Internal callback handling: `POST /api/payments/callbacks`
 - External compatibility callback: `POST /api/v1/payment/alipay/notify`
 - Create refund: `POST /api/payments/refunds`
 - Query refund: `GET /api/payments/refunds/{refundNo}`

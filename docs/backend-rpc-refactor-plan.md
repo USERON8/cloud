@@ -1,0 +1,216 @@
+# Backend RPC Refactor Plan
+
+Generated on: 2026-04-15
+Scope: backend refactor execution status for RPC, security boundary, merchant ownership, payment chain, and governance split.
+
+## Current Status Summary
+
+### Canonical Scope
+
+- This file is the canonical status and audit reference for the backend refactor.
+- The current frozen scope is:
+  - non-merchant governance and operations live behind `governance-service`,
+  - merchant admin, merchant certification, and shop certification remain in `user-service`,
+  - Grafana remains a governed redirect target instead of an SSO or reverse-proxy surface.
+- The repository currently validates with `mvn -DskipTests compile`.
+- Companion docs that should stay in sync with this file are:
+  - `docs/backend-api.md`
+  - `docs/frontend-api.md`
+  - `docs/dev-startup.md`
+  - `docs/observability-stack.md`
+  - `docs/performance-baseline.md`
+  - `docs/transaction-strategy.md`
+  - `docs/TEST_SCRIPT_INDEX.md`
+
+### Completed
+
+- Internal service-to-service RPC contracts are in place under `common-parent/common-api`.
+- Order and payment internal calls now use Dubbo RPC instead of ad-hoc HTTP.
+- Payment chain has been rebuilt around dedicated payment orders, callback logs, outbox relay, compensation, and idempotent cache-only security helpers.
+- Gateway now propagates trusted internal identity headers after successful public JWT authentication.
+- Downstream servlet services now accept trusted internal identity headers with HMAC verification and can authenticate internal requests without reusing the public bearer token.
+- Legacy merchant ownership shortcut `userId == merchantId` has been removed from the common permission utility path.
+- Added `governance-service` as the first dedicated governance aggregation module, using Dubbo to collect user statistics, thread-pool metrics, and stock ledger reads.
+- `governance-service` now also aggregates token governance reads and control operations from `auth-service` through Dubbo RPC.
+- `governance-service` now also aggregates admin management operations from `user-service` through Dubbo RPC.
+- `governance-service` now also aggregates user query and batch user-management operations from `user-service` through Dubbo RPC.
+- `governance-service` now also aggregates MQ consumer topology and dead-letter handling across the business services through trusted internal HTTP.
+- `governance-service` now also aggregates outbox backlog, dead-event listing, single-event requeue, and bounded batch requeue control across the business services through trusted internal HTTP.
+- `governance-service` now exposes governed Grafana entry metadata so operators have one formal observability entrypoint instead of relying on ad-hoc local bookmarks.
+- `governance-service` now also exposes governed Grafana redirect entrypoints so operators can open Grafana through a stable governance URL instead of constructing dashboard links manually.
+- Grafana redirect entrypoints are now restricted by a governance-owned dashboard whitelist in service configuration.
+- `governance-service` now also aggregates admin notification and system announcement operations from `user-service` through Dubbo RPC while preserving the existing external admin notification paths.
+- Gateway now exposes `/api/admin/governance/**` as the admin-compatible proxy to the governance aggregation surface.
+- Gateway now also routes the governance-owned admin paths (`/api/admin/statistics/**`, `/api/admin/thread-pool/**`, `/api/admin/manage/users/**`, `/api/admin/query/users/**`, `/api/admin/mq/**`, `/api/admin/outbox/**`, `/api/admin/observability/**`, `/api/app/user/notification/**`, and `/auth/tokens/**`) to `governance-service` before business-service route matches.
+- `GET /api/admin/stocks/ledger/{skuId}` is now routed to `governance-service` as the formal admin governance entrypoint instead of reaching `stock-service` directly.
+
+### Partially Completed
+
+- Merchant ownership model has moved to `merchant.owner_user_id`, and the main write paths already validate ownership through `user-service`, but some business APIs still expose merchant-facing REST surfaces directly.
+- Gateway and service responsibilities are cleaner on the security side, but merchant-domain management APIs intentionally remain inside the original business service.
+- Pure internal RPC is established on key chains, but the project still keeps many REST controllers that should eventually be reduced to public-edge responsibilities only.
+- Internal governance aliases now exist for thread-pool monitor, user statistics, and stock ledger so trusted callers no longer need to depend on the public admin API shapes for those operations.
+
+### Not Completed
+
+- Governance and operations surfaces have not been split into an isolated deployment boundary; they are implemented as a dedicated `governance-service` module inside the current repository and service set.
+- Merchant-domain admin surfaces such as `/api/admin/merchant/**` and `/api/admin/merchant/auth/**` remain intentionally routed to `user-service` and are outside the governance migration scope for this phase.
+- The repository still contains some compatibility-era public REST shapes, but legacy order pay routes and search alias routes have already been reduced in this cleanup phase.
+
+## Architecture Target
+
+### Public Edge
+
+- Gateway validates public JWT.
+- Gateway converts the authenticated principal into trusted internal headers.
+- Gateway signs internal identity headers with shared HMAC.
+- Downstream services restore identity from internal headers and no longer depend on forwarded bearer tokens for normal routed traffic.
+
+### Internal Calls
+
+- Internal business-to-business calls use Dubbo RPC.
+- Internal HTTP should be reserved for infrastructure and controlled compatibility cases only.
+
+## Security Model Refactor
+
+### Implemented
+
+- Added shared internal request header constants in `common-security`.
+- Added shared HMAC signer in `common-security`.
+- Added downstream internal request authentication filter in `common-security`.
+- Registered the internal filter before bearer token authentication in the servlet resource server chain.
+- Added gateway internal identity propagation filter that:
+  - reads the authenticated JWT principal,
+  - strips the external `Authorization` header before forwarding,
+  - injects trusted internal identity headers,
+  - signs them with HMAC.
+
+### Remaining
+
+- Introduce the same internal header trust model for any non-servlet internal services if new runtime types are added later.
+- Review and reduce any public endpoints that were only kept for historical convenience.
+
+## Gateway And Service Responsibility Split
+
+### Implemented
+
+- Gateway is now the effective public authentication boundary for normal routed authenticated traffic.
+- Downstream services can authenticate trusted internal requests without re-consuming the public bearer token.
+
+### Remaining
+
+- Reduce direct gateway exposure of any future business-internal management endpoints that are not explicitly retained in the merchant domain.
+- Keep merchant-domain admin/auth APIs in `user-service` unless a later phase explicitly changes that boundary.
+
+## Pure RPC Internal Call Rules
+
+### Implemented
+
+- `order-service -> payment-service` uses `PaymentDubboApi`.
+- `payment-service -> order-service` uses `OrderDubboApi`.
+
+### Remaining
+
+- Continue replacing any future internal HTTP business calls with RPC contracts.
+- Keep public REST only for true edge-facing workflows.
+
+## Merchant Ownership Model
+
+### Implemented
+
+- Canonical ownership remains `merchant.owner_user_id`.
+- `user-service` ownership checks are used by merchant authorization and product write guards.
+- Common permission utility no longer treats `merchantId` as equivalent to current `userId`.
+
+### Remaining
+
+- Continue auditing merchant-facing controllers and services for any compatibility assumptions that still blur merchant id and owner user id.
+- Merchant certification and shop certification workflows remain intentionally hosted in the original `user-service` admin surface for this phase.
+
+## Payment Chain
+
+### Implemented
+
+- Payment order creation verifies order ownership and payable amount through RPC.
+- Payment callback verification persists callback logs and drives state transition through payment service logic.
+- Payment outbox relay is in place for payment success and refund completion events.
+- Payment Redis usage remains limited to idempotency, short-lived result/status caching, rate limiting, and checkout tickets.
+
+## Governance Surface Split
+
+### Implemented
+
+- Added internal governance aliases for:
+  - thread-pool monitor,
+  - user statistics,
+  - stock ledger reads.
+- These aliases require internal trusted identity with `SCOPE_internal`.
+- Gateway now recognizes and authorizes these internal governance aliases explicitly instead of forcing them through the public admin role gate.
+- Internal governance aliases are now hosted by dedicated internal controllers, separating them from the public admin controller surface inside the business services.
+- Added `/internal/governance/**` as the dedicated governance aggregation entrypoint backed by `governance-service`.
+- Added admin governance aggregation under `/internal/governance/admins/**`, backed by `AdminGovernanceDubboApi`.
+- Added user query and user batch-management governance aggregation under `/internal/governance/users/**`, backed by `UserAdminGovernanceDubboApi`.
+- Added auth token governance aggregation under `/internal/governance/auth/tokens/**`, backed by `AuthGovernanceDubboApi`.
+- Added notification governance aggregation under `/internal/governance/notifications/**`, backed by `UserNotificationGovernanceDubboApi`.
+- Added MQ governance aggregation under `/internal/governance/mq/**`, backed by service discovery plus trusted internal HMAC-signed HTTP to the business services.
+- Added outbox governance aggregation under `/internal/governance/outbox/**`, backed by service discovery plus trusted internal HMAC-signed HTTP to the business services.
+- Added bounded batch outbox requeue APIs under both `/internal/governance/outbox/requeue-batch` and `/api/admin/outbox/requeue-batch`.
+- Added observability entry metadata under `/internal/governance/observability/grafana`, backed by `governance-service` configuration.
+- Added governed Grafana redirect entrypoints under `/internal/governance/observability/grafana/open` and `/api/admin/observability/grafana/open`.
+- Added `/api/admin/governance/**` at gateway as the preferred admin-facing compatibility proxy for governance operations, reducing the need for operators to reach business-service admin paths directly.
+- Added governance-owned admin controller handling for statistics, thread-pool, admin management, user query, user batch management, notification operations, MQ governance, outbox governance, observability entry metadata, and token governance paths directly in `governance-service`.
+- Added governance-owned admin stock ledger handling in `governance-service`, with `stock-service` retained only as the RPC provider and internal-scope surface.
+- Removed legacy order pay compatibility routes and removed search compatibility alias routes that were no longer needed after frontend and Postman clients moved to canonical search APIs.
+
+### Remaining
+
+- Decide whether Grafana should later gain a controlled reverse-proxy facade or SSO surface for enterprise deployments.
+- Grafana currently remains a governed whitelist-based redirect target rather than a reverse-proxy or SSO surface.
+
+## Database Refactor Notes
+
+### Implemented
+
+- `outbox_event` exists across the major business services.
+- Payment tables already reflect the rebuilt payment domain model.
+- Merchant table includes `owner_user_id`.
+
+## Code-Level Change Log
+
+### Added
+
+- `common-security/InternalRequestHeaders.java`
+- `common-security/InternalAuthenticatedPrincipal.java`
+- `common-security/InternalRequestSigner.java`
+- `common-security/InternalRequestAuthenticationFilter.java`
+- `gateway/InternalIdentityPropagationFilter.java`
+- `common-api/AuthGovernanceDubboApi.java`
+- `common-api/AdminGovernanceDubboApi.java`
+- `common-api/UserNotificationGovernanceDubboApi.java`
+- `common-domain/vo/auth/*`
+- `common-domain/dto/user/UserNotification*.java`
+- `auth-service/AuthGovernanceService.java`
+- `auth-service/AuthGovernanceDubboService.java`
+- `user-service/AdminGovernanceDubboService.java`
+- `user-service/UserNotificationGovernanceDubboService.java`
+- `governance-service/GovernanceAdminController.java`
+- `governance-service/GovernanceStockAdminController.java`
+- `governance-service/MqGovernanceAggregationService.java`
+- `common-messaging/OutboxGovernanceController.java`
+- `common-messaging/OutboxGovernanceService.java`
+- `governance-service/OutboxGovernanceAggregationService.java`
+- `governance-service/ObservabilityEntryService.java`
+
+### Updated
+
+- `common-security/BaseResourceServerConfig.java`
+- `common-security/SecurityAutoConfiguration.java`
+- `common-security/SecurityPermissionUtils.java`
+- `governance-service/GovernanceController.java`
+
+## Recommended Next Steps
+
+1. Re-run end-to-end verification for gateway -> governance-service -> business-service flows in an integration environment.
+2. Audit merchant/business controllers for any remaining ownership compatibility shortcuts.
+3. Decide whether Grafana needs SSO or reverse-proxy capability in a later operations phase.
+4. Review compatibility-era public REST shapes and remove only the ones no longer needed by frontend or ops clients.

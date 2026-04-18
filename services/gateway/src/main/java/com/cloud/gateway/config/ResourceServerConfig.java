@@ -89,6 +89,8 @@ public class ResourceServerConfig {
                       .permitAll()
                       .pathMatchers("/actuator/health", "/actuator/prometheus", "/nacos/**")
                       .permitAll()
+                      .pathMatchers("/auth/tokens/**")
+                      .hasRole("ADMIN")
                       .pathMatchers("/auth/**")
                       .permitAll()
                       .pathMatchers("/ws/**")
@@ -158,6 +160,19 @@ public class ResourceServerConfig {
               authExchanges
                   .pathMatchers("/api/public/**")
                   .permitAll()
+                  .pathMatchers("/api/admin/governance/**")
+                  .hasRole("ADMIN")
+                  .pathMatchers("/api/admin/mq/**")
+                  .hasRole("ADMIN")
+                  .pathMatchers("/api/admin/outbox/**", "/api/admin/observability/**")
+                  .hasRole("ADMIN")
+                  .pathMatchers(
+                      "/api/admin/thread-pool/internal/**",
+                      "/api/admin/statistics/internal/**",
+                      "/api/admin/stocks/internal/**")
+                  .hasAuthority("SCOPE_internal")
+                  .pathMatchers("/internal/governance/**")
+                  .hasAuthority("SCOPE_internal")
                   .pathMatchers("/api/app/user/notification/**")
                   .hasAuthority("admin:all")
                   .pathMatchers("/api/app/user/profile/**", "/api/app/user/address/**")

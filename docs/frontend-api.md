@@ -74,32 +74,28 @@ Primary APIs:
 - `GET /api/product/spu/{spuId}`
 - `GET /api/product/spu/category/{categoryId}`
 - `GET /api/product/sku/batch`
-- `GET /api/search/search`
-- `GET /api/search/smart-search`
-- `GET /api/search/basic`
-- `POST /api/search/complex-search`
-- `POST /api/search/filter`
-- `POST /api/search/filters`
-- `GET /api/search/recommended`
-- `GET /api/search/new`
-- `GET /api/search/hot`
-- `GET /api/search/hot/today`
-- `GET /api/search/filter/category/{categoryId}`
-- `GET /api/search/filter/brand/{brandId}`
-- `GET /api/search/filter/price`
-- `GET /api/search/filter/shop/{shopId}`
-- `GET /api/search/filter/combined`
-- `GET /api/search/shops/recommended`
+- `GET /api/search/products`
+- `GET /api/search/products/optimized-searches`
+- `POST /api/search/products/searches`
+- `POST /api/search/products/filtered-searches`
+- `POST /api/search/products/filter-groups`
+- `GET /api/search/products/recommendations`
+- `GET /api/search/products/latest`
+- `GET /api/search/products/popular`
+- `GET /api/search/products/popular/today`
+- `GET /api/search/categories/{categoryId}/products`
+- `GET /api/search/shops/{shopId}/products`
+- `GET /api/search/shops/recommendations`
 - `GET /api/search/shops/suggestions`
-- `GET /api/search/shops/hot-shops`
+- `GET /api/search/shops/popular`
 - `GET /api/search/shops/{shopId}`
-- `GET /api/search/shops/by-location`
-- `POST /api/search/shops/complex-search`
-- `POST /api/search/shops/filters`
+- `GET /api/search/shops/nearby`
+- `POST /api/search/shops/searches`
+- `POST /api/search/shops/filter-groups`
 
 Notes:
-- Empty-keyword market landing now prefers `GET /api/search/hot/today`.
-- Search APIs are split between lightweight aliases and rich request-body operations.
+- Empty-keyword market landing now prefers `GET /api/search/products/popular/today`.
+- Search APIs now follow resource-oriented naming under `/api/search/products/**` and `/api/search/shops/**`.
 - Merchant catalog management now uses `GET /api/product/manage` so unpublished products remain visible to the merchant owner and can be published again.
 - `src/api/product-catalog.ts` is the frontend entry for SPU and SKU maintenance APIs.
 - `src/api/shop-search.ts` is the frontend entry for shop discovery and recommendation APIs.
@@ -126,6 +122,7 @@ Primary APIs:
 Notes:
 - Real payment starts from the payment module after order creation.
 - The frontend no longer exports direct order pay helpers. Current payment flow must go through the payment module.
+- `GET /api/orders` now sends merchant filtering only through `merchantId`. The old `shopId` query alias has been removed from the frontend contract.
 - `createOrder(payload)` in `src/api/order.ts` currently implements direct-buy only. It auto-generates `clientOrderId` when the caller does not provide one.
 - `createCartOrder(payload)` now implements cart checkout through backend `cartId`.
 - `listOrders` and `getOrderById` now return `items[]`. Each item includes immutable `skuSnapshot` data and an optional `latestProduct` view when the backend can still resolve the SKU.
@@ -168,10 +165,13 @@ Primary APIs:
 - Merchant management: `/api/merchant/**`
 - Merchant auth: `/api/merchant/auth/**`
 - Admin: `/api/admin/**`
-- User management: `/api/query/users/**`, `/api/manage/users/**`
-- Notifications: `/api/user/notification/**`
-- Statistics: `/api/statistics/**`
-- Thread pool: `/api/thread-pool/**`
+- User management: `/api/admin/query/users/**`, `/api/admin/manage/users/**`
+- Notifications: `/api/app/user/notification/**`
+- Statistics: `/api/admin/statistics/**`
+- Thread pool: `/api/admin/thread-pool/**`
+- MQ governance: `/api/admin/mq/**`
+- Outbox governance: `/api/admin/outbox/**`
+- Observability entry: `/api/admin/observability/**`
 - Stock: `/api/stocks/**`
 - Auth token ops: `/auth/tokens/**`
 
@@ -180,13 +180,18 @@ Notes:
 - Stock mutation APIs are internal-scope APIs and are not part of normal frontend user flows.
 - Stock pre-check API (`POST /api/stocks/pre-check`) is available for batch stock validation before order creation.
 - Stock ledger responses expose integer `status` values from the backend. The stock page now renders `1` as `Active` and derives low-stock warnings from `availableQty` and `alertThreshold` instead of assuming string enums.
-- Admin workspace currently consumes `/api/admin`, `/api/query/users/search`, `/api/merchant/auth/list`, `/api/merchant/auth/review/{merchantId}`, `/api/statistics/overview`, and `/api/thread-pool/info`.
+- Admin workspace currently consumes `/api/admin`, `/api/admin/query/users/search`, `/api/merchant/auth/list`, `/api/merchant/auth/review/{merchantId}`, `/api/admin/statistics/overview`, and `/api/admin/thread-pool/info`.
+- Admin workspace notification operations should continue using `/api/app/user/notification/**`, which is now governance-owned behind gateway routing.
+- Merchant certification and shop certification operations continue using `/api/merchant/**` and `/api/merchant/auth/**`, which intentionally remain on the original service boundary in this phase.
 - App shell navigation now hides `Payments` from `MERCHANT` and hides `Ops` from non-admin users because the current backend access policy only closes those pages for owner/admin payment reads and admin operational APIs.
 - Merchant-facing quick actions now avoid linking directly to the standalone payments page, and home quick links only surface `Payments` for roles that can complete the current payment-query flow.
 - Merchant review actions in the admin UI are now unified on `/api/merchant/auth/review/{merchantId}`. The merchant list is read-only for audit status and no longer calls `/api/merchant/{id}/approve|reject`.
 - Admin workspace merchant list and merchant-auth review queue now align with backend access by allowing pure `ADMIN` accounts to read `/api/merchant` and to use `/api/merchant/auth/list|review/*`.
 - Token management utilities exposed in `src/api/auth-tokens.ts` are admin-only operational tools rather than normal user flows.
-- Operations workspace now closes the current admin toolchain for `/auth/tokens/**`, `/api/category/**`, `/api/product/spu/**`, `/api/search/**`, `/api/search/shops/**`, `/api/thread-pool/**`, `/api/statistics/**`, and payment admin helpers already exposed in the frontend API layer.
+- Operations workspace now closes the current admin toolchain for `/auth/tokens/**`, `/api/category/**`, `/api/product/spu/**`, `/api/search/**`, `/api/search/shops/**`, `/api/admin/thread-pool/**`, `/api/admin/statistics/**`, `/api/admin/mq/**`, `/api/admin/outbox/**`, `/api/admin/observability/**`, and payment admin helpers already exposed in the frontend API layer.
+- Outbox governance now supports both single-event requeue and bounded batch requeue under `/api/admin/outbox/requeue` and `/api/admin/outbox/requeue-batch`.
+- Grafana can now be opened through the governed redirect endpoint `/api/admin/observability/grafana/open`, so the admin workspace does not need to construct Grafana dashboard URLs itself.
+- The optional `dashboardUid` query parameter is whitelist-bound by `governance-service` configuration. Frontend callers should only use dashboard UIDs returned from the governance entry metadata.
 
 ## Request And Behavior Notes
 
@@ -241,5 +246,4 @@ The admin UI now depends on:
 
 The backend reference is maintained in `docs/backend-api.md`.
 The Postman collection under `docs/postman/cloud-shop.postman_collection.json` follows the same chain order used here.
-Detailed chain audit findings are maintained in `docs/order-chain-audit.md`.
-Broader module audit findings are maintained in `docs/full-project-audit.md`.
+Consolidated status and audit findings are maintained in `docs/backend-rpc-refactor-plan.md`.

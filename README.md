@@ -89,11 +89,16 @@ Frontend: UniApp (Vue 3 + TypeScript).
 - `payment-service` cache scope is intentionally defensive and short-lived; if future work adds any local cache here, it needs a stronger justification than generic latency reduction.
 - Fail-closed JWT blacklist validation is safer for logout and token revocation semantics, but it turns Redis availability and short access-token TTL into a coupled operational control.
 - Service README files were previously too brief to reflect the current runtime model. They are now expanded, but some modules still need deeper endpoint-level auditing if the team wants a full operational handbook.
-- Existing historical audit references remain useful:
-  - [docs/code-audit-2026-03-13-en.md](./docs/code-audit-2026-03-13-en.md)
-  - [docs/code-audit-2026-03-13-zh.md](./docs/code-audit-2026-03-13-zh.md)
+- Consolidated status and audit notes now live in [docs/backend-rpc-refactor-plan.md](./docs/backend-rpc-refactor-plan.md).
 
 ## Quick Start
+
+## Environment Files
+
+- Copy `.env.example` to `.env` before starting local services.
+- Copy `docker/.env.example` to `docker/.env` before starting Docker Compose.
+- Real `.env` files are local-only and must not be committed.
+- Sensitive values such as database passwords, Redis passwords, OAuth client secrets, JWT keys, and payment keys are now loaded from `.env`.
 
 1. Start infrastructure:
 

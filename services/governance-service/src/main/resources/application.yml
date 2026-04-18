@@ -1,0 +1,20 @@
+spring:
+  application:
+    name: governance-service
+
+server:
+  port: ${SERVER_PORT:8088}
+
+app:
+  governance:
+    observability:
+      grafana:
+        base-url: ${APP_GOVERNANCE_OBSERVABILITY_GRAFANA_BASE_URL:http://127.0.0.1:13000}
+        default-dashboard-uid: ${APP_GOVERNANCE_OBSERVABILITY_GRAFANA_DEFAULT_DASHBOARD_UID:cloud-middleware-services}
+        default-dashboard-title: ${APP_GOVERNANCE_OBSERVABILITY_GRAFANA_DEFAULT_DASHBOARD_TITLE:Cloud Middleware & Services}
+        allowed-dashboards:
+          cloud-middleware-services: Cloud Middleware & Services
+      prometheus:
+        base-url: ${APP_GOVERNANCE_OBSERVABILITY_PROMETHEUS_BASE_URL:http://127.0.0.1:19099}
+      skywalking:
+        base-url: ${APP_GOVERNANCE_OBSERVABILITY_SKYWALKING_BASE_URL:http://127.0.0.1:13001}

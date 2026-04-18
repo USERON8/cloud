@@ -89,7 +89,7 @@ export function complexSearch(
   request: ProductSearchRequest,
   searchAfter?: string
 ): Promise<SearchResult<ProductDocument>> {
-  return http.post<SearchResult<ProductDocument>, SearchResult<ProductDocument>>('/api/search/complex-search', request, {
+  return http.post<SearchResult<ProductDocument>, SearchResult<ProductDocument>>('/api/search/products/searches', request, {
     params: { searchAfter }
   })
 }
@@ -98,7 +98,7 @@ export function getProductFilters(
   request: ProductSearchRequest,
   searchAfter?: string
 ): Promise<SearchResult<ProductDocument>> {
-  return http.post<SearchResult<ProductDocument>, SearchResult<ProductDocument>>('/api/search/filters', request, {
+  return http.post<SearchResult<ProductDocument>, SearchResult<ProductDocument>>('/api/search/products/filter-groups', request, {
     params: { searchAfter }
   })
 }
@@ -109,7 +109,14 @@ export function basicSearch(params: {
   size?: number
   searchAfter?: string
 }): Promise<SearchResult<ProductDocument>> {
-  return http.get<SearchResult<ProductDocument>, SearchResult<ProductDocument>>('/api/search/basic', { params })
+  return complexSearch(
+    {
+      keyword: params.keyword,
+      page: params.page,
+      size: params.size
+    },
+    params.searchAfter
+  )
 }
 
 export function smartSearchProducts(params: {
@@ -120,7 +127,7 @@ export function smartSearchProducts(params: {
   sortOrder?: 'asc' | 'desc'
   searchAfter?: string
 }): Promise<SmartSearchResult> {
-  return http.get<SmartSearchResult, SmartSearchResult>('/api/search/smart-search', { params })
+  return http.get<SmartSearchResult, SmartSearchResult>('/api/search/products/optimized-searches', { params })
 }
 
 export function searchProducts(params: {
@@ -131,14 +138,14 @@ export function searchProducts(params: {
   sortDir?: string
   searchAfter?: string
 }): Promise<SearchResult<ProductDocument>> {
-  return http.get<SearchResult<ProductDocument>, SearchResult<ProductDocument>>('/api/search/search', { params })
+  return http.get<SearchResult<ProductDocument>, SearchResult<ProductDocument>>('/api/search/products', { params })
 }
 
 export function searchByCategory(
   categoryId: number,
   params: { keyword?: string; page?: number; size?: number; searchAfter?: string } = {}
 ): Promise<SearchResult<ProductDocument>> {
-  return http.get<SearchResult<ProductDocument>, SearchResult<ProductDocument>>(`/api/search/search/category/${categoryId}`, {
+  return http.get<SearchResult<ProductDocument>, SearchResult<ProductDocument>>(`/api/search/categories/${categoryId}/products`, {
     params
   })
 }
@@ -147,7 +154,7 @@ export function searchByShop(
   shopId: number,
   params: { keyword?: string; page?: number; size?: number; searchAfter?: string } = {}
 ): Promise<SearchResult<ProductDocument>> {
-  return http.get<SearchResult<ProductDocument>, SearchResult<ProductDocument>>(`/api/search/search/shop/${shopId}`, {
+  return http.get<SearchResult<ProductDocument>, SearchResult<ProductDocument>>(`/api/search/shops/${shopId}/products`, {
     params
   })
 }
@@ -160,19 +167,28 @@ export function advancedSearch(params: {
   size?: number
   searchAfter?: string
 }): Promise<SearchResult<ProductDocument>> {
-  return http.get<SearchResult<ProductDocument>, SearchResult<ProductDocument>>('/api/search/search/advanced', { params })
+  return complexSearch(
+    {
+      keyword: params.keyword,
+      minPrice: params.minPrice,
+      maxPrice: params.maxPrice,
+      page: params.page,
+      size: params.size
+    },
+    params.searchAfter
+  )
 }
 
 export function listSearchSuggestions(keyword: string, size = 10): Promise<string[]> {
-  return http.get<string[], string[]>('/api/search/suggestions', { params: { keyword, size } })
+  return http.get<string[], string[]>('/api/search/products/suggestions', { params: { keyword, size } })
 }
 
 export function listSearchHotKeywords(size = 10): Promise<string[]> {
-  return http.get<string[], string[]>('/api/search/hot-keywords', { params: { size } })
+  return http.get<string[], string[]>('/api/search/products/keywords/hot', { params: { size } })
 }
 
 export function listSearchKeywordRecommendations(keyword = '', size = 10): Promise<string[]> {
-  return http.get<string[], string[]>('/api/search/keyword-recommendations', { params: { keyword, size } })
+  return http.get<string[], string[]>('/api/search/products/keywords/recommendations', { params: { keyword, size } })
 }
 
 export function listRecommendedProducts(
@@ -180,7 +196,7 @@ export function listRecommendedProducts(
   size = 20,
   searchAfter?: string
 ): Promise<SearchResult<ProductDocument>> {
-  return http.get<SearchResult<ProductDocument>, SearchResult<ProductDocument>>('/api/search/recommended', {
+  return http.get<SearchResult<ProductDocument>, SearchResult<ProductDocument>>('/api/search/products/recommendations', {
     params: { page, size, searchAfter }
   })
 }
@@ -190,7 +206,7 @@ export function listNewProducts(
   size = 20,
   searchAfter?: string
 ): Promise<SearchResult<ProductDocument>> {
-  return http.get<SearchResult<ProductDocument>, SearchResult<ProductDocument>>('/api/search/new', {
+  return http.get<SearchResult<ProductDocument>, SearchResult<ProductDocument>>('/api/search/products/latest', {
     params: { page, size, searchAfter }
   })
 }
@@ -200,7 +216,7 @@ export function listHotProducts(
   size = 20,
   searchAfter?: string
 ): Promise<SearchResult<ProductDocument>> {
-  return http.get<SearchResult<ProductDocument>, SearchResult<ProductDocument>>('/api/search/hot', {
+  return http.get<SearchResult<ProductDocument>, SearchResult<ProductDocument>>('/api/search/products/popular', {
     params: { page, size, searchAfter }
   })
 }
@@ -209,7 +225,7 @@ export function listTodayHotSellingProducts(
   page = 0,
   size = 20
 ): Promise<SearchResult<ProductDocument>> {
-  return http.get<SearchResult<ProductDocument>, SearchResult<ProductDocument>>('/api/search/hot/today', {
+  return http.get<SearchResult<ProductDocument>, SearchResult<ProductDocument>>('/api/search/products/popular/today', {
     params: { page, size }
   })
 }
@@ -335,14 +351,28 @@ export interface CombinedSearchParams {
 }
 
 export function combinedSearchProducts(params: CombinedSearchParams): Promise<SearchResult<ProductDocument>> {
-  return http.get<SearchResult<ProductDocument>, SearchResult<ProductDocument>>('/api/search/filter/combined', { params })
+  return filterSearch(
+    {
+      keyword: params.keyword,
+      categoryId: params.categoryId,
+      brandId: params.brandId,
+      shopId: params.shopId,
+      minPrice: params.minPrice,
+      maxPrice: params.maxPrice,
+      sortBy: params.sortBy,
+      sortOrder: params.sortOrder,
+      page: params.page,
+      size: params.size
+    },
+    params.searchAfter
+  )
 }
 
 export function filterSearch(
   request: ProductFilterRequest,
   searchAfter?: string
 ): Promise<SearchResult<ProductDocument>> {
-  return http.post<SearchResult<ProductDocument>, SearchResult<ProductDocument>>('/api/search/filter', request, {
+  return http.post<SearchResult<ProductDocument>, SearchResult<ProductDocument>>('/api/search/products/filtered-searches', request, {
     params: { searchAfter }
   })
 }
@@ -351,18 +381,28 @@ export function filterByCategory(
   categoryId: number,
   params: { page?: number; size?: number; searchAfter?: string } = {}
 ): Promise<SearchResult<ProductDocument>> {
-  return http.get<SearchResult<ProductDocument>, SearchResult<ProductDocument>>(`/api/search/filter/category/${categoryId}`, {
-    params
-  })
+  return filterSearch(
+    {
+      categoryId,
+      page: params.page,
+      size: params.size
+    },
+    params.searchAfter
+  )
 }
 
 export function filterByBrand(
   brandId: number,
   params: { page?: number; size?: number; searchAfter?: string } = {}
 ): Promise<SearchResult<ProductDocument>> {
-  return http.get<SearchResult<ProductDocument>, SearchResult<ProductDocument>>(`/api/search/filter/brand/${brandId}`, {
-    params
-  })
+  return filterSearch(
+    {
+      brandId,
+      page: params.page,
+      size: params.size
+    },
+    params.searchAfter
+  )
 }
 
 export function filterByPrice(params: {
@@ -372,14 +412,27 @@ export function filterByPrice(params: {
   size?: number
   searchAfter?: string
 }): Promise<SearchResult<ProductDocument>> {
-  return http.get<SearchResult<ProductDocument>, SearchResult<ProductDocument>>('/api/search/filter/price', { params })
+  return filterSearch(
+    {
+      minPrice: params.minPrice,
+      maxPrice: params.maxPrice,
+      page: params.page,
+      size: params.size
+    },
+    params.searchAfter
+  )
 }
 
 export function filterByShop(
   shopId: number,
   params: { page?: number; size?: number; searchAfter?: string } = {}
 ): Promise<SearchResult<ProductDocument>> {
-  return http.get<SearchResult<ProductDocument>, SearchResult<ProductDocument>>(`/api/search/filter/shop/${shopId}`, {
-    params
-  })
+  return filterSearch(
+    {
+      shopId,
+      page: params.page,
+      size: params.size
+    },
+    params.searchAfter
+  )
 }

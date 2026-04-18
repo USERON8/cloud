@@ -87,11 +87,16 @@ Version: 1.1.0
 - `payment-service` 的缓存范围是刻意偏防御型和短生命周期的，后续如果要加本地缓存，应该先证明它不会伤到支付正确性或防重语义。
 - JWT 黑名单 fail-closed 策略虽然更严格，但它把 Redis 可用性和短 access token TTL 绑定成了一组运维控制项，后续不能只改其中一个。
 - 之前各服务 README 过于简略，无法真实反映运行方式。本轮已补齐，但如果要形成完整运维手册，仍需再做更细的接口与任务审计。
-- 历史审计文档仍建议保留参考：
-  - [docs/code-audit-2026-03-13-en.md](./docs/code-audit-2026-03-13-en.md)
-  - [docs/code-audit-2026-03-13-zh.md](./docs/code-audit-2026-03-13-zh.md)
+- Consolidated status and audit notes now live in [docs/backend-rpc-refactor-plan.md](./docs/backend-rpc-refactor-plan.md).
 
 ## 快速启动
+
+## 环境文件
+
+- 启动本地服务前，先将 `.env.example` 复制为 `.env`。
+- 启动 Docker Compose 前，先将 `docker/.env.example` 复制为 `docker/.env`。
+- 真实 `.env` 只允许本地保留，不应提交到仓库。
+- 数据库密码、Redis 密码、OAuth 密钥、JWT 密钥、支付密钥等敏感配置统一从 `.env` 读取。
 
 1. 启动基础依赖（含端口占用清理）：
 

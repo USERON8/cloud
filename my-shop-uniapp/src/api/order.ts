@@ -77,12 +77,8 @@ export function createCartOrder(payload: CreateCartOrderPayload): Promise<OrderA
 }
 
 export function listOrders(params: OrderQuery = {}): Promise<OrderPage> {
-  const { merchantId, shopId, ...rest } = params
   return http.get<OrderPage, OrderPage>('/api/orders', {
-    params: {
-      ...rest,
-      merchantId: merchantId ?? shopId
-    }
+    params
   })
 }
 

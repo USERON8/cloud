@@ -76,6 +76,9 @@ application-local.yml
 application-local.properties
 # Local env
 .env
+docker/.env
+!.env.example
+!docker/.env.example
 # Frontend build output
 my-shop-uniapp/dist/
 

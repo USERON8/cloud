@@ -13,7 +13,9 @@ Source of truth: `services/**/controller/*.java`, gateway security rules, and cu
 
 ## Authorization Model
 
-- Public traffic is authenticated and normalized at `gateway` first; downstream services restore trusted identity from gateway-signed internal headers.
+- Public traffic is authenticated and normalized at `gateway` first.
+- For authenticated routed traffic, gateway strips the public bearer token before forwarding, injects trusted internal identity headers, and signs them with shared HMAC.
+- Downstream servlet services restore trusted identity from those gateway-signed internal headers.
 - `Public`: no explicit controller restriction.
 - `Authenticated`: `isAuthenticated()`.
 - `Admin`: `hasAuthority('admin:all')` or `ROLE_ADMIN` where noted.
@@ -21,6 +23,27 @@ Source of truth: `services/**/controller/*.java`, gateway security rules, and cu
 - `Order`: `order:create`, `order:query`, `order:cancel`, `order:refund`.
 - `Product`: `product:create`, `product:edit`, `product:delete`.
 - `Internal`: `hasAuthority('SCOPE_internal')`.
+
+## Internal Header Contract
+
+The following headers are internal-only and must never be produced by public clients:
+
+- `X-Internal-Request`
+- `X-Internal-Subject`
+- `X-Internal-User-Id`
+- `X-Internal-Username`
+- `X-Internal-Client-Id`
+- `X-Internal-Roles`
+- `X-Internal-Permissions`
+- `X-Internal-Scopes`
+- `X-Internal-Timestamp`
+- `X-Internal-Signature`
+
+Rules:
+
+- Downstream services accept these headers only when HMAC verification succeeds.
+- Bearer token requests bypass internal HMAC verification and follow the normal public JWT path.
+- Public clients should continue sending only bearer tokens or the existing public request signature headers where applicable.
 
 ## End-to-End Chains
 
@@ -40,27 +63,28 @@ Source of truth: `services/**/controller/*.java`, gateway security rules, and cu
 3. Product management discovery
    - `GET /api/product/manage`
 4. Search discovery
-   - `GET /api/search/search`
-   - `GET /api/search/smart-search`
-   - `GET /api/search/basic`
-   - `GET /api/search/suggestions`
-   - `GET /api/search/hot-keywords`
-   - `GET /api/search/keyword-recommendations`
-   - `GET /api/search/recommended`
-   - `GET /api/search/new`
-   - `GET /api/search/hot`
-   - `GET /api/search/hot/today`
-   - `POST /api/search/complex-search`
-   - `POST /api/search/filters`
-   - `POST /api/search/filter`
+   - `GET /api/search/products`
+   - `GET /api/search/products/optimized-searches`
+   - `GET /api/search/products/suggestions`
+   - `GET /api/search/products/keywords/hot`
+   - `GET /api/search/products/keywords/recommendations`
+   - `GET /api/search/products/recommendations`
+   - `GET /api/search/products/latest`
+   - `GET /api/search/products/popular`
+   - `GET /api/search/products/popular/today`
+   - `POST /api/search/products/searches`
+   - `POST /api/search/products/filter-groups`
+   - `POST /api/search/products/filtered-searches`
+   - `GET /api/search/categories/{categoryId}/products`
+   - `GET /api/search/shops/{shopId}/products`
 4. Shop discovery
-   - `POST /api/search/shops/complex-search`
-   - `POST /api/search/shops/filters`
+   - `POST /api/search/shops/searches`
+   - `POST /api/search/shops/filter-groups`
    - `GET /api/search/shops/suggestions`
-   - `GET /api/search/shops/hot-shops`
+   - `GET /api/search/shops/popular`
    - `GET /api/search/shops/{shopId}`
-   - `GET /api/search/shops/recommended`
-   - `GET /api/search/shops/by-location`
+   - `GET /api/search/shops/recommendations`
+   - `GET /api/search/shops/nearby`
 
 Notes:
 - Public product and shop search only supports active records.
@@ -92,6 +116,14 @@ Notes:
    - `POST /auth/tokens/blacklist/add`
    - `GET /auth/tokens/blacklist/check`
    - `POST /auth/tokens/blacklist/cleanup`
+6. Internal governance token operations
+   - `GET /internal/governance/auth/tokens/stats`
+   - `GET /internal/governance/auth/tokens/authorization/{id}`
+   - `POST /internal/governance/auth/tokens/authorization/{id}/revoke`
+   - `GET /internal/governance/auth/tokens/blacklist/stats`
+   - `POST /internal/governance/auth/tokens/blacklist/add`
+   - `GET /internal/governance/auth/tokens/blacklist/check`
+   - `POST /internal/governance/auth/tokens/blacklist/cleanup`
 
 ### 3. User Profile And Address Chain
 
@@ -146,7 +178,6 @@ Notes:
    - `POST /api/orders/after-sales/{afterSaleId}/actions/{action}`
 
 Important behavior:
-- `POST /api/orders/{orderId}/pay` and `POST /api/orders/batch/pay` still exist for compatibility but direct pay transitions are disabled in business logic. Verified payment confirmation must come from the payment chain.
 - Shipping now requires explicit `shippingCompany` and `trackingNumber`.
 - Merchant users cannot force `complete`; completion is limited to the order owner or admin.
 
@@ -170,7 +201,6 @@ Important behavior:
 
 Important behavior:
 - Regular users can create payment orders only for themselves; the controller now binds request `userId` to the authenticated owner.
-- Internal callback mutation endpoint `/api/payments/callbacks` still exists for controlled internal callers, but business logic rejects state mutation through the old direct internal callback path.
 - Checkout is public only at the ticketed HTML endpoint; all order and refund reads remain owner/admin restricted.
 
 ### 7. Merchant And Admin Operations Chain
@@ -202,21 +232,71 @@ Important behavior:
    - `DELETE /api/admin/{id}`
    - `PATCH /api/admin/{id}/status`
    - `POST /api/admin/{id}/reset-password`
-   - `GET /api/query/users`
-   - `GET /api/query/users/search`
-   - `PUT /api/manage/users/{id}`
-   - `POST /api/manage/users/delete`
-   - `POST /api/manage/users/deleteBatch`
-   - `POST /api/manage/users/updateBatch`
-   - `POST /api/manage/users/updateStatusBatch`
+   - `GET /api/admin/query/users`
+   - `GET /api/admin/query/users/search`
+   - `PUT /api/admin/manage/users/{id}`
+   - `POST /api/admin/manage/users/delete`
+   - `POST /api/admin/manage/users/deleteBatch`
+   - `POST /api/admin/manage/users/updateBatch`
+   - `POST /api/admin/manage/users/updateStatusBatch`
 4. Notifications, statistics, and ops
-   - `/api/user/notification/*`
-   - `/api/statistics/*`
-   - `/api/thread-pool/info*`
+   - `/api/app/user/notification/*`
    - `/auth/tokens/*`
+   - `/api/admin/mq/*`
+   - `/api/admin/outbox/*`
+   - `/api/admin/observability/*`
+5. Internal governance aliases
+   - `/api/admin/thread-pool/internal/*`
+   - `/api/admin/statistics/internal/*`
+   - `/api/admin/stocks/internal/ledger/*`
+6. Admin governance proxy
+   - `/api/admin/governance/admins`
+   - `/api/admin/governance/admins/{id}`
+   - `/api/admin/governance/admins/{id}/status`
+   - `/api/admin/governance/admins/{id}/reset-password`
+   - `/api/admin/governance/auth/tokens/*`
+   - `/api/admin/governance/thread-pools`
+   - `/api/admin/governance/thread-pools/{name}`
+   - `/api/admin/governance/users/statistics/*`
+   - `/api/admin/governance/stocks/ledger/{skuId}`
+7. Governance aggregation
+   - `/internal/governance/admins`
+   - `/internal/governance/admins/{id}`
+   - `/internal/governance/admins/{id}/status`
+   - `/internal/governance/admins/{id}/reset-password`
+   - `/internal/governance/users/query`
+   - `/internal/governance/users/search`
+   - `/internal/governance/users/{id}`
+   - `/internal/governance/users/delete-batch`
+   - `/internal/governance/users/update-batch`
+   - `/internal/governance/users/status-batch`
+   - `/internal/governance/auth/tokens/*`
+   - `/internal/governance/mq/consumers`
+   - `/internal/governance/mq/dead-letters/pending`
+   - `/internal/governance/mq/dead-letters/handle`
+    - `/internal/governance/outbox/stats`
+    - `/internal/governance/outbox/pending`
+    - `/internal/governance/outbox/dead`
+    - `/internal/governance/outbox/requeue`
+    - `/internal/governance/outbox/requeue-batch`
+    - `/internal/governance/observability/grafana`
+    - `/internal/governance/observability/grafana/open`
+    - `/internal/governance/notifications/welcome/{userId}`
+    - `/internal/governance/notifications/status-change/{userId}`
+    - `/internal/governance/notifications/batch`
+    - `/internal/governance/notifications/system`
+   - `/internal/governance/thread-pools`
+   - `/internal/governance/thread-pools/{name}`
+   - `/internal/governance/users/statistics/*`
+   - `/internal/governance/stocks/ledger/{skuId}`
 
 Notes:
 - Merchant approval in the current frontend workflow is driven by `/api/merchant/auth/review/{merchantId}` because the UI reads `authStatus` from merchant auth records. `/api/merchant/{id}/approve|reject` still exists as a backend management API but is not the frontend source of truth for auth review state.
+- `/api/admin/statistics/**`, `/api/admin/thread-pool/**`, `/api/admin/manage/users/**`, `/api/admin/query/users/**`, `/api/admin/mq/**`, `/api/admin/outbox/**`, `/api/admin/observability/**`, `/api/app/user/notification/**`, `/auth/tokens/**`, and `GET /api/admin/stocks/ledger/{skuId}` are now governance-owned admin paths routed to `governance-service`.
+- `/api/admin/governance/**` remains the explicit governance aggregation prefix for new admin-side callers, while the older admin-shaped paths above are now formal governance entries rather than business-service endpoints.
+- Internal callers should still prefer `/internal/governance/**` or the dedicated internal aliases when they need `SCOPE_internal` access.
+- Grafana open endpoints only allow dashboards declared in `governance-service` observability configuration. Unknown dashboard UIDs are rejected instead of being forwarded.
+- Merchant admin and merchant-auth paths remain intentionally routed to `user-service` in this phase and are not governance-owned paths.
 
 ### 8. Internal Inventory And Gateway Utility Chain
 
@@ -232,17 +312,46 @@ Notes:
    - `/gateway/fallback/payment`
    - `/gateway/fallback/user`
 3. MQ governance and dead-letter utilities
-   - `GET /internal/mq/governance/consumers`
-   - `GET /internal/mq/dead-letters/pending`
-   - `POST /internal/mq/dead-letters/handle`
+   - `GET /internal/governance/mq/consumers`
+   - `GET /internal/governance/mq/dead-letters/pending`
+   - `POST /internal/governance/mq/dead-letters/handle`
+   - `GET /api/admin/mq/consumers`
+   - `GET /api/admin/mq/dead-letters/pending`
+   - `POST /api/admin/mq/dead-letters/handle`
+4. Outbox governance and observability entry
+   - `GET /internal/governance/outbox/stats`
+   - `GET /internal/governance/outbox/pending`
+   - `GET /internal/governance/outbox/dead`
+   - `POST /internal/governance/outbox/requeue`
+   - `POST /internal/governance/outbox/requeue-batch`
+   - `GET /internal/governance/observability/grafana`
+   - `GET /internal/governance/observability/grafana/open`
+   - `GET /api/admin/outbox/stats`
+   - `GET /api/admin/outbox/pending`
+   - `GET /api/admin/outbox/dead`
+   - `POST /api/admin/outbox/requeue`
+   - `POST /api/admin/outbox/requeue-batch`
+   - `GET /api/admin/observability/grafana`
+   - `GET /api/admin/observability/grafana/open`
 
 Notes:
 - Stock ledger reads require admin.
+- Admin stock ledger reads now terminate at `governance-service`, which queries `stock-service` over Dubbo.
+- Stock ledger internal governance reads are also available under `/api/admin/stocks/internal/ledger/*` for trusted internal callers.
 - Stock mutation endpoints require internal scope.
 - Stock ledger `status` is the raw integer segment status aggregated from active rows. Current live ledger reads return active inventory only, so callers should treat `1` as `Active` and derive low-stock warnings from `availableQty` versus `alertThreshold`.
 - Gateway fallback is a degradation utility endpoint, not a primary client search API.
-- MQ governance endpoints are internal operational endpoints and should be exposed only to trusted callers.
+- MQ governance aggregation now terminates at `governance-service`.
+- Service-local `/internal/mq/**` endpoints still exist behind each business service as infrastructure support endpoints, but callers should prefer the governance aggregation paths.
+- Service-local `/internal/outbox/governance/**` endpoints now exist behind each business service as infrastructure support endpoints, but callers should prefer the governance aggregation paths.
+- Grafana remains the observability system of record. `governance-service` only exposes governed entry metadata and dashboard deeplinks.
 - User statistics, thread-pool monitor, and token management endpoints are admin-only operational APIs.
+- Thread-pool monitor and user statistics now also expose internal governance aliases under `/api/admin/thread-pool/internal/**` and `/api/admin/statistics/internal/**` to decouple future governance callers from the public admin API surface.
+- Gateway now authorizes `/api/admin/thread-pool/internal/**`, `/api/admin/statistics/internal/**`, and `/api/admin/stocks/internal/**` with `SCOPE_internal` before the broader admin route match.
+- Gateway now also exposes `/api/admin/governance/**` as the admin-facing governance proxy and rewrites it to `/internal/governance/**`.
+- Gateway now routes statistics, thread-pool, user-management, user-query, MQ-governance, and token-governance admin paths to `governance-service` with higher priority than the business-service routes.
+- These internal governance aliases are now served by dedicated internal controllers instead of being mixed into the public admin controllers.
+- `governance-service` now aggregates stable internal governance capabilities behind `/internal/governance/**` and should be preferred by trusted callers over reaching into business services directly.
 
 ## Endpoint Index
 
@@ -326,51 +435,53 @@ Notes:
 
 | Method | Path | Access |
 | --- | --- | --- |
-| POST | `/api/search/complex-search` | Public |
-| POST | `/api/search/filters` | Public |
-| GET | `/api/search/suggestions` | Public |
-| GET | `/api/search/hot-keywords` | Public |
-| GET | `/api/search/keyword-recommendations` | Public |
-| GET | `/api/search/search` | Public |
-| GET | `/api/search/search/category/{categoryId}` | Public |
-| GET | `/api/search/search/shop/{shopId}` | Public |
-| GET | `/api/search/search/advanced` | Public |
-| GET | `/api/search/smart-search` | Public |
-| GET | `/api/search/recommended` | Public |
-| GET | `/api/search/new` | Public |
-| GET | `/api/search/hot` | Public |
-| GET | `/api/search/hot/today` | Public |
-| GET | `/api/search/basic` | Public |
-| POST | `/api/search/filter` | Public |
-| GET | `/api/search/filter/category/{categoryId}` | Public |
-| GET | `/api/search/filter/brand/{brandId}` | Public |
-| GET | `/api/search/filter/price` | Public |
-| GET | `/api/search/filter/shop/{shopId}` | Public |
-| GET | `/api/search/filter/combined` | Public |
-| POST | `/api/search/shops/complex-search` | Public |
-| POST | `/api/search/shops/filters` | Public |
+| GET | `/api/search/products` | Public |
+| GET | `/api/search/products/optimized-searches` | Public |
+| POST | `/api/search/products/searches` | Public |
+| POST | `/api/search/products/filter-groups` | Public |
+| POST | `/api/search/products/filtered-searches` | Public |
+| GET | `/api/search/products/suggestions` | Public |
+| GET | `/api/search/products/keywords/hot` | Public |
+| GET | `/api/search/products/keywords/recommendations` | Public |
+| GET | `/api/search/categories/{categoryId}/products` | Public |
+| GET | `/api/search/shops/{shopId}/products` | Public |
+| GET | `/api/search/products/recommendations` | Public |
+| GET | `/api/search/products/latest` | Public |
+| GET | `/api/search/products/popular` | Public |
+| GET | `/api/search/products/popular/today` | Public |
+| POST | `/api/search/shops/searches` | Public |
+| POST | `/api/search/shops/filter-groups` | Public |
 | GET | `/api/search/shops/suggestions` | Public |
-| GET | `/api/search/shops/hot-shops` | Public |
+| GET | `/api/search/shops/popular` | Public |
 | GET | `/api/search/shops/{shopId}` | Public |
-| GET | `/api/search/shops/recommended` | Public |
-| GET | `/api/search/shops/by-location` | Public |
+| GET | `/api/search/shops/recommendations` | Public |
+| GET | `/api/search/shops/nearby` | Public |
 | GET | `/gateway/fallback/search` | Gateway utility |
-| GET | `/internal/mq/governance/consumers` | Internal ops |
-| GET | `/internal/mq/dead-letters/pending` | Internal ops |
-| POST | `/internal/mq/dead-letters/handle` | Internal ops |
+| GET | `/internal/governance/mq/consumers` | Internal ops |
+| GET | `/internal/governance/mq/dead-letters/pending` | Internal ops |
+| POST | `/internal/governance/mq/dead-letters/handle` | Internal ops |
+| GET | `/internal/governance/outbox/stats` | Internal ops |
+| GET | `/internal/governance/outbox/pending` | Internal ops |
+| GET | `/internal/governance/outbox/dead` | Internal ops |
+| POST | `/internal/governance/outbox/requeue` | Internal ops |
+| POST | `/internal/governance/outbox/requeue-batch` | Internal ops |
+| GET | `/internal/governance/observability/grafana` | Internal ops |
+| GET | `/internal/governance/observability/grafana/open` | Internal ops |
+| POST | `/internal/governance/notifications/welcome/{userId}` | Internal ops |
+| POST | `/internal/governance/notifications/status-change/{userId}` | Internal ops |
+| POST | `/internal/governance/notifications/batch` | Internal ops |
+| POST | `/internal/governance/notifications/system` | Internal ops |
 
 ### Orders And After-Sale
 
 | Method | Path | Access | Notes |
 | --- | --- | --- | --- |
 | POST | `/api/orders` | `order:create` | Requires `Idempotency-Key` header and `clientOrderId` body field. |
-| GET | `/api/orders` | `order:query` | `shopId` is a legacy alias of `merchantId`. |
+| GET | `/api/orders` | `order:query` | Supports `merchantId` filtering for merchant/admin views. |
 | GET | `/api/orders/{orderId}` | `order:query` |  |
-| POST | `/api/orders/{orderId}/pay` | `order:create` | Intentionally blocked in service layer. |
 | POST | `/api/orders/{orderId}/cancel` | `order:cancel` |  |
 | POST | `/api/orders/{orderId}/ship` | Merchant or admin | Requires `shippingCompany` and `trackingNumber`. |
 | POST | `/api/orders/{orderId}/complete` | `order:query` | Merchant callers are blocked in service layer. |
-| POST | `/api/orders/batch/pay` | `order:create` | Intentionally blocked in service layer. |
 | POST | `/api/orders/batch/cancel` | `order:cancel` |  |
 | POST | `/api/orders/batch/ship` | Merchant or admin | Requires `shippingCompany` and `trackingNumber`. |
 | POST | `/api/orders/batch/complete` | `order:query` | Merchant callers are blocked in service layer. |
@@ -393,7 +504,6 @@ Order list and order detail now return `OrderSummaryDTO` with these stable field
 | GET | `/api/payments/orders/by-order` | Authenticated | Owner/admin only. |
 | POST | `/api/payments/orders/{paymentNo}/checkout-session` | Authenticated | Owner/admin only. |
 | GET | `/api/payments/orders/{paymentNo}/status` | Authenticated | Owner/admin only. |
-| POST | `/api/payments/callbacks` | `order:refund` | Legacy compatibility endpoint. Business mutation through this path is intentionally rejected. |
 | POST | `/api/payments/refunds` | `order:refund` | Refund creation path for already-paid payment orders only. |
 | GET | `/api/payments/refunds/{refundNo}` | Authenticated | Owner/admin only. |
 | GET | `/api/payments/checkout/{ticket}` | Public | Ticketed checkout HTML. |
@@ -429,29 +539,39 @@ Order list and order detail now return `OrderSummaryDTO` with these stable field
 | DELETE | `/api/admin/{id}` | `admin:all` |
 | PATCH | `/api/admin/{id}/status` | `admin:all` |
 | POST | `/api/admin/{id}/reset-password` | `admin:all` |
-| GET | `/api/query/users` | `admin:all` |
-| GET | `/api/query/users/search` | `admin:all` |
-| PUT | `/api/manage/users/{id}` | `admin:all` |
-| POST | `/api/manage/users/delete` | `admin:all` |
-| POST | `/api/manage/users/deleteBatch` | `admin:all` |
-| POST | `/api/manage/users/updateBatch` | `admin:all` |
-| POST | `/api/manage/users/updateStatusBatch` | `admin:all` |
-| POST | `/api/user/notification/welcome/{userId}` | `admin:all` |
-| POST | `/api/user/notification/status-change/{userId}` | `admin:all` |
-| POST | `/api/user/notification/batch` | `admin:all` |
-| POST | `/api/user/notification/system` | `admin:all` |
-| GET | `/api/statistics/overview` | `admin:all` |
-| GET | `/api/statistics/overview/async` | `admin:all` |
-| GET | `/api/statistics/registration-trend` | `admin:all` |
-| GET | `/api/statistics/registration-trend/async` | `admin:all` |
-| GET | `/api/statistics/role-distribution` | `admin:all` |
-| GET | `/api/statistics/status-distribution` | `admin:all` |
-| GET | `/api/statistics/active-users` | `admin:all` |
-| GET | `/api/statistics/growth-rate` | `admin:all` |
-| GET | `/api/statistics/activity-ranking` | `admin:all` |
-| POST | `/api/statistics/refresh-cache` | `admin:all` |
-| GET | `/api/thread-pool/info` | `admin:all` |
-| GET | `/api/thread-pool/info/detail` | `admin:all` |
+| GET | `/api/admin/query/users` | `admin:all` |
+| GET | `/api/admin/query/users/search` | `admin:all` |
+| PUT | `/api/admin/manage/users/{id}` | `admin:all` |
+| POST | `/api/admin/manage/users/delete` | `admin:all` |
+| POST | `/api/admin/manage/users/deleteBatch` | `admin:all` |
+| POST | `/api/admin/manage/users/updateBatch` | `admin:all` |
+| POST | `/api/admin/manage/users/updateStatusBatch` | `admin:all` |
+| POST | `/api/app/user/notification/welcome/{userId}` | `admin:all` |
+| POST | `/api/app/user/notification/status-change/{userId}` | `admin:all` |
+| POST | `/api/app/user/notification/batch` | `admin:all` |
+| POST | `/api/app/user/notification/system` | `admin:all` |
+| GET | `/api/admin/statistics/overview` | `admin:all` |
+| GET | `/api/admin/statistics/overview/async` | `admin:all` |
+| GET | `/api/admin/statistics/registration-trend` | `admin:all` |
+| GET | `/api/admin/statistics/registration-trend/async` | `admin:all` |
+| GET | `/api/admin/statistics/role-distribution` | `admin:all` |
+| GET | `/api/admin/statistics/status-distribution` | `admin:all` |
+| GET | `/api/admin/statistics/active-users` | `admin:all` |
+| GET | `/api/admin/statistics/growth-rate` | `admin:all` |
+| GET | `/api/admin/statistics/activity-ranking` | `admin:all` |
+| POST | `/api/admin/statistics/refresh-cache` | `admin:all` |
+| GET | `/api/admin/thread-pool/info` | `admin:all` |
+| GET | `/api/admin/thread-pool/info/detail` | `admin:all` |
+| GET | `/api/admin/mq/consumers` | `admin:all` |
+| GET | `/api/admin/mq/dead-letters/pending` | `admin:all` |
+| POST | `/api/admin/mq/dead-letters/handle` | `admin:all` |
+| GET | `/api/admin/outbox/stats` | `admin:all` |
+| GET | `/api/admin/outbox/pending` | `admin:all` |
+| GET | `/api/admin/outbox/dead` | `admin:all` |
+| POST | `/api/admin/outbox/requeue` | `admin:all` |
+| POST | `/api/admin/outbox/requeue-batch` | `admin:all` |
+| GET | `/api/admin/observability/grafana` | `admin:all` |
+| GET | `/api/admin/observability/grafana/open` | `admin:all` |
 | GET | `/auth/tokens/stats` | `admin:all` |
 | GET | `/auth/tokens/authorization/{id}` | `admin:all` |
 | DELETE | `/auth/tokens/authorization/{id}` | `admin:all` |
@@ -572,7 +692,7 @@ Example order detail response shape:
 
 - Collection: `docs/postman/cloud-shop.postman_collection.json`
 - Local environment: `docs/postman/cloud-shop.local.postman_environment.json`
-- Detailed chain audit: `docs/order-chain-audit.md`
+- Consolidated status reference: `docs/backend-rpc-refactor-plan.md`
 
 Use the collection for chain-level smoke tests. The collection is intentionally aligned to current gateway routes and removes old order endpoints that no longer exist.
 - The collection includes both direct-buy and cart-checkout order creation examples.
