@@ -1,6 +1,6 @@
 import { computed } from 'vue'
 import { defineStore } from 'pinia'
-import { sessionState, subscribeSessionChange } from '../auth/session'
+import { getCurrentUserId, isAuthenticated, sessionState, subscribeSessionChange } from '../auth/session'
 import { pinia } from '../stores/pinia'
 import { getCurrentCart, syncCurrentCart } from '../api/cart'
 import type { CartSyncPayload, RemoteCart, UserInfo } from '../types/domain'
@@ -15,19 +15,23 @@ export interface CartEntry {
   shopId: number
 }
 
-const LEGACY_CART_KEY = 'shop.cart'
 const CART_KEY_PREFIX = 'shop.cart'
 const GUEST_CART_KEY = `${CART_KEY_PREFIX}.guest`
 
-function resolveCartStorageKey(user: Pick<UserInfo, 'id' | 'username'> | null | undefined): string {
-  if (typeof user?.id === 'number' && user.id > 0) {
-    return `${CART_KEY_PREFIX}.user.${user.id}`
+function resolveCartStorageKey(user: Pick<UserInfo, 'username'> | null | undefined): string {
+  const userId = getCurrentUserId()
+  if (userId) {
+    return `${CART_KEY_PREFIX}.user.${userId}`
   }
   const username = typeof user?.username === 'string' ? user.username.trim().toLowerCase() : ''
   if (username) {
     return `${CART_KEY_PREFIX}.user.${encodeURIComponent(username)}`
   }
   return GUEST_CART_KEY
+}
+
+function hasCurrentUserSession(): boolean {
+  return isAuthenticated()
 }
 
 function normalizeCartEntries(parsed: CartEntry[] | null): CartEntry[] {
@@ -58,7 +62,7 @@ const useCartStore = defineStore('cart', {
     items: [] as CartEntry[],
     activeCartKey: resolveCartStorageKey(sessionState.user),
     hasHydrated: false,
-    remoteCartId: null as number | null
+    remoteCartId: null as number | string | null
   }),
   getters: {
     cartCount: (state) => state.items.reduce((sum, item) => sum + item.quantity, 0),
@@ -69,7 +73,8 @@ const useCartStore = defineStore('cart', {
       setStorage(this.activeCartKey, this.items)
     },
     applyRemoteCart(cart: RemoteCart | null): void {
-      this.remoteCartId = typeof cart?.id === 'number' ? cart.id : null
+      this.remoteCartId =
+        typeof cart?.id === 'number' || typeof cart?.id === 'string' ? cart.id : null
       const remoteItems = Array.isArray(cart?.items)
         ? cart.items
             .map((item) => ({
@@ -113,15 +118,15 @@ const useCartStore = defineStore('cart', {
       }
     },
     async hydrateRemoteCart(): Promise<void> {
-      if (typeof sessionState.user?.id !== 'number') {
+      if (!hasCurrentUserSession()) {
         this.remoteCartId = null
         return
       }
       const cart = await getCurrentCart()
       this.applyRemoteCart(cart)
     },
-    async syncRemoteCart(): Promise<number | null> {
-      if (typeof sessionState.user?.id !== 'number') {
+    async syncRemoteCart(): Promise<number | string | null> {
+      if (!hasCurrentUserSession()) {
         this.remoteCartId = null
         return null
       }
@@ -130,7 +135,7 @@ const useCartStore = defineStore('cart', {
       return this.remoteCartId
     },
     triggerRemoteSync(): void {
-      if (typeof sessionState.user?.id !== 'number') {
+      if (!hasCurrentUserSession()) {
         this.remoteCartId = null
         return
       }
@@ -139,20 +144,6 @@ const useCartStore = defineStore('cart', {
     loadCart(key: string): void {
       this.activeCartKey = key
       this.items = readCart(key)
-    },
-    migrateLegacyCart(targetKey: string): void {
-      if (targetKey === LEGACY_CART_KEY || getStorage<CartEntry[]>(targetKey)) {
-        return
-      }
-
-      const legacyItems = readCart(LEGACY_CART_KEY)
-      if (legacyItems.length === 0) {
-        removeStorage(LEGACY_CART_KEY)
-        return
-      }
-
-      setStorage(targetKey, legacyItems)
-      removeStorage(LEGACY_CART_KEY)
     },
     syncCartStorage(user: UserInfo | null): void {
       const nextKey = resolveCartStorageKey(user)
@@ -164,7 +155,7 @@ const useCartStore = defineStore('cart', {
         return
       }
       this.loadCart(nextKey)
-      if (typeof user?.id === 'number') {
+      if (hasCurrentUserSession()) {
         if (this.items.length > 0) {
           this.triggerRemoteSync()
         } else {
@@ -176,10 +167,9 @@ const useCartStore = defineStore('cart', {
     },
     hydrateFromStorage(): void {
       const targetKey = resolveCartStorageKey(sessionState.user)
-      this.migrateLegacyCart(targetKey)
       this.loadCart(targetKey)
       this.hasHydrated = true
-      if (typeof sessionState.user?.id === 'number') {
+      if (hasCurrentUserSession()) {
         if (this.items.length > 0) {
           this.triggerRemoteSync()
         } else {
@@ -236,7 +226,7 @@ export function hydrateCartFromStorage(): void {
   cartStore.hydrateFromStorage()
 }
 
-export async function syncCartNow(): Promise<number | null> {
+export async function syncCartNow(): Promise<number | string | null> {
   return cartStore.syncRemoteCart()
 }
 

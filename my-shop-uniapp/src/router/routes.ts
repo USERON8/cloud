@@ -1,6 +1,7 @@
 export const Routes = {
   market: '/pages/market/index',
   login: '/pages/login/index',
+  error: '/pages/error/index',
   forbidden: '/pages/forbidden/index',
   oauthSuccess: '/pages/oauth/success',
   oauthError: '/pages/oauth/error',

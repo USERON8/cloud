@@ -9,14 +9,16 @@ import {
     updateUserAddress,
 } from "../../../api/address";
 import type { UserAddress } from "../../../types/domain";
-import { sessionState } from "../../../auth/session";
+import { getCurrentUserId } from "../../../auth/session";
+import { ensurePageAccess } from "../../../router/navigation";
+import { Routes } from "../../../router/routes";
 import { confirm, toast } from "../../../utils/ui";
 
 const rows = ref<UserAddress[]>([]);
 const loading = ref(false);
 const saving = ref(false);
-const editingAddressId = ref<number | null>(null);
-const userId = computed(() => sessionState.user?.id);
+const editingAddressId = ref<number | string | null>(null);
+const userId = computed(() => getCurrentUserId());
 
 const form = reactive<UserAddress>({
     receiverName: "",
@@ -76,7 +78,7 @@ function validateForm(): boolean {
 
 async function loadAddresses(): Promise<void> {
     if (loading.value) return;
-    if (typeof userId.value !== "number") {
+    if (!userId.value) {
         toast("Missing user session");
         return;
     }
@@ -103,7 +105,7 @@ async function saveAddress(): Promise<void> {
     if (saving.value) {
         return;
     }
-    if (typeof userId.value !== "number") {
+    if (!userId.value) {
         toast("Missing user session");
         return;
     }
@@ -135,7 +137,7 @@ async function saveAddress(): Promise<void> {
 }
 
 function startEdit(item: UserAddress): void {
-    editingAddressId.value = typeof item.id === "number" ? item.id : null;
+    editingAddressId.value = item.id ?? null;
     form.receiverName = item.receiverName;
     form.receiverPhone = item.receiverPhone;
     form.province = item.province;
@@ -147,7 +149,7 @@ function startEdit(item: UserAddress): void {
 }
 
 async function markAsDefault(item: UserAddress): Promise<void> {
-    if (typeof item.id !== "number" || item.isDefault === 1) {
+    if (item.id == null || item.isDefault === 1) {
         return;
     }
     try {
@@ -167,7 +169,7 @@ async function markAsDefault(item: UserAddress): Promise<void> {
 }
 
 async function removeAddress(item: UserAddress): Promise<void> {
-    if (typeof item.id !== "number") {
+    if (item.id == null) {
         return;
     }
     const ok = await confirm(`Delete the address for ${item.receiverName}?`);
@@ -192,6 +194,9 @@ async function removeAddress(item: UserAddress): Promise<void> {
 
 resetForm();
 onShow(() => {
+    if (!ensurePageAccess(Routes.appAddresses)) {
+        return;
+    }
     void loadAddresses();
 });
 </script>

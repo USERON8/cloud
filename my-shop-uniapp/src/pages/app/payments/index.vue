@@ -10,7 +10,7 @@ import {
     getPaymentStatus,
     getRefundByNo,
 } from "../../../api/payment";
-import { navigateTo } from "../../../router/navigation";
+import { ensurePageAccess, navigateTo } from "../../../router/navigation";
 import { Routes } from "../../../router/routes";
 import type {
     PaymentOrderInfo,
@@ -22,6 +22,7 @@ import {
     formatPrice,
     formatRelativeDate,
 } from "../../../utils/format";
+import { openExternalPage } from "../../../utils/external-navigation";
 import { toast } from "../../../utils/ui";
 
 const paymentNo = ref("");
@@ -54,14 +55,20 @@ const paymentStatusHint = computed(() => {
 });
 
 function openCheckout(url: string): void {
-    navigateTo(
-        Routes.webview,
-        { url, paymentNo: paymentNo.value.trim() },
-        {
+    openExternalPage(url, {
+        query: { paymentNo: paymentNo.value.trim() },
+        guard: {
             requiresAuth: true,
             roles: ["USER", "MERCHANT", "ADMIN"],
         },
-    );
+        openWebview(target) {
+            navigateTo(
+                Routes.webview,
+                { url: target.url, ...target.query },
+                target.guard,
+            );
+        },
+    });
 }
 
 function shouldKeepPolling(status?: string): boolean {
@@ -191,6 +198,9 @@ async function openPaymentCheckout(): Promise<void> {
 }
 
 onLoad((query) => {
+    if (!ensurePageAccess(Routes.appPayments)) {
+        return;
+    }
     const queryPaymentNo =
         typeof query.paymentNo === "string" && query.paymentNo.trim()
             ? query.paymentNo.trim()
@@ -216,6 +226,9 @@ onLoad((query) => {
 });
 
 onShow(() => {
+    if (!ensurePageAccess(Routes.appPayments)) {
+        return;
+    }
     if (
         paymentNo.value.trim() &&
         shouldKeepPolling(paymentInfo.value?.status)

@@ -3,10 +3,11 @@ import { computed, onMounted, reactive, ref } from "vue";
 import AppShell from "../../../components/AppShell.vue";
 import {
     advanceAfterSaleStatus,
-    completeOrder,
     listOrders,
     shipOrder,
 } from "../../../api/order";
+import { ensurePageAccess } from "../../../router/navigation";
+import { Routes } from "../../../router/routes";
 import {
     formatDate,
     formatOrderStatus,
@@ -43,16 +44,17 @@ type AfterSaleAction =
     | "APPROVE"
     | "REJECT"
     | "WAIT_RETURN"
-    | "RETURN"
     | "RECEIVE"
     | "PROCESS";
 
 type ActionSpec = {
     key: string;
     label: string;
-    kind: "ship" | "complete" | "after_sale";
+    kind: "ship" | "after_sale";
     action?: AfterSaleAction;
 };
+
+const SHIPPABLE_ORDER_STATUSES = new Set(["PAID", "SHIPPED"]);
 
 function orderStatusTone(status?: number): string {
     if (status === 0) return "status-warning";
@@ -140,18 +142,20 @@ function canProcessRefund(order: OrderSummaryDTO): boolean {
     );
 }
 
-function canMarkReturned(order: OrderSummaryDTO): boolean {
-    return (
-        typeof order.afterSaleId === "number" &&
-        order.afterSaleStatus === "WAIT_RETURN"
-    );
-}
-
 function canMarkReceived(order: OrderSummaryDTO): boolean {
     return (
         typeof order.afterSaleId === "number" &&
         order.afterSaleStatus === "RETURNED"
     );
+}
+
+function canShipOrder(order: OrderSummaryDTO): boolean {
+    if (Array.isArray(order.subOrders) && order.subOrders.length > 0) {
+        return order.subOrders.every((subOrder) =>
+            SHIPPABLE_ORDER_STATUSES.has(subOrder.orderStatusRaw ?? ""),
+        );
+    }
+    return SHIPPABLE_ORDER_STATUSES.has(order.orderStatusRaw ?? "");
 }
 
 function toggleExpandedRow(key: string | number | undefined): void {
@@ -212,6 +216,10 @@ function resolveOrderItemSpec(item: OrderSummaryItem): string {
 }
 
 async function onShip(order: OrderSummaryDTO): Promise<void> {
+    if (!canShipOrder(order)) {
+        toast("This order cannot be shipped right now");
+        return;
+    }
     if (typeof order.id !== "number") return;
     const shippingCompany = requireShippingField(
         shippingForm.shippingCompany,
@@ -234,21 +242,6 @@ async function onShip(order: OrderSummaryDTO): Promise<void> {
     }
 }
 
-async function onComplete(order: OrderSummaryDTO): Promise<void> {
-    if (typeof order.id !== "number") return;
-    const ok = await confirm(`Confirm completion for order ${order.orderNo}?`);
-    if (!ok) return;
-    try {
-        await completeOrder(order.id);
-        toast("Order completed", "success");
-        await loadOrders();
-    } catch (error) {
-        toast(
-            error instanceof Error ? error.message : "Failed to complete order",
-        );
-    }
-}
-
 async function onAdvanceAfterSale(
     order: OrderSummaryDTO,
     action: AfterSaleAction,
@@ -262,7 +255,6 @@ async function onAdvanceAfterSale(
         APPROVE: "approve",
         REJECT: "reject",
         WAIT_RETURN: "wait for return",
-        RETURN: "mark returned",
         RECEIVE: "mark received",
         PROCESS: "start refund",
     };
@@ -290,10 +282,11 @@ async function onAdvanceAfterSale(
 }
 
 function buildActionSpecs(order: OrderSummaryDTO): ActionSpec[] {
-    const actions: ActionSpec[] = [
-        { key: "ship", label: "Ship", kind: "ship" },
-        { key: "complete", label: "Complete", kind: "complete" },
-    ];
+    const actions: ActionSpec[] = [];
+
+    if (canShipOrder(order)) {
+        actions.push({ key: "ship", label: "Ship", kind: "ship" });
+    }
 
     if (canAuditAfterSale(order)) {
         actions.push({
@@ -325,14 +318,6 @@ function buildActionSpecs(order: OrderSummaryDTO): ActionSpec[] {
             label: "Wait return",
             kind: "after_sale",
             action: "WAIT_RETURN",
-        });
-    }
-    if (canMarkReturned(order)) {
-        actions.push({
-            key: "mark-returned",
-            label: "Mark returned",
-            kind: "after_sale",
-            action: "RETURN",
         });
     }
     if (canMarkReceived(order)) {
@@ -372,16 +357,15 @@ async function triggerAction(order: OrderSummaryDTO, spec: ActionSpec): Promise<
         await onShip(order);
         return;
     }
-    if (spec.kind === "complete") {
-        await onComplete(order);
-        return;
-    }
     if (spec.action) {
         await onAdvanceAfterSale(order, spec.action);
     }
 }
 
 onMounted(() => {
+    if (!ensurePageAccess(Routes.appOrdersManage)) {
+        return;
+    }
     void loadOrders();
 });
 </script>

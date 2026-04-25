@@ -4,7 +4,7 @@ import { computed, ref } from "vue";
 import AppShell from "../../../components/AppShell.vue";
 import { getStockLedger } from "../../../api/stock";
 import { useRole } from "../../../auth/permission";
-import { redirectTo } from "../../../router/navigation";
+import { ensurePageAccess, redirectTo } from "../../../router/navigation";
 import { Routes } from "../../../router/routes";
 import type { StockLedger } from "../../../types/domain";
 import { toast } from "../../../utils/ui";
@@ -101,7 +101,7 @@ async function queryLedger(): Promise<void> {
 
 onShow(() => {
     void Promise.resolve().then(() => {
-        ensureAdminAccess();
+        ensurePageAccess(Routes.appStock);
     });
 });
 </script>

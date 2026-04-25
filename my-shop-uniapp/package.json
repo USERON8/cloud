@@ -7,7 +7,8 @@
     "dev:h5": "vite",
     "build:h5": "cross-env NODE_ENV=production VITE_CJS_IGNORE_WARNING=1 vite build",
     "dev:app": "cross-env UNI_PLATFORM=app vite",
-    "build:app": "cross-env UNI_PLATFORM=app NODE_ENV=production VITE_CJS_IGNORE_WARNING=1 vite build"
+    "build:app": "cross-env UNI_PLATFORM=app NODE_ENV=production VITE_CJS_IGNORE_WARNING=1 vite build",
+    "test:unit": "node --test --experimental-strip-types src/utils/external-navigation.test.mjs"
   },
   "dependencies": {
     "@dcloudio/uni-app": "3.0.0-5000620260331001",

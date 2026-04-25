@@ -14,11 +14,11 @@ import {
 import type { CartEntry } from "../../../store/cart";
 import { getDefaultAddress } from "../../../api/address";
 import { createCartOrder } from "../../../api/order";
-import { sessionState } from "../../../auth/session";
+import { getCurrentUserId } from "../../../auth/session";
 import type { UserAddress } from "../../../types/domain";
 import { formatPrice } from "../../../utils/format";
 import { confirm, toast } from "../../../utils/ui";
-import { navigateTo } from "../../../router/navigation";
+import { ensurePageAccess, navigateTo } from "../../../router/navigation";
 import { Routes } from "../../../router/routes";
 
 interface ShopGroup {
@@ -30,7 +30,9 @@ interface ShopGroup {
 const placing = ref(false);
 const loadingAddress = ref(false);
 const selectedAddress = ref<UserAddress | null>(null);
-const userId = computed(() => sessionState.user?.id);
+const checkoutClientOrderId = ref("");
+const checkoutFingerprint = ref("");
+const userId = computed(() => getCurrentUserId());
 
 const shopGroups = computed<ShopGroup[]>(() => {
     const map = new Map<number, CartEntry[]>();
@@ -65,11 +67,72 @@ function formatAddress(address: UserAddress | null): string {
         .join(" ");
 }
 
+function buildCheckoutFingerprint(
+    cartId: number | string,
+    receiverName: string,
+    receiverPhone: string,
+    receiverAddress: string,
+): string {
+    const items = [...cartItems.value]
+        .map((item) => ({
+            productId: item.productId,
+            skuId: item.skuId,
+            quantity: item.quantity,
+            price: item.price,
+            shopId: item.shopId,
+        }))
+        .sort((left, right) => {
+            if (left.shopId !== right.shopId) {
+                return left.shopId - right.shopId;
+            }
+            if (left.productId !== right.productId) {
+                return left.productId - right.productId;
+            }
+            return left.skuId - right.skuId;
+        });
+    return JSON.stringify({
+        cartId: String(cartId),
+        receiverName,
+        receiverPhone,
+        receiverAddress,
+        items,
+    });
+}
+
+function resolveCheckoutClientOrderId(
+    cartId: number | string,
+    receiverName: string,
+    receiverPhone: string,
+    receiverAddress: string,
+): string {
+    const fingerprint = buildCheckoutFingerprint(
+        cartId,
+        receiverName,
+        receiverPhone,
+        receiverAddress,
+    );
+    if (
+        checkoutClientOrderId.value &&
+        checkoutFingerprint.value === fingerprint
+    ) {
+        return checkoutClientOrderId.value;
+    }
+    const nextClientOrderId = `cart-${userId.value}-${String(cartId)}-${Date.now()}`;
+    checkoutClientOrderId.value = nextClientOrderId;
+    checkoutFingerprint.value = fingerprint;
+    return nextClientOrderId;
+}
+
+function resetCheckoutAttempt(): void {
+    checkoutClientOrderId.value = "";
+    checkoutFingerprint.value = "";
+}
+
 async function loadDefaultAddress(): Promise<void> {
     if (loadingAddress.value) {
         return;
     }
-    if (typeof userId.value !== "number") {
+    if (!userId.value) {
         selectedAddress.value = null;
         return;
     }
@@ -143,15 +206,23 @@ async function onPlaceOrder(): Promise<void> {
     placing.value = true;
     try {
         const cartId = (await syncCartNow()) ?? currentCartId.value;
-        if (typeof cartId !== "number") {
+        if (!cartId) {
             throw new Error("Failed to prepare remote cart checkout");
         }
-        await createCartOrder({
+        const clientOrderId = resolveCheckoutClientOrderId(
             cartId,
             receiverName,
             receiverPhone,
             receiverAddress,
+        );
+        await createCartOrder({
+            cartId,
+            clientOrderId,
+            receiverName,
+            receiverPhone,
+            receiverAddress,
         });
+        resetCheckoutAttempt();
         clearCart();
         toast("Cart checkout submitted", "success");
         navigateTo(Routes.appOrders, undefined, { requiresAuth: true });
@@ -165,6 +236,9 @@ async function onPlaceOrder(): Promise<void> {
 }
 
 onShow(() => {
+    if (!ensurePageAccess(Routes.appCart)) {
+        return;
+    }
     void loadDefaultAddress();
 });
 </script>
@@ -235,7 +309,7 @@ onShow(() => {
                             <text
                                 v-else-if="loadingAddress"
                                 class="address-text"
-                                >Loading default address...</text
+                                >Loading default address</text
                             >
                             <text v-else class="address-text"
                                 >No default address is available. Add one before
@@ -318,7 +392,8 @@ onShow(() => {
                                             class="btn-outline mini-button"
                                             @click="changeQuantity(item, -1)"
                                         >
-                                            -                                        </button>
+                                            -
+                                        </button>
                                         <text class="qty">{{
                                             item.quantity
                                         }}</text>
@@ -491,11 +566,15 @@ onShow(() => {
     display: flex;
     flex-direction: column;
     gap: 6px;
+    flex: 1;
+    min-width: 180px;
 }
 
 .item-name {
     font-size: 15px;
     font-weight: 700;
+    line-height: 1.45;
+    overflow-wrap: anywhere;
 }
 
 .item-meta {
@@ -506,10 +585,13 @@ onShow(() => {
 .item-actions {
     display: flex;
     align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
 }
 
 .mini-button {
     min-width: 42px;
+    height: 42px;
     padding-left: 0;
     padding-right: 0;
 }
@@ -520,6 +602,10 @@ onShow(() => {
 
 .qty {
     min-width: 28px;
+    min-height: 42px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     text-align: center;
     font-size: 15px;
     font-weight: 700;
@@ -586,6 +672,11 @@ onShow(() => {
     .item-actions {
         width: 100%;
         justify-content: flex-start;
+    }
+
+    .remove-button {
+        flex: 1;
+        min-width: 120px;
     }
 }
 </style>

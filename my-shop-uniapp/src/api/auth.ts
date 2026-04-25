@@ -1,8 +1,11 @@
 import http, { requestRaw } from './http'
 import type { RegisterRequest, RegisterResponse, OAuthTokenResponse, UserInfo } from '../types/domain'
+import { navigateTo } from '../router/navigation'
+import { Routes } from '../router/routes'
+import { openExternalPage } from '../utils/external-navigation'
 import { getStorage, removeStorage, setStorage } from '../utils/storage'
+import { buildApiUrl } from './runtime-base'
 
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || ''
 const oauthClientId = import.meta.env.VITE_OAUTH_CLIENT_ID || 'web-client'
 const oauthScope = import.meta.env.VITE_OAUTH_SCOPE || 'openid user.read order.write'
 const defaultRedirectUri =
@@ -26,13 +29,6 @@ interface AuthorizationRequestPayload {
   state: string
   codeChallenge: string
   codeChallengeMethod: string
-}
-
-function buildApiUrl(path: string): string {
-  if (!apiBaseUrl) {
-    return path
-  }
-  return `${apiBaseUrl.replace(/\/+$/, '')}${path}`
 }
 
 function randomString(length: number): string {
@@ -98,12 +94,11 @@ export function consumePendingRedirectPath(): string {
 }
 
 function redirectExternal(target: string): void {
-  if (typeof window !== 'undefined' && window.location) {
-    window.location.href = target
-    return
-  }
-  const encoded = encodeURIComponent(target)
-  uni.navigateTo({ url: `/pages/webview/index?url=${encoded}` })
+  openExternalPage(target, {
+    openWebview: ({ url }) => {
+      navigateTo(Routes.webview, { url })
+    }
+  })
 }
 
 export async function startAuthorization(redirectPath = '/app/home'): Promise<void> {

@@ -8,11 +8,11 @@ import type {
 } from '../types/domain'
 
 export function listProducts(params: ProductQuery = {}): Promise<ProductPage> {
-  return http.get<ProductPage, ProductPage>('/api/product', { params })
+  return http.get<ProductPage, ProductPage>('/api/products', { params })
 }
 
 export function listManageProducts(params: ProductQuery = {}): Promise<ProductPage> {
-  return http.get<ProductPage, ProductPage>('/api/product/manage', { params })
+  return http.get<ProductPage, ProductPage>('/api/spus', { params })
 }
 
 export function searchProducts(name: string): Promise<ProductItem[]> {
@@ -34,5 +34,5 @@ export function searchProducts(name: string): Promise<ProductItem[]> {
 }
 
 export function updateProductStatus(spuId: number | string, status: 0 | 1): Promise<boolean> {
-  return http.patch<boolean, boolean>(`/api/product/${spuId}/status`, null, { params: { status } })
+  return http.patch<boolean, boolean>(`/api/spus/${spuId}/status`, null, { params: { status } })
 }

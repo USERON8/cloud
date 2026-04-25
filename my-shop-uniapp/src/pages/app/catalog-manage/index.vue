@@ -2,7 +2,8 @@
 import { computed, onMounted, ref } from "vue";
 import AppShell from "../../../components/AppShell.vue";
 import { listManageProducts, updateProductStatus } from "../../../api/product";
-import { sessionState } from "../../../auth/session";
+import { ensurePageAccess } from "../../../router/navigation";
+import { Routes } from "../../../router/routes";
 import type { ProductItem } from "../../../types/domain";
 import { formatPrice, formatProductStatus } from "../../../utils/format";
 import { confirm, toast } from "../../../utils/ui";
@@ -32,10 +33,6 @@ async function loadProducts(): Promise<void> {
             page: 1,
             size: 50,
             name: keyword.value || undefined,
-            merchantId:
-                typeof sessionState.user?.id === "number"
-                    ? sessionState.user.id
-                    : undefined,
         });
         rows.value = result.records;
     } catch (error) {
@@ -67,6 +64,9 @@ async function toggleStatus(item: ProductItem): Promise<void> {
 }
 
 onMounted(() => {
+    if (!ensurePageAccess(Routes.appCatalogManage)) {
+        return;
+    }
     void loadProducts();
 });
 </script>

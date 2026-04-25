@@ -55,7 +55,7 @@ const {
                   keyword,
                   page,
                   size,
-                  sortField: "score",
+                  sortField: "hotScore",
                   sortOrder: "desc",
               })
             : await listTodayHotSellingProductsWithFallback(page, size);
@@ -70,7 +70,7 @@ const {
                     keyword: fallbackKeyword,
                     page: 1,
                     size,
-                    sortField: "score",
+                    sortField: "hotScore",
                     sortOrder: "desc",
                 });
             }
@@ -269,11 +269,7 @@ onShow(() => {
                         </button>
                         <button
                             class="btn-secondary"
-                            @click="
-                                navigateTo(Routes.appCatalog, undefined, {
-                                    requiresAuth: true,
-                                })
-                            "
+                            @click="navigateTo(Routes.appCatalog)"
                         >
                             {{ copy.catalog }}
                         </button>
@@ -306,6 +302,9 @@ onShow(() => {
                     <input
                         v-model="keyword"
                         class="search-input"
+                        type="text"
+                        name="market-search"
+                        confirm-type="search"
                         :placeholder="copy.searchPlaceholder"
                         @confirm="onSearch"
                     />
@@ -360,6 +359,7 @@ onShow(() => {
                 >
                     <image
                         :src="productImageSrc(item)"
+                        :alt="item.name"
                         class="product-image"
                         mode="aspectFill"
                         @error="markImageFailed(item.id)"
@@ -565,6 +565,7 @@ onShow(() => {
     display: flex;
     flex-direction: column;
     gap: 14px;
+    min-width: 0;
     transition:
         transform 0.22s ease,
         box-shadow 0.22s ease,
@@ -583,6 +584,7 @@ onShow(() => {
     display: flex;
     flex-direction: column;
     gap: 8px;
+    min-width: 0;
 }
 
 .product-name {
@@ -590,6 +592,7 @@ onShow(() => {
     font-weight: 800;
     line-height: 1.4;
     letter-spacing: -0.03em;
+    overflow-wrap: anywhere;
 }
 
 .product-price {
@@ -633,7 +636,7 @@ onShow(() => {
     .hero-panel,
     .keyword-grid,
     .product-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: minmax(0, 1fr);
     }
 }
 

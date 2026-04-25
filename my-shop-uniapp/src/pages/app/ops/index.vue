@@ -74,6 +74,7 @@ import {
 } from '../../../api/product-catalog'
 import { getRegistrationTrendRange, getStatisticsOverviewAsync, refreshStatisticsCache } from '../../../api/statistics'
 import { getThreadPoolDetail, getThreadPools } from '../../../api/thread-pool'
+import { openExternalPage } from '../../../utils/external-navigation'
 import type {
   PaymentOrderCommand,
   PaymentRefundCommand,
@@ -1356,14 +1357,20 @@ async function openPaymentCheckoutAction(): Promise<void> {
     if (!session.checkoutPath) {
       throw new Error('Checkout session is missing checkoutPath')
     }
-    navigateTo(
-      Routes.webview,
-      { url: resolveApiUrl(session.checkoutPath), paymentNo: paymentNoInput.value.trim() },
-      {
+    openExternalPage(resolveApiUrl(session.checkoutPath), {
+      query: { paymentNo: paymentNoInput.value.trim() },
+      guard: {
         requiresAuth: true,
         roles: ['USER', 'MERCHANT', 'ADMIN']
+      },
+      openWebview(target) {
+        navigateTo(
+          Routes.webview,
+          { url: target.url, ...target.query },
+          target.guard
+        )
       }
-    )
+    })
     toast('Checkout page opened', 'success')
   } catch (error) {
     toast(error instanceof Error ? error.message : 'Open checkout failed')

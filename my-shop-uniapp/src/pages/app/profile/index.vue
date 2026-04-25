@@ -8,6 +8,8 @@ import {
     updateCurrentProfile,
     uploadCurrentAvatarByPath,
 } from "../../../api/user";
+import { ensurePageAccess } from "../../../router/navigation";
+import { Routes } from "../../../router/routes";
 import type { UserProfileUpdatePayload } from "../../../types/domain";
 import { toast } from "../../../utils/ui";
 
@@ -172,6 +174,9 @@ async function savePassword(): Promise<void> {
 }
 
 onMounted(() => {
+    if (!ensurePageAccess(Routes.appProfile)) {
+        return;
+    }
     syncProfileForm();
     void loadProfile(false);
 });
@@ -273,7 +278,7 @@ onMounted(() => {
                         <text class="summary-copy">
                             This page now refreshes data from
                             <text class="inline-code"
-                                >/api/user/profile/current</text
+                                >/api/users/me/profile</text
                             >
                             instead of relying on JWT claims only.
                         </text>
@@ -290,6 +295,9 @@ onMounted(() => {
                             <input
                                 v-model="profileForm.nickname"
                                 class="field-control"
+                                type="text"
+                                name="nickname"
+                                autocomplete="name"
                                 placeholder="Nickname"
                             />
                         </view>
@@ -298,6 +306,9 @@ onMounted(() => {
                             <input
                                 v-model="profileForm.email"
                                 class="field-control"
+                                type="email"
+                                name="email"
+                                autocomplete="email"
                                 placeholder="Email"
                             />
                         </view>
@@ -306,6 +317,10 @@ onMounted(() => {
                             <input
                                 v-model="profileForm.phone"
                                 class="field-control"
+                                type="tel"
+                                name="phone"
+                                inputmode="tel"
+                                autocomplete="tel"
                                 placeholder="Phone"
                             />
                         </view>
@@ -328,6 +343,8 @@ onMounted(() => {
                                 v-model="passwordForm.oldPassword"
                                 class="field-control"
                                 password
+                                name="current-password"
+                                autocomplete="current-password"
                                 placeholder="Current password"
                             />
                         </view>
@@ -337,6 +354,8 @@ onMounted(() => {
                                 v-model="passwordForm.newPassword"
                                 class="field-control"
                                 password
+                                name="new-password"
+                                autocomplete="new-password"
                                 placeholder="New password"
                             />
                         </view>
@@ -346,6 +365,8 @@ onMounted(() => {
                                 v-model="passwordForm.confirmPassword"
                                 class="field-control"
                                 password
+                                name="confirm-password"
+                                autocomplete="new-password"
                                 placeholder="Confirm password"
                             />
                         </view>

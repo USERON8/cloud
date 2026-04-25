@@ -8,7 +8,6 @@ export interface UserInfo {
   email?: string
   phone?: string
   status?: number
-  enabled?: number
   roles?: string[]
   createdAt?: string
   updatedAt?: string
@@ -107,6 +106,7 @@ export interface OrderSummaryDTO {
   id?: number
   orderNo?: string
   userId?: number
+  subOrders?: OrderSubSummaryDTO[]
   subOrderId?: number
   subOrderNo?: string
   merchantId?: number
@@ -117,9 +117,24 @@ export interface OrderSummaryDTO {
   totalAmount?: number
   payAmount?: number
   status?: number
+  orderStatusRaw?: string
   afterSaleStatus?: string
   createdAt?: string
   items?: OrderSummaryItem[]
+}
+
+export interface OrderSubSummaryDTO {
+  subOrderId?: number
+  subOrderNo?: string
+  merchantId?: number
+  afterSaleId?: number
+  afterSaleNo?: string
+  afterSaleType?: string
+  refundNo?: string
+  payAmount?: number
+  status?: number
+  orderStatusRaw?: string
+  afterSaleStatus?: string
 }
 
 export interface OrderSummaryItem {
@@ -204,7 +219,7 @@ export interface CreateOrderPayload {
 }
 
 export interface CreateCartOrderPayload {
-  cartId: number
+  cartId: number | string
   clientOrderId?: string
   receiverName: string
   receiverPhone: string
@@ -212,8 +227,8 @@ export interface CreateCartOrderPayload {
 }
 
 export interface RemoteCartItem {
-  id?: number
-  cartId?: number
+  id?: number | string
+  cartId?: number | string
   spuId: number
   skuId: number
   skuName: string
@@ -226,9 +241,9 @@ export interface RemoteCartItem {
 }
 
 export interface RemoteCart {
-  id?: number
+  id?: number | string
   cartNo?: string
-  userId?: number
+  userId?: number | string
   cartStatus?: string
   selectedCount?: number
   totalAmount?: number
@@ -250,8 +265,8 @@ export interface CartSyncPayload {
 }
 
 export interface UserAddress {
-  id?: number
-  userId?: number
+  id?: number | string
+  userId?: number | string
   receiverName: string
   receiverPhone: string
   province: string

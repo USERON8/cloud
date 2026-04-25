@@ -1,15 +1,28 @@
 <script setup lang="ts">
-import { computed, onMounted } from "vue";
+import { computed, onBeforeMount } from "vue";
 import { logout } from "../api/auth";
 import { useRole, type UserRole } from "../auth/permission";
 import { clearSession, isAuthenticated, sessionState } from "../auth/session";
 import { type Locale, useLocale } from "../i18n/locale";
-import { currentRoutePath, navigateTo, redirectTo } from "../router/navigation";
+import {
+    currentRoutePath,
+    navigateTo,
+    redirectTo,
+    resolveRouteGuard,
+} from "../router/navigation";
 import { Routes, type RoutePath } from "../router/routes";
 import { cartCount } from "../store/cart";
 import LocaleSwitch from "./LocaleSwitch.vue";
 
-const props = defineProps<{ title?: string }>();
+const props = defineProps<{
+    title?: string;
+    routePath?: RoutePath;
+    requiresAuth?: boolean;
+    roles?: UserRole[];
+}>();
+const GUEST_ROLE_LABEL = "Guest";
+const GUEST_DISPLAY_NAME = "Guest visitor";
+const GUEST_ACTION_LABEL = "Sign in";
 
 interface NavItem {
     key: string;
@@ -34,6 +47,7 @@ const navItems: NavItem[] = [
         key: "catalog",
         path: Routes.appCatalog,
         roles: ["USER", "MERCHANT", "ADMIN"],
+        public: true,
     },
     {
         key: "catalogManage",
@@ -150,7 +164,11 @@ const roleTextMap: Record<UserRole, Record<Locale, string>> = {
 
 const visibleNavItems = computed(() =>
     navItems
-        .filter((item) => item.public || item.roles.includes(role.value))
+        .filter(
+            (item) =>
+                item.public ||
+                (isAuthenticated() && item.roles.includes(role.value)),
+        )
         .map((item) => ({
             ...item,
             label: copy.value.nav[item.key as keyof typeof copy.value.nav],
@@ -159,13 +177,17 @@ const visibleNavItems = computed(() =>
 
 const displayName = computed(
     () =>
+        (!isAuthenticated() && GUEST_DISPLAY_NAME) ||
         sessionState.user?.nickname ||
         sessionState.user?.username ||
         copy.value.currentUser,
 );
 
 const roleLabel = computed(
-    () => roleTextMap[role.value]?.[locale.value] ?? role.value,
+    () =>
+        !isAuthenticated()
+            ? GUEST_ROLE_LABEL
+            : roleTextMap[role.value]?.[locale.value] ?? role.value,
 );
 
 const publicPaths = new Set(
@@ -181,8 +203,27 @@ function isActive(path: string): boolean {
 }
 
 function ensureCurrentRouteAccess(): void {
-    const currentPath = currentRoutePath();
-    if (!currentPath || publicPaths.has(currentPath as RoutePath)) {
+    const currentPath = props.routePath || currentRoutePath();
+    if (!currentPath) {
+        return;
+    }
+
+    const matchedItem = navItems.find((item) => item.path === currentPath);
+    const routeGuard = resolveRouteGuard(currentPath);
+    const requiresAuth =
+        props.requiresAuth ??
+        routeGuard?.requiresAuth ??
+        (!matchedItem?.public &&
+            !publicPaths.has(currentPath as RoutePath));
+    const requiredRoles = props.roles?.length
+        ? props.roles
+        : routeGuard?.roles?.length
+          ? routeGuard.roles
+          : matchedItem?.public
+            ? []
+            : (matchedItem?.roles ?? []);
+
+    if (!requiresAuth) {
         return;
     }
 
@@ -191,12 +232,7 @@ function ensureCurrentRouteAccess(): void {
         return;
     }
 
-    const matchedItem = navItems.find((item) => item.path === currentPath);
-    if (
-        matchedItem &&
-        !matchedItem.public &&
-        !matchedItem.roles.includes(role.value)
-    ) {
+    if (requiredRoles.length > 0 && !requiredRoles.includes(role.value)) {
         redirectTo(Routes.forbidden);
     }
 }
@@ -206,6 +242,10 @@ function handleNav(item: NavItem): void {
         ? undefined
         : { requiresAuth: true, roles: item.roles };
     navigateTo(item.path, undefined, guard);
+}
+
+function handleLogin(): void {
+    redirectTo(Routes.login, { redirect: currentRoutePath() || Routes.appCatalog });
 }
 
 async function handleLogout(): Promise<void> {
@@ -220,7 +260,7 @@ async function handleLogout(): Promise<void> {
     }
 }
 
-onMounted(() => {
+onBeforeMount(() => {
     ensureCurrentRouteAccess();
 });
 </script>
@@ -245,8 +285,19 @@ onMounted(() => {
                             <text class="role-chip">{{ roleLabel }}</text>
                             <text class="user-name">{{ displayName }}</text>
                         </view>
-                        <button class="btn-secondary logout-btn" @click="handleLogout">
+                        <button
+                            v-if="isAuthenticated()"
+                            class="btn-secondary logout-btn"
+                            @click="handleLogout"
+                        >
                             {{ copy.logout }}
+                        </button>
+                        <button
+                            v-else
+                            class="btn-secondary logout-btn"
+                            @click="handleLogin"
+                        >
+                            {{ GUEST_ACTION_LABEL }}
                         </button>
                     </view>
                 </view>
@@ -254,18 +305,19 @@ onMounted(() => {
 
             <scroll-view class="nav-row fade-in-up" scroll-x>
                 <view class="nav-items">
-                    <view
+                    <button
                         v-for="item in visibleNavItems"
                         :key="item.path"
                         class="nav-item"
                         :class="{ active: isActive(item.path) }"
+                        :aria-current="isActive(item.path) ? 'page' : undefined"
                         @click="handleNav(item)"
                     >
                         <text class="nav-label">{{ item.label }}</text>
                         <text v-if="item.showBadge && cartCount > 0" class="badge">
                             {{ cartCount }}
                         </text>
-                    </view>
+                    </button>
                 </view>
             </scroll-view>
 
@@ -409,16 +461,21 @@ onMounted(() => {
 }
 
 .nav-item {
+    appearance: none;
     padding: 11px 16px;
     border-radius: 999px;
     background: rgba(255, 255, 255, 0.03);
     font-size: 13px;
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 8px;
+    min-height: 42px;
     border: 1px solid transparent;
     color: var(--text-muted);
     font-weight: 700;
+    white-space: nowrap;
+    flex-shrink: 0;
     transition:
         background-color 0.22s ease,
         border-color 0.22s ease,

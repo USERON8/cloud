@@ -1,9 +1,8 @@
 import http from './http'
-import { listProducts, searchProducts as searchProductsByName } from './product'
+import { searchProducts as searchProductsByName } from './product'
 import type {
   ProductDocument,
   ProductFilterRequest,
-  ProductItem,
   ProductSearchRequest,
   SearchProductDocument,
   SearchResult,
@@ -14,6 +13,7 @@ const SEARCH_FALLBACK_TIMEOUT_MS = Number(import.meta.env.VITE_SEARCH_FALLBACK_T
 const SUGGESTION_CACHE_TTL = 30_000
 const HOT_KEYWORD_CACHE_TTL = 60_000
 const RECOMMENDATION_CACHE_TTL = 45_000
+const SEARCH_RESULT_CACHE_TTL = 30_000
 
 type CacheEntry<T> = {
   expiresAt: number
@@ -23,6 +23,7 @@ type CacheEntry<T> = {
 const suggestionCache = new Map<string, CacheEntry<string[]>>()
 const hotKeywordCache = new Map<string, CacheEntry<string[]>>()
 const recommendationCache = new Map<string, CacheEntry<string[]>>()
+const searchResultCache = new Map<string, CacheEntry<SmartSearchResult>>()
 
 function getCachedValue<T>(cache: Map<string, CacheEntry<T>>, key: string): T | null {
   const entry = cache.get(key)
@@ -40,6 +41,37 @@ function setCachedValue<T>(cache: Map<string, CacheEntry<T>>, key: string, value
   cache.set(key, { value, expiresAt: Date.now() + ttl })
 }
 
+function buildSmartSearchCacheKey(params: {
+  keyword?: string
+  page?: number
+  size?: number
+  sortField?: string
+  sortOrder?: 'asc' | 'desc'
+}): string {
+  return JSON.stringify({
+    keyword: params.keyword || '',
+    page: params.page || 1,
+    size: params.size || 20,
+    sortField: params.sortField || '',
+    sortOrder: params.sortOrder || ''
+  })
+}
+
+function buildEmptySmartSearchResult(params: {
+  page?: number
+  size?: number
+}): SmartSearchResult {
+  const page = Math.max(params.page || 1, 1)
+  const size = Math.max(params.size || 20, 1)
+  return {
+    documents: [],
+    total: 0,
+    from: (page - 1) * size,
+    size,
+    aggregations: {}
+  }
+}
+
 function withTimeout<T>(promise: Promise<T>, timeoutMs = SEARCH_FALLBACK_TIMEOUT_MS): Promise<T> {
   return new Promise<T>((resolve, reject) => {
     const timer = setTimeout(() => {
@@ -52,21 +84,6 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs = SEARCH_FALLBACK_TIMEOUT
         clearTimeout(timer)
       })
   })
-}
-
-function toSearchDocument(item: ProductItem): SearchProductDocument {
-  return {
-    productId: Number(item.id),
-    shopId: item.shopId != null ? Number(item.shopId) : undefined,
-    productName: item.name,
-    price: item.price,
-    stockQuantity: item.stockQuantity,
-    categoryId: item.categoryId != null ? Number(item.categoryId) : undefined,
-    brandId: item.brandId != null ? Number(item.brandId) : undefined,
-    status: item.status,
-    description: item.description,
-    imageUrl: item.imageUrl
-  }
 }
 
 function toSearchDocumentFromProductDocument(item: ProductDocument): SearchProductDocument {
@@ -89,7 +106,7 @@ export function complexSearch(
   request: ProductSearchRequest,
   searchAfter?: string
 ): Promise<SearchResult<ProductDocument>> {
-  return http.post<SearchResult<ProductDocument>, SearchResult<ProductDocument>>('/api/search/products/searches', request, {
+  return http.post<SearchResult<ProductDocument>, SearchResult<ProductDocument>>('/api/search/products', request, {
     params: { searchAfter }
   })
 }
@@ -98,7 +115,7 @@ export function getProductFilters(
   request: ProductSearchRequest,
   searchAfter?: string
 ): Promise<SearchResult<ProductDocument>> {
-  return http.post<SearchResult<ProductDocument>, SearchResult<ProductDocument>>('/api/search/products/filter-groups', request, {
+  return http.post<SearchResult<ProductDocument>, SearchResult<ProductDocument>>('/api/search/products/filters', request, {
     params: { searchAfter }
   })
 }
@@ -127,7 +144,26 @@ export function smartSearchProducts(params: {
   sortOrder?: 'asc' | 'desc'
   searchAfter?: string
 }): Promise<SmartSearchResult> {
-  return http.get<SmartSearchResult, SmartSearchResult>('/api/search/products/optimized-searches', { params })
+  const page = params.page == null ? 0 : Math.max(params.page - 1, 0)
+  return http
+    .get<SearchResult<ProductDocument>, SearchResult<ProductDocument>>('/api/search/products', {
+      params: {
+        keyword: params.keyword,
+        page,
+        size: params.size,
+        sortBy: params.sortField,
+        sortDir: params.sortOrder,
+        searchAfter: params.searchAfter
+      }
+    })
+    .then((result) => ({
+      documents: result.list.map(toSearchDocumentFromProductDocument),
+      total: result.total,
+      from: result.page * result.size,
+      size: result.size,
+      aggregations: result.aggregations,
+      searchAfter: result.searchAfter
+    }))
 }
 
 export function searchProducts(params: {
@@ -237,21 +273,17 @@ export async function smartSearchProductsWithFallback(params: {
   sortField?: string
   sortOrder?: 'asc' | 'desc'
 }): Promise<SmartSearchResult> {
+  const cacheKey = buildSmartSearchCacheKey(params)
   try {
-    return await withTimeout(smartSearchProducts(params))
+    const result = await withTimeout(smartSearchProducts(params))
+    setCachedValue(searchResultCache, cacheKey, result, SEARCH_RESULT_CACHE_TTL)
+    return result
   } catch {
-    const fallback = await listProducts({
-      page: params.page,
-      size: params.size,
-      name: params.keyword || undefined
-    })
-    return {
-      documents: fallback.records.map(toSearchDocument),
-      total: fallback.total,
-      from: ((params.page || 1) - 1) * (params.size || 20),
-      size: params.size || 20,
-      aggregations: {}
+    const cached = getCachedValue(searchResultCache, cacheKey)
+    if (cached) {
+      return cached
     }
+    return buildEmptySmartSearchResult(params)
   }
 }
 
@@ -372,7 +404,7 @@ export function filterSearch(
   request: ProductFilterRequest,
   searchAfter?: string
 ): Promise<SearchResult<ProductDocument>> {
-  return http.post<SearchResult<ProductDocument>, SearchResult<ProductDocument>>('/api/search/products/filtered-searches', request, {
+  return http.post<SearchResult<ProductDocument>, SearchResult<ProductDocument>>('/api/search/products', request, {
     params: { searchAfter }
   })
 }

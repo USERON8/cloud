@@ -5,15 +5,20 @@ export type UserRole = 'USER' | 'MERCHANT' | 'ADMIN'
 
 const DEFAULT_ROLE: UserRole = 'USER'
 
+function matchesRole(rawRole: string, targetRole: UserRole): boolean {
+  const normalized = rawRole.trim().toUpperCase()
+  return normalized === targetRole || normalized === `ROLE_${targetRole}`
+}
+
 export function getCurrentRole(): UserRole {
   const roles = Array.isArray(sessionState.user?.roles) ? sessionState.user.roles : []
-  if (roles.includes('ADMIN')) {
+  if (roles.some((role) => matchesRole(role, 'ADMIN'))) {
     return 'ADMIN'
   }
-  if (roles.includes('MERCHANT')) {
+  if (roles.some((role) => matchesRole(role, 'MERCHANT'))) {
     return 'MERCHANT'
   }
-  if (roles.includes('USER')) {
+  if (roles.some((role) => matchesRole(role, 'USER'))) {
     return 'USER'
   }
   return DEFAULT_ROLE

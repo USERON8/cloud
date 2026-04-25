@@ -7,6 +7,21 @@ export interface GuardOptions {
   roles?: UserRole[]
 }
 
+const ROUTE_GUARDS: Partial<Record<RoutePath, GuardOptions>> = {
+  [Routes.appHome]: { requiresAuth: true, roles: ['USER', 'MERCHANT', 'ADMIN'] },
+  [Routes.appCatalogManage]: { requiresAuth: true, roles: ['MERCHANT', 'ADMIN'] },
+  [Routes.appOrders]: { requiresAuth: true, roles: ['USER', 'MERCHANT', 'ADMIN'] },
+  [Routes.appOrdersManage]: { requiresAuth: true, roles: ['MERCHANT', 'ADMIN'] },
+  [Routes.appProfile]: { requiresAuth: true, roles: ['USER', 'MERCHANT', 'ADMIN'] },
+  [Routes.appAddresses]: { requiresAuth: true, roles: ['USER', 'MERCHANT', 'ADMIN'] },
+  [Routes.appCart]: { requiresAuth: true, roles: ['USER', 'MERCHANT', 'ADMIN'] },
+  [Routes.appPayments]: { requiresAuth: true, roles: ['USER', 'ADMIN'] },
+  [Routes.appStock]: { requiresAuth: true, roles: ['ADMIN'] },
+  [Routes.appMerchant]: { requiresAuth: true, roles: ['MERCHANT'] },
+  [Routes.appAdmin]: { requiresAuth: true, roles: ['ADMIN'] },
+  [Routes.appOps]: { requiresAuth: true, roles: ['ADMIN'] }
+}
+
 function buildQuery(params?: Record<string, unknown>): string {
   if (!params) {
     return ''
@@ -36,6 +51,17 @@ function ensureAuth(targetUrl: string, guard?: GuardOptions): boolean {
     return false
   }
   return true
+}
+
+export function resolveRouteGuard(path?: string): GuardOptions | undefined {
+  if (!path) {
+    return undefined
+  }
+  return ROUTE_GUARDS[path as RoutePath]
+}
+
+export function ensurePageAccess(path: RoutePath, guard?: GuardOptions): boolean {
+  return ensureAuth(path, guard ?? resolveRouteGuard(path))
 }
 
 export function navigateTo(path: RoutePath, query?: Record<string, unknown>, guard?: GuardOptions): void {

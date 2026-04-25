@@ -19,11 +19,11 @@ export interface ShopSearchRequest {
 }
 
 export function searchShops(request: ShopSearchRequest): Promise<SearchResult<ShopDocument>> {
-  return http.post<SearchResult<ShopDocument>, SearchResult<ShopDocument>>('/api/search/shops/searches', request)
+  return http.post<SearchResult<ShopDocument>, SearchResult<ShopDocument>>('/api/search/shops', request)
 }
 
 export function getShopFilters(request: ShopSearchRequest): Promise<SearchResult<ShopDocument>> {
-  return http.post<SearchResult<ShopDocument>, SearchResult<ShopDocument>>('/api/search/shops/filter-groups', request)
+  return http.post<SearchResult<ShopDocument>, SearchResult<ShopDocument>>('/api/search/shops/filters', request)
 }
 
 export function listShopSuggestions(keyword: string, size = 10): Promise<string[]> {
@@ -35,7 +35,7 @@ export function listHotShops(size = 10): Promise<ShopDocument[]> {
 }
 
 export function getShopById(shopId: number): Promise<ShopDocument> {
-  return http.get<ShopDocument, ShopDocument>(`/api/search/shops/${shopId}`)
+  return http.get<ShopDocument, ShopDocument>(`/api/shops/${shopId}`)
 }
 
 export function listRecommendedShops(page = 0, size = 20): Promise<SearchResult<ShopDocument>> {

@@ -37,36 +37,32 @@ const entryLabel = computed(() => {
 const copy = computed(() =>
     locale.value === "en-US"
         ? {
-              title: "Step into the cloud console without the usual friction.",
-              subtitle:
-                  "One sign-in surface now supports user, merchant, and admin workflows while keeping the handoff cleaner and more consistent.",
+              brand: "My Shop Cloud",
+              title: "Sign in to My Shop Cloud",
+              subtitle: "Continue with your platform account.",
               accessMode: "Access mode",
-              targetRoute: "Target route",
+              targetRoute: "Return path",
               auth: "OAuth 2.1",
               heading: "Sign in",
-              body:
-                  "Continue with your platform account. The same surface now adapts to user, merchant, and admin access.",
-              recommended: "Recommended path",
-              recommendedBody:
-                  "Authorization returns the effective role after sign-in, so one flow is enough for multiple identities. The current entry has already been tuned for your context.",
+              body: "Authorization is handled by the cloud identity service.",
+              recommended: "Account entry",
+              recommendedBody: "Your role is resolved after sign-in.",
               action: "Continue with account",
               storefront: "Storefront access",
               back: "Back to market",
               error: "Failed to start sign-in",
           }
         : {
-              title: "更顺手地进入云端经营控制台。",
-              subtitle:
-                  "一个登录入口同时承接用户、商家和管理员工作流，并把授权切换过程做得更干净、更统一。",
+              brand: "云端商城工作台",
+              title: "登录 My Shop Cloud",
+              subtitle: "使用平台账号继续访问。",
               accessMode: "访问模式",
-              targetRoute: "跳转目标",
+              targetRoute: "返回路径",
               auth: "OAuth 2.1",
               heading: "登录",
-              body:
-                  "使用平台账号继续访问。当前页面已经统一承接用户、商家与管理员登录流程。",
-              recommended: "推荐方式",
-              recommendedBody:
-                  "授权服务会在登录成功后返回当前有效角色，因此一个入口就足以适配多种身份。当前入口已按你的上下文做了默认优化。",
+              body: "授权由云端身份服务完成。",
+              recommended: "账号入口",
+              recommendedBody: "登录成功后自动识别当前角色。",
               action: "使用账号继续登录",
               storefront: "商城访问",
               back: "返回商城",
@@ -104,65 +100,65 @@ function backToMarket(): void {
 
 <template>
     <view class="page">
-        <view class="page-container auth-layout">
-            <view class="hero-panel fade-in-up">
-                <view class="hero-topbar">
-                    <view class="hero-brand">
-                        <text class="hero-badge">My Shop Cloud</text>
+        <view class="page-container auth-shell">
+            <view class="auth-panel display-panel fade-in-up">
+                <view class="auth-topbar">
+                    <view class="brand-line">
+                        <text class="brand-mark">MS</text>
+                        <text class="brand-name">{{ copy.brand }}</text>
                     </view>
                     <LocaleSwitch />
                 </view>
 
-                <view class="hero-main">
-                    <text class="hero-title">{{ copy.title }}</text>
-                    <text class="hero-copy">{{ copy.subtitle }}</text>
-                </view>
+                <view class="auth-main">
+                    <view class="auth-copy">
+                        <text class="hero-eyebrow">{{ copy.auth }}</text>
+                        <text class="hero-title auth-title">{{ copy.title }}</text>
+                        <text class="hero-subtitle auth-subtitle">
+                            {{ copy.subtitle }}
+                        </text>
 
-                <view class="hero-points">
-                    <view class="point surface-card">
-                        <text class="point-label">{{ copy.accessMode }}</text>
-                        <text class="point-value">{{ entryLabel }}</text>
-                    </view>
-                    <view class="point surface-card">
-                        <text class="point-label">{{ copy.targetRoute }}</text>
-                        <text class="point-value">{{ redirectPath }}</text>
-                    </view>
-                </view>
-            </view>
-
-            <view class="signin-card glass-card fade-in-up">
-                <view class="header">
-                    <text class="eyebrow">{{ copy.auth }}</text>
-                    <text class="title">{{ copy.heading }}</text>
-                    <text class="muted">{{ copy.body }}</text>
-                </view>
-
-                <view class="signin-content">
-                    <view class="signin-hint">
-                        <text class="hint-title">{{ copy.recommended }}</text>
-                        <text class="hint-copy">{{ copy.recommendedBody }}</text>
+                        <view class="context-grid">
+                            <view class="context-item">
+                                <text class="context-label">{{ copy.accessMode }}</text>
+                                <text class="context-value">{{ entryLabel }}</text>
+                            </view>
+                            <view class="context-item">
+                                <text class="context-label">{{ copy.targetRoute }}</text>
+                                <text class="context-value">{{ redirectPath }}</text>
+                            </view>
+                        </view>
                     </view>
 
-                    <button
-                        class="btn-primary full-width action-button"
-                        :loading="startingProvider === 'password'"
-                        @click="handleAuthorizationStart('password')"
-                    >
-                        {{ copy.action }}
-                    </button>
+                    <view class="signin-panel">
+                        <view class="signin-header">
+                            <text class="signin-title">{{ copy.heading }}</text>
+                            <text class="signin-copy">{{ copy.body }}</text>
+                        </view>
 
-                    <view class="divider">
-                        <view class="divider-line" />
-                        <text class="divider-text">{{ copy.storefront }}</text>
-                        <view class="divider-line" />
+                        <view class="signin-hint">
+                            <text class="hint-title">{{ copy.recommended }}</text>
+                            <text class="hint-copy">{{ copy.recommendedBody }}</text>
+                        </view>
+
+                        <button
+                            class="btn-primary action-button"
+                            :loading="startingProvider === 'password'"
+                            @click="handleAuthorizationStart('password')"
+                        >
+                            {{ copy.action }}
+                        </button>
+
+                        <view class="divider">
+                            <view class="divider-line" />
+                            <text class="divider-text">{{ copy.storefront }}</text>
+                            <view class="divider-line" />
+                        </view>
+
+                        <button class="btn-outline action-button" @click="backToMarket">
+                            {{ copy.back }}
+                        </button>
                     </view>
-
-                    <button
-                        class="btn-secondary full-width action-button"
-                        @click="backToMarket"
-                    >
-                        {{ copy.back }}
-                    </button>
                 </view>
             </view>
         </view>
@@ -172,144 +168,147 @@ function backToMarket(): void {
 <style scoped>
 .page {
     min-height: 100vh;
-    padding: 24px 16px;
+    display: flex;
+    align-items: center;
+    padding: 24px 0;
 }
 
-.auth-layout {
+.auth-shell {
+    display: flex;
+    align-items: center;
     min-height: calc(100vh - 48px);
-    display: grid;
-    grid-template-columns: minmax(0, 1.15fr) minmax(360px, 420px);
-    gap: 18px;
-    align-items: stretch;
 }
 
-.hero-panel {
+.auth-panel {
+    width: 100%;
     padding: 28px;
     border-radius: var(--radius-xl);
-    background:
-        radial-gradient(
-            circle at 100% 0%,
-            rgba(95, 209, 194, 0.18),
-            transparent 26%
-        ),
-        linear-gradient(160deg, rgba(9, 18, 29, 0.98), rgba(8, 28, 43, 0.92));
-    color: #fff;
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
-    gap: 28px;
-    box-shadow: 0 32px 70px rgba(1, 7, 14, 0.4);
-    border: 1px solid var(--panel-border-strong);
+    gap: 30px;
 }
 
-.hero-topbar {
+.auth-topbar {
     display: flex;
+    align-items: center;
     justify-content: space-between;
     gap: 16px;
     flex-wrap: wrap;
 }
 
-.hero-badge {
-    align-self: flex-start;
-    padding: 9px 14px;
-    border-radius: 999px;
-    background: rgba(255, 255, 255, 0.08);
-    font-size: 12px;
-    font-weight: 800;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-}
-
-.hero-main {
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-}
-
-.hero-title {
-    font-size: 38px;
-    line-height: 1.08;
-    font-weight: 800;
-    letter-spacing: -0.05em;
-}
-
-.hero-copy {
-    font-size: 15px;
-    line-height: 1.8;
-    color: rgba(242, 247, 251, 0.8);
-    max-width: 560px;
-}
-
-.hero-points {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+.brand-line {
+    display: inline-flex;
+    align-items: center;
     gap: 12px;
 }
 
-.point {
-    padding: 16px;
-    background: rgba(255, 255, 255, 0.05);
-    border-color: rgba(255, 255, 255, 0.08);
-    box-shadow: none;
-}
-
-.point-label {
+.brand-mark {
+    width: 42px;
+    height: 42px;
+    border-radius: 14px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, var(--accent), var(--highlight));
+    color: #04111c;
     font-size: 12px;
-    color: rgba(242, 247, 251, 0.62);
+    font-weight: 800;
+    letter-spacing: 0.12em;
+}
+
+.brand-name {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-weight: 800;
+    letter-spacing: 0.16em;
     text-transform: uppercase;
-    letter-spacing: 0.08em;
 }
 
-.point-value {
-    margin-top: 10px;
-    display: block;
-    font-size: 15px;
-    font-weight: 700;
-    color: #fff;
-    word-break: break-all;
-    line-height: 1.6;
+.auth-main {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(340px, 420px);
+    gap: 28px;
+    align-items: stretch;
 }
 
-.signin-card {
-    width: 100%;
-    padding: 24px;
+.auth-copy {
     display: flex;
     flex-direction: column;
     justify-content: center;
     gap: 18px;
+    min-height: 430px;
 }
 
-.header {
+.auth-title {
+    max-width: 640px;
+}
+
+.auth-subtitle {
+    max-width: 520px;
+}
+
+.context-grid {
+    width: min(560px, 100%);
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    padding-top: 8px;
+}
+
+.context-item {
+    min-width: 0;
+    padding: 16px;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--panel-border);
+}
+
+.context-label {
+    font-size: 12px;
+    color: var(--text-soft);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.context-value {
+    margin-top: 10px;
+    display: block;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-main);
+    line-height: 1.55;
+    overflow-wrap: anywhere;
+}
+
+.signin-panel {
+    padding: 24px;
+    border-radius: var(--radius-lg);
+    background: rgba(5, 14, 23, 0.62);
+    border: 1px solid var(--panel-border-strong);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 16px;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+.signin-header {
     display: flex;
     flex-direction: column;
     gap: 8px;
 }
 
-.eyebrow {
-    font-size: 12px;
-    color: var(--accent);
-    font-weight: 800;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-}
-
-.title {
+.signin-title {
     font-size: 30px;
     font-weight: 800;
     letter-spacing: -0.04em;
     color: var(--text-main);
 }
 
-.muted {
+.signin-copy {
     color: var(--text-muted);
     font-size: 13px;
     line-height: 1.7;
-}
-
-.signin-content {
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
 }
 
 .signin-hint {
@@ -336,11 +335,8 @@ function backToMarket(): void {
     line-height: 1.7;
 }
 
-.full-width {
-    width: 100%;
-}
-
 .action-button {
+    width: 100%;
     min-height: 48px;
 }
 
@@ -364,18 +360,41 @@ function backToMarket(): void {
 }
 
 @media (max-width: 960px) {
-    .auth-layout {
-        grid-template-columns: 1fr;
+    .auth-main {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .auth-copy {
+        min-height: auto;
     }
 }
 
 @media (max-width: 768px) {
-    .hero-title {
-        font-size: 30px;
+    .page {
+        align-items: flex-start;
+        padding: 12px 0 28px;
     }
 
-    .hero-points {
-        grid-template-columns: 1fr;
+    .auth-panel {
+        padding: 18px;
+        gap: 22px;
+        border-radius: 28px;
+    }
+
+    .auth-main {
+        gap: 20px;
+    }
+
+    .context-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .signin-panel {
+        padding: 18px;
+    }
+
+    .signin-title {
+        font-size: 26px;
     }
 }
 </style>

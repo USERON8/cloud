@@ -5,6 +5,7 @@ export interface ResultEnvelope<T> {
   message: string
   data: T
   timestamp?: number
+  traceId?: string
 }
 
 export interface PageResult<T> {
@@ -19,10 +20,34 @@ export interface PageResult<T> {
 
 export class BusinessError extends Error {
   code: number
+  httpStatus?: number
+  traceId?: string
+  category?: ApiErrorCategory
 
-  constructor(message: string, code: number) {
+  constructor(message: string, code: number, options: ApiErrorOptions = {}) {
     super(message)
     this.name = 'BusinessError'
     this.code = code
+    this.httpStatus = options.httpStatus
+    this.traceId = options.traceId
+    this.category = options.category
   }
+}
+
+export type ApiErrorCategory =
+  | 'business'
+  | 'validation'
+  | 'auth'
+  | 'permission'
+  | 'notFound'
+  | 'conflict'
+  | 'rateLimit'
+  | 'system'
+  | 'remote'
+  | 'network'
+
+export interface ApiErrorOptions {
+  httpStatus?: number
+  traceId?: string
+  category?: ApiErrorCategory
 }

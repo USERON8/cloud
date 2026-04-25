@@ -25,6 +25,11 @@ type SessionChangeListener = (user: UserInfo | null) => void
 
 const sessionChangeListeners = new Set<SessionChangeListener>()
 
+interface JwtPayload {
+  claims: Record<string, unknown>
+  rawJson: string
+}
+
 function decodeBase64Url(value: string): string {
   const normalized = value.replace(/-/g, '+').replace(/_/g, '/')
   const padding = normalized.length % 4 === 0 ? '' : '='.repeat(4 - (normalized.length % 4))
@@ -35,20 +40,23 @@ function decodeBase64Url(value: string): string {
   return ''
 }
 
-function parseJwtClaims(token?: string): Record<string, unknown> {
+function parseJwtPayload(token?: string): JwtPayload {
   if (!token) {
-    return {}
+    return { claims: {}, rawJson: '' }
   }
   const parts = token.split('.')
   if (parts.length < 2 || !parts[1]) {
-    return {}
+    return { claims: {}, rawJson: '' }
   }
 
   try {
     const json = decodeBase64Url(parts[1])
-    return JSON.parse(json) as Record<string, unknown>
+    return {
+      claims: JSON.parse(json) as Record<string, unknown>,
+      rawJson: json
+    }
   } catch {
-    return {}
+    return { claims: {}, rawJson: '' }
   }
 }
 
@@ -68,18 +76,73 @@ function readNumberClaim(claims: Record<string, unknown>, key: string): number |
   return undefined
 }
 
+function readRawLongClaim(payload: JwtPayload, key: string): string {
+  const stringValue = readStringClaim(payload.claims, key).trim()
+  if (/^\d+$/.test(stringValue)) {
+    return stringValue
+  }
+  const pattern = new RegExp(`"${key}"\\s*:\\s*(\\d+)`)
+  const match = payload.rawJson.match(pattern)
+  return match?.[1] || ''
+}
+
+function normalizeRole(role: string): string {
+  const normalized = role.trim().toUpperCase()
+  if (!normalized) {
+    return ''
+  }
+  return normalized.startsWith('ROLE_') ? normalized.slice(5) : normalized
+}
+
+function normalizeRoles(roles?: string[] | null): string[] {
+  if (!Array.isArray(roles) || roles.length === 0) {
+    return []
+  }
+  return Array.from(
+    new Set(
+      roles
+        .filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
+        .map(normalizeRole)
+        .filter((item) => item.length > 0)
+    )
+  )
+}
+
 function readRoles(claims: Record<string, unknown>): string[] {
   const value = claims.roles
   if (Array.isArray(value)) {
-    return value.filter((item): item is string => typeof item === 'string' && item.length > 0)
+    return normalizeRoles(value)
   }
   if (typeof value === 'string' && value.trim().length > 0) {
-    return value.trim().split(/\s+/)
+    return normalizeRoles(value.trim().split(/\s+/))
   }
   return []
 }
 
-function buildUserInfo(accessClaims: Record<string, unknown>, idClaims: Record<string, unknown>): UserInfo {
+function normalizeUserInfo(user: UserInfo | null | undefined): UserInfo | null {
+  if (!user) {
+    return null
+  }
+  return {
+    ...user,
+    id: (() => {
+      const value = user.id
+      if (typeof value === 'number' && Number.isFinite(value)) {
+        return value
+      }
+      if (typeof value === 'string' && /^\d+$/.test(value)) {
+        const parsed = Number(value)
+        return Number.isSafeInteger(parsed) ? parsed : undefined
+      }
+      return undefined
+    })(),
+    roles: normalizeRoles(user.roles)
+  }
+}
+
+function buildUserInfo(accessPayload: JwtPayload, idPayload: JwtPayload): UserInfo {
+  const accessClaims = accessPayload.claims
+  const idClaims = idPayload.claims
   const roles = readRoles(accessClaims)
   const username =
     readStringClaim(accessClaims, 'username') ||
@@ -92,7 +155,15 @@ function buildUserInfo(accessClaims: Record<string, unknown>, idClaims: Record<s
     username
 
   return {
-    id: readNumberClaim(accessClaims, 'user_id'),
+    id: (() => {
+      const rawUserId =
+        readRawLongClaim(accessPayload, 'user_id') || readRawLongClaim(accessPayload, 'userId')
+      if (rawUserId) {
+        const parsed = Number(rawUserId)
+        return Number.isSafeInteger(parsed) ? parsed : undefined
+      }
+      return readNumberClaim(accessClaims, 'user_id') ?? readNumberClaim(accessClaims, 'userId')
+    })(),
     username,
     nickname,
     email: readStringClaim(idClaims, 'email') || undefined,
@@ -143,18 +214,18 @@ export const useSessionStore = defineStore('session', {
       this.tokenType = payload.tokenType || 'Bearer'
       this.expiresAt = payload.expiresAt
       this.scope = payload.scope || ''
-      this.user = payload.user || null
+      this.user = normalizeUserInfo(payload.user)
       this.notifySessionChange()
     },
     setSessionFromTokenResponse(payload: OAuthTokenResponse): void {
-      const accessClaims = parseJwtClaims(payload.access_token)
-      const idClaims = parseJwtClaims(payload.id_token)
+      const accessPayload = parseJwtPayload(payload.access_token)
+      const idPayload = parseJwtPayload(payload.id_token)
 
       this.accessToken = payload.access_token
       this.tokenType = payload.token_type || 'Bearer'
       this.expiresAt = Date.now() + (payload.expires_in || 0) * 1000
       this.scope = payload.scope || ''
-      this.user = buildUserInfo(accessClaims, idClaims)
+      this.user = buildUserInfo(accessPayload, idPayload)
       this.persist()
       this.notifySessionChange()
     },
@@ -168,10 +239,10 @@ export const useSessionStore = defineStore('session', {
       this.notifySessionChange()
     },
     patchUser(patch: Partial<UserInfo>): void {
-      this.user = {
+      this.user = normalizeUserInfo({
         ...(this.user || {}),
         ...patch
-      }
+      })
       this.persist()
       this.notifySessionChange()
     },
@@ -205,6 +276,11 @@ export function patchSessionUser(patch: Partial<UserInfo>): void {
 
 export function getAccessToken(): string {
   return sessionState.readAccessToken()
+}
+
+export function getCurrentUserId(): string {
+  const payload = parseJwtPayload(getAccessToken())
+  return readRawLongClaim(payload, 'user_id') || readRawLongClaim(payload, 'userId')
 }
 
 export function isAuthenticated(): boolean {

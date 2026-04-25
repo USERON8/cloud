@@ -15,6 +15,13 @@
       }
     },
     {
+      "path": "pages/error/index",
+      "style": {
+        "navigationBarTitleText": "Error",
+        "navigationStyle": "custom"
+      }
+    },
+    {
       "path": "pages/forbidden/index",
       "style": {
         "navigationBarTitleText": "Forbidden",

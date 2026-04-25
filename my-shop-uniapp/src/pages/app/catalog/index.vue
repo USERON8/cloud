@@ -6,6 +6,7 @@ import AppShell from "../../../components/AppShell.vue";
 import {
     smartSearchProductsWithFallback,
 } from "../../../api/search-ops";
+import { isAuthenticated } from "../../../auth/session";
 import { useRole } from "../../../auth/permission";
 import { useProductSearchFeed } from "../../../composables/useProductSearchFeed";
 import { useLocale } from "../../../i18n/locale";
@@ -47,7 +48,7 @@ const {
             keyword: keyword || undefined,
             page,
             size,
-            sortField: "score",
+            sortField: "hotScore",
             sortOrder: "desc",
         });
         return {
@@ -88,6 +89,7 @@ const copy = computed(() =>
               invalidPrice: "Product price is unavailable.",
               invalidShop: "Shop metadata is unavailable.",
               outOfStock: "This product is out of stock.",
+              authHint: "Please sign in before adding items to cart.",
               addSuccess: "Added to cart",
               addFailed: "Failed to add item to cart",
               loadFailed: "Failed to load products",
@@ -118,6 +120,7 @@ const copy = computed(() =>
               invalidPrice: "商品价格不可用。",
               invalidShop: "店铺信息不可用。",
               outOfStock: "商品库存不足。",
+              authHint: "请先登录后再加入购物车。",
               addSuccess: "已加入购物车",
               addFailed: "加入购物车失败",
               loadFailed: "加载商品失败",
@@ -140,6 +143,11 @@ function stockTone(stock?: number): string {
 }
 
 async function onAddToCart(item: ProductItem): Promise<void> {
+    if (!isAuthenticated()) {
+        toast(copy.value.authHint || "Please sign in before adding items to cart.");
+        navigateTo(Routes.login, { redirect: Routes.appCatalog });
+        return;
+    }
     if (typeof item.price !== "number" || item.price <= 0) {
         toast(copy.value.invalidPrice);
         return;
@@ -239,6 +247,9 @@ onShow(() => {
                         <input
                             v-model="keyword"
                             class="field-control field-control-pill"
+                            type="text"
+                            name="catalog-search"
+                            confirm-type="search"
                             :placeholder="copy.searchPlaceholder"
                             @confirm="onSearch"
                         />
@@ -303,6 +314,7 @@ onShow(() => {
                 >
                     <image
                         :src="productImageSrc(item)"
+                        :alt="item.name"
                         class="product-image"
                         mode="aspectFill"
                         @error="markImageFailed(item.id)"
@@ -414,6 +426,7 @@ onShow(() => {
     display: flex;
     flex-direction: column;
     gap: 14px;
+    min-width: 0;
     transition:
         transform 0.22s ease,
         box-shadow 0.22s ease,
@@ -432,6 +445,7 @@ onShow(() => {
     display: flex;
     flex-direction: column;
     gap: 8px;
+    min-width: 0;
 }
 
 .product-name {
@@ -439,6 +453,7 @@ onShow(() => {
     font-weight: 800;
     line-height: 1.4;
     letter-spacing: -0.03em;
+    overflow-wrap: anywhere;
 }
 
 .product-price {
@@ -476,7 +491,7 @@ onShow(() => {
 @media (max-width: 900px) {
     .keyword-grid,
     .product-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: minmax(0, 1fr);
     }
 
     .search-row {

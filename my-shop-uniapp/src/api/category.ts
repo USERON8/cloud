@@ -10,55 +10,55 @@ export interface CategoryQuery {
 }
 
 export function getCategories(params: CategoryQuery = {}): Promise<PageResult<CategoryItem>> {
-  return http.get<PageResult<CategoryItem>, PageResult<CategoryItem>>('/api/category', { params })
+  return http.get<PageResult<CategoryItem>, PageResult<CategoryItem>>('/api/categories', { params })
 }
 
 export function getCategoryById(id: number | string): Promise<CategoryItem> {
-  return http.get<CategoryItem, CategoryItem>(`/api/category/${id}`)
+  return http.get<CategoryItem, CategoryItem>(`/api/categories/${id}`)
 }
 
 export function getCategoryTree(enabledOnly = false): Promise<CategoryItem[]> {
-  return http.get<CategoryItem[], CategoryItem[]>('/api/category/tree', { params: { enabledOnly } })
+  return http.get<CategoryItem[], CategoryItem[]>('/api/categories/tree', { params: { enabledOnly } })
 }
 
 export function getCategoryChildren(id: number | string, enabledOnly = false): Promise<CategoryItem[]> {
-  return http.get<CategoryItem[], CategoryItem[]>(`/api/category/${id}/children`, { params: { enabledOnly } })
+  return http.get<CategoryItem[], CategoryItem[]>(`/api/categories/${id}/children`, { params: { enabledOnly } })
 }
 
 export function createCategory(payload: CategoryItem): Promise<CategoryItem> {
-  return http.post<CategoryItem, CategoryItem>('/api/category', payload)
+  return http.post<CategoryItem, CategoryItem>('/api/categories', payload)
 }
 
 export function updateCategory(id: number | string, payload: CategoryItem): Promise<boolean> {
-  return http.put<boolean, boolean>(`/api/category/${id}`, payload)
+  return http.put<boolean, boolean>(`/api/categories/${id}`, payload)
 }
 
 export function deleteCategory(id: number | string, cascade = false): Promise<boolean> {
-  return http.delete<boolean, boolean>(`/api/category/${id}`, { params: { cascade } })
+  return http.delete<boolean, boolean>(`/api/categories/${id}`, { params: { cascade } })
 }
 
 export function updateCategoryStatus(id: number | string, status: number): Promise<boolean> {
-  return http.patch<boolean, boolean>(`/api/category/${id}/status`, null, { params: { status } })
+  return http.patch<boolean, boolean>(`/api/categories/${id}/status`, null, { params: { status } })
 }
 
 export function updateCategorySort(id: number | string, sort: number): Promise<boolean> {
-  return http.patch<boolean, boolean>(`/api/category/${id}/sort`, null, { params: { sort } })
+  return http.patch<boolean, boolean>(`/api/categories/${id}/sort`, null, { params: { sort } })
 }
 
 export function moveCategory(id: number | string, newParentId: number | string): Promise<boolean> {
-  return http.patch<boolean, boolean>(`/api/category/${id}/move`, null, { params: { newParentId } })
+  return http.patch<boolean, boolean>(`/api/categories/${id}/move`, null, { params: { newParentId } })
 }
 
 export function deleteCategoriesBatch(ids: (number | string)[]): Promise<boolean> {
-  return http.delete<boolean, boolean>('/api/category/batch', { data: ids })
+  return http.delete<boolean, boolean>('/api/categories/batch', { data: ids })
 }
 
 export function updateCategoryStatusBatch(ids: (number | string)[], status: number): Promise<number> {
-  return http.patch<number, number>('/api/category/batch/status', null, {
+  return http.patch<number, number>('/api/categories/batch/status', null, {
     params: { ids, status }
   })
 }
 
 export function createCategoriesBatch(payload: CategoryItem[]): Promise<number> {
-  return http.post<number, number>('/api/category/batch', payload)
+  return http.post<number, number>('/api/categories/batch', payload)
 }

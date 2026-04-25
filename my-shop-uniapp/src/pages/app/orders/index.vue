@@ -16,7 +16,7 @@ import {
     getPaymentOrderByOrderNo,
 } from "../../../api/payment";
 import { useLocale } from "../../../i18n/locale";
-import { navigateTo } from "../../../router/navigation";
+import { ensurePageAccess, navigateTo } from "../../../router/navigation";
 import { Routes } from "../../../router/routes";
 import type {
     AfterSaleInfo,
@@ -29,16 +29,18 @@ import {
     formatPrice,
     formatRelativeDate,
 } from "../../../utils/format";
+import { openExternalPage } from "../../../utils/external-navigation";
 import { confirm, toast } from "../../../utils/ui";
 
 const rows = ref<OrderSummaryDTO[]>([]);
 const loading = ref(false);
-const refundingOrderId = ref<number | null>(null);
-const payingOrderId = ref<number | null>(null);
+const refundingOrderKey = ref<string | null>(null);
+const payingOrderKey = ref<string | null>(null);
 const completingOrderId = ref<number | null>(null);
 
 const afterSaleDraft = reactive({
     orderId: null as number | null,
+    subOrderId: null as number | null,
     afterSaleType: "REFUND",
     reason: "",
     description: "",
@@ -175,6 +177,63 @@ const copy = computed(() =>
           },
 );
 
+function actionKey(order: OrderSummaryDTO): string {
+    return `${order.id ?? "main"}:${order.subOrderId ?? "sub"}`;
+}
+
+function buildSubOrderActionTarget(
+    order: OrderSummaryDTO,
+    subOrder: NonNullable<OrderSummaryDTO["subOrders"]>[number],
+): OrderSummaryDTO {
+    const items = orderItems(order).filter(
+        (item) =>
+            typeof subOrder.subOrderId !== "number" ||
+            item.subOrderId === subOrder.subOrderId,
+    );
+    return {
+        id: order.id,
+        orderNo: order.orderNo,
+        userId: order.userId,
+        subOrderId: subOrder.subOrderId,
+        subOrderNo: subOrder.subOrderNo,
+        merchantId: subOrder.merchantId,
+        afterSaleId: subOrder.afterSaleId,
+        afterSaleNo: subOrder.afterSaleNo,
+        afterSaleType: subOrder.afterSaleType,
+        refundNo: subOrder.refundNo,
+        totalAmount: subOrder.payAmount ?? order.totalAmount,
+        payAmount: subOrder.payAmount ?? order.payAmount,
+        status: subOrder.status,
+        orderStatusRaw: subOrder.orderStatusRaw,
+        afterSaleStatus: subOrder.afterSaleStatus,
+        createdAt: order.createdAt,
+        items,
+    };
+}
+
+function orderSubActionTargets(order: OrderSummaryDTO): OrderSummaryDTO[] {
+    if (Array.isArray(order.subOrders) && order.subOrders.length > 0) {
+        return order.subOrders.map((subOrder) =>
+            buildSubOrderActionTarget(order, subOrder),
+        );
+    }
+    return [order];
+}
+
+function hasMultipleSubOrders(order: OrderSummaryDTO): boolean {
+    return orderSubActionTargets(order).length > 1;
+}
+
+const pendingPayCount = computed(() =>
+    rows.value.reduce(
+        (count, order) =>
+            count +
+            orderSubActionTargets(order).filter((subOrder) => canPay(subOrder))
+                .length,
+        0,
+    ),
+);
+
 function canApplyAfterSale(order: OrderSummaryDTO): boolean {
     return (
         typeof order.id === "number" &&
@@ -202,7 +261,21 @@ function canPay(order: OrderSummaryDTO): boolean {
 }
 
 function canComplete(order: OrderSummaryDTO): boolean {
-    return typeof order.id === "number" && order.status === 2;
+    const subOrders = orderSubActionTargets(order);
+    return (
+        typeof order.id === "number" &&
+        subOrders.length > 0 &&
+        subOrders.every((subOrder) => subOrder.status === 2)
+    );
+}
+
+function canCancel(order: OrderSummaryDTO): boolean {
+    const subOrders = orderSubActionTargets(order);
+    return (
+        typeof order.id === "number" &&
+        subOrders.length > 0 &&
+        subOrders.every((subOrder) => subOrder.status === 0)
+    );
 }
 
 function canViewRefund(order: OrderSummaryDTO): boolean {
@@ -212,29 +285,48 @@ function canViewRefund(order: OrderSummaryDTO): boolean {
     );
 }
 
-function buildPaymentIdempotencyKey(order: OrderSummaryDTO): string {
-    return `payment:${order.orderNo}:${order.subOrderNo ?? order.id}`;
+function createPaymentAttemptToken(): string {
+    return `${Date.now().toString(36)}${Math.random()
+        .toString(36)
+        .slice(2, 8)}`;
 }
 
-function buildPaymentNo(order: OrderSummaryDTO): string {
+function buildPaymentIdempotencyKey(
+    order: OrderSummaryDTO,
+    attemptToken: string,
+): string {
+    return `payment:${order.orderNo}:${order.subOrderNo ?? order.id}:${attemptToken}`;
+}
+
+function buildPaymentNo(
+    order: OrderSummaryDTO,
+    attemptToken: string,
+): string {
     const subOrderNo =
         order.subOrderNo?.replace(/[^A-Za-z0-9_-]/g, "") || String(order.id);
-    return `PAY-${subOrderNo}`;
+    return `PAY-${subOrderNo}-${attemptToken}`;
 }
 
 function openCheckout(url: string, paymentNo: string): void {
-    navigateTo(
-        Routes.webview,
-        { url, paymentNo },
-        {
+    openExternalPage(url, {
+        query: { paymentNo },
+        guard: {
             requiresAuth: true,
             roles: ["USER", "MERCHANT", "ADMIN"],
         },
-    );
+        openWebview(target) {
+            navigateTo(
+                Routes.webview,
+                { url: target.url, ...target.query },
+                target.guard,
+            );
+        },
+    });
 }
 
 function resetAfterSaleDraft(): void {
     afterSaleDraft.orderId = null;
+    afterSaleDraft.subOrderId = null;
     afterSaleDraft.afterSaleType = "REFUND";
     afterSaleDraft.reason = "";
     afterSaleDraft.description = "";
@@ -293,6 +385,7 @@ function openAfterSale(order: OrderSummaryDTO): void {
         return;
     }
     afterSaleDraft.orderId = order.id;
+    afterSaleDraft.subOrderId = order.subOrderId ?? null;
     afterSaleDraft.afterSaleType = "REFUND";
     afterSaleDraft.reason = "";
     afterSaleDraft.description = "";
@@ -300,7 +393,22 @@ function openAfterSale(order: OrderSummaryDTO): void {
 }
 
 function selectedOrder(): OrderSummaryDTO | null {
-    return rows.value.find((item) => item.id === afterSaleDraft.orderId) ?? null;
+    for (const item of rows.value) {
+        const matchedSubOrder = orderSubActionTargets(item).find(
+            (subOrder) =>
+                subOrder.id === afterSaleDraft.orderId &&
+                subOrder.subOrderId === afterSaleDraft.subOrderId,
+        );
+        if (matchedSubOrder) {
+            return matchedSubOrder;
+        }
+    }
+    return null;
+}
+
+function selectedOrderKey(): string | null {
+    const order = selectedOrder();
+    return order ? actionKey(order) : null;
 }
 
 function buildAfterSalePayload(order: OrderSummaryDTO): AfterSaleInfo | null {
@@ -359,15 +467,22 @@ async function onPay(order: OrderSummaryDTO): Promise<void> {
         return;
     }
 
-    payingOrderId.value = order.id;
+    payingOrderKey.value = actionKey(order);
     let paymentNo = "";
     try {
         const existingOrder = await getPaymentOrderByOrderNo(
             order.orderNo,
             order.subOrderNo,
         );
-        paymentNo = existingOrder?.paymentNo ?? buildPaymentNo(order);
-        if (!existingOrder) {
+        const reusablePayment =
+            existingOrder && existingOrder.status !== "FAILED"
+                ? existingOrder
+                : null;
+        if (reusablePayment?.paymentNo) {
+            paymentNo = reusablePayment.paymentNo;
+        } else {
+            const attemptToken = createPaymentAttemptToken();
+            paymentNo = buildPaymentNo(order, attemptToken);
             await createPaymentOrder({
                 paymentNo,
                 mainOrderNo: order.orderNo,
@@ -375,7 +490,7 @@ async function onPay(order: OrderSummaryDTO): Promise<void> {
                 userId: order.userId,
                 amount: Number(amount.toFixed(2)),
                 channel: "ALIPAY",
-                idempotencyKey: buildPaymentIdempotencyKey(order),
+                idempotencyKey: buildPaymentIdempotencyKey(order, attemptToken),
             });
         }
         const session = await createPaymentCheckoutSession(paymentNo);
@@ -396,7 +511,7 @@ async function onPay(order: OrderSummaryDTO): Promise<void> {
             );
         }
     } finally {
-        payingOrderId.value = null;
+        payingOrderKey.value = null;
     }
 }
 
@@ -455,7 +570,11 @@ function onViewRefund(order: OrderSummaryDTO): void {
 
 async function submitAfterSale(): Promise<void> {
     const order = selectedOrder();
-    if (!order || typeof order.id !== "number") {
+    if (
+        !order ||
+        typeof order.id !== "number" ||
+        typeof order.subOrderId !== "number"
+    ) {
         toast(copy.value.selectOrderFirst);
         return;
     }
@@ -464,7 +583,7 @@ async function submitAfterSale(): Promise<void> {
         return;
     }
 
-    refundingOrderId.value = order.id;
+    refundingOrderKey.value = actionKey(order);
     try {
         const result = await applyAfterSale(payload);
         toast(
@@ -480,7 +599,7 @@ async function submitAfterSale(): Promise<void> {
                 : copy.value.afterSaleCreateFailed,
         );
     } finally {
-        refundingOrderId.value = null;
+        refundingOrderKey.value = null;
     }
 }
 
@@ -497,7 +616,7 @@ async function cancelAfterSale(order: OrderSummaryDTO): Promise<void> {
     if (!ok) {
         return;
     }
-    refundingOrderId.value = order.id;
+    refundingOrderKey.value = actionKey(order);
     try {
         await advanceAfterSaleStatus(order.afterSaleId, "CANCEL");
         toast(copy.value.afterSaleCancelled, "success");
@@ -509,11 +628,14 @@ async function cancelAfterSale(order: OrderSummaryDTO): Promise<void> {
                 : copy.value.afterSaleCancelFailed,
         );
     } finally {
-        refundingOrderId.value = null;
+        refundingOrderKey.value = null;
     }
 }
 
 onShow(() => {
+    if (!ensurePageAccess(Routes.appOrders)) {
+        return;
+    }
     void loadOrders();
 });
 </script>
@@ -536,7 +658,7 @@ onShow(() => {
                     <view class="info-card">
                         <text class="info-label">{{ copy.pendingPay }}</text>
                         <text class="info-value">
-                            {{ rows.filter((item) => item.status === 0).length }}
+                            {{ pendingPayCount }}
                         </text>
                     </view>
                 </view>
@@ -597,7 +719,10 @@ onShow(() => {
                             </view>
                         </view>
 
-                        <view class="meta-list">
+                        <view
+                            v-if="!hasMultipleSubOrders(item)"
+                            class="meta-list"
+                        >
                             <text class="meta" v-if="item.subOrderNo">
                                 {{ copy.subOrder }}: {{ item.subOrderNo }}
                             </text>
@@ -618,51 +743,135 @@ onShow(() => {
                             </text>
                         </view>
 
-                        <view v-if="orderItems(item).length" class="item-list">
+                        <view class="sub-order-list">
                             <view
-                                v-for="orderItem in orderItems(item)"
+                                v-for="subOrder in orderSubActionTargets(item)"
                                 :key="
-                                    orderItem.id ??
-                                    `${item.id ?? 'order'}-${orderItem.skuId ?? 'sku'}`
+                                    `${item.id ?? 'order'}-${subOrder.subOrderId ?? subOrder.subOrderNo ?? 'sub'}`
                                 "
-                                class="item-row"
+                                class="sub-order-card surface-muted"
                             >
-                                <view class="item-copy">
-                                    <text class="item-name">
-                                        {{ resolveOrderItemName(orderItem) }}
-                                    </text>
+                                <view class="sub-order-head">
+                                    <view class="sub-order-main">
+                                        <text class="sub-order-name">
+                                            {{ copy.subOrder }}
+                                            {{ subOrder.subOrderNo ?? "--" }}
+                                        </text>
+                                        <text class="sub-order-meta">
+                                            {{ copy.amount }}
+                                            {{
+                                                formatPrice(
+                                                    subOrder.payAmount ??
+                                                        subOrder.totalAmount,
+                                                )
+                                            }}
+                                        </text>
+                                    </view>
                                     <text
-                                        v-if="resolveOrderItemSpec(orderItem)"
-                                        class="item-spec"
+                                        class="status-chip sub-status-chip"
+                                        :class="`status-${subOrder.status ?? 'unknown'}`"
                                     >
-                                        {{ resolveOrderItemSpec(orderItem) }}
+                                        {{ formatOrderStatus(subOrder.status) }}
                                     </text>
                                 </view>
-                                <text class="item-price">
-                                    {{
-                                        formatPrice(
-                                            orderItem.unitPrice ??
-                                                orderItem.totalPrice,
-                                        )
-                                    }}
-                                    x {{ orderItem.quantity ?? 0 }}
-                                </text>
+
+                                <view class="meta-list">
+                                    <text class="meta" v-if="subOrder.refundNo">
+                                        {{ copy.refundNo }}: {{ subOrder.refundNo }}
+                                    </text>
+                                    <text
+                                        v-if="
+                                            subOrder.afterSaleStatus &&
+                                            subOrder.afterSaleStatus !== 'NONE'
+                                        "
+                                        class="meta"
+                                    >
+                                        {{ copy.afterSaleStatus }}:
+                                        {{ subOrder.afterSaleStatus }}
+                                        {{
+                                            subOrder.afterSaleNo
+                                                ? ` (${subOrder.afterSaleNo})`
+                                                : ""
+                                        }}
+                                    </text>
+                                </view>
+
+                                <view
+                                    v-if="orderItems(subOrder).length"
+                                    class="item-list"
+                                >
+                                    <view
+                                        v-for="orderItem in orderItems(subOrder)"
+                                        :key="
+                                            orderItem.id ??
+                                            `${subOrder.subOrderId ?? item.id ?? 'order'}-${orderItem.skuId ?? 'sku'}`
+                                        "
+                                        class="item-row"
+                                    >
+                                        <view class="item-copy">
+                                            <text class="item-name">
+                                                {{ resolveOrderItemName(orderItem) }}
+                                            </text>
+                                            <text
+                                                v-if="resolveOrderItemSpec(orderItem)"
+                                                class="item-spec"
+                                            >
+                                                {{ resolveOrderItemSpec(orderItem) }}
+                                            </text>
+                                        </view>
+                                        <text class="item-price">
+                                            {{
+                                                formatPrice(
+                                                    orderItem.unitPrice ??
+                                                        orderItem.totalPrice,
+                                                )
+                                            }}
+                                            x {{ orderItem.quantity ?? 0 }}
+                                        </text>
+                                    </view>
+                                </view>
+
+                                <view class="actions sub-order-actions">
+                                    <button
+                                        v-if="canPay(subOrder)"
+                                        class="btn-primary action-button"
+                                        :loading="
+                                            payingOrderKey === actionKey(subOrder)
+                                        "
+                                        @click="onPay(subOrder)"
+                                    >
+                                        {{
+                                            payingOrderKey === actionKey(subOrder)
+                                                ? copy.openingCheckout
+                                                : copy.payNow
+                                        }}
+                                    </button>
+                                    <button
+                                        v-if="canViewRefund(subOrder)"
+                                        class="btn-outline action-button"
+                                        @click="onViewRefund(subOrder)"
+                                    >
+                                        {{ copy.viewRefund }}
+                                    </button>
+                                    <button
+                                        v-if="canApplyAfterSale(subOrder)"
+                                        class="btn-outline action-button"
+                                        @click="openAfterSale(subOrder)"
+                                    >
+                                        {{ copy.applyAfterSale }}
+                                    </button>
+                                    <button
+                                        v-if="canCancelAfterSale(subOrder)"
+                                        class="btn-outline action-button"
+                                        @click="cancelAfterSale(subOrder)"
+                                    >
+                                        {{ copy.cancelAfterSale }}
+                                    </button>
+                                </view>
                             </view>
                         </view>
 
-                        <view class="actions">
-                            <button
-                                v-if="item.status === 0"
-                                class="btn-primary action-button"
-                                :loading="payingOrderId === item.id"
-                                @click="onPay(item)"
-                            >
-                                {{
-                                    payingOrderId === item.id
-                                        ? copy.openingCheckout
-                                        : copy.payNow
-                                }}
-                            </button>
+                        <view class="actions main-actions">
                             <button
                                 v-if="canComplete(item)"
                                 class="btn-outline action-button"
@@ -693,6 +902,7 @@ onShow(() => {
                                 {{ copy.cancelAfterSale }}
                             </button>
                             <button
+                                v-if="canCancel(item)"
                                 class="btn-secondary action-button"
                                 @click="onCancel(item)"
                             >
@@ -704,7 +914,7 @@ onShow(() => {
             </view>
 
             <view
-                v-if="afterSaleDraft.orderId"
+                v-if="afterSaleDraft.orderId && afterSaleDraft.subOrderId"
                 class="surface-card aftersale-panel fade-in-up"
             >
                 <view class="header">
@@ -756,7 +966,7 @@ onShow(() => {
 
                 <button
                     class="btn-primary submit-button"
-                    :loading="refundingOrderId === afterSaleDraft.orderId"
+                    :loading="refundingOrderKey === selectedOrderKey()"
                     @click="submitAfterSale"
                 >
                     {{ copy.submitAfterSale }}
@@ -975,10 +1185,57 @@ onShow(() => {
     line-height: 1.7;
 }
 
+.sub-order-list {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.sub-order-card {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    border-radius: 20px;
+    border: 1px solid var(--panel-border);
+}
+
+.sub-order-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.sub-order-main {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.sub-order-name {
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+}
+
+.sub-order-meta {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.sub-status-chip {
+    align-self: flex-start;
+}
+
 .actions {
     display: flex;
     gap: 8px;
     flex-wrap: wrap;
+}
+
+.main-actions {
+    padding-top: 4px;
 }
 
 .action-button {

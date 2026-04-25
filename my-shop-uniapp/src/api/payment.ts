@@ -10,7 +10,7 @@ import type {
 } from '../types/domain'
 
 export function getPaymentOrderByNo(paymentNo: string): Promise<PaymentOrderInfo> {
-  return http.get<PaymentOrderInfo, PaymentOrderInfo>(`/api/payments/orders/${paymentNo}`)
+  return http.get<PaymentOrderInfo, PaymentOrderInfo>(`/api/payment-orders/${paymentNo}`)
 }
 
 export async function getPaymentOrderByOrderNo(
@@ -18,7 +18,7 @@ export async function getPaymentOrderByOrderNo(
   subOrderNo: string
 ): Promise<PaymentOrderInfo | null> {
   try {
-    return await http.get<PaymentOrderInfo, PaymentOrderInfo>('/api/payments/orders/by-order', {
+    return await http.get<PaymentOrderInfo, PaymentOrderInfo>('/api/payment-orders', {
       params: { mainOrderNo, subOrderNo }
     })
   } catch (error) {
@@ -30,23 +30,23 @@ export async function getPaymentOrderByOrderNo(
 }
 
 export function getRefundByNo(refundNo: string): Promise<PaymentRefundInfo> {
-  return http.get<PaymentRefundInfo, PaymentRefundInfo>(`/api/payments/refunds/${refundNo}`)
+  return http.get<PaymentRefundInfo, PaymentRefundInfo>(`/api/payment-refunds/${refundNo}`)
 }
 
 export function createPaymentOrder(payload: PaymentOrderCommand): Promise<number> {
-  return http.post<number, number>('/api/payments/orders', payload)
+  return http.post<number, number>('/api/payment-orders', payload)
 }
 
 export function createPaymentCheckoutSession(paymentNo: string): Promise<PaymentCheckoutSession> {
   return http.post<PaymentCheckoutSession, PaymentCheckoutSession>(
-    `/api/payments/orders/${paymentNo}/checkout-session`
+    `/api/payment-orders/${paymentNo}/checkout-sessions`
   )
 }
 
 export function getPaymentStatus(paymentNo: string): Promise<PaymentStatusInfo> {
-  return http.get<PaymentStatusInfo, PaymentStatusInfo>(`/api/payments/orders/${paymentNo}/status`)
+  return http.get<PaymentStatusInfo, PaymentStatusInfo>(`/api/payment-orders/${paymentNo}/status`)
 }
 
 export function createPaymentRefund(payload: PaymentRefundCommand): Promise<number> {
-  return http.post<number, number>('/api/payments/refunds', payload)
+  return http.post<number, number>('/api/payment-refunds', payload)
 }

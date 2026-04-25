@@ -9,6 +9,8 @@ import {
 import { searchUsers } from "../../../api/user-management";
 import { getAdmins } from "../../../api/admin";
 import { getStatisticsOverview } from "../../../api/statistics";
+import { ensurePageAccess } from "../../../router/navigation";
+import { Routes } from "../../../router/routes";
 import { toast } from "../../../utils/ui";
 import type { MerchantAuthInfo, MerchantInfo } from "../../../types/domain";
 
@@ -28,6 +30,14 @@ const reviewLoading = ref(false);
 const reviewStatus = ref("0");
 const reviewRemark = ref("");
 const reviewRows = ref<MerchantAuthInfo[]>([]);
+const reviewPage = reactive({
+    current: 1,
+    size: 8,
+    total: 0,
+    pages: 0,
+    hasPrevious: false,
+    hasNext: false,
+});
 
 const merchantLoading = ref(false);
 const merchantRows = ref<MerchantInfo[]>([]);
@@ -57,6 +67,15 @@ const heroCards = computed(() => [
     { label: "Users", value: overview.userCount },
     { label: "Admins", value: overview.adminCount },
 ]);
+
+const reviewPageSummary = computed(() => {
+    if (reviewPage.total === 0 || reviewRows.value.length === 0) {
+        return "0 records";
+    }
+    const start = (reviewPage.current - 1) * reviewPage.size + 1;
+    const end = start + reviewRows.value.length - 1;
+    return `${start}-${end} of ${reviewPage.total}`;
+});
 
 function authStatusText(status?: number): string {
     if (status === 1) return "Approved";
@@ -88,14 +107,31 @@ function isExpandedRow(
     return Boolean(store[String(key)]);
 }
 
-async function loadReviewRows(): Promise<void> {
+async function loadReviewRows(targetPage = reviewPage.current): Promise<void> {
     reviewLoading.value = true;
     try {
-        reviewRows.value = await listMerchantAuthByStatus(
-            Number(reviewStatus.value),
-        );
+        const result = await listMerchantAuthByStatus(Number(reviewStatus.value), {
+            page: targetPage,
+            size: reviewPage.size,
+        });
+        if (
+            result.total > 0 &&
+            result.records.length === 0 &&
+            targetPage > 1 &&
+            targetPage > Math.max(result.pages, 1)
+        ) {
+            await loadReviewRows(Math.max(result.pages, 1));
+            return;
+        }
+        reviewRows.value = result.records || [];
+        reviewPage.current = result.current || targetPage;
+        reviewPage.size = result.size || reviewPage.size;
+        reviewPage.total = result.total || 0;
+        reviewPage.pages = result.pages || 0;
+        reviewPage.hasPrevious = Boolean(result.hasPrevious);
+        reviewPage.hasNext = Boolean(result.hasNext);
         if (reviewStatus.value === "0") {
-            overview.pendingReviews = reviewRows.value.length;
+            overview.pendingReviews = reviewPage.total;
         }
     } catch (error) {
         toast(
@@ -219,6 +255,7 @@ async function rejectReview(row: MerchantAuthInfo): Promise<void> {
 
 async function init(): Promise<void> {
     reviewStatus.value = "0";
+    reviewPage.current = 1;
     await Promise.all([
         loadOverview(),
         loadReviewRows(),
@@ -229,6 +266,9 @@ async function init(): Promise<void> {
 }
 
 onMounted(() => {
+    if (!ensurePageAccess(Routes.appAdmin)) {
+        return;
+    }
     void init();
 });
 </script>
@@ -378,7 +418,8 @@ onMounted(() => {
                         :value="Number(reviewStatus)"
                         @change="
                             reviewStatus = String($event.detail.value);
-                            loadReviewRows();
+                            reviewPage.current = 1;
+                            loadReviewRows(1);
                         "
                     >
                         <view class="select-like field-control field-control-pill"
@@ -508,6 +549,29 @@ onMounted(() => {
                                 Reject review
                             </button>
                         </view>
+                    </view>
+                </view>
+
+                <view v-if="reviewPage.total > 0" class="pager-bar">
+                    <text class="pager-meta">
+                        Page {{ reviewPage.current }} / {{ Math.max(reviewPage.pages, 1) }}
+                        · {{ reviewPageSummary }}
+                    </text>
+                    <view class="pager-actions">
+                        <button
+                            class="btn-outline"
+                            :disabled="reviewLoading || !reviewPage.hasPrevious"
+                            @click="loadReviewRows(reviewPage.current - 1)"
+                        >
+                            Previous
+                        </button>
+                        <button
+                            class="btn-outline"
+                            :disabled="reviewLoading || !reviewPage.hasNext"
+                            @click="loadReviewRows(reviewPage.current + 1)"
+                        >
+                            Next
+                        </button>
                     </view>
                 </view>
             </view>
@@ -821,7 +885,8 @@ onMounted(() => {
 .row-actions,
 .review-actions,
 .action-stack,
-.toolbar {
+.toolbar,
+.pager-actions {
     display: flex;
     align-items: flex-start;
     gap: 12px;
@@ -989,6 +1054,20 @@ onMounted(() => {
     padding: 32px 18px;
 }
 
+.pager-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding-top: 4px;
+}
+
+.pager-meta {
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
 @media (max-width: 1100px) {
     .review-actions,
     .row-actions {
@@ -1009,6 +1088,11 @@ onMounted(() => {
     .summary-grid,
     .detail-grid {
         grid-template-columns: 1fr;
+    }
+
+    .pager-bar {
+        flex-direction: column;
+        align-items: flex-start;
     }
 }
 

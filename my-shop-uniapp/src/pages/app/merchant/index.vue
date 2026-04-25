@@ -1,20 +1,21 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from "vue";
 import AppShell from "../../../components/AppShell.vue";
-import { sessionState } from "../../../auth/session";
+import { getCurrentUserId } from "../../../auth/session";
 import {
     applyMerchantAuth,
     getMerchantAuth,
     revokeMerchantAuth,
-    uploadMerchantBusinessLicense,
+    uploadMerchantAuthFile,
 } from "../../../api/merchant-auth";
 import {
+    getMerchants,
     getMerchantById,
     getMerchantStatistics,
     updateMerchant,
 } from "../../../api/merchant";
 import { Routes } from "../../../router/routes";
-import { navigateTo } from "../../../router/navigation";
+import { ensurePageAccess, navigateTo } from "../../../router/navigation";
 import { confirm, toast } from "../../../utils/ui";
 import type { MerchantInfo, MerchantAuthInfo } from "../../../types/domain";
 
@@ -24,18 +25,15 @@ const stats = ref<Record<string, unknown> | null>(null);
 const loading = ref(false);
 const saving = ref(false);
 const authSaving = ref(false);
+const merchantId = ref<number | null>(null);
+
+let merchantIdPromise: Promise<number | null> | null = null;
 
 const uploadState = reactive({
     businessLicenseUrl: false,
     idCardFrontUrl: false,
     idCardBackUrl: false,
 });
-
-const merchantId = computed(() => sessionState.user?.id);
-const uploadUrl =
-    import.meta.env.VITE_MERCHANT_AUTH_UPLOAD_URL ||
-    import.meta.env.VITE_UPLOAD_URL ||
-    "";
 
 const profileForm = reactive({
     merchantName: "",
@@ -128,37 +126,46 @@ function authTone(status?: number): string {
     return "neutral";
 }
 
-function resolveUploadUrl(): string | null {
-    if (!uploadUrl) {
+async function resolveMerchantId(): Promise<number | null> {
+    if (typeof merchantId.value === "number") {
+        return merchantId.value;
+    }
+    if (!getCurrentUserId()) {
+        return null;
+    }
+    if (merchantIdPromise) {
+        return merchantIdPromise;
+    }
+
+    merchantIdPromise = getMerchants({ page: 1, size: 1 })
+        .then((result) => {
+            const currentMerchantId = result.records[0]?.id;
+            merchantId.value =
+                typeof currentMerchantId === "number" ? currentMerchantId : null;
+            return merchantId.value;
+        })
+        .finally(() => {
+            merchantIdPromise = null;
+        });
+
+    return merchantIdPromise;
+}
+
+async function requireMerchantId(): Promise<number | null> {
+    try {
+        const currentMerchantId = await resolveMerchantId();
+        if (!currentMerchantId) {
+            toast("Merchant profile is unavailable. Please contact support.");
+        }
+        return currentMerchantId;
+    } catch (error) {
         toast(
-            "Upload endpoint is not configured. Set VITE_MERCHANT_AUTH_UPLOAD_URL or VITE_UPLOAD_URL",
+            error instanceof Error
+                ? error.message
+                : "Failed to resolve merchant profile",
         );
         return null;
     }
-    return uploadUrl;
-}
-
-function extractUploadUrl(raw: string): string | null {
-    if (!raw) return null;
-    try {
-        const payload = JSON.parse(raw) as unknown;
-        if (typeof payload === "string") return payload;
-        if (payload && typeof payload === "object") {
-            const record = payload as Record<string, unknown>;
-            if (typeof record.url === "string") return record.url;
-            if (typeof record.data === "string") return record.data;
-            if (
-                record.data &&
-                typeof record.data === "object" &&
-                typeof (record.data as Record<string, unknown>).url === "string"
-            ) {
-                return (record.data as Record<string, unknown>).url as string;
-            }
-        }
-    } catch {
-        return null;
-    }
-    return null;
 }
 
 async function uploadAuthImage(field: UploadField): Promise<void> {
@@ -175,47 +182,14 @@ async function uploadAuthImage(field: UploadField): Promise<void> {
             return;
         }
 
-        if (field === "businessLicenseUrl") {
-            if (!merchantId.value) {
-                toast("Merchant session is missing. Please sign in again.");
-                return;
-            }
-            const result = await uploadMerchantBusinessLicense(
-                merchantId.value,
-                filePath,
-            );
-            authForm.businessLicenseUrl = result.previewUrl;
-            toast("Upload completed", "success");
-            return;
-        }
-
-        const target = resolveUploadUrl();
-        if (!target) return;
-
-        const uploadResult =
-            await new Promise<UniApp.UploadFileSuccessCallbackResult>(
-                (resolve, reject) => {
-                    uni.uploadFile({
-                        url: target,
-                        filePath,
-                        name: "file",
-                        success: resolve,
-                        fail: reject,
-                    });
-                },
-            );
-
-        if (uploadResult.statusCode && uploadResult.statusCode >= 400) {
-            toast("Upload failed");
-            return;
-        }
-
-        const url = extractUploadUrl(uploadResult.data);
-        if (!url) {
-            toast("The upload response did not contain a file URL");
-            return;
-        }
-        authForm[field] = url;
+        const currentMerchantId = await requireMerchantId();
+        if (!currentMerchantId) return;
+        const result = await uploadMerchantAuthFile(
+            currentMerchantId,
+            field,
+            filePath,
+        );
+        authForm[field] = result.previewUrl;
         toast("Upload completed", "success");
     } catch (error) {
         toast(error instanceof Error ? error.message : "Upload failed");
@@ -233,21 +207,20 @@ function previewImage(url?: string): void {
 }
 
 async function loadMerchant(): Promise<void> {
-    if (!merchantId.value) {
-        toast("Merchant session is missing. Please sign in again.");
-        return;
-    }
+    const currentMerchantId = await requireMerchantId();
+    if (!currentMerchantId) return;
     loading.value = true;
     try {
         const [info, auth, statResult] = await Promise.all([
-            getMerchantById(merchantId.value),
-            getMerchantAuth(merchantId.value),
-            getMerchantStatistics(merchantId.value),
+            getMerchantById(currentMerchantId),
+            getMerchantAuth(currentMerchantId),
+            getMerchantStatistics(currentMerchantId),
         ]);
 
         merchantInfo.value = info;
         authInfo.value = auth;
         stats.value = statResult;
+        merchantId.value = typeof info?.id === "number" ? info.id : currentMerchantId;
 
         profileForm.merchantName = info?.merchantName || "";
         profileForm.email = info?.email || "";
@@ -271,10 +244,11 @@ async function loadMerchant(): Promise<void> {
 }
 
 async function saveProfile(): Promise<void> {
-    if (!merchantId.value) return;
+    const currentMerchantId = await requireMerchantId();
+    if (!currentMerchantId) return;
     saving.value = true;
     try {
-        await updateMerchant(merchantId.value, {
+        await updateMerchant(currentMerchantId, {
             merchantName: profileForm.merchantName,
             email: profileForm.email,
             phone: profileForm.phone,
@@ -289,10 +263,11 @@ async function saveProfile(): Promise<void> {
 }
 
 async function submitAuth(): Promise<void> {
-    if (!merchantId.value) return;
+    const currentMerchantId = await requireMerchantId();
+    if (!currentMerchantId) return;
     authSaving.value = true;
     try {
-        await applyMerchantAuth(merchantId.value, { ...authForm } as never);
+        await applyMerchantAuth(currentMerchantId, { ...authForm } as never);
         toast("Merchant auth submitted", "success");
         await loadMerchant();
     } catch (error) {
@@ -303,11 +278,12 @@ async function submitAuth(): Promise<void> {
 }
 
 async function revokeAuth(): Promise<void> {
-    if (!merchantId.value) return;
+    const currentMerchantId = await requireMerchantId();
+    if (!currentMerchantId) return;
     const ok = await confirm("Revoke merchant authentication?");
     if (!ok) return;
     try {
-        await revokeMerchantAuth(merchantId.value);
+        await revokeMerchantAuth(currentMerchantId);
         toast("Merchant auth revoked", "success");
         await loadMerchant();
     } catch (error) {
@@ -316,6 +292,9 @@ async function revokeAuth(): Promise<void> {
 }
 
 onMounted(() => {
+    if (!ensurePageAccess(Routes.appMerchant)) {
+        return;
+    }
     void loadMerchant();
 });
 </script>
