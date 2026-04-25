@@ -15,19 +15,19 @@ import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/admin/thread-pool")
+@RequestMapping("/api/admin/thread-pools")
 @Tag(name = "Thread Pool Monitor", description = "Thread pool monitoring APIs")
 @RequiredArgsConstructor
 public class ThreadPoolMonitorController {
 
   private final ThreadPoolMonitor threadPoolMonitor;
 
-  @GetMapping("/info")
+  @GetMapping
   @PreAuthorize("hasAuthority('admin:all')")
   @Operation(summary = "Get all thread pool metrics")
   public Result<List<Map<String, Object>>> getAllThreadPoolInfo() {
@@ -39,11 +39,11 @@ public class ThreadPoolMonitorController {
     return Result.success(threadPoolInfoList);
   }
 
-  @GetMapping("/info/detail")
+  @GetMapping("/{name}")
   @PreAuthorize("hasAuthority('admin:all')")
   @Operation(summary = "Get thread pool metrics by bean name")
   public Result<Map<String, Object>> getThreadPoolInfoByName(
-      @Parameter(description = "Thread pool bean name") @RequestParam String name) {
+      @Parameter(description = "Thread pool bean name") @PathVariable String name) {
     ThreadPoolInfo info = threadPoolMonitor.getThreadPoolInfo(name);
     if (info == null) {
       throw new BizException(ResultCode.NOT_FOUND, "Thread pool bean not found: " + name);

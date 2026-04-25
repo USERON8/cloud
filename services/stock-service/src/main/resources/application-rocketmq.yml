@@ -25,6 +25,9 @@ spring:
           destination: stock-confirm-request
           content-type: application/json
           group: stock-confirm-request-consumer-group
+        stockReservedProducer-out-0:
+          destination: stock-reserved
+          content-type: application/json
         stockFreezeFailedProducer-out-0:
           destination: stock-freeze-failed
           content-type: application/json

@@ -6,6 +6,7 @@ import com.cloud.common.domain.vo.auth.AuthAuthorizationDetailVO;
 import com.cloud.common.domain.vo.auth.AuthTokenStorageStatsVO;
 import com.cloud.common.domain.vo.auth.TokenBlacklistCheckVO;
 import com.cloud.common.domain.vo.auth.TokenBlacklistStatsVO;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.apache.dubbo.config.annotation.DubboService;
 
@@ -28,6 +29,16 @@ public class AuthGovernanceDubboService implements AuthGovernanceDubboApi {
   @Override
   public Boolean revokeAuthorization(String authorizationId) {
     return authGovernanceService.revokeAuthorization(authorizationId);
+  }
+
+  @Override
+  public Map<String, Object> cleanupAuthorizations() {
+    return authGovernanceService.cleanupAuthorizations();
+  }
+
+  @Override
+  public Map<String, Object> getAuthorizationStorageStructure() {
+    return authGovernanceService.getAuthorizationStorageStructure();
   }
 
   @Override

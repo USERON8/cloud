@@ -26,7 +26,5 @@ public class AuthPrincipalDTO implements Serializable {
 
   private List<String> roles;
 
-  private Integer enabled;
-
   private List<String> permissions;
 }

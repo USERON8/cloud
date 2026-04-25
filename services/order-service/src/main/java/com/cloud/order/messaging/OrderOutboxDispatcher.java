@@ -2,6 +2,7 @@ package com.cloud.order.messaging;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
@@ -23,6 +24,7 @@ public class OrderOutboxDispatcher {
   }
 
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+  @Async("orderAsyncExecutor")
   public void onOutboxDispatch(OrderOutboxDispatchEvent event) {
     orderOutboxRelay.dispatch();
   }

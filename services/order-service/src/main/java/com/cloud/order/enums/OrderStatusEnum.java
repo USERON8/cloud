@@ -35,7 +35,7 @@ public enum OrderStatusEnum {
   }
 
   public boolean canCancel() {
-    return this == PENDING_PAYMENT || this == PAID;
+    return this == PENDING_PAYMENT;
   }
 
   public boolean canShip() {
@@ -53,7 +53,7 @@ public enum OrderStatusEnum {
   public OrderStatusEnum[] getNextPossibleStatuses() {
     return switch (this) {
       case PENDING_PAYMENT -> new OrderStatusEnum[] {PAID, CANCELLED};
-      case PAID -> new OrderStatusEnum[] {SHIPPED, CANCELLED};
+      case PAID -> new OrderStatusEnum[] {SHIPPED};
       case SHIPPED -> new OrderStatusEnum[] {COMPLETED};
       case COMPLETED, CANCELLED -> new OrderStatusEnum[] {};
     };

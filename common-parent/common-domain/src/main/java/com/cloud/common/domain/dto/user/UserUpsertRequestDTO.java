@@ -30,6 +30,4 @@ public class UserUpsertRequestDTO extends BaseAccountUpsertRequestDTO {
           @NotBlank(message = "role cannot be blank")
           @Size(max = 50, message = "role length must be less than or equal to 50") String>
       roles;
-
-  private Integer enabled;
 }

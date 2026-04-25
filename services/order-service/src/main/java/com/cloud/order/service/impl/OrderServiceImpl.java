@@ -59,7 +59,7 @@ public class OrderServiceImpl implements OrderService {
       Map.of(
           "CREATED", Set.of("STOCK_RESERVED", "PAID", "CANCELLED", "CLOSED"),
           "STOCK_RESERVED", Set.of("PAID", "CANCELLED", "CLOSED"),
-          "PAID", Set.of("SHIPPED", "CANCELLED", "CLOSED"),
+          "PAID", Set.of("SHIPPED", "CLOSED"),
           "SHIPPED", Set.of("DONE", "CLOSED"),
           "DONE", Set.of(),
           "CANCELLED", Set.of(),

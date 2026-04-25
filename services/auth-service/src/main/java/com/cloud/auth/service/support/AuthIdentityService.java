@@ -148,7 +148,6 @@ public class AuthIdentityService {
     principal.setUsername(username);
     principal.setPassword(StrUtil.trim(registerRequest.getPassword()));
     principal.setStatus(1);
-    principal.setEnabled(1);
     principal.setRoles(List.of("ROLE_USER"));
 
     Long userId =
@@ -232,7 +231,6 @@ public class AuthIdentityService {
     principal.setPassword(
         "github_oauth2_" + githubUserDTO.getGithubId() + "_" + IdUtil.fastSimpleUUID());
     principal.setStatus(1);
-    principal.setEnabled(1);
     principal.setRoles(List.of("ROLE_USER"));
     Long userId =
         invokeAuthService("create principal", () -> authDubboApi.createPrincipal(principal));

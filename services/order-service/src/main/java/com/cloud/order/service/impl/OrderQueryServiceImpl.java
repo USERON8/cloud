@@ -1,9 +1,9 @@
 package com.cloud.order.service.impl;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cloud.api.product.ProductDubboApi;
+import com.cloud.api.user.UserDubboApi;
 import com.cloud.common.domain.dto.order.ProductSellStatDTO;
 import com.cloud.common.domain.vo.order.OrderSubStatusVO;
 import com.cloud.common.domain.vo.product.SkuDetailVO;
@@ -56,6 +56,9 @@ public class OrderQueryServiceImpl implements OrderQueryService {
 
   @org.apache.dubbo.config.annotation.DubboReference private ProductDubboApi productDubboApi;
 
+  @org.apache.dubbo.config.annotation.DubboReference(check = false, timeout = 5000, retries = 0)
+  private UserDubboApi userDubboApi;
+
   @Override
   public PageResult<OrderSummaryDTO> listOrders(
       Authentication authentication,
@@ -104,13 +107,9 @@ public class OrderQueryServiceImpl implements OrderQueryService {
     }
     Long currentUserId = requireCurrentUserId(authentication);
     if (isMerchant(authentication)) {
+      Long currentMerchantId = requireCurrentMerchantId(authentication);
       boolean belongs =
-          orderSubMapper.selectCount(
-                  new LambdaQueryWrapper<OrderSub>()
-                      .eq(OrderSub::getMainOrderId, main.getId())
-                      .eq(OrderSub::getMerchantId, currentUserId)
-                      .eq(OrderSub::getDeleted, 0))
-              > 0;
+          orderSubMapper.countActiveByMainOrderIdAndMerchantId(main.getId(), currentMerchantId) > 0;
       if (!belongs) {
         throw new BizException("forbidden");
       }
@@ -210,7 +209,7 @@ public class OrderQueryServiceImpl implements OrderQueryService {
         return orderMainMapper.selectPageByVisibleStatus(pageData, merchantId, userId, status);
       }
       if (isMerchant(authentication)) {
-        Long currentMerchantId = requireCurrentUserId(authentication);
+        Long currentMerchantId = requireCurrentMerchantId(authentication);
         return orderMainMapper.selectPageByVisibleStatus(pageData, currentMerchantId, null, status);
       }
       Long currentUserId = requireCurrentUserId(authentication);
@@ -225,7 +224,7 @@ public class OrderQueryServiceImpl implements OrderQueryService {
     }
 
     if (isMerchant(authentication)) {
-      Long currentMerchantId = requireCurrentUserId(authentication);
+      Long currentMerchantId = requireCurrentMerchantId(authentication);
       return orderMainMapper.selectPageByMerchant(pageData, currentMerchantId, List.of(), null);
     }
 
@@ -242,11 +241,7 @@ public class OrderQueryServiceImpl implements OrderQueryService {
     if (mainIds.isEmpty()) {
       return Collections.emptyMap();
     }
-    List<OrderSub> subs =
-        orderSubMapper.selectList(
-            new LambdaQueryWrapper<OrderSub>()
-                .in(OrderSub::getMainOrderId, mainIds)
-                .eq(OrderSub::getDeleted, 0));
+    List<OrderSub> subs = orderSubMapper.listActiveByMainOrderIds(mainIds);
     subs = filterSummarySubOrders(subs, summaryMerchantId);
     if (subs == null || subs.isEmpty()) {
       return Collections.emptyMap();
@@ -282,14 +277,35 @@ public class OrderQueryServiceImpl implements OrderQueryService {
     summary.setTotalAmount(main.getTotalAmount());
     summary.setPayAmount(main.getPayableAmount());
     summary.setCreatedAt(main.getCreatedAt());
+    summary.setOrderStatusRaw(main.getOrderStatus());
     summary.setStatus(resolveStatusCode(subs));
     summary.setItems(buildItemSummaries(subs, itemsBySubOrderId));
-    if (subs != null && subs.size() == 1) {
-      OrderSub sub = subs.get(0);
+    List<OrderSummaryDTO.SubOrderSummaryDTO> subSummaries = buildSubOrderSummaries(subs);
+    summary.setSubOrders(subSummaries);
+    if (subSummaries.size() == 1) {
+      applySingleSubOrderSummary(summary, subSummaries.get(0));
+    }
+    return summary;
+  }
+
+  private List<OrderSummaryDTO.SubOrderSummaryDTO> buildSubOrderSummaries(List<OrderSub> subs) {
+    if (subs == null || subs.isEmpty()) {
+      return List.of();
+    }
+    List<OrderSummaryDTO.SubOrderSummaryDTO> summaries = new ArrayList<>(subs.size());
+    for (OrderSub sub : subs) {
+      if (sub == null) {
+        continue;
+      }
+      OrderSummaryDTO.SubOrderSummaryDTO summary = new OrderSummaryDTO.SubOrderSummaryDTO();
       summary.setSubOrderId(sub.getId());
       summary.setSubOrderNo(sub.getSubOrderNo());
       summary.setMerchantId(sub.getMerchantId());
+      summary.setPayAmount(sub.getPayableAmount());
+      summary.setStatus(resolveSubStatusCode(sub));
+      summary.setOrderStatusRaw(sub.getOrderStatus());
       summary.setAfterSaleStatus(sub.getAfterSaleStatus());
+
       AfterSale latestAfterSale = findLatestAfterSale(sub.getId());
       if (latestAfterSale != null) {
         summary.setAfterSaleId(latestAfterSale.getId());
@@ -300,8 +316,25 @@ public class OrderQueryServiceImpl implements OrderQueryService {
               OrderRefundSagaCoordinator.buildRefundNo(latestAfterSale.getAfterSaleNo()));
         }
       }
+      summaries.add(summary);
     }
-    return summary;
+    return summaries;
+  }
+
+  private void applySingleSubOrderSummary(
+      OrderSummaryDTO summary, OrderSummaryDTO.SubOrderSummaryDTO subSummary) {
+    if (summary == null || subSummary == null) {
+      return;
+    }
+    summary.setSubOrderId(subSummary.getSubOrderId());
+    summary.setSubOrderNo(subSummary.getSubOrderNo());
+    summary.setMerchantId(subSummary.getMerchantId());
+    summary.setAfterSaleId(subSummary.getAfterSaleId());
+    summary.setAfterSaleNo(subSummary.getAfterSaleNo());
+    summary.setAfterSaleType(subSummary.getAfterSaleType());
+    summary.setRefundNo(subSummary.getRefundNo());
+    summary.setOrderStatusRaw(subSummary.getOrderStatusRaw());
+    summary.setAfterSaleStatus(subSummary.getAfterSaleStatus());
   }
 
   private Map<Long, List<OrderItem>> loadItemsBySubOrders(List<OrderSub> subs) {
@@ -471,12 +504,7 @@ public class OrderQueryServiceImpl implements OrderQueryService {
     if (subOrderId == null) {
       return null;
     }
-    return afterSaleMapper.selectOne(
-        new LambdaQueryWrapper<AfterSale>()
-            .eq(AfterSale::getSubOrderId, subOrderId)
-            .eq(AfterSale::getDeleted, 0)
-            .orderByDesc(AfterSale::getId)
-            .last("LIMIT 1"));
+    return afterSaleMapper.selectLatestActiveBySubOrderId(subOrderId);
   }
 
   private Integer resolveStatusCode(List<OrderSub> subs) {
@@ -507,11 +535,39 @@ public class OrderQueryServiceImpl implements OrderQueryService {
     return 0;
   }
 
+  private Integer resolveSubStatusCode(OrderSub sub) {
+    if (sub == null) {
+      return 0;
+    }
+    if ("DONE".equals(sub.getOrderStatus())) {
+      return 3;
+    }
+    if ("CANCELLED".equals(sub.getOrderStatus()) || "CLOSED".equals(sub.getOrderStatus())) {
+      return 4;
+    }
+    if ("SHIPPED".equals(sub.getOrderStatus())) {
+      return 2;
+    }
+    if ("PAID".equals(sub.getOrderStatus())) {
+      return 1;
+    }
+    return 0;
+  }
+
   private Long resolveSummaryMerchantId(Authentication authentication, Long requestedMerchantId) {
     if (isMerchant(authentication)) {
-      return requireCurrentUserId(authentication);
+      return requireCurrentMerchantId(authentication);
     }
     return requestedMerchantId;
+  }
+
+  private Long requireCurrentMerchantId(Authentication authentication) {
+    Long currentUserId = requireCurrentUserId(authentication);
+    Long currentMerchantId = userDubboApi.findMerchantIdByOwnerUserId(currentUserId);
+    if (currentMerchantId == null) {
+      throw new BizException("current merchant not found");
+    }
+    return currentMerchantId;
   }
 
   private Long requireCurrentUserId(Authentication authentication) {

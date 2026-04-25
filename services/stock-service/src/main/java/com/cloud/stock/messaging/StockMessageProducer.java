@@ -3,6 +3,7 @@ package com.cloud.stock.messaging;
 import com.cloud.common.messaging.event.ProductSyncEvent;
 import com.cloud.common.messaging.event.StockAlertEvent;
 import com.cloud.common.messaging.event.StockFreezeFailedEvent;
+import com.cloud.common.messaging.event.StockReservedEvent;
 import com.cloud.common.messaging.outbox.OutboxEventService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.UUID;
@@ -21,6 +22,31 @@ public class StockMessageProducer {
   private final OutboxEventService outboxEventService;
   private final ObjectMapper objectMapper;
   private final StockOutboxDispatcher stockOutboxDispatcher;
+
+  public boolean sendStockReservedEvent(String orderNo) {
+    if (!StringUtils.hasText(orderNo)) {
+      log.warn("Skip stock-reserved event: orderNo missing");
+      return false;
+    }
+    try {
+      String trimmedOrderNo = orderNo.trim();
+      StockReservedEvent event = new StockReservedEvent();
+      event.setOrderNo(trimmedOrderNo);
+      event.setTimestamp(System.currentTimeMillis());
+      event.setEventId(
+          trimmedOrderNo.length() <= 64 ? trimmedOrderNo : UUID.randomUUID().toString());
+      event.setEventType("STOCK_RESERVED");
+
+      String payload = objectMapper.writeValueAsString(event);
+      outboxEventService.enqueue(
+          "STOCK", trimmedOrderNo, event.getEventType(), payload, event.getEventId());
+      stockOutboxDispatcher.dispatchAfterCommit();
+      return true;
+    } catch (Exception ex) {
+      log.warn("Send stock-reserved event failed: orderNo={}", orderNo, ex);
+      return false;
+    }
+  }
 
   @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
   public boolean sendStockFreezeFailedEvent(String orderNo, String reason) {

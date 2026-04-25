@@ -8,7 +8,6 @@ public final class TraceIdUtil {
   public static final String TRACE_ID_KEY = "traceId";
   public static final String TRACE_HEADER = "X-Trace-Id";
   public static final String B3_TRACE_HEADER = "X-B3-TraceId";
-  public static final String LEGACY_TRACE_HEADER = "traceId";
 
   private TraceIdUtil() {}
 

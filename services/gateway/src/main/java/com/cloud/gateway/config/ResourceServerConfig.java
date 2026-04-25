@@ -89,9 +89,14 @@ public class ResourceServerConfig {
                       .permitAll()
                       .pathMatchers("/actuator/health", "/actuator/prometheus", "/nacos/**")
                       .permitAll()
-                      .pathMatchers("/auth/tokens/**")
+                      .pathMatchers(
+                          "/auth/authorizations/statistics",
+                          "/auth/authorizations/storage-structure",
+                          "/auth/authorizations/**",
+                          "/auth/cleanups/**",
+                          "/auth/blacklist-entries/**")
                       .hasRole("ADMIN")
-                      .pathMatchers("/auth/**")
+                      .pathMatchers("/auth/**", "/oauth2/**", "/.well-known/**")
                       .permitAll()
                       .pathMatchers("/ws/**")
                       .authenticated()
@@ -99,7 +104,7 @@ public class ResourceServerConfig {
                       .permitAll()
                       .pathMatchers(HttpMethod.GET, "/api/v1/payment/alipay/return")
                       .permitAll()
-                      .pathMatchers(HttpMethod.GET, "/api/app/payments/checkout/**")
+                      .pathMatchers(HttpMethod.GET, "/api/payment-checkouts/**")
                       .permitAll()
                       .pathMatchers("/health/**", "/metrics/**")
                       .permitAll()
@@ -158,7 +163,7 @@ public class ResourceServerConfig {
               }
 
               authExchanges
-                  .pathMatchers("/api/public/**")
+                  .pathMatchers("/api/search/**", "/api/shops/**")
                   .permitAll()
                   .pathMatchers("/api/admin/governance/**")
                   .hasRole("ADMIN")
@@ -173,43 +178,60 @@ public class ResourceServerConfig {
                   .hasAuthority("SCOPE_internal")
                   .pathMatchers("/internal/governance/**")
                   .hasAuthority("SCOPE_internal")
-                  .pathMatchers("/api/app/user/notification/**")
+                  .pathMatchers("/api/admin/notifications/**")
                   .hasAuthority("admin:all")
-                  .pathMatchers("/api/app/user/profile/**", "/api/app/user/address/**")
+                  .pathMatchers("/api/users/**", "/api/addresses/**")
                   .authenticated()
-                  .pathMatchers("/api/app/cart/**")
+                  .pathMatchers("/api/users/me/cart", "/api/users/me/cart/**")
                   .authenticated()
-                  .pathMatchers(HttpMethod.POST, "/api/app/orders")
+                  .pathMatchers(HttpMethod.POST, "/api/orders")
                   .hasAuthority("order:create")
-                  .pathMatchers("/api/app/orders/**")
+                  .pathMatchers(
+                      HttpMethod.POST,
+                      "/api/orders/*/cancellation",
+                      "/api/orders/bulk/cancellations")
+                  .hasAuthority("order:cancel")
+                  .pathMatchers(
+                      HttpMethod.POST, "/api/orders/*/shipments", "/api/orders/bulk/shipments")
+                  .hasAnyRole("ADMIN", "MERCHANT")
+                  .pathMatchers(
+                      HttpMethod.POST, "/api/orders/*/completion", "/api/orders/bulk/completions")
                   .hasAuthority("order:query")
-                  .pathMatchers("/api/app/v1/refund/**")
+                  .pathMatchers(HttpMethod.POST, "/api/after-sales", "/api/after-sales/*/events")
+                  .hasAuthority("order:refund")
+                  .pathMatchers("/api/orders/**", "/api/after-sales/**")
                   .hasAuthority("order:query")
-                  .pathMatchers(HttpMethod.GET, "/api/app/product/**")
+                  .pathMatchers(
+                      HttpMethod.GET,
+                      "/api/products/**",
+                      "/api/categories/**",
+                      "/api/spus/**",
+                      "/api/skus/**")
                   .hasAuthority("product:view")
-                  .pathMatchers(HttpMethod.POST, "/api/app/product/**")
+                  .pathMatchers(
+                      HttpMethod.POST, "/api/products/**", "/api/categories/**", "/api/spus/**")
                   .hasAuthority("product:create")
-                  .pathMatchers(HttpMethod.PUT, "/api/app/product/**")
+                  .pathMatchers(HttpMethod.PUT, "/api/categories/**", "/api/spus/**")
                   .hasAuthority("product:edit")
-                  .pathMatchers(HttpMethod.DELETE, "/api/app/product/**")
+                  .pathMatchers(HttpMethod.PATCH, "/api/categories/**", "/api/spus/**")
+                  .hasAuthority("product:edit")
+                  .pathMatchers(HttpMethod.DELETE, "/api/categories/**")
                   .hasAuthority("product:delete")
-                  .pathMatchers(HttpMethod.GET, "/api/app/category/**")
-                  .hasAuthority("product:view")
-                  .pathMatchers(HttpMethod.POST, "/api/app/category/**")
-                  .hasAuthority("product:create")
-                  .pathMatchers(HttpMethod.PUT, "/api/app/category/**")
-                  .hasAuthority("product:edit")
-                  .pathMatchers(HttpMethod.PATCH, "/api/app/category/**")
-                  .hasAuthority("product:edit")
-                  .pathMatchers(HttpMethod.DELETE, "/api/app/category/**")
-                  .hasAuthority("product:delete")
-                  .pathMatchers("/api/app/merchant/auth/review/**")
+                  .pathMatchers(
+                      "/api/merchants/*/reviews",
+                      "/api/merchants/bulk/reviews",
+                      "/api/merchants/*/authentication/reviews",
+                      "/api/merchant-authentications/bulk/reviews")
                   .hasAuthority("merchant:audit")
-                  .pathMatchers("/api/app/merchant/**")
-                  .hasRole("MERCHANT")
+                  .pathMatchers("/api/merchant-authentications/**")
+                  .hasAnyAuthority("admin:all", "merchant:audit")
+                  .pathMatchers("/api/merchants/**")
+                  .authenticated()
+                  .pathMatchers("/api/admins/**")
+                  .hasRole("ADMIN")
                   .pathMatchers("/api/admin/**")
                   .hasRole("ADMIN")
-                  .pathMatchers("/api/app/payments/**")
+                  .pathMatchers("/api/payment-orders/**", "/api/payment-refunds/**")
                   .hasAnyRole("USER", "MERCHANT", "ADMIN")
                   .pathMatchers(HttpMethod.GET, "/api/admin/stocks/ledger/**")
                   .hasRole("ADMIN")

@@ -1,11 +1,15 @@
 package com.cloud.common.domain.vo.user;
 
+import java.io.Serial;
+import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.Data;
 
 @Data
-public class UserVO {
+public class UserVO implements Serializable {
+
+  @Serial private static final long serialVersionUID = 1L;
 
   private Long id;
 
@@ -20,8 +24,6 @@ public class UserVO {
   private String email;
 
   private Integer status;
-
-  private Integer enabled;
 
   private List<String> roles;
 

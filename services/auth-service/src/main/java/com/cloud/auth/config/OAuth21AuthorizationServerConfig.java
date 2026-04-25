@@ -1,6 +1,7 @@
 package com.cloud.auth.config;
 
 import jakarta.annotation.PostConstruct;
+import java.net.URI;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.UUID;
@@ -20,6 +21,7 @@ import org.springframework.security.oauth2.server.authorization.client.Registere
 import org.springframework.security.oauth2.server.authorization.settings.AuthorizationServerSettings;
 import org.springframework.security.oauth2.server.authorization.settings.ClientSettings;
 import org.springframework.security.oauth2.server.authorization.settings.TokenSettings;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 @Slf4j
@@ -197,10 +199,26 @@ public class OAuth21AuthorizationServerConfig {
     if (!StringUtils.hasText(redirectUris)) {
       throw new IllegalStateException("OAuth2 redirect URIs must not be empty");
     }
-    Arrays.stream(redirectUris.split(","))
-        .map(String::trim)
-        .filter(StringUtils::hasText)
-        .forEach(builder::redirectUri);
+    java.util.List<String> validRedirectUris =
+        Arrays.stream(redirectUris.split(","))
+            .map(String::trim)
+            .filter(StringUtils::hasText)
+            .filter(this::isValidRedirectUri)
+            .toList();
+    if (CollectionUtils.isEmpty(validRedirectUris)) {
+      throw new IllegalStateException("OAuth2 redirect URIs must contain at least one valid URI");
+    }
+    validRedirectUris.forEach(builder::redirectUri);
+  }
+
+  private boolean isValidRedirectUri(String redirectUri) {
+    try {
+      URI parsed = URI.create(redirectUri);
+      return parsed.getFragment() == null;
+    } catch (IllegalArgumentException ex) {
+      log.warn("Ignore invalid OAuth2 redirect URI: {}", redirectUri);
+      return false;
+    }
   }
 
   private String encodeClientSecret(String secret) {

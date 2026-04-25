@@ -28,6 +28,22 @@ public interface OrderSubMapper extends BaseMapper<OrderSub> {
   @InterceptorIgnore(illegalSql = "1")
   @Select(
       """
+            <script>
+            SELECT *
+            FROM order_sub FORCE INDEX (idx_order_sub_main_deleted)
+            WHERE deleted = 0
+              AND main_order_id IN
+              <foreach collection="mainOrderIds" item="mainOrderId" open="(" separator="," close=")">
+                #{mainOrderId}
+              </foreach>
+            ORDER BY main_order_id ASC, id ASC
+            </script>
+            """)
+  List<OrderSub> listActiveByMainOrderIds(@Param("mainOrderIds") List<Long> mainOrderIds);
+
+  @InterceptorIgnore(illegalSql = "1")
+  @Select(
+      """
             SELECT *
             FROM order_sub FORCE INDEX (idx_order_sub_main_deleted)
             WHERE main_order_id = #{mainOrderId}
@@ -37,6 +53,71 @@ public interface OrderSubMapper extends BaseMapper<OrderSub> {
             """)
   OrderSub selectActiveByMainOrderIdAndSubOrderNo(
       @Param("mainOrderId") Long mainOrderId, @Param("subOrderNo") String subOrderNo);
+
+  @InterceptorIgnore(illegalSql = "1")
+  @Select(
+      """
+            SELECT COUNT(1)
+            FROM order_sub FORCE INDEX (idx_order_sub_main_deleted)
+            WHERE main_order_id = #{mainOrderId}
+              AND merchant_id = #{merchantId}
+              AND deleted = 0
+            """)
+  long countActiveByMainOrderIdAndMerchantId(
+      @Param("mainOrderId") Long mainOrderId, @Param("merchantId") Long merchantId);
+
+  @InterceptorIgnore(illegalSql = "1")
+  @Select(
+      """
+            SELECT *
+            FROM order_sub
+            WHERE order_status = 'SHIPPED'
+              AND shipped_at IS NOT NULL
+              AND shipped_at &lt;= #{deadline}
+              AND deleted = 0
+            ORDER BY shipped_at ASC
+            LIMIT #{limit}
+            """)
+  List<OrderSub> listAutoConfirmCandidates(
+      @Param("deadline") LocalDateTime deadline, @Param("limit") Integer limit);
+
+  @InterceptorIgnore(illegalSql = "1")
+  @Select(
+      """
+            <script>
+            SELECT id
+            FROM order_sub
+            WHERE deleted = 0
+              AND created_at &lt; #{timeoutPoint}
+              AND order_status IN
+              <foreach collection="statuses" item="status" open="(" separator="," close=")">
+                #{status}
+              </foreach>
+            ORDER BY created_at ASC
+            LIMIT #{limit}
+            </script>
+            """)
+  List<Long> listTimeoutSubOrderIds(
+      @Param("statuses") List<String> statuses,
+      @Param("timeoutPoint") LocalDateTime timeoutPoint,
+      @Param("limit") Integer limit);
+
+  @InterceptorIgnore(illegalSql = "1")
+  @Select(
+      """
+            <script>
+            SELECT COUNT(1)
+            FROM order_sub FORCE INDEX (idx_order_sub_main_deleted)
+            WHERE main_order_id = #{mainOrderId}
+              AND deleted = 0
+              AND order_status IN
+              <foreach collection="statuses" item="status" open="(" separator="," close=")">
+                #{status}
+              </foreach>
+            </script>
+            """)
+  long countActiveByMainOrderIdAndStatuses(
+      @Param("mainOrderId") Long mainOrderId, @Param("statuses") List<String> statuses);
 
   @Update(
       """

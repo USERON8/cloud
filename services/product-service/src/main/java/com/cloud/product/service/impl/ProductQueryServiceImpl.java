@@ -49,7 +49,7 @@ public class ProductQueryServiceImpl implements ProductQueryService {
     int maxSize = maxListSize == null || maxListSize <= 0 ? 100 : maxListSize;
     safeSize = Math.min(safeSize, maxSize);
 
-    LambdaQueryWrapper<Spu> wrapper = new LambdaQueryWrapper<Spu>().eq(Spu::getDeleted, 0);
+    LambdaQueryWrapper<Spu> wrapper = new LambdaQueryWrapper<>();
     if (StrUtil.isNotBlank(name)) {
       wrapper.like(Spu::getSpuName, name.trim());
     }
@@ -156,7 +156,6 @@ public class ProductQueryServiceImpl implements ProductQueryService {
     int safeSize = normalizeSearchSize(size);
     LambdaQueryWrapper<Spu> wrapper =
         new LambdaQueryWrapper<Spu>()
-            .eq(Spu::getDeleted, 0)
             .eq(Spu::getStatus, ACTIVE_STATUS)
             .like(Spu::getSpuName, name.trim())
             .orderByDesc(Spu::getId)
@@ -175,14 +174,12 @@ public class ProductQueryServiceImpl implements ProductQueryService {
     if (spuIds == null || spuIds.isEmpty()) {
       return minSkuBySpu;
     }
-    List<Sku> skus =
-        skuMapper.selectList(
-            new LambdaQueryWrapper<Sku>()
-                .in(Sku::getSpuId, spuIds)
-                .eq(Sku::getDeleted, 0)
-                .eq(Sku::getStatus, ACTIVE_STATUS));
+    List<Sku> skus = skuMapper.selectActiveBySpuIds(spuIds);
     for (Sku sku : skus) {
       if (sku == null || sku.getSpuId() == null) {
+        continue;
+      }
+      if (!ACTIVE_STATUS.equals(sku.getStatus())) {
         continue;
       }
       Sku current = minSkuBySpu.get(sku.getSpuId());

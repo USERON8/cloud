@@ -53,10 +53,4 @@ public class User extends BaseEntity<User> {
       insertStrategy = FieldStrategy.NOT_NULL,
       updateStrategy = FieldStrategy.NOT_NULL)
   private Integer status;
-
-  @TableField(
-      value = "enabled",
-      insertStrategy = FieldStrategy.NOT_NULL,
-      updateStrategy = FieldStrategy.NOT_NULL)
-  private Integer enabled;
 }

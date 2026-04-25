@@ -76,9 +76,6 @@ public class CustomUserDetailsServiceImpl implements UserDetailsService {
   }
 
   private boolean isDisabled(AuthPrincipalDTO principal) {
-    if (principal.getEnabled() != null) {
-      return principal.getEnabled() != 1;
-    }
     return principal.getStatus() != null && principal.getStatus() != 1;
   }
 

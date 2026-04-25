@@ -27,6 +27,10 @@ public class ProductMerchantGuard {
     }
   }
 
+  public boolean canWriteMerchant(Authentication authentication, Long merchantId) {
+    return canWriteMerchantData(authentication, merchantId);
+  }
+
   public SpuDetailVO requireWritableSpu(Authentication authentication, Long spuId) {
     SpuDetailVO existing = productCatalogService.getSpuById(spuId);
     if (existing == null) {

@@ -46,7 +46,9 @@ import org.springframework.util.StringUtils;
 public class PaymentOrderServiceImpl implements PaymentOrderService {
 
   private static final Set<String> COUNTED_REFUND_STATUSES = Set.of("REFUNDING", "REFUNDED");
-  private static final String CHECKOUT_PATH_PREFIX = "/api/app/payments/checkout/";
+  private static final Set<String> PAYABLE_ORDER_STATUSES =
+      Set.of("CREATED", "STOCK_RESERVED", "PAID");
+  private static final String CHECKOUT_PATH_PREFIX = "/api/payment-checkouts/";
 
   private final PaymentOrderMapper paymentOrderMapper;
   private final PaymentRefundMapper paymentRefundMapper;
@@ -94,11 +96,7 @@ public class PaymentOrderServiceImpl implements PaymentOrderService {
     }
 
     PaymentOrderEntity existing =
-        paymentOrderMapper.selectOne(
-            new LambdaQueryWrapper<PaymentOrderEntity>()
-                .eq(PaymentOrderEntity::getIdempotencyKey, command.getIdempotencyKey())
-                .eq(PaymentOrderEntity::getDeleted, 0)
-                .last("LIMIT 1"));
+        findPaymentOrderEntityByIdempotencyKey(command.getIdempotencyKey());
     if (existing != null) {
       paymentSecurityCacheService.markIdempotent(orderKey, command.getIdempotencyKey());
       paymentSecurityCacheService.cacheResult(orderKey, existing.getId());
@@ -109,11 +107,7 @@ public class PaymentOrderServiceImpl implements PaymentOrderService {
         paymentSecurityCacheService.tryAcquireIdempotent(orderKey, command.getIdempotencyKey());
     if (!acquired) {
       PaymentOrderEntity duplicated =
-          paymentOrderMapper.selectOne(
-              new LambdaQueryWrapper<PaymentOrderEntity>()
-                  .eq(PaymentOrderEntity::getIdempotencyKey, command.getIdempotencyKey())
-                  .eq(PaymentOrderEntity::getDeleted, 0)
-                  .last("LIMIT 1"));
+          findPaymentOrderEntityByIdempotencyKey(command.getIdempotencyKey());
       if (duplicated != null) {
         paymentSecurityCacheService.cacheResult(orderKey, duplicated.getId());
         return duplicated.getId();
@@ -149,20 +143,14 @@ public class PaymentOrderServiceImpl implements PaymentOrderService {
         && orderStatus.getPayableAmount().compareTo(command.getAmount()) != 0) {
       throw new BizException("payment amount does not match order payable amount");
     }
-    if (!"STOCK_RESERVED".equals(orderStatus.getOrderStatus())
-        && !"PAID".equals(orderStatus.getOrderStatus())) {
+    if (!PAYABLE_ORDER_STATUSES.contains(orderStatus.getOrderStatus())) {
       throw new BizException("order is not ready for payment: " + orderStatus.getOrderStatus());
     }
   }
 
   @Override
   public PaymentOrderVO getPaymentOrderByNo(String paymentNo) {
-    PaymentOrderEntity entity =
-        paymentOrderMapper.selectOne(
-            new LambdaQueryWrapper<PaymentOrderEntity>()
-                .eq(PaymentOrderEntity::getPaymentNo, paymentNo)
-                .eq(PaymentOrderEntity::getDeleted, 0)
-                .last("LIMIT 1"));
+    PaymentOrderEntity entity = findPaymentOrderEntityByNo(paymentNo);
     return entity == null ? null : toOrderVO(entity);
   }
 
@@ -232,12 +220,7 @@ public class PaymentOrderServiceImpl implements PaymentOrderService {
         return true;
       }
 
-      PaymentOrderEntity order =
-          paymentOrderMapper.selectOne(
-              new LambdaQueryWrapper<PaymentOrderEntity>()
-                  .eq(PaymentOrderEntity::getPaymentNo, command.getPaymentNo())
-                  .eq(PaymentOrderEntity::getDeleted, 0)
-                  .last("LIMIT 1"));
+      PaymentOrderEntity order = findPaymentOrderEntityByNo(command.getPaymentNo());
       PaymentCallbackVerificationResult verificationResult =
           paymentCallbackVerifier.verify(order, command, context);
       String previousStatus = order.getStatus();
@@ -298,12 +281,7 @@ public class PaymentOrderServiceImpl implements PaymentOrderService {
       return existing.getId();
     }
 
-    PaymentOrderEntity paymentOrder =
-        paymentOrderMapper.selectOne(
-            new LambdaQueryWrapper<PaymentOrderEntity>()
-                .eq(PaymentOrderEntity::getPaymentNo, command.getPaymentNo())
-                .eq(PaymentOrderEntity::getDeleted, 0)
-                .last("LIMIT 1"));
+    PaymentOrderEntity paymentOrder = findPaymentOrderEntityByNo(command.getPaymentNo());
     if (paymentOrder == null) {
       throw new BizException("payment order not found");
     }
@@ -449,22 +427,16 @@ public class PaymentOrderServiceImpl implements PaymentOrderService {
   }
 
   private PaymentOrderEntity findPaymentOrderEntityByNo(String paymentNo) {
-    return paymentOrderMapper.selectOne(
-        new LambdaQueryWrapper<PaymentOrderEntity>()
-            .eq(PaymentOrderEntity::getPaymentNo, paymentNo)
-            .eq(PaymentOrderEntity::getDeleted, 0)
-            .last("LIMIT 1"));
+    return paymentOrderMapper.selectByPaymentNo(paymentNo);
+  }
+
+  private PaymentOrderEntity findPaymentOrderEntityByIdempotencyKey(String idempotencyKey) {
+    return paymentOrderMapper.selectByIdempotencyKey(idempotencyKey);
   }
 
   private PaymentOrderEntity findPaymentOrderEntityByOrderNo(
       String mainOrderNo, String subOrderNo) {
-    return paymentOrderMapper.selectOne(
-        new LambdaQueryWrapper<PaymentOrderEntity>()
-            .eq(PaymentOrderEntity::getMainOrderNo, mainOrderNo)
-            .eq(PaymentOrderEntity::getSubOrderNo, subOrderNo)
-            .eq(PaymentOrderEntity::getDeleted, 0)
-            .orderByDesc(PaymentOrderEntity::getId)
-            .last("LIMIT 1"));
+    return paymentOrderMapper.selectLatestByMainOrderNoAndSubOrderNo(mainOrderNo, subOrderNo);
   }
 
   private boolean canReusePaymentOrder(PaymentOrderEntity order) {

@@ -31,9 +31,6 @@ public final class GatewayTraceSupport {
     if (traceId.isBlank()) {
       traceId = trim(request.getHeaders().getFirst(TraceIdUtil.B3_TRACE_HEADER));
     }
-    if (traceId.isBlank()) {
-      traceId = trim(request.getHeaders().getFirst(TraceIdUtil.LEGACY_TRACE_HEADER));
-    }
     return traceId.isBlank() ? TraceIdUtil.generateTraceId() : traceId;
   }
 

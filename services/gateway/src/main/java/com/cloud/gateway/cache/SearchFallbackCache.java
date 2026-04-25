@@ -88,9 +88,6 @@ public class SearchFallbackCache {
     if ("suggestions".equals(routeType)) {
       return properties.getSuggestionsTtlMs();
     }
-    if ("smart-search".equals(routeType)) {
-      return properties.getSmartSearchTtlMs();
-    }
     return properties.getSearchTtlMs();
   }
 

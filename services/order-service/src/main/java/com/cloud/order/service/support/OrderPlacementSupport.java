@@ -1,6 +1,5 @@
 package com.cloud.order.service.support;
 
-import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.cloud.api.product.ProductDubboApi;
 import com.cloud.common.domain.vo.product.SkuDetailVO;
 import com.cloud.common.domain.vo.product.SpuDetailVO;
@@ -60,18 +59,9 @@ public class OrderPlacementSupport {
     if (cartId == null) {
       return;
     }
-    cartItemMapper.update(
-        null,
-        new LambdaUpdateWrapper<CartItem>()
-            .eq(CartItem::getCartId, cartId)
-            .eq(CartItem::getUserId, userId)
-            .eq(CartItem::getCheckedOut, 0)
-            .set(CartItem::getCheckedOut, 1));
-    cartMapper.update(
-        null,
-        new LambdaUpdateWrapper<Cart>()
-            .eq(Cart::getId, cartId)
-            .set(Cart::getCartStatus, CART_STATUS_CHECKED_OUT));
+    cartItemMapper.deletePhysicalByCartIdAndUserId(cartId, userId);
+    cartMapper.deleteCheckedOutByUserId(userId);
+    cartMapper.markCheckedOutByIdAndUserId(cartId, userId);
   }
 
   private void buildFromCart(CreateMainOrderRequest request) {
@@ -83,14 +73,6 @@ public class OrderPlacementSupport {
       throw new BizException("user id is required for cart checkout");
     }
     Cart cart = cartMapper.selectById(cartId);
-    if ((cart == null || cart.getDeleted() == 1) && request.getUserId() != null) {
-      // Browser clients lose precision for 64-bit cart ids, so tolerate an imprecise cartId
-      // by falling back to the current user's active cart and correcting the request in-place.
-      cart = cartMapper.selectActiveByUserId(request.getUserId());
-      if (cart != null) {
-        request.setCartId(cart.getId());
-      }
-    }
     if (cart == null || cart.getDeleted() == 1) {
       throw new BizException("cart not found");
     }

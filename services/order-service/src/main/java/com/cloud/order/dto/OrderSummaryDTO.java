@@ -11,6 +11,7 @@ public class OrderSummaryDTO {
   private Long id;
   private String orderNo;
   private Long userId;
+  private List<SubOrderSummaryDTO> subOrders;
   private Long subOrderId;
   private String subOrderNo;
   private Long merchantId;
@@ -21,9 +22,25 @@ public class OrderSummaryDTO {
   private BigDecimal totalAmount;
   private BigDecimal payAmount;
   private Integer status;
+  private String orderStatusRaw;
   private String afterSaleStatus;
   private LocalDateTime createdAt;
   private List<OrderItemSummaryDTO> items;
+
+  @Data
+  public static class SubOrderSummaryDTO {
+    private Long subOrderId;
+    private String subOrderNo;
+    private Long merchantId;
+    private Long afterSaleId;
+    private String afterSaleNo;
+    private String afterSaleType;
+    private String refundNo;
+    private BigDecimal payAmount;
+    private Integer status;
+    private String orderStatusRaw;
+    private String afterSaleStatus;
+  }
 
   @Data
   public static class OrderItemSummaryDTO {

@@ -1,5 +1,6 @@
 package com.cloud.common.domain.dto.user;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -17,9 +18,11 @@ public class UserAddressDTO implements Serializable {
 
   @Serial private static final long serialVersionUID = 1L;
 
+  @JsonFormat(shape = JsonFormat.Shape.STRING)
   private Long id;
 
   @NotNull(message = "User ID cannot be null")
+  @JsonFormat(shape = JsonFormat.Shape.STRING)
   private Long userId;
 
   @Size(max = 32, message = "Address tag length must be less than or equal to 32")

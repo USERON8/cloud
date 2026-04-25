@@ -104,12 +104,13 @@ public class SentinelGatewayConfig {
   private Set<ApiDefinition> buildApiDefinitions() {
     Set<ApiDefinition> definitions = new LinkedHashSet<>();
     definitions.add(api("/auth"));
-    definitions.add(api("/api/app/user", "/api/app/merchant"));
-    definitions.add(api("/api/app/product", "/api/app/category"));
-    definitions.add(api("/api/app/orders", "/api/app/cart"));
-    definitions.add(api("/api/app/payments"));
-    definitions.add(api("/api/admin"));
-    definitions.add(api("/api/public/search"));
+    definitions.add(
+        api("/api/users", "/api/addresses", "/api/merchants", "/api/merchant-authentications"));
+    definitions.add(api("/api/products", "/api/categories", "/api/spus", "/api/skus"));
+    definitions.add(api("/api/orders", "/api/after-sales", "/api/users/me/cart"));
+    definitions.add(api("/api/payment-orders", "/api/payment-refunds", "/api/payment-checkouts"));
+    definitions.add(api("/api/admin", "/api/admins"));
+    definitions.add(api("/api/search", "/api/shops"));
     return definitions;
   }
 

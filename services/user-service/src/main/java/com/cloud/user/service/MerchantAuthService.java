@@ -1,5 +1,6 @@
 package com.cloud.user.service;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.cloud.common.domain.dto.user.MerchantAuthDTO;
 import com.cloud.common.domain.dto.user.MerchantAuthRequestDTO;
@@ -22,9 +23,13 @@ public interface MerchantAuthService extends IService<MerchantAuth> {
 
   boolean updateAuthStatus(Long merchantId, Integer authStatus, String remark);
 
-  List<MerchantAuthDTO> listByAuthStatus(Integer authStatus, int limit);
+  Page<MerchantAuthDTO> getMerchantAuthPage(Integer authStatus, Integer page, Integer size);
 
   boolean updateBusinessLicenseUrlIfExists(Long merchantId, String objectName);
+
+  boolean updateIdCardFrontUrlIfExists(Long merchantId, String objectName);
+
+  boolean updateIdCardBackUrlIfExists(Long merchantId, String objectName);
 
   int reviewAuthBatch(List<Long> merchantIds, Integer authStatus, String remark);
 }

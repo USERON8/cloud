@@ -30,6 +30,10 @@ public class StockInventoryCommandService {
     for (StockOperateCommandDTO command : event.getItems()) {
       stockLedgerService.reserve(command);
     }
+    if (!stockMessageProducer.sendStockReservedEvent(event.getOrderNo())) {
+      throw new IllegalStateException(
+          "failed to enqueue stock reserved event for orderNo=" + event.getOrderNo());
+    }
   }
 
   @Transactional(rollbackFor = Exception.class)

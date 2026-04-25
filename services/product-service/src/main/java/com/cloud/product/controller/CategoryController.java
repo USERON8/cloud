@@ -32,7 +32,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/app/category")
+@RequestMapping("/api/categories")
 @RequiredArgsConstructor
 @Validated
 @Tag(name = "Category API", description = "Category management APIs")

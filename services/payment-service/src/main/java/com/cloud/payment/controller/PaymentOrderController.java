@@ -1,6 +1,5 @@
 package com.cloud.payment.controller;
 
-import com.cloud.common.annotation.RawResponse;
 import com.cloud.common.domain.dto.payment.PaymentOrderCommandDTO;
 import com.cloud.common.domain.dto.payment.PaymentRefundCommandDTO;
 import com.cloud.common.domain.vo.payment.PaymentCheckoutSessionVO;
@@ -20,7 +19,6 @@ import jakarta.validation.Valid;
 import java.util.Map;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.validation.annotation.Validated;
@@ -33,7 +31,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/app/payments")
+@RequestMapping("/api")
 @RequiredArgsConstructor
 @Validated
 @Tag(name = "Payment API", description = "Payment order and refund APIs")
@@ -50,8 +48,8 @@ public class PaymentOrderController {
   private final PaymentOrderService paymentOrderService;
   private final PaymentSecurityCacheService paymentSecurityCacheService;
 
-  @PostMapping("/orders")
-  @PreAuthorize("isAuthenticated() and hasAuthority('order:create')")
+  @PostMapping("/payment-orders")
+  @PreAuthorize("isAuthenticated() and (hasAuthority('admin:all') or hasAuthority('order:create'))")
   @Operation(summary = "Create payment order")
   public Result<Long> createPaymentOrder(
       @Valid @RequestBody PaymentOrderCommandDTO command, Authentication authentication) {
@@ -70,7 +68,7 @@ public class PaymentOrderController {
     return Result.success(paymentOrderService.createPaymentOrder(command));
   }
 
-  @GetMapping("/orders/{paymentNo}")
+  @GetMapping("/payment-orders/{paymentNo}")
   @PreAuthorize("isAuthenticated()")
   @Operation(summary = "Get payment order by number")
   public Result<PaymentOrderVO> getPaymentOrderByNo(
@@ -85,7 +83,7 @@ public class PaymentOrderController {
     return Result.success(order);
   }
 
-  @GetMapping("/orders/by-order")
+  @GetMapping("/payment-orders")
   @PreAuthorize("isAuthenticated()")
   @Operation(summary = "Get payment order by order numbers")
   public Result<PaymentOrderVO> getPaymentOrderByOrderNo(
@@ -102,7 +100,7 @@ public class PaymentOrderController {
     return Result.success(order);
   }
 
-  @PostMapping("/orders/{paymentNo}/checkout-session")
+  @PostMapping("/payment-orders/{paymentNo}/checkout-sessions")
   @PreAuthorize("isAuthenticated()")
   @Operation(summary = "Create checkout session for payment order")
   public Result<PaymentCheckoutSessionVO> createCheckoutSession(
@@ -118,7 +116,7 @@ public class PaymentOrderController {
     return Result.success(paymentOrderService.createCheckoutSession(paymentNo));
   }
 
-  @GetMapping("/orders/{paymentNo}/status")
+  @GetMapping("/payment-orders/{paymentNo}/status")
   @PreAuthorize("isAuthenticated()")
   @Operation(summary = "Get payment order status")
   public Result<Map<String, Object>> getPaymentStatus(
@@ -152,27 +150,14 @@ public class PaymentOrderController {
             "status", order.getStatus()));
   }
 
-  @PostMapping("/refunds")
-  @PreAuthorize("hasAuthority('order:refund')")
+  @PostMapping("/payment-refunds")
+  @PreAuthorize("isAuthenticated() and (hasAuthority('admin:all') or hasAuthority('order:refund'))")
   @Operation(summary = "Create payment refund")
   public Result<Long> createRefund(@Valid @RequestBody PaymentRefundCommandDTO command) {
     return Result.success(paymentOrderService.createRefund(command));
   }
 
-  @RawResponse
-  @GetMapping(value = "/checkout/{ticket}", produces = MediaType.TEXT_HTML_VALUE)
-  @Operation(summary = "Render payment checkout page")
-  public String renderCheckoutPage(@PathVariable String ticket) {
-    try {
-      return paymentOrderService.renderCheckoutPage(ticket);
-    } catch (BizException ex) {
-      return buildHtmlPage("Payment unavailable", ex.getMessage());
-    } catch (RuntimeException ex) {
-      return buildHtmlPage("Payment unavailable", "Failed to initialize the payment page.");
-    }
-  }
-
-  @GetMapping("/refunds/{refundNo}")
+  @GetMapping("/payment-refunds/{refundNo}")
   @PreAuthorize("isAuthenticated()")
   @Operation(summary = "Get refund by number")
   public Result<PaymentRefundVO> getRefundByNo(
@@ -212,70 +197,9 @@ public class PaymentOrderController {
     if (userId == null || userId.isBlank()) {
       throw new BizException("current user not found in token");
     }
-    try {
-      return Long.parseLong(userId);
-    } catch (NumberFormatException ex) {
+    if (!userId.chars().allMatch(Character::isDigit)) {
       throw new BizException("invalid user_id in token");
     }
-  }
-
-  private String buildHtmlPage(String title, String message) {
-    return """
-        <!DOCTYPE html>
-        <html lang="en">
-          <head>
-            <meta charset="UTF-8" />
-            <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-            <title>%s</title>
-            <style>
-              body {
-                margin: 0;
-                min-height: 100vh;
-                display: grid;
-                place-items: center;
-                background: #f4f7fb;
-                color: #1f2a37;
-                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-              }
-              main {
-                max-width: 420px;
-                padding: 24px;
-                border-radius: 18px;
-                background: #ffffff;
-                box-shadow: 0 16px 48px rgba(15, 23, 42, 0.08);
-                text-align: center;
-              }
-              h1 {
-                margin: 0 0 12px;
-                font-size: 24px;
-              }
-              p {
-                margin: 0;
-                line-height: 1.6;
-                color: #526072;
-              }
-            </style>
-          </head>
-          <body>
-            <main>
-              <h1>%s</h1>
-              <p>%s</p>
-            </main>
-          </body>
-        </html>
-        """
-        .formatted(escapeHtml(title), escapeHtml(title), escapeHtml(message));
-  }
-
-  private String escapeHtml(String value) {
-    if (value == null) {
-      return "";
-    }
-    return value
-        .replace("&", "&amp;")
-        .replace("<", "&lt;")
-        .replace(">", "&gt;")
-        .replace("\"", "&quot;")
-        .replace("'", "&#39;");
+    return Long.parseLong(userId);
   }
 }

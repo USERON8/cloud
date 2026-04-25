@@ -8,7 +8,6 @@ import com.cloud.api.user.UserNotificationGovernanceDubboApi;
 import com.cloud.common.domain.dto.governance.OutboxBatchRequeueRequestDTO;
 import com.cloud.common.domain.dto.user.AdminDTO;
 import com.cloud.common.domain.dto.user.AdminUpsertRequestDTO;
-import com.cloud.common.domain.dto.user.UserDTO;
 import com.cloud.common.domain.dto.user.UserNotificationBatchRequestDTO;
 import com.cloud.common.domain.dto.user.UserNotificationStatusChangeRequestDTO;
 import com.cloud.common.domain.dto.user.UserPageDTO;
@@ -187,7 +186,7 @@ public class GovernanceAdminController {
     return CompletableFuture.completedFuture(result);
   }
 
-  @PostMapping("/api/admin/statistics/refresh-cache")
+  @PostMapping("/api/admin/statistics/cache-refreshes")
   @PreAuthorize("hasAuthority('admin:all')")
   public CompletableFuture<Result<Boolean>> refreshStatisticsCache() {
     Result<Boolean> result =
@@ -199,7 +198,7 @@ public class GovernanceAdminController {
     return CompletableFuture.completedFuture(result);
   }
 
-  @GetMapping("/api/admin/thread-pool/info")
+  @GetMapping("/api/admin/thread-pools")
   @PreAuthorize("hasAuthority('admin:all')")
   public Result<List<Map<String, Object>>> getAllThreadPoolInfo() {
     List<Map<String, Object>> items =
@@ -213,10 +212,10 @@ public class GovernanceAdminController {
     return Result.success(items);
   }
 
-  @GetMapping("/api/admin/thread-pool/info/detail")
+  @GetMapping("/api/admin/thread-pools/{name}")
   @PreAuthorize("hasAuthority('admin:all')")
   public Result<Map<String, Object>> getThreadPoolInfoByName(
-      @RequestParam @Parameter(description = "Thread pool bean name") String name) {
+      @PathVariable @Parameter(description = "Thread pool bean name") String name) {
     ThreadPoolMetricsVO metrics =
         remoteCallSupport.query(
             "user-service.governance.getThreadPoolInfo",
@@ -227,7 +226,7 @@ public class GovernanceAdminController {
     return Result.success(toThreadPoolMap(metrics));
   }
 
-  @GetMapping("/api/admin")
+  @GetMapping("/api/admins")
   @PreAuthorize("hasAuthority('admin:all')")
   public Result<AdminPageVO> getAdmins(
       @RequestParam(defaultValue = "1") @Min(1) Integer page,
@@ -238,7 +237,7 @@ public class GovernanceAdminController {
             () -> adminGovernanceDubboApi.getAdminsPage(page, size)));
   }
 
-  @GetMapping("/api/admin/{id}")
+  @GetMapping("/api/admins/{id}")
   @PreAuthorize("hasAuthority('admin:all')")
   public Result<AdminDTO> getAdminById(@PathVariable @NotNull @Positive Long id) {
     return Result.success(
@@ -248,7 +247,7 @@ public class GovernanceAdminController {
             () -> adminGovernanceDubboApi.getAdminById(id)));
   }
 
-  @PostMapping("/api/admin")
+  @PostMapping("/api/admins")
   @PreAuthorize("hasAuthority('admin:all')")
   public Result<AdminDTO> createAdmin(@RequestBody @Validated AdminUpsertRequestDTO requestDTO) {
     return Result.success(
@@ -258,7 +257,7 @@ public class GovernanceAdminController {
             () -> adminGovernanceDubboApi.createAdmin(requestDTO)));
   }
 
-  @PutMapping("/api/admin/{id}")
+  @PutMapping("/api/admins/{id}")
   @PreAuthorize("hasAuthority('admin:all')")
   public Result<Boolean> updateAdmin(
       @PathVariable @NotNull @Positive Long id,
@@ -270,7 +269,7 @@ public class GovernanceAdminController {
             () -> adminGovernanceDubboApi.updateAdmin(id, requestDTO)));
   }
 
-  @DeleteMapping("/api/admin/{id}")
+  @DeleteMapping("/api/admins/{id}")
   @PreAuthorize("hasAuthority('admin:all')")
   public Result<Boolean> deleteAdmin(@PathVariable @NotNull @Positive Long id) {
     return Result.success(
@@ -279,7 +278,7 @@ public class GovernanceAdminController {
             "user-service.governance.deleteAdmin", () -> adminGovernanceDubboApi.deleteAdmin(id)));
   }
 
-  @PatchMapping("/api/admin/{id}/status")
+  @PatchMapping("/api/admins/{id}/status")
   @PreAuthorize("hasAuthority('admin:all')")
   public Result<Boolean> updateAdminStatus(
       @PathVariable @NotNull @Positive Long id, @RequestParam Integer status) {
@@ -290,7 +289,7 @@ public class GovernanceAdminController {
             () -> adminGovernanceDubboApi.updateAdminStatus(id, status)));
   }
 
-  @PostMapping("/api/admin/{id}/reset-password")
+  @PostMapping("/api/admins/{id}/password-resets")
   @PreAuthorize("hasAuthority('admin:all')")
   public Result<String> resetPassword(@PathVariable @NotNull @Positive Long id) {
     return Result.success(
@@ -300,17 +299,7 @@ public class GovernanceAdminController {
             () -> adminGovernanceDubboApi.resetPassword(id)));
   }
 
-  @GetMapping("/api/admin/query/users")
-  @PreAuthorize("hasAuthority('admin:all')")
-  public Result<UserDTO> findUserByUsername(@RequestParam @NotBlank String username) {
-    return Result.success(
-        "query successful",
-        remoteCallSupport.query(
-            "user-service.governance.findByUsername",
-            () -> userAdminGovernanceDubboApi.findByUsername(username)));
-  }
-
-  @GetMapping("/api/admin/query/users/search")
+  @GetMapping("/api/admin/users")
   @PreAuthorize("hasAuthority('admin:all')")
   public Result<UserPageVO> searchUsers(
       @RequestParam(defaultValue = "1") @Min(1) Integer page,
@@ -336,7 +325,7 @@ public class GovernanceAdminController {
             () -> userAdminGovernanceDubboApi.searchUsers(request)));
   }
 
-  @PutMapping("/api/admin/manage/users/{id}")
+  @PutMapping("/api/admin/users/{id}")
   @PreAuthorize("hasAuthority('admin:all')")
   public Result<Boolean> updateUser(
       @PathVariable @NotNull @Positive Long id,
@@ -348,9 +337,9 @@ public class GovernanceAdminController {
             () -> userAdminGovernanceDubboApi.updateUser(id, requestDTO)));
   }
 
-  @PostMapping("/api/admin/manage/users/delete")
+  @DeleteMapping("/api/admin/users/{id}")
   @PreAuthorize("hasAuthority('admin:all')")
-  public Result<Boolean> deleteUser(@RequestBody @NotNull Long id) {
+  public Result<Boolean> deleteUser(@PathVariable @NotNull @Positive Long id) {
     return Result.success(
         "user deleted",
         remoteCallSupport.command(
@@ -358,7 +347,7 @@ public class GovernanceAdminController {
             () -> userAdminGovernanceDubboApi.deleteUser(id)));
   }
 
-  @PostMapping("/api/admin/manage/users/deleteBatch")
+  @DeleteMapping("/api/admin/users/batch")
   @PreAuthorize("hasAuthority('admin:all')")
   public Result<Boolean> deleteUsers(@RequestBody @NotNull List<Long> ids) {
     return Result.success(
@@ -368,7 +357,7 @@ public class GovernanceAdminController {
             () -> userAdminGovernanceDubboApi.deleteUsers(ids)));
   }
 
-  @PostMapping("/api/admin/manage/users/updateBatch")
+  @PutMapping("/api/admin/users/batch")
   @PreAuthorize("hasAuthority('admin:all')")
   public Result<Boolean> updateUsersBatch(
       @RequestBody @Validated @NotNull List<UserUpsertRequestDTO> requestDTOList) {
@@ -379,7 +368,7 @@ public class GovernanceAdminController {
             () -> userAdminGovernanceDubboApi.updateUsersBatch(requestDTOList)));
   }
 
-  @PostMapping("/api/admin/manage/users/updateStatusBatch")
+  @PatchMapping("/api/admin/users/status/batch")
   @PreAuthorize("hasAuthority('admin:all')")
   public Result<Boolean> updateUserStatusBatch(
       @RequestParam List<Long> ids, @RequestParam Integer status) {
@@ -394,7 +383,7 @@ public class GovernanceAdminController {
         String.format("batch status update completed: %d/%d", successCount, ids.size()), true);
   }
 
-  @GetMapping("/auth/tokens/stats")
+  @GetMapping("/auth/authorizations/statistics")
   @PreAuthorize("hasAuthority('admin:all')")
   public Result<Map<String, Object>> getTokenStats() {
     AuthTokenStorageStatsVO stats =
@@ -411,7 +400,7 @@ public class GovernanceAdminController {
     return Result.success(payload);
   }
 
-  @GetMapping("/auth/tokens/authorization/{id}")
+  @GetMapping("/auth/authorizations/{id}")
   @PreAuthorize("hasAuthority('admin:all')")
   public Result<Map<String, Object>> getAuthorizationDetails(@PathVariable @NotBlank String id) {
     AuthAuthorizationDetailVO detail =
@@ -444,7 +433,7 @@ public class GovernanceAdminController {
     return Result.success(payload);
   }
 
-  @DeleteMapping("/auth/tokens/authorization/{id}")
+  @DeleteMapping("/auth/authorizations/{id}")
   @PreAuthorize("hasAuthority('admin:all')")
   public Result<Void> revokeAuthorization(@PathVariable @NotBlank String id) {
     remoteCallSupport.command(
@@ -453,49 +442,25 @@ public class GovernanceAdminController {
     return Result.success();
   }
 
-  @PostMapping("/auth/tokens/cleanup")
+  @PostMapping("/auth/cleanups/authorizations")
   @PreAuthorize("hasAuthority('admin:all')")
   public Result<Map<String, Object>> cleanupExpiredTokens() {
-    Map<String, Object> result = new HashMap<>();
-    result.put("message", "Cleanup job executed");
-    result.put("note", "Redis TTL will automatically remove expired data");
-    result.put("time", Instant.now());
-    return Result.success(result);
+    return Result.success(
+        remoteCallSupport.command(
+            "auth-service.governance.cleanupAuthorizations",
+            authGovernanceDubboApi::cleanupAuthorizations));
   }
 
-  @GetMapping("/auth/tokens/storage-structure")
+  @GetMapping("/auth/authorizations/storage-structure")
   @PreAuthorize("hasAuthority('admin:all')")
   public Result<Map<String, Object>> getStorageStructure() {
-    Map<String, String> keys = new HashMap<>();
-    keys.put("oauth2:token:{authorizationId}", "Serialized OAuth2Authorization");
-    keys.put("oauth2:access:{accessToken}", "Access token index to authorization ID");
-    keys.put("oauth2:refresh:{refreshTokenId}", "Refresh token index to authorization ID");
-    keys.put("oauth2:code:{code}", "Authorization code index to authorization ID");
-    keys.put("oauth2:principal:{username}", "Principal to authorization ID set");
-
-    Map<String, String> tokenIndexes = new HashMap<>(keys);
-    tokenIndexes.put("oauth2:token:{authorizationId}", "Authorization object storage");
-    tokenIndexes.put("oauth2:access:{accessToken}", "Access token index");
-    tokenIndexes.put("oauth2:refresh:{refreshTokenId}", "Refresh token index");
-    tokenIndexes.put("oauth2:code:{code}", "Authorization code index");
-    tokenIndexes.put("oauth2:principal:{username}", "Principal authorization set");
-
-    Map<String, Object> structure = new HashMap<>();
-    structure.put("keys", keys);
-    structure.put("tokenIndexes", tokenIndexes);
-    structure.put(
-        "advantages",
-        List.of(
-            "Simple key/value storage",
-            "Direct index for access tokens",
-            "Token TTL aligned with Redis TTL",
-            "Easy manual inspection",
-            "Direct index for refresh/code tokens",
-            "Direct principal to authorization lookup"));
-    return Result.success(structure);
+    return Result.success(
+        remoteCallSupport.query(
+            "auth-service.governance.getAuthorizationStorageStructure",
+            authGovernanceDubboApi::getAuthorizationStorageStructure));
   }
 
-  @GetMapping("/auth/tokens/blacklist/stats")
+  @GetMapping("/auth/blacklist-entries/statistics")
   @PreAuthorize("hasAuthority('admin:all')")
   public Result<TokenBlacklistStatsVO> getBlacklistStats() {
     return Result.success(
@@ -504,7 +469,7 @@ public class GovernanceAdminController {
             authGovernanceDubboApi::getBlacklistStats));
   }
 
-  @PostMapping("/auth/tokens/blacklist/add")
+  @PostMapping("/auth/blacklist-entries")
   @PreAuthorize("hasAuthority('admin:all')")
   public Result<Void> addToBlacklist(
       @RequestParam @NotBlank String tokenValue,
@@ -515,7 +480,7 @@ public class GovernanceAdminController {
     return Result.success();
   }
 
-  @GetMapping("/auth/tokens/blacklist/check")
+  @GetMapping("/auth/blacklist-entries/check")
   @PreAuthorize("hasAuthority('admin:all')")
   public Result<Map<String, Object>> checkBlacklist(@RequestParam @NotBlank String tokenValue) {
     TokenBlacklistCheckVO result =
@@ -529,7 +494,7 @@ public class GovernanceAdminController {
     return Result.success(payload);
   }
 
-  @PostMapping("/auth/tokens/blacklist/cleanup")
+  @PostMapping("/auth/cleanups/blacklist-entries")
   @PreAuthorize("hasAuthority('admin:all')")
   public Result<Map<String, Object>> cleanupBlacklist() {
     Integer cleanedCount =
@@ -621,7 +586,7 @@ public class GovernanceAdminController {
         .build();
   }
 
-  @PostMapping("/api/app/user/notification/welcome/{userId}")
+  @PostMapping("/api/admin/notifications/welcome/{userId}")
   @PreAuthorize("hasAuthority('admin:all')")
   public Result<Boolean> sendWelcomeNotification(@PathVariable @NotNull @Positive Long userId) {
     return Result.success(
@@ -631,7 +596,7 @@ public class GovernanceAdminController {
             () -> userNotificationGovernanceDubboApi.sendWelcomeNotification(userId)));
   }
 
-  @PostMapping("/api/app/user/notification/status-change/{userId}")
+  @PostMapping("/api/admin/notifications/status-change/{userId}")
   @PreAuthorize("hasAuthority('admin:all')")
   public Result<Boolean> sendStatusChangeNotification(
       @PathVariable @NotNull @Positive Long userId,
@@ -645,7 +610,7 @@ public class GovernanceAdminController {
                     userId, requestDTO)));
   }
 
-  @PostMapping("/api/app/user/notification/batch")
+  @PostMapping("/api/admin/notifications/batch")
   @PreAuthorize("hasAuthority('admin:all')")
   public Result<Boolean> sendBatchNotification(
       @RequestBody @Validated UserNotificationBatchRequestDTO requestDTO) {
@@ -656,7 +621,7 @@ public class GovernanceAdminController {
             () -> userNotificationGovernanceDubboApi.sendBatchNotification(requestDTO)));
   }
 
-  @PostMapping("/api/app/user/notification/system")
+  @PostMapping("/api/admin/notifications/system")
   @PreAuthorize("hasAuthority('admin:all')")
   public Result<Boolean> sendSystemAnnouncement(
       @RequestBody @Validated UserSystemAnnouncementRequestDTO requestDTO) {

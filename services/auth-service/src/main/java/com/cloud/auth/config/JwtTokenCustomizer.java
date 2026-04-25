@@ -58,9 +58,6 @@ public class JwtTokenCustomizer implements OAuth2TokenCustomizer<JwtEncodingCont
       if (principal.getStatus() != null) {
         context.getClaims().claim("status", principal.getStatus());
       }
-      if (principal.getEnabled() != null) {
-        context.getClaims().claim("enabled", principal.getEnabled());
-      }
       if (StrUtil.isNotBlank(principal.getNickname())) {
         context.getClaims().claim("nickname", principal.getNickname());
       }

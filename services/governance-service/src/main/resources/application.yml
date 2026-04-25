@@ -1,6 +1,18 @@
 spring:
   application:
     name: governance-service
+  config:
+    import: "optional:nacos:common.yaml,optional:nacos:governance-service.yaml"
+  profiles:
+    active: dev
+  main:
+    allow-bean-definition-overriding: true
+  cloud:
+    nacos:
+      discovery:
+        server-addr: ${NACOS_SERVER_ADDR:${NACOS_HOST:127.0.0.1}:${NACOS_PORT:18848}}
+      config:
+        server-addr: ${NACOS_SERVER_ADDR:${NACOS_HOST:127.0.0.1}:${NACOS_PORT:18848}}
 
 server:
   port: ${SERVER_PORT:8088}

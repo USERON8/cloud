@@ -176,7 +176,7 @@ alipay:
 springdoc:
   group-configs:
     - group: 'payment'
-      paths-to-match: '/api/payments/**'
+      paths-to-match: '/api/payment-orders/**,/api/payment-refunds/**,/api/payment-checkouts/**'
     - group: 'payment-callback'
       paths-to-match: '/api/v1/payment/alipay/notify'
 

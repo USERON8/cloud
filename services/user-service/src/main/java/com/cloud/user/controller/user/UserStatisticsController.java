@@ -161,7 +161,7 @@ public class UserStatisticsController {
         .thenApply(ranking -> Result.success("query successful", ranking));
   }
 
-  @PostMapping("/refresh-cache")
+  @PostMapping("/cache-refreshes")
   @Operation(
       summary = "Refresh statistics cache",
       description = "Refresh statistics cache asynchronously")

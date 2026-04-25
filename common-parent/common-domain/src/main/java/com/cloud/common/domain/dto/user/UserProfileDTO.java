@@ -22,6 +22,4 @@ public class UserProfileDTO implements Serializable {
   private String email;
 
   private Integer status;
-
-  private Integer enabled;
 }

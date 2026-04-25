@@ -116,8 +116,8 @@ app:
       interval-sec: ${APP_SENTINEL_GATEWAY_INTERVAL_SEC:1}
       search-qps: ${APP_SENTINEL_GATEWAY_SEARCH_QPS:120}
       search-interval-sec: ${APP_SENTINEL_GATEWAY_SEARCH_INTERVAL_SEC:1}
-      search-route-ids: ${APP_SENTINEL_GATEWAY_SEARCH_ROUTE_IDS:search-service-api-v2}
-      route-ids: ${APP_SENTINEL_GATEWAY_ROUTE_IDS:user-service-api-v2,product-service-api-v2,order-service-api-v2,payment-service-api-v2,stock-service-api-v2,search-service-api-v2}
+      search-route-ids: ${APP_SENTINEL_GATEWAY_SEARCH_ROUTE_IDS:search-service-public}
+      route-ids: ${APP_SENTINEL_GATEWAY_ROUTE_IDS:auth-service-api,user-service-app,user-service-admin,product-service-app,order-service-app,payment-service-app,stock-service-admin,search-service-public}
   security:
     enable-test-api: false
     jwt:
@@ -148,7 +148,6 @@ app:
         min-ttl-ms: ${SEARCH_FALLBACK_CACHE_MIN_TTL_MS:500}
         route-ttl-ms:
           search: ${SEARCH_FALLBACK_CACHE_ROUTE_TTL_SEARCH_MS:3000}
-          smart-search: ${SEARCH_FALLBACK_CACHE_ROUTE_TTL_SMART_SEARCH_MS:3000}
           suggestions: ${SEARCH_FALLBACK_CACHE_ROUTE_TTL_SUGGESTIONS_MS:10000}
         param-ttl-ms:
           keyword: ${SEARCH_FALLBACK_CACHE_PARAM_TTL_KEYWORD_MS:3000}

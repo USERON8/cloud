@@ -68,7 +68,7 @@ public class SecurityFilterChainConfig {
         .cors(Customizer.withDefaults())
         .authorizeHttpRequests(authorize -> authorize.anyRequest().authenticated())
         .httpBasic(Customizer.withDefaults())
-        .formLogin(Customizer.withDefaults())
+        .formLogin(form -> form.loginPage("/login").permitAll())
         .sessionManagement(
             session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED));
 
@@ -165,6 +165,7 @@ public class SecurityFilterChainConfig {
         .oauth2Login(
             oauth2 ->
                 oauth2
+                    .loginPage("/login")
                     .successHandler(oAuth2AuthenticationSuccessHandler)
                     .failureHandler(
                         (request, response, exception) -> {
@@ -174,7 +175,7 @@ public class SecurityFilterChainConfig {
                               githubErrorRedirectUrl + "?message=" + encodedError);
                         }))
         .httpBasic(AbstractHttpConfigurer::disable)
-        .formLogin(Customizer.withDefaults())
+        .formLogin(form -> form.loginPage("/login").permitAll())
         .sessionManagement(
             session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED));
 

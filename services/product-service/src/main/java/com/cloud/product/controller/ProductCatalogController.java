@@ -12,9 +12,10 @@ import com.cloud.product.service.ProductCatalogService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -29,7 +30,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/app/product")
+@RequestMapping("/api")
 @RequiredArgsConstructor
 @Tag(name = "Product Catalog API", description = "SPU/SKU catalog management APIs")
 public class ProductCatalogController {
@@ -37,7 +38,7 @@ public class ProductCatalogController {
   private final ProductCatalogService productCatalogService;
   private final ProductMerchantGuard productMerchantGuard;
 
-  @PostMapping("/spu")
+  @PostMapping("/spus")
   @PreAuthorize("hasAuthority('product:create')")
   @Operation(summary = "Create SPU")
   public Result<Long> createSpu(
@@ -46,7 +47,7 @@ public class ProductCatalogController {
     return Result.success(productCatalogService.createSpu(request));
   }
 
-  @PutMapping("/spu/{spuId}")
+  @PutMapping("/spus/{spuId}")
   @PreAuthorize("hasAuthority('product:edit')")
   @Operation(summary = "Update SPU")
   public Result<Boolean> updateSpu(
@@ -60,20 +61,32 @@ public class ProductCatalogController {
     return Result.success(productCatalogService.updateSpu(spuId, request));
   }
 
-  @GetMapping("/spu/{spuId}")
+  @GetMapping("/spus/{spuId}")
   @Operation(summary = "Get SPU detail")
-  public Result<SpuDetailVO> getSpu(@PathVariable Long spuId) {
-    SpuDetailVO detail = toPublicSpu(productCatalogService.getSpuById(spuId));
+  public Result<SpuDetailVO> getSpu(@PathVariable Long spuId, Authentication authentication) {
+    SpuDetailVO detail = productCatalogService.getSpuById(spuId);
     if (detail == null) {
       throw new BizException(ResultCode.NOT_FOUND, "spu not found");
     }
-    return Result.success(detail);
+    if (productMerchantGuard.canWriteMerchant(authentication, detail.getMerchantId())) {
+      return Result.success(detail);
+    }
+    SpuDetailVO publicDetail = toPublicSpu(detail);
+    if (publicDetail == null) {
+      throw new BizException(ResultCode.NOT_FOUND, "spu not found");
+    }
+    return Result.success(publicDetail);
   }
 
-  @GetMapping("/spu/category/{categoryId}")
+  @GetMapping("/categories/{categoryId}/spus")
   @Operation(summary = "List SPU by category")
   public Result<List<SpuDetailVO>> listByCategory(
-      @PathVariable Long categoryId, @RequestParam(required = false) Integer status) {
+      @PathVariable Long categoryId,
+      @RequestParam(required = false) Integer status,
+      Authentication authentication) {
+    if (SecurityPermissionUtils.isAdmin(authentication)) {
+      return Result.success(productCatalogService.listSpuByCategory(categoryId, status));
+    }
     Integer effectiveStatus = normalizePublicStatus(status);
     return Result.success(
         productCatalogService.listSpuByCategory(categoryId, effectiveStatus).stream()
@@ -82,25 +95,29 @@ public class ProductCatalogController {
             .toList());
   }
 
-  @GetMapping("/sku/batch")
+  @GetMapping("/skus")
   @Operation(summary = "Batch query SKU details")
-  public Result<List<SkuDetailVO>> listSkuByIds(@RequestParam List<Long> skuIds) {
-    List<SkuDetailVO> skuDetails = productCatalogService.listSkuByIds(skuIds);
-    Set<Long> activeSpuIds =
-        skuDetails.stream()
-            .map(SkuDetailVO::getSpuId)
-            .filter(Objects::nonNull)
-            .distinct()
-            .filter(this::isActiveSpu)
-            .collect(java.util.stream.Collectors.toSet());
+  public Result<List<SkuDetailVO>> listSkuByIds(
+      @RequestParam("ids") List<Long> ids, Authentication authentication) {
+    List<SkuDetailVO> skuDetails = productCatalogService.listSkuByIds(ids);
+    if (skuDetails.isEmpty() || SecurityPermissionUtils.isAdmin(authentication)) {
+      return Result.success(skuDetails);
+    }
+    Map<Long, SpuDetailVO> spuDetailsById = loadSpuDetailsById(skuDetails);
+    Map<Long, Boolean> writableMerchantById = new HashMap<>();
     return Result.success(
         skuDetails.stream()
-            .filter(this::isActiveSku)
-            .filter(sku -> sku.getSpuId() != null && activeSpuIds.contains(sku.getSpuId()))
+            .filter(
+                sku ->
+                    canReadSku(
+                        authentication,
+                        sku,
+                        spuDetailsById.get(sku.getSpuId()),
+                        writableMerchantById))
             .toList());
   }
 
-  @PatchMapping("/spu/{spuId}/status")
+  @PatchMapping("/spus/{spuId}/status")
   @PreAuthorize("hasAuthority('product:edit')")
   @Operation(summary = "Update SPU status")
   public Result<Boolean> updateSpuStatus(
@@ -128,8 +145,7 @@ public class ProductCatalogController {
     return detail != null && Integer.valueOf(1).equals(detail.getStatus());
   }
 
-  private boolean isActiveSpu(Long spuId) {
-    SpuDetailVO detail = productCatalogService.getSpuById(spuId);
+  private boolean isActiveSpu(SpuDetailVO detail) {
     return detail != null && Integer.valueOf(1).equals(detail.getStatus());
   }
 
@@ -142,5 +158,35 @@ public class ProductCatalogController {
           ResultCode.BAD_REQUEST, "public product queries only support active status");
     }
     return status;
+  }
+
+  private Map<Long, SpuDetailVO> loadSpuDetailsById(List<SkuDetailVO> skuDetails) {
+    return skuDetails.stream()
+        .map(SkuDetailVO::getSpuId)
+        .filter(Objects::nonNull)
+        .distinct()
+        .map(productCatalogService::getSpuById)
+        .filter(Objects::nonNull)
+        .collect(
+            java.util.stream.Collectors.toMap(
+                SpuDetailVO::getSpuId, detail -> detail, (left, right) -> left));
+  }
+
+  private boolean canReadSku(
+      Authentication authentication,
+      SkuDetailVO skuDetail,
+      SpuDetailVO spuDetail,
+      Map<Long, Boolean> writableMerchantById) {
+    if (skuDetail == null || skuDetail.getSpuId() == null || spuDetail == null) {
+      return false;
+    }
+    Long merchantId = spuDetail.getMerchantId();
+    if (merchantId != null
+        && writableMerchantById.computeIfAbsent(
+            merchantId,
+            ignored -> productMerchantGuard.canWriteMerchant(authentication, merchantId))) {
+      return true;
+    }
+    return isActiveSku(skuDetail) && isActiveSpu(spuDetail);
   }
 }

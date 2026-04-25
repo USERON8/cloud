@@ -29,7 +29,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 @RestController
-@RequestMapping("/api/app/user/profile")
+@RequestMapping("/api/users/me")
 @RequiredArgsConstructor
 @Tag(name = "User Profile", description = "Current user profile APIs")
 public class UserProfileController {
@@ -38,7 +38,7 @@ public class UserProfileController {
   private final MinioService minioService;
   private final UserProfileCommandConverter userProfileCommandConverter;
 
-  @GetMapping("/current")
+  @GetMapping("/profile")
   @PreAuthorize("isAuthenticated()")
   @Operation(summary = "Get current profile", description = "Get current logged-in user profile")
   public Result<UserDTO> getCurrentProfile(Authentication authentication) {
@@ -50,7 +50,7 @@ public class UserProfileController {
     return Result.success(userService.getUserById(currentUserId));
   }
 
-  @PutMapping("/current")
+  @PutMapping("/profile")
   @PreAuthorize("isAuthenticated()")
   @Operation(summary = "Update current profile", description = "Update current user profile fields")
   public Result<Boolean> updateCurrentProfile(
@@ -74,7 +74,7 @@ public class UserProfileController {
     return Result.success("profile updated", updated);
   }
 
-  @PutMapping("/current/password")
+  @PutMapping("/password")
   @PreAuthorize("isAuthenticated()")
   @Operation(
       summary = "Change current password",
@@ -92,7 +92,7 @@ public class UserProfileController {
     return Result.success("password changed", Boolean.TRUE.equals(changed));
   }
 
-  @PostMapping(value = "/current/avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+  @PostMapping(value = "/avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   @PreAuthorize("isAuthenticated()")
   @Operation(
       summary = "Upload current avatar",

@@ -61,14 +61,16 @@ public class CartServiceImpl implements CartService {
     List<CartSyncRequest.CartSyncItemRequest> requests =
         request == null || request.getItems() == null ? List.of() : request.getItems();
     Map<Long, CartSyncRequest.CartSyncItemRequest> requestBySkuId = normalizeRequests(requests);
-    List<CartItem> existingItems = listActiveItems(cart.getId(), safeUserId);
-    Map<Long, CartItem> existingBySkuId = new HashMap<>();
-    for (CartItem existingItem : existingItems) {
-      existingBySkuId.put(existingItem.getSkuId(), existingItem);
+    List<CartItem> activeItems = listActiveItems(cart.getId(), safeUserId);
+    Map<Long, CartItem> activeBySkuId = new HashMap<>();
+    for (CartItem activeItem : activeItems) {
+      activeBySkuId.put(activeItem.getSkuId(), activeItem);
     }
+    Map<Long, CartItem> existingBySkuId =
+        loadExistingItemsBySkuId(safeUserId, new ArrayList<>(requestBySkuId.keySet()));
 
     for (CartSyncRequest.CartSyncItemRequest itemRequest : requestBySkuId.values()) {
-      CartItem existing = existingBySkuId.remove(itemRequest.getSkuId());
+      CartItem existing = existingBySkuId.get(itemRequest.getSkuId());
       if (existing == null) {
         CartItem created = new CartItem();
         created.setCartId(cart.getId());
@@ -83,6 +85,7 @@ public class CartServiceImpl implements CartService {
         cartItemMapper.insert(created);
         continue;
       }
+      existing.setCartId(cart.getId());
       existing.setSpuId(itemRequest.getSpuId());
       existing.setSkuName(itemRequest.getSkuName().trim());
       existing.setUnitPrice(itemRequest.getUnitPrice());
@@ -90,9 +93,10 @@ public class CartServiceImpl implements CartService {
       existing.setSelected(normalizeSelected(itemRequest.getSelected()));
       existing.setCheckedOut(0);
       cartItemMapper.updateById(existing);
+      activeBySkuId.remove(itemRequest.getSkuId());
     }
 
-    for (CartItem staleItem : existingBySkuId.values()) {
+    for (CartItem staleItem : activeBySkuId.values()) {
       cartItemMapper.deleteById(staleItem.getId());
     }
 
@@ -149,6 +153,23 @@ public class CartServiceImpl implements CartService {
     }
     List<CartItem> items = cartItemMapper.listActiveByCartIdAndUserId(cartId, userId);
     return items == null ? List.of() : items;
+  }
+
+  private Map<Long, CartItem> loadExistingItemsBySkuId(Long userId, List<Long> skuIds) {
+    if (userId == null || skuIds == null || skuIds.isEmpty()) {
+      return Map.of();
+    }
+    List<CartItem> items = cartItemMapper.selectByUserIdAndSkuIds(userId, skuIds);
+    if (items == null || items.isEmpty()) {
+      return Map.of();
+    }
+    Map<Long, CartItem> existingBySkuId = new HashMap<>();
+    for (CartItem item : items) {
+      if (item != null && item.getSkuId() != null) {
+        existingBySkuId.put(item.getSkuId(), item);
+      }
+    }
+    return existingBySkuId;
   }
 
   private void refreshCartSummary(Cart cart, List<CartItem> items) {

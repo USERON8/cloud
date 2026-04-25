@@ -35,14 +35,8 @@ public class OrderAutomationServiceImpl implements OrderAutomationService {
     LocalDateTime deadline =
         LocalDateTime.now().minusHours(properties.getAutoConfirm().getAfterHours());
     List<OrderSub> subOrders =
-        orderSubMapper.selectList(
-            new LambdaQueryWrapper<OrderSub>()
-                .eq(OrderSub::getOrderStatus, SUB_STATUS_SHIPPED)
-                .eq(OrderSub::getDeleted, 0)
-                .isNotNull(OrderSub::getShippedAt)
-                .le(OrderSub::getShippedAt, deadline)
-                .orderByAsc(OrderSub::getShippedAt)
-                .last("LIMIT " + properties.getAutoConfirm().getBatchSize()));
+        orderSubMapper.listAutoConfirmCandidates(
+            deadline, properties.getAutoConfirm().getBatchSize());
 
     int handledCount = 0;
     for (OrderSub subOrder : subOrders) {

@@ -23,16 +23,18 @@ public class ResourceServerConfig {
                 "/api/admin/thread-pool/internal/**", "/api/admin/statistics/internal/**")
             .hasAuthority("SCOPE_internal")
             .requestMatchers(
-                "/api/admin/**",
-                "/api/admin/manage/users/**",
-                "/api/admin/query/users/**",
+                "/api/admins/**",
+                "/api/admin/users/**",
                 "/api/admin/statistics/**",
-                "/api/admin/thread-pool/**")
+                "/api/admin/thread-pools/**")
             .hasRole("ADMIN")
-            .requestMatchers("/api/app/user/notification/**")
+            .requestMatchers("/api/admin/notifications/**")
             .hasAuthority("admin:all")
             .requestMatchers(
-                "/api/app/user/profile/**", "/api/app/user/address/**", "/api/app/merchant/**")
+                "/api/users/**",
+                "/api/addresses/**",
+                "/api/merchants/**",
+                "/api/merchant-authentications/**")
             .authenticated();
       }
 

@@ -37,11 +37,23 @@ public class InternalIdentityPropagationFilter implements GlobalFilter, Ordered 
     if (!enabled) {
       return chain.filter(exchange);
     }
+    if (shouldPreserveBearer(exchange)) {
+      return chain.filter(exchange);
+    }
     return exchange
         .getPrincipal()
         .cast(Authentication.class)
         .flatMap(authentication -> chain.filter(withInternalIdentity(exchange, authentication)))
         .switchIfEmpty(chain.filter(exchange));
+  }
+
+  private boolean shouldPreserveBearer(ServerWebExchange exchange) {
+    String path = exchange.getRequest().getURI().getPath();
+    return path.startsWith("/auth/")
+        || path.startsWith("/oauth2/")
+        || path.startsWith("/.well-known/")
+        || path.equals("/userinfo")
+        || path.equals("/connect/logout");
   }
 
   private ServerWebExchange withInternalIdentity(

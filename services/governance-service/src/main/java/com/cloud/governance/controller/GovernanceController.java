@@ -38,7 +38,9 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import java.net.URI;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
@@ -381,36 +383,58 @@ public class GovernanceController {
             () -> userAdminGovernanceDubboApi.updateUserStatusBatch(ids, status)));
   }
 
-  @GetMapping("/auth/tokens/stats")
+  @GetMapping("/auth/authorizations/statistics")
   @PreAuthorize("hasAuthority('SCOPE_internal')")
   @Operation(summary = "Get token storage statistics")
-  public Result<AuthTokenStorageStatsVO> getTokenStats() {
-    return Result.success(
+  public Result<Map<String, Object>> getTokenStats() {
+    AuthTokenStorageStatsVO stats =
         remoteCallSupport.query(
-            "auth-service.governance.getTokenStats", authGovernanceDubboApi::getTokenStats));
+            "auth-service.governance.getTokenStats", authGovernanceDubboApi::getTokenStats);
+    return Result.success(toTokenStatsPayload(stats));
   }
 
-  @GetMapping("/auth/tokens/authorization/{id}")
+  @GetMapping("/auth/authorizations/storage-structure")
+  @PreAuthorize("hasAuthority('SCOPE_internal')")
+  @Operation(summary = "Get authorization storage structure")
+  public Result<Map<String, Object>> getAuthorizationStorageStructure() {
+    return Result.success(
+        remoteCallSupport.query(
+            "auth-service.governance.getAuthorizationStorageStructure",
+            authGovernanceDubboApi::getAuthorizationStorageStructure));
+  }
+
+  @GetMapping("/auth/authorizations/{id}")
   @PreAuthorize("hasAuthority('SCOPE_internal')")
   @Operation(summary = "Get authorization details")
-  public Result<AuthAuthorizationDetailVO> getAuthorizationDetails(@PathVariable String id) {
-    return Result.success(
+  public Result<Map<String, Object>> getAuthorizationDetails(@PathVariable @NotBlank String id) {
+    AuthAuthorizationDetailVO detail =
         remoteCallSupport.query(
             "auth-service.governance.getAuthorizationDetails",
-            () -> authGovernanceDubboApi.getAuthorizationDetails(id)));
+            () -> authGovernanceDubboApi.getAuthorizationDetails(id));
+    return Result.success(toAuthorizationDetailPayload(detail));
   }
 
-  @PostMapping("/auth/tokens/authorization/{id}/revoke")
+  @DeleteMapping("/auth/authorizations/{id}")
   @PreAuthorize("hasAuthority('SCOPE_internal')")
   @Operation(summary = "Revoke authorization")
-  public Result<Boolean> revokeAuthorization(@PathVariable String id) {
-    return Result.success(
-        remoteCallSupport.command(
-            "auth-service.governance.revokeAuthorization",
-            () -> authGovernanceDubboApi.revokeAuthorization(id)));
+  public Result<Void> revokeAuthorization(@PathVariable @NotBlank String id) {
+    remoteCallSupport.command(
+        "auth-service.governance.revokeAuthorization",
+        () -> authGovernanceDubboApi.revokeAuthorization(id));
+    return Result.success();
   }
 
-  @GetMapping("/auth/tokens/blacklist/stats")
+  @PostMapping("/auth/cleanups/authorizations")
+  @PreAuthorize("hasAuthority('SCOPE_internal')")
+  @Operation(summary = "Cleanup expired authorizations")
+  public Result<Map<String, Object>> cleanupAuthorizations() {
+    return Result.success(
+        remoteCallSupport.command(
+            "auth-service.governance.cleanupAuthorizations",
+            authGovernanceDubboApi::cleanupAuthorizations));
+  }
+
+  @GetMapping("/auth/blacklist-entries/statistics")
   @PreAuthorize("hasAuthority('SCOPE_internal')")
   @Operation(summary = "Get blacklist statistics")
   public Result<TokenBlacklistStatsVO> getBlacklistStats() {
@@ -420,38 +444,45 @@ public class GovernanceController {
             authGovernanceDubboApi::getBlacklistStats));
   }
 
-  @PostMapping("/auth/tokens/blacklist/add")
+  @PostMapping("/auth/blacklist-entries")
   @PreAuthorize("hasAuthority('SCOPE_internal')")
   @Operation(summary = "Add token to blacklist")
-  public Result<Boolean> addToBlacklist(
-      @RequestParam @Parameter(description = "Token value") String tokenValue,
+  public Result<Void> addToBlacklist(
+      @RequestParam @Parameter(description = "Token value") @NotBlank String tokenValue,
       @RequestParam(defaultValue = "governance_manual")
           @Parameter(description = "Revocation reason")
+          @NotBlank
           String reason) {
-    return Result.success(
-        remoteCallSupport.command(
-            "auth-service.governance.addToBlacklist",
-            () -> authGovernanceDubboApi.addToBlacklist(tokenValue, reason)));
+    remoteCallSupport.command(
+        "auth-service.governance.addToBlacklist",
+        () -> authGovernanceDubboApi.addToBlacklist(tokenValue, reason));
+    return Result.success();
   }
 
-  @GetMapping("/auth/tokens/blacklist/check")
+  @GetMapping("/auth/blacklist-entries/check")
   @PreAuthorize("hasAuthority('SCOPE_internal')")
   @Operation(summary = "Check blacklist status")
-  public Result<TokenBlacklistCheckVO> checkBlacklist(
-      @RequestParam @Parameter(description = "Token value") String tokenValue) {
-    return Result.success(
+  public Result<Map<String, Object>> checkBlacklist(
+      @RequestParam @Parameter(description = "Token value") @NotBlank String tokenValue) {
+    TokenBlacklistCheckVO result =
         remoteCallSupport.query(
             "auth-service.governance.checkBlacklist",
-            () -> authGovernanceDubboApi.checkBlacklist(tokenValue)));
+            () -> authGovernanceDubboApi.checkBlacklist(tokenValue));
+    return Result.success(toBlacklistCheckPayload(result));
   }
 
-  @PostMapping("/auth/tokens/blacklist/cleanup")
+  @PostMapping("/auth/cleanups/blacklist-entries")
   @PreAuthorize("hasAuthority('SCOPE_internal')")
   @Operation(summary = "Cleanup blacklist entries")
-  public Result<Integer> cleanupBlacklist() {
-    return Result.success(
+  public Result<Map<String, Object>> cleanupBlacklist() {
+    Integer cleanedCount =
         remoteCallSupport.command(
-            "auth-service.governance.cleanupBlacklist", authGovernanceDubboApi::cleanupBlacklist));
+            "auth-service.governance.cleanupBlacklist", authGovernanceDubboApi::cleanupBlacklist);
+    Map<String, Object> payload = new LinkedHashMap<>();
+    payload.put("cleanedCount", cleanedCount);
+    payload.put("message", "Blacklist cleanup completed");
+    payload.put("cleanupTime", Instant.now());
+    return Result.success(payload);
   }
 
   @GetMapping("/mq/consumers")
@@ -535,6 +566,53 @@ public class GovernanceController {
     return ResponseEntity.status(HttpStatus.FOUND)
         .location(URI.create(observabilityEntryService.resolveGrafanaUrl(dashboardUid)))
         .build();
+  }
+
+  private Map<String, Object> toTokenStatsPayload(AuthTokenStorageStatsVO stats) {
+    Map<String, Object> payload = new LinkedHashMap<>();
+    payload.put("authorizationCount", stats.getAuthorizationCount());
+    payload.put("accessIndexCount", stats.getAccessIndexCount());
+    payload.put("refreshIndexCount", stats.getRefreshIndexCount());
+    payload.put("codeIndexCount", stats.getCodeIndexCount());
+    payload.put("principalIndexCount", stats.getPrincipalIndexCount());
+    payload.put("redisInfo", stats.getRedisInfo());
+    payload.put("storageType", stats.getStorageType());
+    return payload;
+  }
+
+  private Map<String, Object> toAuthorizationDetailPayload(AuthAuthorizationDetailVO detail) {
+    Map<String, Object> payload = new LinkedHashMap<>();
+    payload.put("id", detail.getId());
+    payload.put("clientId", detail.getClientId());
+    payload.put("principalName", detail.getPrincipalName());
+    payload.put("grantType", detail.getGrantType());
+    payload.put("scopes", detail.getScopes());
+    Map<String, Object> tokens = new LinkedHashMap<>();
+    if (detail.getAccessToken() != null) {
+      tokens.put(
+          "accessToken",
+          Map.of(
+              "issuedAt", detail.getAccessToken().getIssuedAt(),
+              "expiresAt", detail.getAccessToken().getExpiresAt(),
+              "scopes", detail.getAccessToken().getScopes()));
+    }
+    if (detail.getRefreshToken() != null) {
+      tokens.put(
+          "refreshToken",
+          Map.of(
+              "issuedAt", detail.getRefreshToken().getIssuedAt(),
+              "expiresAt", detail.getRefreshToken().getExpiresAt()));
+    }
+    payload.put("tokens", tokens);
+    return payload;
+  }
+
+  private Map<String, Object> toBlacklistCheckPayload(TokenBlacklistCheckVO result) {
+    Map<String, Object> payload = new LinkedHashMap<>();
+    payload.put("tokenValue", result.getTokenPreview());
+    payload.put("isBlacklisted", result.getBlacklisted());
+    payload.put("checkTime", result.getCheckedAt());
+    return payload;
   }
 
   @PostMapping("/notifications/welcome/{userId}")

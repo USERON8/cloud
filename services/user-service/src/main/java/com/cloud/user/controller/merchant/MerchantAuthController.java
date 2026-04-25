@@ -1,10 +1,12 @@
 package com.cloud.user.controller.merchant;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cloud.common.domain.dto.user.MerchantAuthDTO;
 import com.cloud.common.domain.dto.user.MerchantAuthFileUploadDTO;
 import com.cloud.common.domain.dto.user.MerchantAuthRequestDTO;
 import com.cloud.common.enums.ResultCode;
 import com.cloud.common.exception.BizException;
+import com.cloud.common.result.PageResult;
 import com.cloud.common.result.Result;
 import com.cloud.user.service.MerchantAuthService;
 import com.cloud.user.service.MerchantService;
@@ -31,15 +33,14 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 @RestController
-@RequestMapping("/api/app/merchant/auth")
 @RequiredArgsConstructor
 @Tag(name = "Merchant Auth", description = "Merchant authentication APIs")
 @Validated
@@ -69,7 +70,7 @@ public class MerchantAuthController {
   @Value("${minio.cert-bucket-name:cloud-shop-certs}")
   private String certBucketName;
 
-  @PostMapping("/apply/{merchantId}")
+  @PutMapping("/api/merchants/{merchantId}/authentication")
   @PreAuthorize(
       "hasAuthority('admin:all') "
           + "or (hasAuthority('merchant:manage') "
@@ -98,12 +99,29 @@ public class MerchantAuthController {
         merchantAuthService.getMerchantAuthByMerchantIdWithCache(merchantId);
 
     String normalizedLicenseUrl =
-        normalizeBusinessLicenseUrl(
+        normalizeCertUrl(
             merchantAuthRequestDTO.getBusinessLicenseUrl(),
             existingAuth == null ? null : existingAuth.getBusinessLicenseUrl());
     if (normalizedLicenseUrl == null || normalizedLicenseUrl.isBlank()) {
       throw new BizException(ResultCode.BAD_REQUEST, "invalid business license url");
     }
+    String normalizedIdCardFrontUrl =
+        normalizeCertUrl(
+            merchantAuthRequestDTO.getIdCardFrontUrl(),
+            existingAuth == null ? null : existingAuth.getIdCardFrontUrl());
+    if (normalizedIdCardFrontUrl == null || normalizedIdCardFrontUrl.isBlank()) {
+      throw new BizException(ResultCode.BAD_REQUEST, "invalid id card front url");
+    }
+    String normalizedIdCardBackUrl =
+        normalizeCertUrl(
+            merchantAuthRequestDTO.getIdCardBackUrl(),
+            existingAuth == null ? null : existingAuth.getIdCardBackUrl());
+    if (normalizedIdCardBackUrl == null || normalizedIdCardBackUrl.isBlank()) {
+      throw new BizException(ResultCode.BAD_REQUEST, "invalid id card back url");
+    }
+
+    merchantAuthRequestDTO.setIdCardFrontUrl(normalizedIdCardFrontUrl);
+    merchantAuthRequestDTO.setIdCardBackUrl(normalizedIdCardBackUrl);
 
     MerchantAuthDTO savedAuth =
         merchantAuthService.applyForAuth(
@@ -121,7 +139,7 @@ public class MerchantAuthController {
     return Result.success("merchant auth application submitted", savedAuth);
   }
 
-  @PostMapping("/upload/license/{merchantId}")
+  @PostMapping("/api/merchants/{merchantId}/authentication/license-files")
   @PreAuthorize(
       "hasAuthority('admin:all') "
           + "or (hasAuthority('merchant:manage') "
@@ -154,7 +172,57 @@ public class MerchantAuthController {
     return Result.success("business license uploaded", response);
   }
 
-  @GetMapping("/get/{merchantId}")
+  @PostMapping("/api/merchants/{merchantId}/authentication/id-card-front-files")
+  @PreAuthorize(
+      "hasAuthority('admin:all') "
+          + "or (hasAuthority('merchant:manage') "
+          + "and @permissionManager.isMerchantOwner(#merchantId, authentication))")
+  @Operation(
+      summary = "Upload ID card front",
+      description = "Upload ID card front image for merchant auth")
+  public Result<MerchantAuthFileUploadDTO> uploadIdCardFront(
+      @PathVariable("merchantId")
+          @Parameter(description = "Merchant ID")
+          @NotNull(message = "merchant id is required")
+          @Positive(message = "merchant id must be positive")
+          Long merchantId,
+      @RequestPart("file") @NotNull(message = "file is required") MultipartFile file,
+      Authentication authentication) {
+    return uploadMerchantAuthFile(
+        merchantId,
+        file,
+        authentication,
+        () -> minioService.uploadIdCardFront(merchantId, file),
+        "id card front uploaded",
+        objectName -> merchantAuthService.updateIdCardFrontUrlIfExists(merchantId, objectName));
+  }
+
+  @PostMapping("/api/merchants/{merchantId}/authentication/id-card-back-files")
+  @PreAuthorize(
+      "hasAuthority('admin:all') "
+          + "or (hasAuthority('merchant:manage') "
+          + "and @permissionManager.isMerchantOwner(#merchantId, authentication))")
+  @Operation(
+      summary = "Upload ID card back",
+      description = "Upload ID card back image for merchant auth")
+  public Result<MerchantAuthFileUploadDTO> uploadIdCardBack(
+      @PathVariable("merchantId")
+          @Parameter(description = "Merchant ID")
+          @NotNull(message = "merchant id is required")
+          @Positive(message = "merchant id must be positive")
+          Long merchantId,
+      @RequestPart("file") @NotNull(message = "file is required") MultipartFile file,
+      Authentication authentication) {
+    return uploadMerchantAuthFile(
+        merchantId,
+        file,
+        authentication,
+        () -> minioService.uploadIdCardBack(merchantId, file),
+        "id card back uploaded",
+        objectName -> merchantAuthService.updateIdCardBackUrlIfExists(merchantId, objectName));
+  }
+
+  @GetMapping("/api/merchants/{merchantId}/authentication")
   @PreAuthorize(
       "hasAuthority('admin:all') "
           + "or (hasAuthority('merchant:manage') "
@@ -179,7 +247,7 @@ public class MerchantAuthController {
     return Result.success(enrichBusinessLicenseUrl(merchantAuth));
   }
 
-  @DeleteMapping("/revoke/{merchantId}")
+  @DeleteMapping("/api/merchants/{merchantId}/authentication")
   @PreAuthorize(
       "hasAuthority('admin:all') "
           + "or (hasAuthority('merchant:manage') "
@@ -205,7 +273,7 @@ public class MerchantAuthController {
     return Result.success("merchant auth revoked", true);
   }
 
-  @PostMapping("/review/{merchantId}")
+  @PostMapping("/api/merchants/{merchantId}/authentication/reviews")
   @PreAuthorize("hasAuthority('admin:all') or hasAuthority('merchant:audit')")
   @Operation(
       summary = "Review merchant auth",
@@ -249,27 +317,40 @@ public class MerchantAuthController {
     return Result.success("merchant auth " + action, true);
   }
 
-  @GetMapping("/list")
+  @GetMapping("/api/merchant-authentications")
   @PreAuthorize("hasAuthority('admin:all') or hasAuthority('merchant:audit')")
   @Operation(
       summary = "List merchant auth by status",
       description = "List merchant auth records by auth status")
-  public Result<List<MerchantAuthDTO>> listAuthByStatus(
+  public Result<PageResult<MerchantAuthDTO>> listAuthByStatus(
       @RequestParam("authStatus")
           @Parameter(description = "Auth status")
           @NotNull(message = "auth status is required")
           @Min(value = 0, message = "auth status must be between 0 and 2")
           @Max(value = 2, message = "auth status must be between 0 and 2")
-          Integer authStatus) {
+          Integer authStatus,
+      @RequestParam(defaultValue = "1")
+          @Parameter(description = "Page number")
+          @Min(value = 1, message = "page must be greater than 0")
+          Integer page,
+      @RequestParam(defaultValue = "20")
+          @Parameter(description = "Page size")
+          @Min(value = 1, message = "size must be greater than 0")
+          @Max(value = 200, message = "size must be less than or equal to 200")
+          Integer size) {
     if (!isValidAuthStatus(authStatus)) {
       throw new BizException(ResultCode.BAD_REQUEST, "invalid auth status");
     }
 
-    int effectiveLimit = (authListMaxSize == null || authListMaxSize <= 0) ? 200 : authListMaxSize;
-    List<MerchantAuthDTO> result =
-        merchantAuthService.listByAuthStatus(authStatus, effectiveLimit).stream()
-            .map(this::enrichBusinessLicenseUrl)
-            .toList();
+    int maxPageSize = (authListMaxSize == null || authListMaxSize <= 0) ? 200 : authListMaxSize;
+    int safeSize = Math.min(size, maxPageSize);
+    Page<MerchantAuthDTO> pageResult =
+        merchantAuthService.getMerchantAuthPage(authStatus, page, safeSize);
+    List<MerchantAuthDTO> records =
+        pageResult.getRecords().stream().map(this::enrichBusinessLicenseUrl).toList();
+    PageResult<MerchantAuthDTO> result =
+        PageResult.of(
+            pageResult.getCurrent(), pageResult.getSize(), pageResult.getTotal(), records);
     return Result.success(result);
   }
 
@@ -277,14 +358,7 @@ public class MerchantAuthController {
     if (merchantAuthDTO == null) {
       return null;
     }
-    String businessLicenseUrl = merchantAuthDTO.getBusinessLicenseUrl();
-    if (businessLicenseUrl == null || businessLicenseUrl.isBlank()) {
-      return merchantAuthDTO;
-    }
-    if (isHttpUrl(businessLicenseUrl)) {
-      return merchantAuthDTO;
-    }
-    merchantAuthDTO.setBusinessLicenseUrl(minioService.getCertPresignedUrl(businessLicenseUrl));
+    merchantAuthDTO.setBusinessLicenseUrl(enrichCertUrl(merchantAuthDTO.getBusinessLicenseUrl()));
     merchantAuthDTO.setIdCardFrontUrl(enrichCertUrl(merchantAuthDTO.getIdCardFrontUrl()));
     merchantAuthDTO.setIdCardBackUrl(enrichCertUrl(merchantAuthDTO.getIdCardBackUrl()));
     return merchantAuthDTO;
@@ -297,21 +371,47 @@ public class MerchantAuthController {
     return minioService.getCertPresignedUrl(value);
   }
 
-  private String normalizeBusinessLicenseUrl(
-      String businessLicenseUrl, String existingBusinessLicenseUrl) {
-    if (businessLicenseUrl == null || businessLicenseUrl.isBlank()) {
-      return existingBusinessLicenseUrl;
+  private String normalizeCertUrl(String certUrl, String existingObjectName) {
+    if (certUrl == null || certUrl.isBlank()) {
+      return existingObjectName;
     }
-    if (!isHttpUrl(businessLicenseUrl)) {
-      return businessLicenseUrl;
+    if (!isHttpUrl(certUrl)) {
+      return certUrl;
     }
-    if (existingBusinessLicenseUrl != null
-        && !existingBusinessLicenseUrl.isBlank()
-        && !isHttpUrl(existingBusinessLicenseUrl)) {
-      return existingBusinessLicenseUrl;
+    if (existingObjectName != null
+        && !existingObjectName.isBlank()
+        && !isHttpUrl(existingObjectName)) {
+      return existingObjectName;
     }
-    String objectName = extractObjectNameFromUrl(businessLicenseUrl);
-    return objectName == null || objectName.isBlank() ? null : objectName;
+    String objectName = extractObjectNameFromUrl(certUrl);
+    if (objectName != null && !objectName.isBlank()) {
+      return objectName;
+    }
+    return certUrl;
+  }
+
+  private Result<MerchantAuthFileUploadDTO> uploadMerchantAuthFile(
+      Long merchantId,
+      MultipartFile file,
+      Authentication authentication,
+      java.util.function.Supplier<String> uploader,
+      String successMessage,
+      java.util.function.Consumer<String> objectNameConsumer) {
+    merchantAuthorizationService.assertCanWriteMerchant(authentication, merchantId);
+    if (merchantService.getById(merchantId) == null) {
+      throw new BizException(ResultCode.NOT_FOUND, "merchant not found");
+    }
+    if (file.isEmpty()) {
+      throw new BizException(ResultCode.BAD_REQUEST, "file cannot be empty");
+    }
+
+    String objectName = uploader.get();
+    objectNameConsumer.accept(objectName);
+    String previewUrl = minioService.getCertPresignedUrl(objectName);
+    MerchantAuthFileUploadDTO response = new MerchantAuthFileUploadDTO();
+    response.setFileKey(objectName);
+    response.setPreviewUrl(previewUrl);
+    return Result.success(successMessage, response);
   }
 
   private String extractObjectNameFromUrl(String url) {
@@ -335,7 +435,7 @@ public class MerchantAuthController {
     return value.startsWith("http://") || value.startsWith("https://");
   }
 
-  @PostMapping("/review/batch")
+  @PostMapping("/api/merchant-authentications/bulk/reviews")
   @PreAuthorize("hasAuthority('admin:all') or hasAuthority('merchant:audit')")
   @Operation(
       summary = "Batch review merchant auth",

@@ -9,6 +9,9 @@ import com.cloud.common.domain.vo.auth.TokenBlacklistCheckVO;
 import com.cloud.common.domain.vo.auth.TokenBlacklistStatsVO;
 import com.cloud.common.exception.ResourceNotFoundException;
 import java.time.Instant;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -62,6 +65,44 @@ public class AuthGovernanceService {
     return tokenManagementService.revokeAuthorizationById(authorizationId, "governance_revocation");
   }
 
+  public Map<String, Object> cleanupAuthorizations() {
+    Map<String, Object> payload = new LinkedHashMap<>();
+    payload.put("message", "Cleanup job executed");
+    payload.put("note", "Redis TTL will automatically remove expired data");
+    payload.put("time", Instant.now());
+    return payload;
+  }
+
+  public Map<String, Object> getAuthorizationStorageStructure() {
+    Map<String, String> keys = new LinkedHashMap<>();
+    keys.put("oauth2:token:{authorizationId}", "Serialized OAuth2Authorization");
+    keys.put("oauth2:access:{accessToken}", "Access token index to authorization ID");
+    keys.put("oauth2:refresh:{refreshTokenId}", "Refresh token index to authorization ID");
+    keys.put("oauth2:code:{code}", "Authorization code index to authorization ID");
+    keys.put("oauth2:principal:{username}", "Principal to authorization ID set");
+
+    Map<String, String> tokenIndexes = new LinkedHashMap<>(keys);
+    tokenIndexes.put("oauth2:token:{authorizationId}", "Authorization object storage");
+    tokenIndexes.put("oauth2:access:{accessToken}", "Access token index");
+    tokenIndexes.put("oauth2:refresh:{refreshTokenId}", "Refresh token index");
+    tokenIndexes.put("oauth2:code:{code}", "Authorization code index");
+    tokenIndexes.put("oauth2:principal:{username}", "Principal authorization set");
+
+    Map<String, Object> payload = new LinkedHashMap<>();
+    payload.put("keys", keys);
+    payload.put("tokenIndexes", tokenIndexes);
+    payload.put(
+        "advantages",
+        List.of(
+            "Simple key/value storage",
+            "Direct index for access tokens",
+            "Token TTL aligned with Redis TTL",
+            "Easy manual inspection",
+            "Direct index for refresh/code tokens",
+            "Direct principal to authorization lookup"));
+    return payload;
+  }
+
   public TokenBlacklistStatsVO getBlacklistStats() {
     TokenBlacklistService.BlacklistStats stats = tokenBlacklistService.getBlacklistStats();
     return TokenBlacklistStatsVO.builder()
@@ -87,7 +128,7 @@ public class AuthGovernanceService {
     String preview = normalizedToken.isEmpty() ? "" : maskToken(normalizedToken);
     return TokenBlacklistCheckVO.builder()
         .tokenPreview(preview)
-        .blacklisted(tokenBlacklistService.isBlacklisted(tokenValue))
+        .blacklisted(tokenBlacklistService.isBlacklisted(normalizedToken))
         .checkedAt(Instant.now())
         .build();
   }

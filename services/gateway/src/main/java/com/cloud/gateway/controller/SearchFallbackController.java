@@ -2,6 +2,7 @@ package com.cloud.gateway.controller;
 
 import cn.hutool.core.util.StrUtil;
 import com.cloud.api.product.ProductDubboApi;
+import com.cloud.common.domain.dto.product.ProductSearchItemDTO;
 import com.cloud.common.result.Result;
 import com.cloud.gateway.cache.SearchFallbackCache;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -13,6 +14,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import java.net.URI;
 import java.time.Duration;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -102,22 +104,32 @@ public class SearchFallbackController {
       String routeType, MultiValueMap<String, String> queryParams) {
     return switch (routeType) {
       case "suggestions" -> fallbackSuggestions(queryParams);
-      case "search", "smart-search" -> fallbackSearch(queryParams);
+      case "search" -> fallbackSearch(queryParams);
       default -> Mono.just(errorResponse("Unsupported fallback route"));
     };
   }
 
   private Mono<ResponseEntity<String>> fallbackSearch(MultiValueMap<String, String> queryParams) {
     String keyword = normalizeKeyword(queryParams.getFirst("keyword"));
+    int page = parsePage(queryParams.getFirst("page"));
+    int size = parseSize(queryParams.getFirst("size"));
     if (StrUtil.isBlank(keyword)) {
-      String json = toJson(Result.success("Search fallback applied with empty keyword", List.of()));
+      String json =
+          toJson(
+              Result.success(
+                  "Search fallback applied with empty keyword",
+                  buildSearchResult(List.<ProductSearchItemDTO>of(), page, size)));
       return Mono.just(ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(json));
     }
     return Mono.fromSupplier(
         () ->
             ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(toJson(Result.success(productDubboApi.searchProducts(keyword, null)))));
+                .body(
+                    toJson(
+                        Result.success(
+                            buildSearchResult(
+                                productDubboApi.searchProducts(keyword, size), page, size)))));
   }
 
   private Mono<ResponseEntity<String>> fallbackSuggestions(
@@ -162,32 +174,36 @@ public class SearchFallbackController {
     Set<URI> originalUris =
         exchange.getAttributeOrDefault(
             ServerWebExchangeUtils.GATEWAY_ORIGINAL_REQUEST_URL_ATTR, Collections.emptySet());
-    Optional<URI> first = originalUris.stream().findFirst();
-    return first.map(URI::getPath).orElse(exchange.getRequest().getPath().value());
+    Optional<String> originalPath =
+        originalUris.stream()
+            .map(URI::getPath)
+            .filter(StrUtil::isNotBlank)
+            .filter(path -> !path.startsWith("/gateway/fallback/"))
+            .findFirst();
+    return originalPath.orElse(exchange.getRequest().getPath().value());
   }
 
   private String resolveRouteType(String originalPath, String explicitRoute) {
     if (StrUtil.isNotBlank(explicitRoute)) {
       String normalized = explicitRoute.trim().toLowerCase();
-      if ("suggestions".equals(normalized)
-          || "search".equals(normalized)
-          || "smart-search".equals(normalized)) {
+      if ("suggestions".equals(normalized) || "search".equals(normalized)) {
         return normalized;
       }
     }
     if (originalPath.endsWith("/suggestions")) {
       return "suggestions";
     }
-    if (originalPath.endsWith("/smart-search")) {
-      return "smart-search";
-    }
-    if (originalPath.endsWith("/basic")) {
-      return "search";
-    }
-    if (originalPath.endsWith("/search")) {
+    if ("/api/search/products".equals(originalPath)) {
       return "search";
     }
     return "unknown";
+  }
+
+  private int parsePage(String rawPage) {
+    if (StrUtil.isBlank(rawPage) || !StrUtil.isNumeric(rawPage)) {
+      return 0;
+    }
+    return Math.max(Integer.parseInt(rawPage), 0);
   }
 
   private int parseSize(String rawSize) {
@@ -209,6 +225,45 @@ public class SearchFallbackController {
       return "";
     }
     return keyword.trim();
+  }
+
+  private Map<String, Object> buildSearchResult(
+      List<ProductSearchItemDTO> products, int page, int size) {
+    int safeSize = size <= 0 ? 10 : size;
+    List<Map<String, Object>> documents =
+        products == null ? List.of() : products.stream().map(this::toProductDocument).toList();
+    int total = documents.size();
+    int totalPages = safeSize <= 0 ? 0 : (int) Math.ceil((double) total / safeSize);
+    Map<String, Object> payload = new LinkedHashMap<>();
+    payload.put("list", documents);
+    payload.put("total", total);
+    payload.put("page", page);
+    payload.put("size", safeSize);
+    payload.put("totalPages", totalPages);
+    payload.put("hasNext", page < totalPages - 1);
+    payload.put("hasPrevious", page > 0);
+    payload.put("aggregations", Map.of());
+    payload.put("highlights", Map.of());
+    payload.put("searchAfter", List.of());
+    return payload;
+  }
+
+  private Map<String, Object> toProductDocument(ProductSearchItemDTO item) {
+    Map<String, Object> payload = new LinkedHashMap<>();
+    if (item == null) {
+      return payload;
+    }
+    payload.put("productId", item.getId());
+    payload.put("shopId", item.getShopId());
+    payload.put("productName", item.getName());
+    payload.put("price", item.getPrice());
+    payload.put("stockQuantity", item.getStockQuantity());
+    payload.put("categoryId", item.getCategoryId());
+    payload.put("brandId", item.getBrandId());
+    payload.put("status", item.getStatus());
+    payload.put("description", item.getDescription());
+    payload.put("imageUrl", item.getImageUrl());
+    return payload;
   }
 
   private ResponseEntity<String> errorResponse(String message) {

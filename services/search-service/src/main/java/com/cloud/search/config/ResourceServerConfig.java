@@ -26,7 +26,7 @@ public class ResourceServerConfig {
       public void configureServiceEndpoints(
           AuthorizeHttpRequestsConfigurer<HttpSecurity>.AuthorizationManagerRequestMatcherRegistry
               authz) {
-        authz.requestMatchers("/api/public/search/**", "/api/public/search/shops/**").permitAll();
+        authz.requestMatchers("/api/search/**", "/api/shops/**").permitAll();
       }
     };
   }

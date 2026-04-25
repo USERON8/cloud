@@ -79,7 +79,7 @@ xxl:
 springdoc:
   group-configs:
     - group: 'stock-api'
-      paths-to-match: '/api/stocks/**'
+      paths-to-match: '/api/admin/stocks/**'
 
 knife4j:
   insight:

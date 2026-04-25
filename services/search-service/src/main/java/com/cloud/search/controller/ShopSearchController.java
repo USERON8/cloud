@@ -24,7 +24,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/public/search/shops")
+@RequestMapping("/api")
 @RequiredArgsConstructor
 @Tag(name = "Shop Search", description = "Shop search APIs")
 @Validated
@@ -33,7 +33,7 @@ public class ShopSearchController {
   private final ShopSearchService shopSearchService;
 
   @Operation(summary = "Complex shop search", description = "Search shops with rich conditions")
-  @PostMapping("/searches")
+  @PostMapping("/search/shops")
   public Result<SearchResultDTO<ShopDocument>> complexSearch(
       @Valid @RequestBody ShopSearchRequest request) {
     normalizePublicStatus(request);
@@ -42,7 +42,7 @@ public class ShopSearchController {
   }
 
   @Operation(summary = "Shop filter data", description = "Get shop filters by request")
-  @PostMapping("/filter-groups")
+  @PostMapping("/search/shops/filters")
   public Result<SearchResultDTO<ShopDocument>> getShopFilters(
       @Valid @RequestBody ShopSearchRequest request) {
     normalizePublicStatus(request);
@@ -51,7 +51,7 @@ public class ShopSearchController {
   }
 
   @Operation(summary = "Shop suggestions", description = "Get shop suggestions by keyword")
-  @GetMapping("/suggestions")
+  @GetMapping("/search/shops/suggestions")
   public Result<List<String>> getSearchSuggestions(
       @Parameter(description = "Keyword") @RequestParam String keyword,
       @Parameter(description = "Size") @RequestParam(defaultValue = "10") Integer size) {
@@ -61,7 +61,7 @@ public class ShopSearchController {
   }
 
   @Operation(summary = "Hot shops", description = "Get hot shops")
-  @GetMapping("/popular")
+  @GetMapping("/search/shops/popular")
   public Result<List<ShopDocument>> getHotShops(
       @Parameter(description = "Size") @RequestParam(defaultValue = "10") Integer size) {
 
@@ -70,7 +70,7 @@ public class ShopSearchController {
   }
 
   @Operation(summary = "Get shop by id", description = "Get shop detail by id")
-  @GetMapping("/{shopId}")
+  @GetMapping("/shops/{shopId}")
   public Result<ShopDocument> getShopById(
       @Parameter(description = "Shop id") @PathVariable Long shopId) {
     ShopDocument shop = shopSearchService.findByShopId(shopId);
@@ -81,7 +81,7 @@ public class ShopSearchController {
   }
 
   @Operation(summary = "Recommended shops", description = "Get recommended shops")
-  @GetMapping("/recommendations")
+  @GetMapping("/search/shops/recommendations")
   public Result<SearchResultDTO<ShopDocument>> getRecommendedShops(
       @Parameter(description = "Page") @RequestParam(defaultValue = "0") Integer page,
       @Parameter(description = "Size") @RequestParam(defaultValue = "20") Integer size) {
@@ -99,7 +99,7 @@ public class ShopSearchController {
   }
 
   @Operation(summary = "Search shops by location", description = "Search shops by address keyword")
-  @GetMapping("/nearby")
+  @GetMapping("/search/shops/nearby")
   public Result<SearchResultDTO<ShopDocument>> searchShopsByLocation(
       @Parameter(description = "Location keyword") @RequestParam String location,
       @Parameter(description = "Page") @RequestParam(defaultValue = "0") Integer page,

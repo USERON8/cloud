@@ -1,5 +1,6 @@
 package com.cloud.user.service.impl;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.cloud.common.domain.dto.user.MerchantAuthDTO;
 import com.cloud.common.domain.dto.user.MerchantAuthRequestDTO;
@@ -10,7 +11,6 @@ import com.cloud.user.service.MerchantAuthService;
 import com.cloud.user.service.MerchantService;
 import com.cloud.user.service.cache.TransactionalMerchantAuthCacheService;
 import java.time.LocalDateTime;
-import java.util.Collections;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -159,25 +159,55 @@ public class MerchantAuthServiceImpl extends ServiceImpl<MerchantAuthMapper, Mer
 
   @Override
   @Transactional(readOnly = true)
-  public List<MerchantAuthDTO> listByAuthStatus(Integer authStatus, int limit) {
+  public Page<MerchantAuthDTO> getMerchantAuthPage(Integer authStatus, Integer page, Integer size) {
     if (authStatus == null) {
-      return Collections.emptyList();
+      return new Page<>();
     }
-    int effectiveLimit = limit <= 0 ? 200 : limit;
-    List<MerchantAuth> list =
+    long safePage = page == null || page < 1 ? 1L : page.longValue();
+    long safeSize = size == null || size < 1 ? 20L : size.longValue();
+    Page<MerchantAuth> pageParam = new Page<>(safePage, safeSize);
+    Page<MerchantAuth> merchantAuthPage =
         lambdaQuery()
             .eq(MerchantAuth::getAuthStatus, authStatus)
-            .last("LIMIT " + effectiveLimit)
-            .list();
-    if (list == null || list.isEmpty()) {
-      return List.of();
+            .orderByDesc(MerchantAuth::getCreatedAt)
+            .page(pageParam);
+    Page<MerchantAuthDTO> dtoPage =
+        new Page<>(
+            merchantAuthPage.getCurrent(), merchantAuthPage.getSize(), merchantAuthPage.getTotal());
+    List<MerchantAuth> records = merchantAuthPage.getRecords();
+    if (records == null || records.isEmpty()) {
+      dtoPage.setRecords(List.of());
+      return dtoPage;
     }
-    return list.stream().map(merchantAuthConverter::toDTO).toList();
+    dtoPage.setRecords(records.stream().map(merchantAuthConverter::toDTO).toList());
+    return dtoPage;
   }
 
   @Override
   @Transactional(rollbackFor = Exception.class)
   public boolean updateBusinessLicenseUrlIfExists(Long merchantId, String objectName) {
+    return updateAuthDocumentUrlIfExists(
+        merchantId, objectName, merchantAuth -> merchantAuth.setBusinessLicenseUrl(objectName));
+  }
+
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public boolean updateIdCardFrontUrlIfExists(Long merchantId, String objectName) {
+    return updateAuthDocumentUrlIfExists(
+        merchantId, objectName, merchantAuth -> merchantAuth.setIdCardFrontUrl(objectName));
+  }
+
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public boolean updateIdCardBackUrlIfExists(Long merchantId, String objectName) {
+    return updateAuthDocumentUrlIfExists(
+        merchantId, objectName, merchantAuth -> merchantAuth.setIdCardBackUrl(objectName));
+  }
+
+  private boolean updateAuthDocumentUrlIfExists(
+      Long merchantId,
+      String objectName,
+      java.util.function.Consumer<MerchantAuth> documentUpdater) {
     if (merchantId == null || objectName == null || objectName.isBlank()) {
       return false;
     }
@@ -185,7 +215,7 @@ public class MerchantAuthServiceImpl extends ServiceImpl<MerchantAuthMapper, Mer
     if (merchantAuth == null) {
       return false;
     }
-    merchantAuth.setBusinessLicenseUrl(objectName);
+    documentUpdater.accept(merchantAuth);
     return updateById(merchantAuth);
   }
 

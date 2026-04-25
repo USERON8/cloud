@@ -1,76 +1,176 @@
 body {
+  --bg-top: #06111b;
+  --bg-bottom: #091a29;
+  --bg-grid: rgba(142, 170, 207, 0.08);
+  --panel-bg: rgba(8, 19, 31, 0.74);
+  --panel-border: rgba(160, 191, 225, 0.12);
+  --panel-border-strong: rgba(160, 191, 225, 0.2);
+  --text-main: #f2f7fb;
+  --text-muted: #9aacbf;
+  --accent: #5fd1c2;
+  --accent-strong: #89efe1;
+  --highlight: #f0b65a;
+  --shadow-soft: 0 24px 70px rgba(2, 8, 16, 0.34);
   margin: 0;
   min-height: 100vh;
-  font-family: "Segoe UI", Arial, sans-serif;
-  background: linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%);
-  color: #0f172a;
+  font-family: "Sora", "Segoe UI", "PingFang SC", "Helvetica Neue", Arial, sans-serif;
+  color: var(--text-main);
+  background:
+    radial-gradient(circle at 12% -8%, rgba(95, 209, 194, 0.18) 0%, transparent 34%),
+    radial-gradient(circle at 92% 4%, rgba(240, 182, 90, 0.14) 0%, transparent 28%),
+    linear-gradient(0deg, transparent 24px, var(--bg-grid) 25px),
+    linear-gradient(90deg, transparent 24px, var(--bg-grid) 25px),
+    linear-gradient(180deg, var(--bg-top), var(--bg-bottom));
+  background-size: auto, auto, 25px 25px, 25px 25px, auto;
+  display: grid;
+  place-items: center;
+  padding: 24px 16px;
+  box-sizing: border-box;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 100% 0%, rgba(95, 209, 194, 0.12), transparent 30%),
+    linear-gradient(180deg, rgba(13, 29, 44, 0.24), rgba(8, 20, 33, 0.12));
+}
+
+.content,
+h2:nth-of-type(2),
+.table {
+  position: relative;
+  z-index: 1;
 }
 
 .content {
-  max-width: 420px;
-  margin: 64px auto;
-  padding: 32px;
-  border-radius: 20px;
-  background: rgba(255, 255, 255, 0.94);
-  box-shadow: 0 24px 48px rgba(15, 23, 42, 0.12);
+  width: min(420px, calc(100vw - 32px));
+  margin: 0;
+  padding: 28px;
+  border-radius: 28px;
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  backdrop-filter: blur(28px) saturate(1.1);
+  -webkit-backdrop-filter: blur(28px) saturate(1.1);
+  box-shadow: var(--shadow-soft);
+  box-sizing: border-box;
 }
 
 .login-form {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  margin-bottom: 28px;
+  gap: 14px;
+  margin: 0;
 }
 
 .login-form h2,
-.content h2 {
-  margin: 0 0 8px;
-  font-size: 24px;
-  line-height: 1.2;
+h2:nth-of-type(2) {
+  margin: 0 0 10px;
+  font-size: 30px;
+  line-height: 1.08;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  color: var(--text-main);
+}
+
+.login-form h2::before {
+  content: "OAuth 2.1";
+  display: block;
+  margin-bottom: 10px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+h2:nth-of-type(2) {
+  width: min(420px, calc(100vw - 32px));
+  margin: 18px 0 10px;
+  padding: 0 6px;
+  box-sizing: border-box;
+  font-size: 22px;
+}
+
+h2:nth-of-type(2)::before {
+  content: "Provider";
+  display: block;
+  margin-bottom: 8px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
 }
 
 .screenreader {
   display: block;
-  margin-bottom: 6px;
-  font-size: 13px;
-  color: #475569;
+  margin-bottom: 8px;
+  font-size: 12px;
+  color: var(--text-muted);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.login-form p {
+  margin: 0;
 }
 
 .login-form input {
   width: 100%;
   box-sizing: border-box;
-  padding: 12px 14px;
-  border: 1px solid #cbd5e1;
-  border-radius: 12px;
+  min-height: 50px;
+  padding: 13px 16px;
+  border: 1px solid var(--panel-border);
+  border-radius: 16px;
   font-size: 14px;
-  color: #0f172a;
-  background: #fff;
+  color: var(--text-main);
+  background: rgba(255, 255, 255, 0.04);
+  transition: border-color 0.22s ease, box-shadow 0.22s ease, background-color 0.22s ease;
+}
+
+.login-form input::placeholder {
+  color: var(--text-muted);
 }
 
 .login-form input:focus {
   outline: none;
-  border-color: #2563eb;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+  border-color: rgba(95, 209, 194, 0.4);
+  box-shadow: 0 0 0 3px rgba(95, 209, 194, 0.12);
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .primary {
   border: 0;
-  border-radius: 12px;
-  padding: 12px 16px;
+  border-radius: 999px;
+  min-height: 48px;
+  padding: 12px 18px;
   font-size: 14px;
-  font-weight: 600;
-  color: #fff;
-  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: #04111c;
+  background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+  box-shadow: 0 16px 34px rgba(95, 209, 194, 0.2);
   cursor: pointer;
+  transition: transform 0.22s ease, box-shadow 0.22s ease, filter 0.22s ease;
 }
 
 .primary:hover {
-  filter: brightness(1.03);
+  transform: translateY(-1px);
+  box-shadow: 0 18px 36px rgba(95, 209, 194, 0.24);
 }
 
 .table {
-  width: 100%;
-  border-collapse: collapse;
+  width: min(420px, calc(100vw - 32px));
+  border-collapse: separate;
+  border-spacing: 0;
+  border-radius: 24px;
+  background: rgba(8, 19, 31, 0.72);
+  border: 1px solid var(--panel-border);
+  box-shadow: var(--shadow-soft);
+  overflow: hidden;
 }
 
 .table td {
@@ -78,16 +178,55 @@ body {
 }
 
 .table a {
-  display: block;
-  padding: 12px 14px;
-  border: 1px solid #cbd5e1;
-  border-radius: 12px;
-  color: #0f172a;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 18px;
+  border: 0;
+  color: var(--text-main);
   text-decoration: none;
-  background: #fff;
+  background: transparent;
+  transition: background-color 0.22s ease, color 0.22s ease;
+}
+
+.table a::after {
+  content: "Open";
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
 }
 
 .table a:hover {
-  background: #eff6ff;
-  border-color: #93c5fd;
+  background: rgba(255, 255, 255, 0.04);
+  color: #ffffff;
+}
+
+@media (max-width: 640px) {
+  body {
+    display: block;
+    padding: 12px 12px 24px;
+  }
+
+  .content {
+    width: 100%;
+    padding: 22px;
+    border-radius: 24px;
+  }
+
+  .login-form h2,
+  h2:nth-of-type(2) {
+    font-size: 24px;
+  }
+
+  h2:nth-of-type(2),
+  .table {
+    width: 100%;
+  }
+
+  .table a {
+    padding: 15px 16px;
+  }
 }

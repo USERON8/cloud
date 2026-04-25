@@ -8,7 +8,7 @@ spring:
               uri: ${GATEWAY_ROUTE_AUTH_URI:lb://auth-service}
               order: 10
               predicates:
-                - Path=/auth/**
+                - Path=/auth/**,/oauth2/**,/.well-known/**
               filters:
                 - name: RequestRateLimiter
                   args:
@@ -21,20 +21,7 @@ spring:
               uri: ${GATEWAY_ROUTE_GOVERNANCE_URI:lb://governance-service}
               order: 9
               predicates:
-                - Path=/auth/tokens/**,/api/admin/thread-pool/info,/api/admin/thread-pool/info/detail,/api/admin/statistics/overview,/api/admin/statistics/overview/async,/api/admin/statistics/registration-trend,/api/admin/statistics/registration-trend/async,/api/admin/statistics/role-distribution,/api/admin/statistics/status-distribution,/api/admin/statistics/active-users,/api/admin/statistics/growth-rate,/api/admin/statistics/activity-ranking,/api/admin/statistics/refresh-cache,/api/admin/manage/users/**,/api/admin/query/users/**,/api/admin/mq/**,/api/admin/outbox/**,/api/admin/observability/**,/api/app/user/notification/**
-              filters:
-                - name: RequestRateLimiter
-                  args:
-                    key-resolver: "#{@userIpPathKeyResolver}"
-                    redis-rate-limiter.replenishRate: ${app.security.rate-limit.replenish-rate}
-                    redis-rate-limiter.burstCapacity: ${app.security.rate-limit.burst-capacity}
-                    redis-rate-limiter.requestedTokens: ${app.security.rate-limit.requested-tokens}
-
-            - id: user-service-admin-alias
-              uri: ${GATEWAY_ROUTE_USER_URI:lb://user-service}
-              order: 19
-              predicates:
-                - Path=/api/admin/merchant/**,/api/admin/merchant/auth/**
+                - Path=/auth/authorizations/**,/auth/cleanups/**,/auth/blacklist-entries/**,/api/admin/thread-pools/**,/api/admin/statistics/**,/api/admin/users/**,/api/admin/mq/**,/api/admin/outbox/**,/api/admin/observability/**,/api/admin/notifications/**
               filters:
                 - name: RequestRateLimiter
                   args:
@@ -61,7 +48,7 @@ spring:
               uri: ${GATEWAY_ROUTE_USER_URI:lb://user-service}
               order: 20
               predicates:
-                - Path=/api/admin/**
+                - Path=/api/admins/**
               filters:
                 - name: RequestRateLimiter
                   args:
@@ -74,8 +61,12 @@ spring:
               uri: ${GATEWAY_ROUTE_USER_URI:lb://user-service}
               order: 20
               predicates:
-                - Path=/api/app/user/**,/api/app/merchant/**,/api/app/merchant/auth/**
+                - Path=/api/users/**,/api/addresses/**,/api/merchants/**,/api/merchant-authentications/**
               filters:
+                - name: CircuitBreaker
+                  args:
+                    name: user-route
+                    fallbackUri: forward:/gateway/fallback/user
                 - name: RequestRateLimiter
                   args:
                     key-resolver: "#{@userIpPathKeyResolver}"
@@ -87,7 +78,7 @@ spring:
               uri: ${GATEWAY_ROUTE_PRODUCT_URI:lb://product-service}
               order: 20
               predicates:
-                - Path=/api/app/product/**,/api/app/category/**
+                - Path=/api/products/**,/api/categories/**,/api/spus/**,/api/skus/**
               filters:
                 - name: RequestRateLimiter
                   args:
@@ -98,9 +89,9 @@ spring:
 
             - id: order-service-app
               uri: ${GATEWAY_ROUTE_ORDER_URI:lb://order-service}
-              order: 20
+              order: 19
               predicates:
-                - Path=/api/app/orders/**,/api/app/cart/**,/api/app/v1/refund/**
+                - Path=/api/orders/**,/api/users/me/cart,/api/users/me/cart/**,/api/after-sales/**
               filters:
                 - name: RequestRateLimiter
                   args:
@@ -113,8 +104,12 @@ spring:
               uri: ${GATEWAY_ROUTE_PAYMENT_URI:lb://payment-service}
               order: 20
               predicates:
-                - Path=/api/app/payments/**
+                - Path=/api/payment-orders/**,/api/payment-refunds/**,/api/payment-checkouts/**
               filters:
+                - name: CircuitBreaker
+                  args:
+                    name: payment-route
+                    fallbackUri: forward:/gateway/fallback/payment
                 - name: RequestRateLimiter
                   args:
                     key-resolver: "#{@userIpPathKeyResolver}"
@@ -178,8 +173,12 @@ spring:
               uri: ${GATEWAY_ROUTE_SEARCH_URI:lb://search-service}
               order: 20
               predicates:
-                - Path=/api/public/search/**,/api/public/search/shops/**
+                - Path=/api/search/**,/api/shops/**
               filters:
+                - name: CircuitBreaker
+                  args:
+                    name: search-route
+                    fallbackUri: forward:/gateway/fallback/search
                 - name: RequestRateLimiter
                   args:
                     key-resolver: "#{@userIpPathKeyResolver}"

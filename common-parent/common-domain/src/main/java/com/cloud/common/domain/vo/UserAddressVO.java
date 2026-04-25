@@ -1,5 +1,6 @@
 package com.cloud.common.domain.vo;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import lombok.Data;
@@ -7,8 +8,10 @@ import lombok.Data;
 @Data
 public class UserAddressVO {
 
+  @JsonFormat(shape = JsonFormat.Shape.STRING)
   private Long id;
 
+  @JsonFormat(shape = JsonFormat.Shape.STRING)
   private Long userId;
 
   private String addressTag;

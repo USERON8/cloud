@@ -80,7 +80,6 @@ public class AuthPrincipalService {
     user.setPhone(authPrincipalDTO.getPhone());
     Integer status = authPrincipalDTO.getStatus() == null ? 1 : authPrincipalDTO.getStatus();
     user.setStatus(status);
-    user.setEnabled(resolveEnabled(authPrincipalDTO.getEnabled(), status, 1));
 
     if (existing == null) {
       userMapper.insert(user);
@@ -122,11 +121,6 @@ public class AuthPrincipalService {
     }
     if (authPrincipalDTO.getStatus() != null) {
       update.setStatus(authPrincipalDTO.getStatus());
-      update.setEnabled(
-          resolveEnabled(
-              authPrincipalDTO.getEnabled(), authPrincipalDTO.getStatus(), existing.getEnabled()));
-    } else if (authPrincipalDTO.getEnabled() != null) {
-      update.setEnabled(authPrincipalDTO.getEnabled());
     }
     if (authPrincipalDTO.getNickname() != null) {
       update.setNickname(authPrincipalDTO.getNickname());
@@ -222,28 +216,11 @@ public class AuthPrincipalService {
     return dto;
   }
 
-  private Integer resolveEnabled(Integer enabled, Integer status, Integer fallback) {
-    if (enabled != null) {
-      return enabled;
-    }
-    if (status != null) {
-      return status;
-    }
-    return fallback;
-  }
-
   private String normalizePassword(String password) {
     String trimmed = password == null ? null : password.trim();
     if (StrUtil.isBlank(trimmed)) {
       throw new BizException("password is required");
     }
-    if (isBCryptHash(trimmed)) {
-      return trimmed;
-    }
     return passwordEncoder.encode(trimmed);
-  }
-
-  private boolean isBCryptHash(String value) {
-    return value.startsWith("$2a$") || value.startsWith("$2b$") || value.startsWith("$2y$");
   }
 }

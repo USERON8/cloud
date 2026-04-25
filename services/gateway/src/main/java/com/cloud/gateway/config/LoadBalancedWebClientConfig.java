@@ -70,7 +70,6 @@ public class LoadBalancedWebClientConfig {
               return next.exchange(
                   org.springframework.web.reactive.function.client.ClientRequest.from(request)
                       .header(TraceIdUtil.TRACE_HEADER, traceId)
-                      .header(TraceIdUtil.LEGACY_TRACE_HEADER, traceId)
                       .build());
             });
   }

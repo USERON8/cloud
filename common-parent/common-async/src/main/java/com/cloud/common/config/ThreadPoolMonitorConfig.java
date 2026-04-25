@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 @Slf4j
@@ -17,6 +18,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 public class ThreadPoolMonitorConfig {
 
   @Bean
+  @Primary
   public EnhancedThreadPoolMonitor enhancedThreadPoolMonitor() {
 
     return new EnhancedThreadPoolMonitor();

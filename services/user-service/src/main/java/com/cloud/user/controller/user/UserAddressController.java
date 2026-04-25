@@ -22,7 +22,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/app/user/address")
+@RequestMapping("/api")
 @RequiredArgsConstructor
 @PreAuthorize("isAuthenticated()")
 @Tag(name = "User Address", description = "User address APIs")
@@ -30,7 +30,7 @@ public class UserAddressController {
 
   private final UserAddressService userAddressService;
 
-  @PostMapping("/add/{userId}")
+  @PostMapping("/users/{userId}/addresses")
   @Operation(summary = "Add user address", description = "Add a new address for user")
   public Result<UserAddressDTO> addAddress(
       @PathVariable @Parameter(description = "User ID") @NotNull(message = "user id is required")
@@ -49,7 +49,7 @@ public class UserAddressController {
     return Result.success("address created", created);
   }
 
-  @PutMapping("/update/{addressId}")
+  @PutMapping("/addresses/{addressId}")
   @Operation(summary = "Update user address", description = "Update address by address ID")
   public Result<UserAddressDTO> updateAddress(
       @PathVariable
@@ -75,7 +75,7 @@ public class UserAddressController {
     return Result.success("address updated", updated);
   }
 
-  @DeleteMapping("/delete/{addressId}")
+  @DeleteMapping("/addresses/{addressId}")
   @Operation(summary = "Delete user address", description = "Delete address by address ID")
   public Result<Boolean> deleteAddress(
       @PathVariable
@@ -96,7 +96,7 @@ public class UserAddressController {
     return Result.success("address deleted", result);
   }
 
-  @GetMapping("/list/{userId}")
+  @GetMapping("/users/{userId}/addresses")
   @Operation(summary = "List user addresses", description = "List all addresses for one user")
   public Result<List<UserAddressVO>> getAddressList(
       @PathVariable @Parameter(description = "User ID") @NotNull(message = "user id is required")
@@ -110,7 +110,7 @@ public class UserAddressController {
     return Result.success(result);
   }
 
-  @GetMapping("/default/{userId}")
+  @GetMapping("/users/{userId}/addresses/default")
   @Operation(summary = "Get default address", description = "Get default address for one user")
   public Result<UserAddressVO> getDefaultAddress(
       @PathVariable @Parameter(description = "User ID") @NotNull(message = "user id is required")
@@ -128,14 +128,10 @@ public class UserAddressController {
     return Result.success(userAddress);
   }
 
-  @PostMapping("/page")
+  @GetMapping("/addresses")
   @Operation(summary = "Page user addresses", description = "Page query user addresses")
   public Result<PageResult<UserAddressVO>> pageUserAddress(
-      @RequestBody
-          @Parameter(description = "Page query payload")
-          @Valid
-          @NotNull(message = "page query payload is required")
-          UserAddressPageDTO pageDTO,
+      @Parameter(description = "Page query payload") @Valid UserAddressPageDTO pageDTO,
       Authentication authentication) {
     if (pageDTO.getUserId() != null
         && !SecurityPermissionUtils.isAdminOrOwner(authentication, pageDTO.getUserId())) {
@@ -149,7 +145,7 @@ public class UserAddressController {
     return Result.success(pageResult);
   }
 
-  @DeleteMapping("/deleteBatch")
+  @DeleteMapping("/addresses/bulk")
   @Operation(
       summary = "Batch delete addresses",
       description = "Batch delete addresses by address IDs")
@@ -172,7 +168,7 @@ public class UserAddressController {
     return Result.success(message, true);
   }
 
-  @PutMapping("/updateBatch")
+  @PatchMapping("/addresses/bulk")
   @Operation(
       summary = "Batch update addresses",
       description = "Batch update addresses by address payload list")

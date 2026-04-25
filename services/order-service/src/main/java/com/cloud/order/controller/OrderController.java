@@ -1,6 +1,7 @@
 package com.cloud.order.controller;
 
 import cn.hutool.core.util.StrUtil;
+import com.cloud.api.user.UserDubboApi;
 import com.cloud.common.enums.ResultCode;
 import com.cloud.common.exception.BizException;
 import com.cloud.common.result.PageResult;
@@ -43,7 +44,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/app/orders")
+@RequestMapping("/api")
 @RequiredArgsConstructor
 @Validated
 @Tag(name = "Order API", description = "Order creation and after-sale APIs")
@@ -74,7 +75,10 @@ public class OrderController {
   private final OrderQueryService orderQueryService;
   private final AfterSaleDtoConverter afterSaleDtoConverter;
 
-  @PostMapping
+  @org.apache.dubbo.config.annotation.DubboReference(check = false, timeout = 5000, retries = 0)
+  private UserDubboApi userDubboApi;
+
+  @PostMapping("/orders")
   @PreAuthorize("hasAuthority('order:create')")
   @Operation(summary = "Create main order")
   public Result<OrderAggregateResponse> createMainOrder(
@@ -100,7 +104,7 @@ public class OrderController {
     return Result.success(orderPlacementService.createOrder(request));
   }
 
-  @GetMapping
+  @GetMapping("/orders")
   @PreAuthorize("hasAuthority('order:query')")
   @Operation(summary = "List orders")
   public Result<PageResult<OrderSummaryDTO>> listOrders(
@@ -114,7 +118,7 @@ public class OrderController {
         orderQueryService.listOrders(authentication, page, size, userId, merchantId, status));
   }
 
-  @GetMapping("/{orderId}")
+  @GetMapping("/orders/{orderId}")
   @PreAuthorize("hasAuthority('order:query')")
   @Operation(summary = "Get order detail")
   public Result<OrderSummaryDTO> getOrder(
@@ -122,7 +126,7 @@ public class OrderController {
     return Result.success(orderQueryService.getOrderSummary(orderId, authentication));
   }
 
-  @PostMapping("/{orderId}/cancel")
+  @PostMapping("/orders/{orderId}/cancellation")
   @PreAuthorize("hasAuthority('order:cancel')")
   @Operation(summary = "Cancel order")
   public Result<Boolean> cancelOrder(
@@ -134,7 +138,7 @@ public class OrderController {
     return Result.success(true);
   }
 
-  @PostMapping("/{orderId}/ship")
+  @PostMapping("/orders/{orderId}/shipments")
   @PreAuthorize("hasAnyRole('ADMIN','MERCHANT')")
   @Operation(summary = "Ship order")
   public Result<Boolean> shipOrderStandard(
@@ -150,7 +154,7 @@ public class OrderController {
     return Result.success(true);
   }
 
-  @PostMapping("/{orderId}/complete")
+  @PostMapping("/orders/{orderId}/completion")
   @PreAuthorize("hasAuthority('order:query')")
   @Operation(summary = "Complete order")
   public Result<Boolean> completeOrder(@PathVariable Long orderId, Authentication authentication) {
@@ -158,7 +162,7 @@ public class OrderController {
     return Result.success(true);
   }
 
-  @PostMapping("/batch/cancel")
+  @PostMapping("/orders/bulk/cancellations")
   @PreAuthorize("hasAuthority('order:cancel')")
   @Operation(summary = "Batch cancel orders")
   public Result<Integer> batchCancel(
@@ -170,7 +174,7 @@ public class OrderController {
             orderIds, authentication, OrderAction.CANCEL, null, null, cancelReason));
   }
 
-  @PostMapping("/batch/ship")
+  @PostMapping("/orders/bulk/shipments")
   @PreAuthorize("hasAnyRole('ADMIN','MERCHANT')")
   @Operation(summary = "Batch ship orders")
   public Result<Integer> batchShip(
@@ -186,7 +190,7 @@ public class OrderController {
             orderIds, authentication, OrderAction.SHIP, company, tracking, null));
   }
 
-  @PostMapping("/batch/complete")
+  @PostMapping("/orders/bulk/completions")
   @PreAuthorize("hasAuthority('order:query')")
   @Operation(summary = "Batch complete orders")
   public Result<Integer> batchComplete(
@@ -217,12 +221,12 @@ public class OrderController {
     return Result.success(afterSaleDtoConverter.toDto(created));
   }
 
-  @PostMapping("/after-sales/{afterSaleId}/actions/{action}")
+  @PostMapping("/after-sales/{afterSaleId}/events")
   @PreAuthorize("hasAuthority('order:refund')")
   @Operation(summary = "Advance after-sale status")
   public Result<AfterSaleDTO> advanceAfterSaleStatus(
       @PathVariable Long afterSaleId,
-      @PathVariable String action,
+      @RequestParam String action,
       @RequestParam(required = false) String remark,
       Authentication authentication) {
     AfterSale afterSale = orderService.getAfterSale(afterSaleId);
@@ -232,7 +236,8 @@ public class OrderController {
     if (!isAdmin(authentication)) {
       Long currentUserId = requireCurrentUserId(authentication);
       if (isMerchant(authentication)) {
-        if (!Objects.equals(currentUserId, afterSale.getMerchantId())) {
+        Long currentMerchantId = requireCurrentMerchantId(authentication);
+        if (!Objects.equals(currentMerchantId, afterSale.getMerchantId())) {
           throw new BizException(
               ResultCode.FORBIDDEN, "forbidden to operate another merchant's after-sale");
         }
@@ -273,6 +278,15 @@ public class OrderController {
       return;
     }
     throw new BizException(ResultCode.FORBIDDEN, "shipping requires merchant or admin privileges");
+  }
+
+  private Long requireCurrentMerchantId(Authentication authentication) {
+    Long currentUserId = requireCurrentUserId(authentication);
+    Long currentMerchantId = userDubboApi.findMerchantIdByOwnerUserId(currentUserId);
+    if (currentMerchantId == null) {
+      throw new BizException("current merchant not found");
+    }
+    return currentMerchantId;
   }
 
   private String requireShippingValue(String value, String fieldName) {

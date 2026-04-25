@@ -19,11 +19,9 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
-import jakarta.validation.constraints.Size;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -41,7 +39,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/app/merchant")
+@RequestMapping("/api/merchants")
 @RequiredArgsConstructor
 @Tag(name = "Merchant Management", description = "Merchant REST APIs")
 @Validated
@@ -179,36 +177,31 @@ public class MerchantController {
     return Result.success("merchant deleted", result);
   }
 
-  @PostMapping("/{id}/approve")
+  @PostMapping("/{id}/reviews")
   @PreAuthorize("hasAuthority('merchant:audit')")
-  @Operation(summary = "Approve merchant", description = "Approve merchant")
-  public Result<Boolean> approveMerchant(
+  @Operation(summary = "Review merchant", description = "Review merchant")
+  public Result<Boolean> reviewMerchant(
       @Parameter(description = "Merchant ID")
           @PathVariable
           @NotNull(message = "merchant id is required")
           @Positive(message = "merchant id must be positive")
           Long id,
-      @Parameter(description = "Review remark") @RequestParam(required = false) String remark) {
-    boolean result = merchantService.approveMerchant(id, remark);
-    return Result.success("merchant approved", result);
-  }
-
-  @PostMapping("/{id}/reject")
-  @PreAuthorize("hasAuthority('merchant:audit')")
-  @Operation(summary = "Reject merchant", description = "Reject merchant")
-  public Result<Boolean> rejectMerchant(
-      @Parameter(description = "Merchant ID")
-          @PathVariable
-          @NotNull(message = "merchant id is required")
-          @Positive(message = "merchant id must be positive")
-          Long id,
-      @Parameter(description = "Reject reason")
+      @Parameter(description = "Review approved flag")
           @RequestParam
-          @NotBlank(message = "reason cannot be blank")
-          @Size(max = 255, message = "reason must be less than or equal to 255 characters")
-          String reason) {
-    boolean result = merchantService.rejectMerchant(id, reason);
-    return Result.success("merchant rejected", result);
+          @NotNull(message = "approved is required")
+          Boolean approved,
+      @Parameter(description = "Review remark") @RequestParam(required = false) String remark,
+      @Parameter(description = "Review reason") @RequestParam(required = false) String reason) {
+    String reviewRemark = StrUtil.isNotBlank(remark) ? remark : reason;
+    if (!approved && StrUtil.isBlank(reviewRemark)) {
+      throw new BizException(ResultCode.BAD_REQUEST, "reason cannot be blank");
+    }
+    boolean result =
+        Boolean.TRUE.equals(approved)
+            ? merchantService.approveMerchant(id, reviewRemark)
+            : merchantService.rejectMerchant(id, reviewRemark);
+    return Result.success(
+        Boolean.TRUE.equals(approved) ? "merchant approved" : "merchant rejected", result);
   }
 
   @PatchMapping("/{id}/status")
@@ -293,10 +286,10 @@ public class MerchantController {
     return Result.success(message, true);
   }
 
-  @PostMapping("/batch/approve")
+  @PostMapping("/bulk/reviews")
   @PreAuthorize("hasAuthority('merchant:audit')")
-  @Operation(summary = "Batch approve merchants", description = "Batch approve merchants by IDs")
-  public Result<Boolean> approveMerchantsBatch(
+  @Operation(summary = "Batch review merchants", description = "Batch review merchants by IDs")
+  public Result<Boolean> reviewMerchantsBatch(
       @Parameter(description = "Merchant IDs")
           @RequestBody
           @NotNull(message = "merchant ids are required")
@@ -305,13 +298,32 @@ public class MerchantController {
                   @NotNull(message = "merchant id cannot be null")
                   @Positive(message = "merchant id must be positive") Long>
               ids,
-      @Parameter(description = "Review remark") @RequestParam(required = false) String remark) {
+      @Parameter(description = "Review approved flag")
+          @RequestParam
+          @NotNull(message = "approved is required")
+          Boolean approved,
+      @Parameter(description = "Review remark") @RequestParam(required = false) String remark,
+      @Parameter(description = "Review reason") @RequestParam(required = false) String reason) {
     if (ids.size() > 100) {
       throw new BizException(ResultCode.BAD_REQUEST, "batch size cannot exceed 100");
     }
+    String reviewRemark = StrUtil.isNotBlank(remark) ? remark : reason;
+    if (!approved && StrUtil.isBlank(reviewRemark)) {
+      throw new BizException(ResultCode.BAD_REQUEST, "reason cannot be blank");
+    }
 
-    int successCount = merchantService.approveMerchantsBatch(ids, remark);
-    String message = String.format("batch approve completed: %d/%d", successCount, ids.size());
+    int successCount;
+    if (Boolean.TRUE.equals(approved)) {
+      successCount = merchantService.approveMerchantsBatch(ids, reviewRemark);
+    } else {
+      successCount = 0;
+      for (Long merchantId : ids) {
+        if (merchantService.rejectMerchant(merchantId, reviewRemark)) {
+          successCount++;
+        }
+      }
+    }
+    String message = String.format("batch review completed: %d/%d", successCount, ids.size());
     return Result.success(message, true);
   }
 

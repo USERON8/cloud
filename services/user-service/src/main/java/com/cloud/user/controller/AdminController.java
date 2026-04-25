@@ -32,7 +32,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/admin")
+@RequestMapping("/api/admins")
 @RequiredArgsConstructor
 @Tag(name = "Admin Management", description = "Admin resource REST APIs")
 public class AdminController {
@@ -130,7 +130,7 @@ public class AdminController {
     return Result.success("Status updated", result);
   }
 
-  @PostMapping("/{id}/reset-password")
+  @PostMapping("/{id}/password-resets")
   @PreAuthorize("hasAuthority('admin:all')")
   @Operation(summary = "Reset admin password", description = "Reset admin password to default")
   public Result<String> resetPassword(@Parameter(description = "Admin ID") @PathVariable Long id) {

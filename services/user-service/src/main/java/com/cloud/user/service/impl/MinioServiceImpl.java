@@ -94,24 +94,23 @@ public class MinioServiceImpl implements MinioService {
     if (merchantId == null) {
       throw new IllegalArgumentException("merchant id is required");
     }
-    validateCertFile(file);
+    return uploadMerchantCertFile(merchantId, file, "license", "business license");
+  }
 
-    try {
-      String extension = getFileExtension(file.getOriginalFilename());
-      String objectName =
-          String.format("cert/license/%d/%s%s", merchantId, UUID.randomUUID(), extension);
-      try (InputStream inputStream = file.getInputStream()) {
-        minioClient.putObject(
-            PutObjectArgs.builder().bucket(certBucketName).object(objectName).stream(
-                    inputStream, file.getSize(), -1)
-                .contentType(file.getContentType())
-                .build());
-      }
-      return objectName;
-    } catch (Exception e) {
-      log.error("Failed to upload business license, merchantId={}", merchantId, e);
-      throw new RuntimeException("failed to upload business license: " + e.getMessage(), e);
+  @Override
+  public String uploadIdCardFront(Long merchantId, MultipartFile file) {
+    if (merchantId == null) {
+      throw new IllegalArgumentException("merchant id is required");
     }
+    return uploadMerchantCertFile(merchantId, file, "id-card/front", "id card front");
+  }
+
+  @Override
+  public String uploadIdCardBack(Long merchantId, MultipartFile file) {
+    if (merchantId == null) {
+      throw new IllegalArgumentException("merchant id is required");
+    }
+    return uploadMerchantCertFile(merchantId, file, "id-card/back", "id card back");
   }
 
   @Override
@@ -185,6 +184,28 @@ public class MinioServiceImpl implements MinioService {
       } catch (Exception e) {
         throw new IllegalArgumentException("failed to validate image: " + e.getMessage(), e);
       }
+    }
+  }
+
+  private String uploadMerchantCertFile(
+      Long merchantId, MultipartFile file, String category, String label) {
+    validateCertFile(file);
+
+    try {
+      String extension = getFileExtension(file.getOriginalFilename());
+      String objectName =
+          String.format("cert/%s/%d/%s%s", category, merchantId, UUID.randomUUID(), extension);
+      try (InputStream inputStream = file.getInputStream()) {
+        minioClient.putObject(
+            PutObjectArgs.builder().bucket(certBucketName).object(objectName).stream(
+                    inputStream, file.getSize(), -1)
+                .contentType(file.getContentType())
+                .build());
+      }
+      return objectName;
+    } catch (Exception e) {
+      log.error("Failed to upload {}, merchantId={}", label, merchantId, e);
+      throw new RuntimeException("failed to upload " + label + ": " + e.getMessage(), e);
     }
   }
 

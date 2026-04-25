@@ -3,6 +3,7 @@ package com.cloud.stock.messaging;
 import com.cloud.common.messaging.event.ProductSyncEvent;
 import com.cloud.common.messaging.event.StockAlertEvent;
 import com.cloud.common.messaging.event.StockFreezeFailedEvent;
+import com.cloud.common.messaging.event.StockReservedEvent;
 import com.cloud.common.messaging.outbox.AbstractOutboxRelay;
 import com.cloud.common.messaging.outbox.OutboxEvent;
 import com.cloud.common.messaging.outbox.OutboxEventService;
@@ -40,6 +41,7 @@ public class StockOutboxRelay extends AbstractOutboxRelay {
     }
 
     return switch (eventType) {
+      case "STOCK_RESERVED" -> sendStockReserved(event);
       case "STOCK_FREEZE_FAILED" -> sendStockFreezeFailed(event);
       case "STOCK_ALERT" -> sendStockAlert(event);
       case "PRODUCT_UPSERT" -> sendProductSync(event);
@@ -49,6 +51,17 @@ public class StockOutboxRelay extends AbstractOutboxRelay {
         yield false;
       }
     };
+  }
+
+  private boolean sendStockReserved(OutboxEvent event) throws Exception {
+    StockReservedEvent payload = readPayload(event, StockReservedEvent.class);
+    return sendMessage(
+        "stockReservedProducer-out-0",
+        payload,
+        payload.getOrderNo(),
+        "STOCK_RESERVED",
+        payload.getEventId(),
+        payload.getEventType());
   }
 
   private boolean sendStockFreezeFailed(OutboxEvent event) throws Exception {

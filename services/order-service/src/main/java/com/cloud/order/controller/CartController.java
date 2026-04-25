@@ -16,13 +16,13 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/app/cart")
+@RequestMapping("/api/users/me/cart")
 @RequiredArgsConstructor
 @Validated
 @Tag(name = "Cart API", description = "Current user cart APIs")
@@ -43,7 +43,7 @@ public class CartController {
     return Result.success(cartService.getCurrentCart(requireCurrentUserId(authentication)));
   }
 
-  @PostMapping("/sync")
+  @PutMapping("/items")
   @PreAuthorize("isAuthenticated()")
   @Operation(summary = "Synchronize current user cart")
   public Result<CartDTO> syncCart(

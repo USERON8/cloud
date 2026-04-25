@@ -36,9 +36,6 @@ public class TraceHeaderFilter extends OncePerRequestFilter {
       traceId = TraceIdUtil.normalizeTraceId(request.getHeader(TraceIdUtil.B3_TRACE_HEADER));
     }
     if (traceId.isBlank()) {
-      traceId = TraceIdUtil.normalizeTraceId(request.getHeader(TraceIdUtil.LEGACY_TRACE_HEADER));
-    }
-    if (traceId.isBlank()) {
       Object attribute = request.getAttribute(TraceIdUtil.TRACE_ID_KEY);
       traceId = TraceIdUtil.normalizeTraceId(attribute == null ? null : attribute.toString());
     }

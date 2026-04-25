@@ -16,8 +16,9 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -25,7 +26,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/admin/manage/users")
+@RequestMapping("/api/admin/users")
 @RequiredArgsConstructor
 @Tag(name = "User Management", description = "User management APIs")
 public class UserManageController {
@@ -47,18 +48,16 @@ public class UserManageController {
     return Result.success("user updated", Boolean.TRUE.equals(result));
   }
 
-  @PostMapping("/delete")
+  @DeleteMapping("/{id}")
   @Operation(summary = "Delete user", description = "Delete user by user ID")
   @PreAuthorize("hasAuthority('admin:all')")
   public Result<Boolean> delete(
-      @RequestBody @Parameter(description = "User ID") @NotNull(message = "user id is required")
-          Long id,
-      Authentication authentication) {
+      @PathVariable @Parameter(description = "User ID") Long id, Authentication authentication) {
     boolean result = userService.deleteUserById(id);
     return Result.success("user deleted", result);
   }
 
-  @PostMapping("/deleteBatch")
+  @DeleteMapping("/batch")
   @Operation(summary = "Batch delete users", description = "Batch delete users by user IDs")
   @PreAuthorize("hasAuthority('admin:all')")
   public Result<Boolean> deleteBatch(
@@ -73,7 +72,7 @@ public class UserManageController {
     return Result.success(String.format("batch delete completed: %d", userIds.size()), result);
   }
 
-  @PostMapping("/updateBatch")
+  @PutMapping("/batch")
   @Operation(summary = "Batch update users", description = "Batch update users by payload list")
   @PreAuthorize("hasAuthority('admin:all')")
   public Result<Boolean> updateBatch(
@@ -94,7 +93,7 @@ public class UserManageController {
         String.format("batch update completed: %d", requestDTOList.size()), result);
   }
 
-  @PostMapping("/updateStatusBatch")
+  @PatchMapping("/status/batch")
   @Operation(summary = "Batch update user status", description = "Batch update user status by IDs")
   @PreAuthorize("hasAuthority('admin:all')")
   public Result<Boolean> updateStatusBatch(

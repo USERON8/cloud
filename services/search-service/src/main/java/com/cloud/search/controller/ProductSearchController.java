@@ -4,10 +4,8 @@ import com.cloud.common.enums.ResultCode;
 import com.cloud.common.exception.BizException;
 import com.cloud.common.result.Result;
 import com.cloud.search.document.ProductDocument;
-import com.cloud.search.dto.ProductFilterRequest;
 import com.cloud.search.dto.ProductSearchRequest;
 import com.cloud.search.dto.SearchResultDTO;
-import com.cloud.search.service.ElasticsearchOptimizedService;
 import com.cloud.search.service.SearchFacadeService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -27,7 +25,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/public/search")
+@RequestMapping("/api/search")
 @RequiredArgsConstructor
 @Tag(name = "Product Search", description = "Product search and filter APIs")
 @Validated
@@ -42,8 +40,10 @@ public class ProductSearchController {
 
   private final SearchFacadeService searchFacadeService;
 
-  @Operation(summary = "Complex search", description = "Run full search by request payload")
-  @PostMapping("/products/searches")
+  @Operation(
+      summary = "Search products by request payload",
+      description = "Run full search by request payload")
+  @PostMapping("/products")
   public Result<SearchResultDTO<ProductDocument>> complexSearch(
       @Valid @RequestBody ProductSearchRequest request,
       @Parameter(description = "search_after values, json array or comma separated")
@@ -57,7 +57,7 @@ public class ProductSearchController {
   @Operation(
       summary = "Get filter data",
       description = "Return available filter data for current search")
-  @PostMapping("/products/filter-groups")
+  @PostMapping("/products/filters")
   public Result<SearchResultDTO<ProductDocument>> getProductFilters(
       @Valid @RequestBody ProductSearchRequest request,
       @Parameter(description = "search_after values, json array or comma separated")
@@ -100,7 +100,7 @@ public class ProductSearchController {
   @Operation(summary = "Basic search", description = "Search products by keyword and pagination")
   @GetMapping("/products")
   public Result<SearchResultDTO<ProductDocument>> searchProducts(
-      @Parameter(description = "Keyword") @RequestParam String keyword,
+      @Parameter(description = "Keyword") @RequestParam(required = false) String keyword,
       @Parameter(description = "Page number, starts from 0") @RequestParam(defaultValue = "0")
           int page,
       @Parameter(description = "Page size") @RequestParam(defaultValue = "20") int size,
@@ -147,37 +147,6 @@ public class ProductSearchController {
     return Result.success(
         "Search success",
         searchFacadeService.searchByShop(shopId, keyword, page, size, searchAfter));
-  }
-
-  @Operation(
-      summary = "Smart search",
-      description = "Compatibility alias of complex search for optimized query parameters")
-  @GetMapping("/products/optimized-searches")
-  public Result<ElasticsearchOptimizedService.SearchResultDTO> smartSearch(
-      @Parameter(description = "Keyword") @RequestParam(required = false) String keyword,
-      @Parameter(description = "Category id") @RequestParam(required = false) Long categoryId,
-      @Parameter(description = "Min price") @RequestParam(required = false) Double minPrice,
-      @Parameter(description = "Max price") @RequestParam(required = false) Double maxPrice,
-      @Parameter(description = "Sort field") @RequestParam(defaultValue = "score") String sortField,
-      @Parameter(description = "Sort order") @RequestParam(defaultValue = "desc") String sortOrder,
-      @Parameter(description = "Page number, starts from 1") @RequestParam(defaultValue = "1")
-          int page,
-      @Parameter(description = "Page size") @RequestParam(defaultValue = "20") int size,
-      @Parameter(description = "search_after values, json array or comma separated")
-          @RequestParam(required = false)
-          String searchAfter) {
-    return Result.success(
-        "Search success",
-        searchFacadeService.smartSearch(
-            keyword,
-            categoryId,
-            minPrice,
-            maxPrice,
-            sortField,
-            sortOrder,
-            page,
-            size,
-            searchAfter));
   }
 
   @Operation(summary = "Recommended products", description = "Get recommended products")
@@ -227,16 +196,6 @@ public class ProductSearchController {
     return Result.success(
         "Query today hot selling products success",
         searchFacadeService.getTodayHotSellingProducts(page, size));
-  }
-
-  @Operation(summary = "Filter search", description = "Search products with filter payload")
-  @PostMapping("/products/filtered-searches")
-  public Result<SearchResultDTO<ProductDocument>> filterSearch(
-      @Valid @RequestBody ProductFilterRequest request,
-      @Parameter(description = "search_after values, json array or comma separated")
-          @RequestParam(required = false)
-          String searchAfter) {
-    return Result.success("Search success", searchFacadeService.filterSearch(request, searchAfter));
   }
 
   private void normalizePublicStatus(ProductSearchRequest request) {
