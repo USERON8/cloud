@@ -297,13 +297,6 @@ public class OrderController {
   }
 
   private Long requireCurrentUserId(Authentication authentication) {
-    String userId = SecurityPermissionUtils.getCurrentUserId(authentication);
-    if (userId == null || userId.isBlank()) {
-      throw new BizException("current user not found in token");
-    }
-    if (!StrUtil.isNumeric(userId)) {
-      throw new BizException("invalid user_id in token");
-    }
-    return Long.parseLong(userId);
+    return SecurityPermissionUtils.requireCurrentUserIdAsLong(authentication);
   }
 }

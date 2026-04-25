@@ -12,6 +12,7 @@ import com.cloud.common.exception.BizException;
 import com.cloud.common.exception.SystemException;
 import com.cloud.common.messaging.event.PaymentSuccessEvent;
 import com.cloud.common.metrics.TradeMetrics;
+import com.cloud.common.util.HtmlEscapeUtils;
 import com.cloud.payment.config.AlipayConfig;
 import com.cloud.payment.converter.PaymentOrderConverter;
 import com.cloud.payment.mapper.PaymentCallbackLogMapper;
@@ -501,19 +502,10 @@ public class PaymentOrderServiceImpl implements PaymentOrderService {
           </body>
         </html>
         """
-        .formatted(escapeHtml(title), escapeHtml(title), escapeHtml(message));
-  }
-
-  private String escapeHtml(String value) {
-    if (value == null) {
-      return "";
-    }
-    return value
-        .replace("&", "&amp;")
-        .replace("<", "&lt;")
-        .replace(">", "&gt;")
-        .replace("\"", "&quot;")
-        .replace("'", "&#39;");
+        .formatted(
+            HtmlEscapeUtils.escape(title),
+            HtmlEscapeUtils.escape(title),
+            HtmlEscapeUtils.escape(message));
   }
 
   private PaymentCallbackLogEntity findCallbackLogByCallbackNo(String callbackNo) {

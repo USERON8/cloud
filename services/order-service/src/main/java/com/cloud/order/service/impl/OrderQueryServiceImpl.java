@@ -571,14 +571,6 @@ public class OrderQueryServiceImpl implements OrderQueryService {
   }
 
   private Long requireCurrentUserId(Authentication authentication) {
-    String userId = SecurityPermissionUtils.getCurrentUserId(authentication);
-    if (userId == null || userId.isBlank()) {
-      throw new BizException("current user not found in token");
-    }
-    try {
-      return Long.parseLong(userId);
-    } catch (NumberFormatException ex) {
-      throw new BizException("invalid user_id in token");
-    }
+    return SecurityPermissionUtils.requireCurrentUserIdAsLong(authentication);
   }
 }

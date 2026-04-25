@@ -1,6 +1,7 @@
 package com.cloud.auth.controller;
 
 import com.cloud.common.annotation.RawResponse;
+import com.cloud.common.util.HtmlEscapeUtils;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -441,18 +442,6 @@ public class LoginPageController {
       return "";
     }
     return "<div class=\"feedback %s\">%s</div>"
-        .formatted(escapeHtml(feedbackClass), escapeHtml(message));
-  }
-
-  private String escapeHtml(String value) {
-    if (value == null) {
-      return "";
-    }
-    return value
-        .replace("&", "&amp;")
-        .replace("<", "&lt;")
-        .replace(">", "&gt;")
-        .replace("\"", "&quot;")
-        .replace("'", "&#39;");
+        .formatted(HtmlEscapeUtils.escape(feedbackClass), HtmlEscapeUtils.escape(message));
   }
 }

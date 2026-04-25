@@ -1,6 +1,5 @@
 package com.cloud.order.controller;
 
-import com.cloud.common.exception.BizException;
 import com.cloud.common.result.Result;
 import com.cloud.common.security.SecurityPermissionUtils;
 import com.cloud.order.dto.CartDTO;
@@ -40,7 +39,9 @@ public class CartController {
   @PreAuthorize("isAuthenticated()")
   @Operation(summary = "Get current user active cart")
   public Result<CartDTO> getCurrentCart(Authentication authentication) {
-    return Result.success(cartService.getCurrentCart(requireCurrentUserId(authentication)));
+    return Result.success(
+        cartService.getCurrentCart(
+            SecurityPermissionUtils.requireCurrentUserIdAsLong(authentication)));
   }
 
   @PutMapping("/items")
@@ -48,18 +49,8 @@ public class CartController {
   @Operation(summary = "Synchronize current user cart")
   public Result<CartDTO> syncCart(
       @Valid @RequestBody CartSyncRequest request, Authentication authentication) {
-    return Result.success(cartService.syncCart(requireCurrentUserId(authentication), request));
-  }
-
-  private Long requireCurrentUserId(Authentication authentication) {
-    String userId = SecurityPermissionUtils.getCurrentUserId(authentication);
-    if (userId == null || userId.isBlank()) {
-      throw new BizException("current user not found in token");
-    }
-    try {
-      return Long.parseLong(userId);
-    } catch (NumberFormatException ex) {
-      throw new BizException("invalid user_id in token");
-    }
+    return Result.success(
+        cartService.syncCart(
+            SecurityPermissionUtils.requireCurrentUserIdAsLong(authentication), request));
   }
 }

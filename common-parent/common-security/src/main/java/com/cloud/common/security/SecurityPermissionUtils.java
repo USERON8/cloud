@@ -1,5 +1,6 @@
 package com.cloud.common.security;
 
+import com.cloud.common.exception.BizException;
 import java.util.Objects;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -32,6 +33,18 @@ public final class SecurityPermissionUtils {
       return internalPrincipal.userId();
     }
     return null;
+  }
+
+  public static Long requireCurrentUserIdAsLong(Authentication authentication) {
+    String userId = getCurrentUserId(authentication);
+    if (userId == null || userId.isBlank()) {
+      throw new BizException("current user not found in token");
+    }
+    try {
+      return Long.parseLong(userId);
+    } catch (NumberFormatException ex) {
+      throw new BizException("invalid user_id in token");
+    }
   }
 
   public static boolean hasAuthority(Authentication authentication, String authority) {

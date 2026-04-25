@@ -15,6 +15,7 @@ import com.cloud.common.domain.dto.user.UserNotificationStatusChangeRequestDTO;
 import com.cloud.common.domain.dto.user.UserPageDTO;
 import com.cloud.common.domain.dto.user.UserSystemAnnouncementRequestDTO;
 import com.cloud.common.domain.dto.user.UserUpsertRequestDTO;
+import com.cloud.common.domain.support.AuthGovernancePayloadMapper;
 import com.cloud.common.domain.vo.auth.AuthAuthorizationDetailVO;
 import com.cloud.common.domain.vo.auth.AuthTokenStorageStatsVO;
 import com.cloud.common.domain.vo.auth.TokenBlacklistCheckVO;
@@ -390,7 +391,7 @@ public class GovernanceController {
     AuthTokenStorageStatsVO stats =
         remoteCallSupport.query(
             "auth-service.governance.getTokenStats", authGovernanceDubboApi::getTokenStats);
-    return Result.success(toTokenStatsPayload(stats));
+    return Result.success(AuthGovernancePayloadMapper.toTokenStatsPayload(stats));
   }
 
   @GetMapping("/auth/authorizations/storage-structure")
@@ -411,7 +412,7 @@ public class GovernanceController {
         remoteCallSupport.query(
             "auth-service.governance.getAuthorizationDetails",
             () -> authGovernanceDubboApi.getAuthorizationDetails(id));
-    return Result.success(toAuthorizationDetailPayload(detail));
+    return Result.success(AuthGovernancePayloadMapper.toAuthorizationDetailPayload(detail));
   }
 
   @DeleteMapping("/auth/authorizations/{id}")
@@ -468,7 +469,7 @@ public class GovernanceController {
         remoteCallSupport.query(
             "auth-service.governance.checkBlacklist",
             () -> authGovernanceDubboApi.checkBlacklist(tokenValue));
-    return Result.success(toBlacklistCheckPayload(result));
+    return Result.success(AuthGovernancePayloadMapper.toBlacklistCheckPayload(result));
   }
 
   @PostMapping("/auth/cleanups/blacklist-entries")
@@ -566,53 +567,6 @@ public class GovernanceController {
     return ResponseEntity.status(HttpStatus.FOUND)
         .location(URI.create(observabilityEntryService.resolveGrafanaUrl(dashboardUid)))
         .build();
-  }
-
-  private Map<String, Object> toTokenStatsPayload(AuthTokenStorageStatsVO stats) {
-    Map<String, Object> payload = new LinkedHashMap<>();
-    payload.put("authorizationCount", stats.getAuthorizationCount());
-    payload.put("accessIndexCount", stats.getAccessIndexCount());
-    payload.put("refreshIndexCount", stats.getRefreshIndexCount());
-    payload.put("codeIndexCount", stats.getCodeIndexCount());
-    payload.put("principalIndexCount", stats.getPrincipalIndexCount());
-    payload.put("redisInfo", stats.getRedisInfo());
-    payload.put("storageType", stats.getStorageType());
-    return payload;
-  }
-
-  private Map<String, Object> toAuthorizationDetailPayload(AuthAuthorizationDetailVO detail) {
-    Map<String, Object> payload = new LinkedHashMap<>();
-    payload.put("id", detail.getId());
-    payload.put("clientId", detail.getClientId());
-    payload.put("principalName", detail.getPrincipalName());
-    payload.put("grantType", detail.getGrantType());
-    payload.put("scopes", detail.getScopes());
-    Map<String, Object> tokens = new LinkedHashMap<>();
-    if (detail.getAccessToken() != null) {
-      tokens.put(
-          "accessToken",
-          Map.of(
-              "issuedAt", detail.getAccessToken().getIssuedAt(),
-              "expiresAt", detail.getAccessToken().getExpiresAt(),
-              "scopes", detail.getAccessToken().getScopes()));
-    }
-    if (detail.getRefreshToken() != null) {
-      tokens.put(
-          "refreshToken",
-          Map.of(
-              "issuedAt", detail.getRefreshToken().getIssuedAt(),
-              "expiresAt", detail.getRefreshToken().getExpiresAt()));
-    }
-    payload.put("tokens", tokens);
-    return payload;
-  }
-
-  private Map<String, Object> toBlacklistCheckPayload(TokenBlacklistCheckVO result) {
-    Map<String, Object> payload = new LinkedHashMap<>();
-    payload.put("tokenValue", result.getTokenPreview());
-    payload.put("isBlacklisted", result.getBlacklisted());
-    payload.put("checkTime", result.getCheckedAt());
-    return payload;
   }
 
   @PostMapping("/notifications/welcome/{userId}")

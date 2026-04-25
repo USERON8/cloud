@@ -2,6 +2,7 @@ package com.cloud.payment.controller;
 
 import com.cloud.common.annotation.RawResponse;
 import com.cloud.common.exception.BizException;
+import com.cloud.common.util.HtmlEscapeUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -78,18 +79,9 @@ public class PaymentCheckoutExceptionHandler {
           </body>
         </html>
         """
-        .formatted(escapeHtml(title), escapeHtml(title), escapeHtml(message));
-  }
-
-  private String escapeHtml(String value) {
-    if (value == null) {
-      return "";
-    }
-    return value
-        .replace("&", "&amp;")
-        .replace("<", "&lt;")
-        .replace(">", "&gt;")
-        .replace("\"", "&quot;")
-        .replace("'", "&#39;");
+        .formatted(
+            HtmlEscapeUtils.escape(title),
+            HtmlEscapeUtils.escape(title),
+            HtmlEscapeUtils.escape(message));
   }
 }

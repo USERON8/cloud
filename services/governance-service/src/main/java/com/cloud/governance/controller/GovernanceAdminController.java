@@ -13,6 +13,7 @@ import com.cloud.common.domain.dto.user.UserNotificationStatusChangeRequestDTO;
 import com.cloud.common.domain.dto.user.UserPageDTO;
 import com.cloud.common.domain.dto.user.UserSystemAnnouncementRequestDTO;
 import com.cloud.common.domain.dto.user.UserUpsertRequestDTO;
+import com.cloud.common.domain.support.AuthGovernancePayloadMapper;
 import com.cloud.common.domain.vo.auth.AuthAuthorizationDetailVO;
 import com.cloud.common.domain.vo.auth.AuthTokenStorageStatsVO;
 import com.cloud.common.domain.vo.auth.TokenBlacklistCheckVO;
@@ -407,30 +408,7 @@ public class GovernanceAdminController {
         remoteCallSupport.query(
             "auth-service.governance.getAuthorizationDetails",
             () -> authGovernanceDubboApi.getAuthorizationDetails(id));
-    Map<String, Object> payload = new HashMap<>();
-    payload.put("id", detail.getId());
-    payload.put("clientId", detail.getClientId());
-    payload.put("principalName", detail.getPrincipalName());
-    payload.put("grantType", detail.getGrantType());
-    payload.put("scopes", detail.getScopes());
-    Map<String, Object> tokens = new HashMap<>();
-    if (detail.getAccessToken() != null) {
-      tokens.put(
-          "accessToken",
-          Map.of(
-              "issuedAt", detail.getAccessToken().getIssuedAt(),
-              "expiresAt", detail.getAccessToken().getExpiresAt(),
-              "scopes", detail.getAccessToken().getScopes()));
-    }
-    if (detail.getRefreshToken() != null) {
-      tokens.put(
-          "refreshToken",
-          Map.of(
-              "issuedAt", detail.getRefreshToken().getIssuedAt(),
-              "expiresAt", detail.getRefreshToken().getExpiresAt()));
-    }
-    payload.put("tokens", tokens);
-    return Result.success(payload);
+    return Result.success(AuthGovernancePayloadMapper.toAuthorizationDetailPayload(detail));
   }
 
   @DeleteMapping("/auth/authorizations/{id}")

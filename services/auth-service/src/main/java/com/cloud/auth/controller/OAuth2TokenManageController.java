@@ -1,9 +1,7 @@
 package com.cloud.auth.controller;
 
 import com.cloud.auth.service.AuthGovernanceService;
-import com.cloud.common.domain.vo.auth.AuthAuthorizationDetailVO;
-import com.cloud.common.domain.vo.auth.AuthTokenStorageStatsVO;
-import com.cloud.common.domain.vo.auth.TokenBlacklistCheckVO;
+import com.cloud.common.domain.support.AuthGovernancePayloadMapper;
 import com.cloud.common.domain.vo.auth.TokenBlacklistStatsVO;
 import com.cloud.common.exception.ResourceNotFoundException;
 import com.cloud.common.result.Result;
@@ -50,7 +48,8 @@ public class OAuth2TokenManageController {
   @GetMapping("/authorizations/statistics")
   @PreAuthorize("hasAuthority('admin:all')")
   public Result<Map<String, Object>> getTokenStats() {
-    return Result.success(toTokenStatsPayload(authGovernanceService.getTokenStats()));
+    return Result.success(
+        AuthGovernancePayloadMapper.toTokenStatsPayload(authGovernanceService.getTokenStats()));
   }
 
   @Operation(
@@ -64,7 +63,8 @@ public class OAuth2TokenManageController {
           @NotBlank(message = "authorization id cannot be blank")
           String id) {
     return Result.success(
-        toAuthorizationDetailPayload(authGovernanceService.getAuthorizationDetails(id)));
+        AuthGovernancePayloadMapper.toAuthorizationDetailPayload(
+            authGovernanceService.getAuthorizationDetails(id)));
   }
 
   @Operation(summary = "Revoke authorization", description = "Revoke OAuth2 authorization by ID")
@@ -137,7 +137,8 @@ public class OAuth2TokenManageController {
           @NotBlank(message = "tokenValue cannot be blank")
           String tokenValue) {
     return Result.success(
-        toBlacklistCheckPayload(authGovernanceService.checkBlacklist(tokenValue)));
+        AuthGovernancePayloadMapper.toBlacklistCheckPayload(
+            authGovernanceService.checkBlacklist(tokenValue)));
   }
 
   @Operation(
@@ -152,52 +153,5 @@ public class OAuth2TokenManageController {
     result.put("message", "Blacklist cleanup completed");
     result.put("cleanupTime", Instant.now());
     return Result.success(result);
-  }
-
-  private Map<String, Object> toTokenStatsPayload(AuthTokenStorageStatsVO stats) {
-    Map<String, Object> payload = new LinkedHashMap<>();
-    payload.put("authorizationCount", stats.getAuthorizationCount());
-    payload.put("accessIndexCount", stats.getAccessIndexCount());
-    payload.put("refreshIndexCount", stats.getRefreshIndexCount());
-    payload.put("codeIndexCount", stats.getCodeIndexCount());
-    payload.put("principalIndexCount", stats.getPrincipalIndexCount());
-    payload.put("redisInfo", stats.getRedisInfo());
-    payload.put("storageType", stats.getStorageType());
-    return payload;
-  }
-
-  private Map<String, Object> toAuthorizationDetailPayload(AuthAuthorizationDetailVO detail) {
-    Map<String, Object> payload = new LinkedHashMap<>();
-    payload.put("id", detail.getId());
-    payload.put("clientId", detail.getClientId());
-    payload.put("principalName", detail.getPrincipalName());
-    payload.put("grantType", detail.getGrantType());
-    payload.put("scopes", detail.getScopes());
-    Map<String, Object> tokens = new LinkedHashMap<>();
-    if (detail.getAccessToken() != null) {
-      tokens.put(
-          "accessToken",
-          Map.of(
-              "issuedAt", detail.getAccessToken().getIssuedAt(),
-              "expiresAt", detail.getAccessToken().getExpiresAt(),
-              "scopes", detail.getAccessToken().getScopes()));
-    }
-    if (detail.getRefreshToken() != null) {
-      tokens.put(
-          "refreshToken",
-          Map.of(
-              "issuedAt", detail.getRefreshToken().getIssuedAt(),
-              "expiresAt", detail.getRefreshToken().getExpiresAt()));
-    }
-    payload.put("tokens", tokens);
-    return payload;
-  }
-
-  private Map<String, Object> toBlacklistCheckPayload(TokenBlacklistCheckVO result) {
-    Map<String, Object> payload = new LinkedHashMap<>();
-    payload.put("tokenValue", result.getTokenPreview());
-    payload.put("isBlacklisted", result.getBlacklisted());
-    payload.put("checkTime", result.getCheckedAt());
-    return payload;
   }
 }
