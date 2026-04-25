@@ -1,7 +1,7 @@
 # Payment Service
 Version: 1.1.0
 
-Payment service for payment order management, refund processing, and payment channel compensation.
+Payment domain service for payment orders, checkout sessions, refunds, and external payment callbacks.
 
 - Service name: `payment-service`
 - Port: `8086`
@@ -10,56 +10,29 @@ Payment service for payment order management, refund processing, and payment cha
 
 ## Responsibilities
 
-- Manages payment orders and refund orders.
-- Integrates payment provider callbacks and compensation flows.
-- Publishes payment success and refund completion events.
-- Provides payment-status lookup for order orchestration.
+- Creates and queries payment orders.
+- Creates checkout sessions and renders the ticketed checkout page.
+- Handles payment provider callbacks and refund processing.
+- Publishes payment success and refund-completed events.
 
-## Core Endpoints
+## HTTP Surface
 
-- Create payment order: `POST /api/payments/orders`
-- Query payment order: `GET /api/payments/orders/{paymentNo}`
-- Query payment status: `GET /api/payments/orders/{paymentNo}/status`
-- External compatibility callback: `POST /api/v1/payment/alipay/notify`
-- Create refund: `POST /api/payments/refunds`
-- Query refund: `GET /api/payments/refunds/{refundNo}`
-- Payment provider integration: implemented through `PaymentProviderGateway`, currently with Alipay query and refund compensation paths
+- Payment orders: `/api/payment-orders/**`
+- Refunds: `/api/payment-refunds/**`
+- Checkout page: `GET /api/payment-checkouts/{ticket}`
+- Provider callback: `POST /api/v1/payment/alipay/notify`
 
-## Messaging And Consistency
+## Runtime Notes
 
-- Produced events: `PAYMENT_SUCCESS` (RocketMQ transactional message) and `REFUND_COMPLETED` (Outbox)
-- Reliable delivery: `REFUND_COMPLETED` is persisted to `outbox_event` and published by `PaymentOutboxRelay`
-- Transaction model: payment success uses RocketMQ transactional messages; refunds use local transactions + Outbox
-
-## Current Design Notes
-
-- Payment success is treated as a high-value event and uses RocketMQ transactional messaging instead of only local outbox relay.
-- Refund completion remains on the local-transaction-plus-outbox pattern.
-- `payment-service` now participates in the unified eventual-consistency model without any Seata dependency.
-- Order-status lookup now goes through shared `RemoteCallSupport`, so query failures can degrade cleanly without scattering Dubbo exception handling.
-
-## Current Cache Model
-
-- `PaymentSecurityCacheService` uses explicit Redis single-level cache for:
-  - payment order idempotency keys
-  - payment result reuse keys
-  - short-lived payment status lookup cache
+- Reliable delivery follows local transaction + `outbox_event` + RocketMQ relay.
+- The public payment flow is `payment order -> checkout session -> checkoutPath -> status polling`.
+- Cache is intentionally limited to:
+  - idempotency keys
+  - duplicate-result reuse
+  - short-lived non-final status helpers
   - checkout tickets
-  - per-user payment rate limiting
-- This cache layer is security and anti-duplication oriented, not a business read-acceleration layer.
-
-## Scheduled Jobs
-
-- Compensation jobs run through `XXL-JOB`
-- Registered handler: `paymentOrderReconcileJob`
-- Registered handler: `paymentRefundRetryJob`
-
-## Known Findings In This Sync
-
-- `payment-service` already uses explicit Redis single-level cache through `PaymentSecurityCacheService` instead of annotation-driven cache behavior.
-- The current cache scope is intentionally narrow and focused on idempotency, short-lived status lookup, checkout tickets, and rate limiting.
-- The README now makes the split between transactional-message success handling and outbox-based refund handling explicit.
-- No extra local L1 cache was added here because payment correctness and anti-duplication semantics matter more than shaving a network hop.
+  - rate limiting
+- Final payment truth stays in MySQL and transactional workflows. Amounts and terminal states are not cached as business data.
 
 ## Local Run
 

@@ -1,7 +1,7 @@
 # User Service
 Version: 1.1.0
 
-User domain service covering consumers, merchants, administrators, and merchant verification workflows.
+User domain service for consumers, merchants, merchant verification, administrators, and related profile data.
 
 - Service name: `user-service`
 - Port: `8082`
@@ -11,53 +11,25 @@ User domain service covering consumers, merchants, administrators, and merchant 
 ## Responsibilities
 
 - Owns user profile, address, merchant, merchant-auth, and admin domain data.
-- Exposes query, management, profile, statistics, notification, and internal Dubbo interfaces.
-- Coordinates with `auth-service` for principal and authority synchronization.
-- Publishes user-notification related messages through RocketMQ.
+- Provides the main CRUD and query APIs for those domains.
+- Supplies user-domain data that is later aggregated by governance routes.
+- Publishes notification-related messages and cooperates with `auth-service` on identity data.
 
-## Core Endpoint Groups
+## HTTP Surface
 
-- User profile: `/api/user/profile/**`
-- User address: `/api/user/address/**`
-- User query: `/api/query/users/**`
-- User management: `/api/manage/users/**`
-- Merchant management: `/api/merchant/**`
-- Merchant verification: `/api/merchant/auth/**`
-- Administration: `/api/admin/**`
-- Statistics and thread pools: `/api/statistics/**`, `/api/thread-pool/**`
+- User self-service: `/api/users/me/**`
+- Address: `/api/users/{userId}/addresses/**`, `/api/addresses/**`
+- Merchant: `/api/merchants/**`
+- Merchant authentication: `/api/merchants/{merchantId}/authentication/**`, `/api/merchant-authentications/**`
+- Admin accounts: `/api/admins/**`
+- Admin support controllers also exist for `/api/admin/users/**`, `/api/admin/statistics/**`, `/api/admin/thread-pools/**`, and `/api/admin/notifications/**`
 
-## Current Confirmed Cache Model
+## Runtime Notes
 
-- Redis single-level cache already implemented explicitly for:
-  - user basic info
-  - user address data
-  - admin service
-  - merchant service
-  - merchant-auth service
-  - statistics service
-  - async user refresh and file upload invalidation paths
-
-## Authorization Rules
-
-- Uses OAuth2 JWT resource server mode
-- Scopes follow the unified `resource:action` format
-- Administrative endpoints require `ROLE_ADMIN` plus the matching scope
-- Internal Dubbo endpoints use `/internal/user/**`
-
-## What Was Changed In The Current Sync Round
-
-- Replaced previous partial user-info cache implementation with explicit Redis single-level cache service.
-- Replaced previous partial user-address cache implementation with explicit Redis single-level cache service.
-- Replaced legacy cache invalidation in async refresh and avatar upload flows with explicit Redis cache updates.
-- Replaced admin, merchant, merchant-auth, and statistics service cache usage with explicit Redis single-level cache services.
-- Removed remaining `Spring Cache` dependency from `UserServiceImpl` and aligned user write paths with explicit Redis cache refresh and eviction.
-- Added and updated targeted tests for the user, address, admin, merchant, merchant-auth, and statistics cache paths.
-
-## Known Findings In This Sync
-
-- Business cache paths in `user-service` are now unified to explicit Redis single-level cache services.
-- `UserApplication` still enables Spring caching at framework level, but current user-domain business flows no longer depend on annotation-driven cache behavior.
-- Future cache work in this service should prefer extending the existing explicit cache services instead of reintroducing `CacheManager` or `@Cacheable` style annotations.
+- When traffic enters through `gateway`, the preferred public admin routes for statistics, thread pools, notifications, and admin-user governance are owned by `governance-service`.
+- Business cache paths use explicit Redis single-level services for user, address, merchant, merchant-auth, and statistics reads.
+- Avatar upload and related file handling depend on MinIO integration.
+- This service remains the source of truth for user-domain data even when the public admin surface is aggregated elsewhere.
 
 ## Local Run
 

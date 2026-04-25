@@ -1,62 +1,31 @@
 # Search Service
 Version: 1.1.0
 
-Search service responsible for product and shop discovery, recommendations, and suggestion features.
+Search and discovery service for products, shops, suggestions, and recommendation endpoints.
 
 - Service name: `search-service`
 - Port: `8087`
-- Primary dependencies: Elasticsearch, Redis, and Nacos
+- Primary dependencies: Elasticsearch, Redis, MySQL, Nacos
 
 ## Responsibilities
 
-- Provides product search, shop search, suggestions, hot keywords, keyword recommendations, and filtered search views.
-- Maintains Elasticsearch-backed query endpoints for product and shop discovery.
-- Consumes upstream product synchronization messages and XXL full-index rebuild jobs.
-- Maintains Redis-based hot keyword ranking and today hot-selling product ranking.
-- Rebuilds product documents from product, category, and stock signals using `availableQty` as the searchable stock field.
+- Serves product search, shop search, suggestions, and recommendation APIs.
+- Maintains Elasticsearch-backed product and shop documents.
+- Tracks hot keywords and hot-selling products in Redis.
+- Rebuilds or refreshes search documents from upstream product, category, and stock signals.
 
-## Core Endpoints
+## HTTP Surface
 
-- Product search: `/api/search/**`
+- Product search: `/api/search/products/**`
 - Shop search: `/api/search/shops/**`
+- Shop detail: `/api/shops/{shopId}`
 
-## Current Confirmed Cache Model
+## Runtime Notes
 
-- Redis single-level hot data cache:
-  - hot keyword list
-  - today hot-selling product id list
-- Redis single-level cache inside `ElasticsearchOptimizedService`:
-  - smart search results
-  - search suggestions
-  - hot keywords
-  - keyword recommendations
-
-## Data Sources And Background Jobs
-
-- This service does not maintain an independent MySQL bootstrap script
-- Product, category, and stock data is synchronized from upstream services into Elasticsearch, with MQ-based incremental sync and XXL full rebuild already connected
-- Redis-backed hot data caches and search cache policies are configured in `application.yml`
-- Hot keyword DB synchronization uses `scheduled` mode by default; switch to XXL with `SEARCH_HOT_DB_SYNC_TRIGGER_MODE=xxl`
-
-## What Was Changed In The Current Sync Round
-
-- Added explicit Redis hot-data cache service for:
-  - hot keyword list
-  - today hot-selling product id list
-- Removed stale dev-only `cache.multi-level` config from `application-dev.yml`
-- Removed stale smart-search, suggestion, hot-keyword, and recommendation L1 config from `application.yml`
-- Removed local L1 caches for hot keywords and keyword recommendations in `ElasticsearchOptimizedService`
-- Removed remaining local L1 caches for smart search results and search suggestions in `ElasticsearchOptimizedService`
-- Removed the now-unused Caffeine dependency and refresh-executor config
-- Updated this README to match the actual implementation
-
-## Known Findings In This Sync
-
-- `search-service` hot-data and keyword/search cache paths are now aligned to explicit Redis single-level cache.
-- Cache invalidation for hot keywords is still interval-driven, so correctness still depends on TTL plus invalidation timing rather than strong consistency.
-- Incremental Elasticsearch sync now depends on MQ events from product and stock domains instead of direct database coupling.
-- Stock-driven document rebuild uses available inventory totals instead of the old salable-quantity naming.
-- If the team later wants stronger freshness for search-result cache, the next step should be explicit invalidation events tied to product index updates.
+- This service has no dedicated business bootstrap SQL under `db/init`; search data is built from Elasticsearch indexes and upstream sync inputs.
+- Hot keywords and today-popular product ids use Redis single-level cache.
+- Search result optimization inside the service also relies on Redis rather than local L1 cache.
+- Index freshness depends on upstream sync signals plus scheduled rebuild paths.
 
 ## Local Run
 

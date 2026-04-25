@@ -1,7 +1,7 @@
 # Stock Service
 Version: 1.1.0
 
-Inventory service supporting segmented reservation, release, confirmation, stocktaking, and ledger queries.
+Inventory service for reservation, confirmation, release, restoration, and stock ledger reads.
 
 - Service name: `stock-service`
 - Port: `8085`
@@ -10,36 +10,22 @@ Inventory service supporting segmented reservation, release, confirmation, stock
 
 ## Responsibilities
 
-- Owns segmented inventory quantity, reservation, release, and final confirmation.
-- Maintains explicit `available`, `locked`, and `sold` quantities per stock segment.
-- Executes reservation commands from MQ with local transactions and consumer idempotency.
-- Publishes stock failure or alert events when required.
+- Owns segmented stock rows and inventory quantity transitions.
+- Consumes stock reservation, confirmation, release, and restore commands.
+- Publishes stock failure or alert events when needed.
+- Serves stock ledger reads for admin and internal operations.
 
-## Core Endpoints
+## HTTP Surface
 
-- Unified entry: `/api/stocks/**`
-- Internal access: `/internal/stock/**`
+- Public admin ledger: `GET /api/admin/stocks/ledger/{skuId}`
+- Internal ledger: `GET /api/admin/stocks/internal/ledger/{skuId}`
 
-## Messaging And Consistency
+## Runtime Notes
 
-- Produced events: `STOCK_FREEZE_FAILED`, `STOCK_ALERT`
-- Reliable delivery: produced events are persisted to `outbox_event`, then dispatched after commit and polled by `StockOutboxRelay` as fallback
-- Consumed events: `STOCK_RESERVE_REQUEST`, `STOCK_CONFIRM_REQUEST`, `STOCK_RELEASE_REQUEST`, `STOCK_RESTORE`
-- Transaction model: local transaction + outbox + RocketMQ reliable delivery + consumer idempotency
-
-## Current Design Notes
-
-- `stock_segment` splits one SKU into multiple rows to reduce hot-row contention.
-- `StockRedisCacheService` keeps a Redis summary per SKU and uses Lua for fast availability pre-check.
-- Reservation, confirmation, release, and rollback reconcile MySQL state first and then evict Redis summary state after commit with delayed second eviction.
-- Stock changes also trigger product-search sync for affected SKUs.
-
-## Known Findings In This Sync
-
-- The ledger query path uses Redis summary cache backed by aggregated `stock_segment` queries.
-- Redis Lua currently guards entry-side availability checks before database allocation runs.
-- Cross-node cache freshness now follows post-commit eviction plus delayed double delete instead of in-transaction cache writes.
-- Delayed RocketMQ timeout handling is part of the normal stock release path for unpaid orders.
+- Hot-row contention is reduced through `stock_segment`.
+- Redis summary cache and Lua checks are used for fast availability pre-checks.
+- Cross-service consistency follows local transaction + `outbox_event` + RocketMQ + consumer idempotency.
+- Cache invalidation for stock summaries uses post-commit eviction and delayed second delete.
 
 ## Local Run
 

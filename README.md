@@ -1,203 +1,106 @@
-﻿# Cloud Shop Microservices
+# Cloud Shop Microservices
 Version: 1.1.0
 
 [Chinese](./README-zh.md)
 
-A simplified e-commerce microservices project.
-Backend: Spring Boot + Spring Cloud Alibaba.
-Frontend: UniApp (Vue 3 + TypeScript).
+Cloud Shop is a microservice e-commerce project built with Spring Boot, Spring Cloud Alibaba, Dubbo, RocketMQ, MySQL, Redis, Elasticsearch, and a UniApp frontend.
 
-## Current Consistency Model
+## Current System Model
 
-- Order/stock/refund events use local DB transactions + `outbox_event` for reliable messaging.
-- Outbox relay runs inside each service (scheduled polling) and publishes to RocketMQ.
-- Payment success is delivered via RocketMQ transactional message in `payment-service`.
-- Consumers are idempotent (Redis-based) to tolerate replays.
-- User notifications are enqueued to RocketMQ (`user-notification`) and retried on consumer failure.
-- No Seata coordinator is required. Cross-service consistency uses local transactions, Outbox, RocketMQ, and idempotent consumers.
+- Public entry: `gateway` is the only public backend entry. In the local Docker setup, Nginx exposes the platform at `http://127.0.0.1:18080`.
+- Authentication and trust: `gateway` validates public JWTs, injects signed `X-Internal-*` headers, and downstream services verify HMAC or accept direct bearer-token traffic.
+- Consistency: cross-service writes use local transactions, `outbox_event`, RocketMQ delivery, and idempotent consumers.
+- Cache: business reads follow Cache-Aside with delayed double delete. `payment-service` cache is limited to idempotency, checkout tickets, short-lived status helpers, and rate limiting.
+- Search: `search-service` serves public product and shop discovery from Elasticsearch and Redis-backed hot data.
 
-## Current Platform Governance
+## Modules
 
-- `gateway` validates public JWTs, signs internal identity headers, and applies both route-level and user-level Sentinel rules.
-- Shared remote service calls use `RemoteCallSupport` to standardize timeout, fallback, and error translation semantics.
-- MQ governance includes consumer topology discovery, lag thresholds, dead-letter admin endpoints, and outbox backlog metrics.
-- Product/category/shop/stock caches now follow Cache-Aside plus delayed double delete after commit.
-
-## Modules And Ports
-
-| Module | Port | Description |
+| Module | Port | Responsibility |
 | --- | --- | --- |
-| `gateway` | `8080` | Unified gateway for `/api/**` and `/auth/**` |
-| `auth-service` | `8081` | OAuth2/JWT auth and GitHub login |
-| `user-service` | `8082` | User, merchant (enable + audit status), admin, profile, address |
-| `order-service` | `8083` | Order and refund |
-| `product-service` | `8084` | Product and category |
-| `stock-service` | `8085` | Inventory and stock movement |
-| `payment-service` | `8086` | Payment and Alipay integration |
-| `search-service` | `8087` | Elasticsearch search |
-| `my-shop-uniapp` | `5173` (dev) | Web/Android/iOS frontend (UniApp) |
+| `gateway` | `8080` | Public routing, JWT validation, HMAC forwarding, rate limiting, fallback handling |
+| `auth-service` | `8081` | OAuth2 authorization server, JWT issuance, session logout, GitHub OAuth login |
+| `user-service` | `8082` | User profile, address, merchant, merchant-auth, and admin domain data |
+| `order-service` | `8083` | Cart, order lifecycle, after-sale, timeout handling |
+| `product-service` | `8084` | Product, SKU, SPU, and category management |
+| `stock-service` | `8085` | Stock reservation, release, confirmation, and ledger queries |
+| `payment-service` | `8086` | Payment orders, checkout sessions, refunds, payment callback handling |
+| `search-service` | `8087` | Product search, shop search, suggestions, recommendations |
+| `governance-service` | `8088` | Admin aggregation, MQ and Outbox governance, observability redirects |
+| `my-shop-uniapp` | `5173` (dev) | UniApp frontend for H5 and app builds |
 
-## Service Documentation Map
+## Repository Layout
 
-| Service | Document |
-| --- | --- |
-| `gateway` | [services/gateway/README.md](./services/gateway/README.md) |
-| `auth-service` | [services/auth-service/README.md](./services/auth-service/README.md) |
-| `user-service` | [services/user-service/README.md](./services/user-service/README.md) |
-| `order-service` | [services/order-service/README.md](./services/order-service/README.md) |
-| `product-service` | [services/product-service/README.md](./services/product-service/README.md) |
-| `stock-service` | [services/stock-service/README.md](./services/stock-service/README.md) |
-| `payment-service` | [services/payment-service/README.md](./services/payment-service/README.md) |
-| `search-service` | [services/search-service/README.md](./services/search-service/README.md) |
-
-## Current Cache Rollout Status
-
-- `user-service`
-  - User basic info, address, admin, merchant, merchant-auth, and statistics cache paths are unified to explicit Redis single-level cache services.
-  - Async refresh and avatar upload invalidation paths were also aligned to the same explicit Redis cache model.
-  - `UserApplication` still keeps `@EnableCaching`, but current user-domain business flows no longer depend on annotation-driven cache behavior.
-- `search-service`
-  - Hot keyword list is cached through Redis single-level hot-data cache.
-  - Today hot-selling product id list is cached through Redis single-level hot-data cache.
-  - Smart search, suggestions, hot keywords, and keyword recommendations inside `ElasticsearchOptimizedService` now use Redis single-level cache only.
-  - Legacy local L1 cache config and the unused Caffeine dependency were removed from the search hot-data path.
-- `product-service`
-  - Product detail keeps its explicit multi-level cache design in `ProductDetailCacheService` with local Caffeine plus Redis storage.
-  - Category tree and shop query/statistics cache paths were moved from `Spring Cache` annotations to explicit Redis cache services.
-  - `ProductApplication` no longer depends on `@EnableCaching`.
-- `stock-service`
-  - Stock ledger query reads now use a pragmatic multi-level cache: short-lived local L1 plus Redis ledger cache.
-  - Redis Lua updates remain the cross-request consistency source for reserve, release, confirm, and rollback flows.
-- `order-service`
-  - Completed main-order aggregate reads now use a pragmatic multi-level cache: short-lived local L1 plus Redis aggregate cache.
-- Aggregate cache invalidation is already wired into sub-order status transitions, shipping updates, after-sale changes, refund updates, and stock command flows.
-- `payment-service`
-  - Payment security and anti-duplication paths use explicit Redis single-level cache for idempotency keys, result reuse, short-lived status lookup, checkout tickets, and rate limiting.
-  - No local L1 cache is used here because the cache role is correctness support and abuse control rather than domain read acceleration.
-- `auth-service` and `gateway`
-  - JWT blacklist validation now defaults to fail-closed when Redis blacklist lookup is unavailable.
-  - Default user and internal access-token TTL are reduced to `PT15M` to keep fail-closed outage windows bounded.
-  - Startup validation in `auth-service` prevents a longer access-token TTL from being combined with fail-closed mode.
-
-## Known Findings From This Sync Round
-
-- `user-service` business cache paths are now unified to explicit Redis single-level cache services, but the framework-level `@EnableCaching` switch is still present and could mislead future changes.
-- `search-service` no longer keeps Caffeine-based local caches for hot data, smart search, or suggestions, but freshness still depends on TTL plus invalidation timing rather than strict event-driven invalidation.
-- `product-service` intentionally remains mixed by design: hot product detail is multi-level, while category and shop cache paths are Redis single-level. That split should stay explicit in future work instead of drifting back to generic annotation caching.
-- `stock-service` now has a local L1 ledger cache, but cross-node L1 freshness still depends on the short TTL window because this round did not add an event-driven invalidation bus.
-- `order-service` aggregate cache is intentionally narrow and only targets completed main-order reads, so it should stay a read optimization instead of expanding into an order-state source of truth.
-- `payment-service` cache scope is intentionally defensive and short-lived; if future work adds any local cache here, it needs a stronger justification than generic latency reduction.
-- Fail-closed JWT blacklist validation is safer for logout and token revocation semantics, but it turns Redis availability and short access-token TTL into a coupled operational control.
-- Service README files were previously too brief to reflect the current runtime model. They are now expanded, but some modules still need deeper endpoint-level auditing if the team wants a full operational handbook.
-- Consolidated status and audit notes now live in [docs/backend-rpc-refactor-plan.md](./docs/backend-rpc-refactor-plan.md).
+- `common-parent/`: shared libraries such as `common-api`, `common-db`, `common-security`, and `common-messaging`
+- `services/`: backend services and service-level README files
+- `my-shop-uniapp/`: UniApp frontend
+- `db/`: bootstrap and test SQL scripts
+- `scripts/dev/`: local startup scripts
+- `docker/`: infrastructure, monitoring, and local container definitions
+- `docs/`: API, startup, consistency, cache, and observability notes
 
 ## Quick Start
 
-## Environment Files
-
-- Copy `.env.example` to `.env` before starting local services.
-- Copy `docker/.env.example` to `docker/.env` before starting Docker Compose.
-- Real `.env` files are local-only and must not be committed.
-- Sensitive values such as database passwords, Redis passwords, OAuth client secrets, JWT keys, and payment keys are now loaded from `.env`.
-
-1. Start infrastructure:
+1. Prepare local environment files.
 
 ```bash
-bash scripts/dev/start-containers.sh
-# PowerShell compatibility:
-# powershell -File scripts/dev/start-containers.ps1
+cp .env.example .env
+cp docker/.env.example docker/.env
 ```
 
-Optional: start with full monitoring stack (Prometheus + Grafana + exporters):
+PowerShell:
+
+```powershell
+Copy-Item .env.example .env
+Copy-Item docker/.env.example docker/.env
+```
+
+2. Start infrastructure, or start the whole platform in one command.
 
 ```bash
 bash scripts/dev/start-containers.sh --with-monitoring
-# PowerShell compatibility:
-# powershell -File scripts/dev/start-containers.ps1 --with-monitoring
-```
-
-One-command startup for containers + services:
-
-```bash
+# or
 bash scripts/dev/start-platform.sh --with-monitoring
-# PowerShell compatibility:
-# powershell -File scripts/dev/start-platform.ps1 --with-monitoring
 ```
 
-Compatibility alias:
+Windows PowerShell:
 
-```bash
-bash scripts/dev/start-all.sh --with-monitoring
-# PowerShell compatibility:
-# powershell -File scripts/dev/start-all.ps1 --with-monitoring
+```powershell
+powershell -File scripts/dev/start-containers.ps1 --with-monitoring
+# or
+powershell -File scripts/dev/start-platform.ps1 --with-monitoring
 ```
 
-2. Database bootstrap:
-- Run `db/init/**/*.sql` first, then `db/test/**/*.sql` (optional).
-- In the current closed development phase:
-  - MySQL is rebuilt on each container restart.
-  - History data is not preserved.
-  - Migration compatibility is not required.
-
-3. Build backend:
+3. Build backend modules.
 
 ```bash
 mvn -T 1C clean package -DskipTests
 ```
 
-4. Start backend services:
+4. Start backend services if you did not use `start-platform.*`.
 
 ```bash
 bash scripts/dev/start-services.sh
-# PowerShell compatibility:
-# powershell -File scripts/dev/start-services.ps1
 ```
 
-When `start-services.*` is run directly, it auto-exports the local runtime addresses and development secrets required by gateway/auth, including `GATEWAY_SIGNATURE_SECRET`, `CLIENT_SERVICE_SECRET`, `APP_OAUTH2_*_CLIENT_SECRET`, and `APP_JWT_ALLOW_GENERATED_KEYPAIR`.
-`start-platform.*` and `start-services.*` set `JAVA_TOOL_OPTIONS` and `SW_AGENT_NAME` for the 8 business services, using the agent under `docker/monitor/skywalking/agent/`, so HTTP, Dubbo, Redis, and JDBC/MyBatis traces show up in SkyWalking UI.
-
-Host-first acceptance workflow:
-
-```bash
-bash scripts/dev/start-host-linked.sh --services=gateway,auth-service,user-service
-# PowerShell compatibility:
-# powershell -File scripts/dev/start-host-linked.ps1 --services=gateway,auth-service,user-service
-```
-
-`start-host-linked.*` starts infrastructure plus the selected host-side Java services, then validates `.tmp/acceptance/startup.csv` and the corresponding stdout/stderr logs. A service is accepted only when health status is `UP` or `UP_SECURED`, stderr stays empty, and stdout has no critical startup error patterns.
-
-Cluster-linked deployment after host acceptance:
-
-```bash
-bash scripts/dev/start-cluster-linked.sh --services=auth-service,user-service
-# PowerShell compatibility:
-# powershell -File scripts/dev/start-cluster-linked.ps1 --services=auth-service,user-service
-```
-
-`start-cluster-linked.*` requires a successful `start-host-linked.*` run first. It recreates Nginx plus the selected service containers with host ports remapped to `28080-28087`, keeps the public gateway entrance on `18080`, and switches `NGINX_GATEWAY_UPSTREAM` to the in-cluster `gateway:8080`.
-
-Restart only the services you changed:
-
-```bash
-bash scripts/dev/start-platform.sh --skip-containers --services=order-service,stock-service
-# PowerShell compatibility:
-# powershell -File scripts/dev/start-platform.ps1 --skip-containers --services=order-service
-```
-
-Service process logs are written to `.tmp/service-runtime/<service>/stdout.log` and `.tmp/service-runtime/<service>/stderr.log`.
-Rolling application and error logs are written to `services/<service>/logs/` by default, or `.tmp/service-runtime/<service>/app-logs/` if the module log directory is not writable.
-
-5. Build frontend:
+5. Run or build the frontend.
 
 ```bash
 pnpm --dir my-shop-uniapp install
+pnpm --dir my-shop-uniapp dev:h5
+# or
 pnpm --dir my-shop-uniapp build:h5
 ```
 
-## Common Entrances
+Notes:
+
+- The MySQL container mounts `db/init/**` and `db/test/**` and bootstraps data through `docker/docker-compose.yml`.
+- Service process logs are written under `.tmp/service-runtime/<service>/`.
+- For detailed startup flags, linked-host workflows, and monitoring options, use `docs/dev-startup.md`.
+
+## Common URLs
 
 - Frontend: `http://127.0.0.1:18080`
-- Gateway API Docs: `http://127.0.0.1:18080/doc.html`
+- Gateway OpenAPI / Knife4j: `http://127.0.0.1:18080/doc.html`
 - Nacos: `http://127.0.0.1:18080/nacos`
 - RocketMQ Dashboard: `http://127.0.0.1:38082`
 - MinIO Console: `http://127.0.0.1:19001`
@@ -207,4 +110,17 @@ pnpm --dir my-shop-uniapp build:h5
 - Grafana: `http://127.0.0.1:13000`
 - SkyWalking UI: `http://127.0.0.1:13001`
 - Sentinel Dashboard: `http://127.0.0.1:18718`
+- XXL-Job Admin: `http://127.0.0.1:18089`
 
+## Documentation Map
+
+| Document | Purpose |
+| --- | --- |
+| `docs/backend-api.md` | Current backend route ownership, trust boundary, and API surface |
+| `docs/frontend-api.md` | Current UniApp API modules and frontend request rules |
+| `docs/backend-runtime.md` | Backend boundary, consistency, cache, and exception rules |
+| `docs/dev-startup.md` | Local startup scripts, flags, and linked-host workflows |
+| `docs/observability-stack.md` | SkyWalking, Prometheus, and Grafana setup |
+| `docs/TEST_SCRIPT_INDEX.md` | Contract, smoke, and performance script entrypoints |
+| `db/README.md` | SQL bootstrap layout and execution order |
+| `services/*/README.md` | Service-specific responsibility and runtime notes |

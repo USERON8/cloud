@@ -1,9 +1,7 @@
 # Database Script Guide
 Version: 1.1.0
 
-Project database scripts live under `db/`. The main development path keeps only `init.sql` and `test.sql`.
-
-## Directory Layout
+## Layout
 
 - `db/init/infra/nacos/init.sql`
 - `db/init/infra/skywalking/init.sql`
@@ -14,27 +12,27 @@ Project database scripts live under `db/`. The main development path keeps only 
 - `db/init/order-service/init.sql`
 - `db/init/stock-service/init.sql`
 - `db/init/payment-service/init.sql`
-- `db/test/*/test.sql` (including `auth-service` and the business services)
+- `db/test/*/test.sql`
 
 ## Execution Order
 
-1. `db/init/infra/nacos/init.sql`
-2. Optionally run `db/init/infra/skywalking/init.sql` and `db/init/infra/xxl-job/init.sql`
-3. Run each business service bootstrap script under `db/init/*/init.sql`
-4. Optionally run `db/test/*/test.sql`
+1. Run `db/init/infra/nacos/init.sql`
+2. Run optional infra scripts for SkyWalking and XXL-Job if needed
+3. Run each service bootstrap script under `db/init/*/init.sql`
+4. Run optional test data under `db/test/*/test.sql`
 
 ## Shared Tables
 
-The following tables are included consistently in the `init.sql` files for `order-service`, `payment-service`, and `stock-service` to support reliable messaging and consumer idempotency:
+`order-service`, `payment-service`, and `stock-service` keep these shared reliability tables:
 
-- `outbox_event`: local transaction outbox persisted before scheduled relay publishing to RocketMQ
-- `inbox_consume_log`: consumer-side idempotency records
+- `outbox_event`
+- `inbox_consume_log`
 
-## Example (MySQL on `127.0.0.1:3306`)
+## Local Example
 
 ```bash
 mysql -h127.0.0.1 -P3306 -uroot -proot < db/init/user-service/init.sql
 mysql -h127.0.0.1 -P3306 -uroot -proot < db/test/user-service/test.sql
 ```
 
-If you use the MySQL container directly, run the same script through `docker exec -i mysql_db mysql -uroot -proot`.
+In the Docker setup, MySQL bootstrap is wired through `docker/docker-compose.yml`.

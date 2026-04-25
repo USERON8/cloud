@@ -25,19 +25,19 @@ ALTER TABLE users
 ALTER TABLE merchant
     ADD INDEX idx_merchant_name_deleted (merchant_name, deleted);
 
-INSERT INTO users (id, username, password, phone, nickname, avatar_url, email, status, enabled, deleted, version)
+INSERT INTO users (id, username, password, phone, nickname, avatar_url, email, status, deleted, version)
 VALUES (20001, 't_user_20001', '$2a$10$m/b9ARBHKAop0eerterQV.x/FCa6zQ4Dg2LHNX/yzTySGWRREwfYu', '13900000001',
-        'Test User One', NULL, 't_user_20001@example.com', 1, 1, 0, 0),
+        'Test User One', NULL, 't_user_20001@example.com', 1, 0, 0),
        (20002, 't_user_20002', '$2a$10$m/b9ARBHKAop0eerterQV.x/FCa6zQ4Dg2LHNX/yzTySGWRREwfYu', '13900000002',
-        'Test User Two', 'https://example.com/u2.png', 't_user_20002@example.com', 1, 1, 0, 0),
+        'Test User Two', 'https://example.com/u2.png', 't_user_20002@example.com', 1, 0, 0),
        (20003, 't_user_20003', '$2a$10$m/b9ARBHKAop0eerterQV.x/FCa6zQ4Dg2LHNX/yzTySGWRREwfYu', '13900000003',
-        'Test User Three', NULL, 't_user_20003@example.com', 1, 1, 0, 0),
+        'Test User Three', NULL, 't_user_20003@example.com', 1, 0, 0),
        (24001, 't_admin_24001', '$2a$10$m/b9ARBHKAop0eerterQV.x/FCa6zQ4Dg2LHNX/yzTySGWRREwfYu', '13900010001',
-        'Platform Admin', NULL, 't_admin_24001@example.com', 1, 1, 0, 0),
+        'Platform Admin', NULL, 't_admin_24001@example.com', 1, 0, 0),
        (30001, 't_merchant_30001', '$2a$10$m/b9ARBHKAop0eerterQV.x/FCa6zQ4Dg2LHNX/yzTySGWRREwfYu', '13900020001',
-        'Merchant Owner A', NULL, 't_merchant_30001@example.com', 1, 1, 0, 0),
+        'Merchant Owner A', NULL, 't_merchant_30001@example.com', 1, 0, 0),
        (30002, 't_merchant_30002', '$2a$10$m/b9ARBHKAop0eerterQV.x/FCa6zQ4Dg2LHNX/yzTySGWRREwfYu', '13900020002',
-        'Merchant Owner B', 'https://example.com/u30002.png', 't_merchant_30002@example.com', 1, 1, 0, 0);
+        'Merchant Owner B', 'https://example.com/u30002.png', 't_merchant_30002@example.com', 1, 0, 0);
 
 INSERT INTO roles (id, code, name, description, deleted, version)
 VALUES (26001, 'ROLE_USER', 'User', 'Default customer role', 0, 0),

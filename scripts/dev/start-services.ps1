@@ -49,6 +49,7 @@ function Get-ServiceCatalog {
         [pscustomobject]@{ name = "payment-service"; port = 8086; jar = "services\payment-service\target\payment-service-1.1.0.jar"; profiles = "dev" },
         [pscustomobject]@{ name = "order-service";   port = 8083; jar = "services\order-service\target\order-service-1.1.0.jar"; profiles = "dev" },
         [pscustomobject]@{ name = "search-service";  port = 8087; jar = "services\search-service\target\search-service-1.1.0.jar"; profiles = "dev" },
+        [pscustomobject]@{ name = "governance-service"; port = 8088; jar = "services\governance-service\target\governance-service-1.1.0.jar"; profiles = "dev" },
         [pscustomobject]@{ name = "gateway";         port = 8080; jar = "services\gateway\target\gateway-1.1.0.jar"; profiles = "dev,route" }
     )
 }
@@ -200,6 +201,9 @@ function Get-ServiceEnvironmentOverrides {
         }
         "payment-service" {
             $overrides["DUBBO_PROTOCOL_PORT"] = "20888"
+        }
+        "governance-service" {
+            $overrides["DUBBO_PROTOCOL_PORT"] = "20892"
         }
         "search-service" {
             $overrides["DUBBO_PROTOCOL_PORT"] = "20890"

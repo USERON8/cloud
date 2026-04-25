@@ -1,4 +1,4 @@
-{
+﻿{
   "info": {
     "_postman_id": "2f2b51b8-ffb3-4cf6-a2a4-2c7b8b3a2b1f",
     "name": "Cloud Shop API Tests",
@@ -187,14 +187,14 @@
           "name": "Get Current Profile",
           "request": {
             "method": "GET",
-            "url": "{{baseUrl}}/api/user/profile/current"
+            "url": "{{baseUrl}}/api/users/me/profile"
           }
         },
         {
           "name": "Update Current Profile",
           "request": {
             "method": "PUT",
-            "url": "{{baseUrl}}/api/user/profile/current",
+            "url": "{{baseUrl}}/api/users/me/profile",
             "header": [
               {
                 "key": "Content-Type",
@@ -216,7 +216,7 @@
           "name": "Change Current Password",
           "request": {
             "method": "PUT",
-            "url": "{{baseUrl}}/api/user/profile/current/password",
+            "url": "{{baseUrl}}/api/users/me/password",
             "header": [
               {
                 "key": "Content-Type",
@@ -238,21 +238,21 @@
           "name": "List Addresses",
           "request": {
             "method": "GET",
-            "url": "{{baseUrl}}/api/user/address/list/{{userId}}"
+            "url": "{{baseUrl}}/api/users/{{userId}}/addresses"
           }
         },
         {
           "name": "Get Default Address",
           "request": {
             "method": "GET",
-            "url": "{{baseUrl}}/api/user/address/default/{{userId}}"
+            "url": "{{baseUrl}}/api/users/{{userId}}/addresses/default"
           }
         },
         {
           "name": "Add Address",
           "request": {
             "method": "POST",
-            "url": "{{baseUrl}}/api/user/address/add/{{userId}}",
+            "url": "{{baseUrl}}/api/users/{{userId}}/addresses",
             "header": [
               {
                 "key": "Content-Type",
@@ -286,7 +286,7 @@
           "name": "Update Address",
           "request": {
             "method": "PUT",
-            "url": "{{baseUrl}}/api/user/address/update/{{addressId}}",
+            "url": "{{baseUrl}}/api/addresses/{{addressId}}",
             "header": [
               {
                 "key": "Content-Type",
@@ -308,14 +308,14 @@
           "name": "Delete Address",
           "request": {
             "method": "DELETE",
-            "url": "{{baseUrl}}/api/user/address/delete/{{addressId}}"
+            "url": "{{baseUrl}}/api/addresses/{{addressId}}"
           }
         },
         {
           "name": "Delete Addresses In Batch",
           "request": {
             "method": "DELETE",
-            "url": "{{baseUrl}}/api/user/address/deleteBatch",
+            "url": "{{baseUrl}}/api/addresses/bulk",
             "description": "Delete multiple addresses by request-body ID list.",
             "header": [
               {
@@ -338,7 +338,7 @@
           "name": "Address Pagination",
           "request": {
             "method": "POST",
-            "url": "{{baseUrl}}/api/user/address/page",
+            "url": "{{baseUrl}}/api/addresses",
             "header": [
               {
                 "key": "Content-Type",
@@ -365,49 +365,49 @@
           "name": "Get Categories",
           "request": {
             "method": "GET",
-            "url": "{{baseUrl}}/api/category?page=1&size=10"
+            "url": "{{baseUrl}}/api/categories?page=1&size=10"
           }
         },
         {
           "name": "Get Category Tree",
           "request": {
             "method": "GET",
-            "url": "{{baseUrl}}/api/category/tree?enabledOnly=true"
+            "url": "{{baseUrl}}/api/categories/tree?enabledOnly=true"
           }
         },
         {
           "name": "Get SPU Detail",
           "request": {
             "method": "GET",
-            "url": "{{baseUrl}}/api/product/spu/{{spuId}}"
+            "url": "{{baseUrl}}/api/spus/{{spuId}}"
           }
         },
         {
           "name": "List SPUs By Category",
           "request": {
             "method": "GET",
-            "url": "{{baseUrl}}/api/product/spu/category/{{categoryId}}?status=1"
+            "url": "{{baseUrl}}/api/categories/{{categoryId}}/spus?status=1"
           }
         },
         {
           "name": "Batch Query SKUs",
           "request": {
             "method": "GET",
-            "url": "{{baseUrl}}/api/product/sku/batch?skuIds={{skuIds}}"
+            "url": "{{baseUrl}}/api/skus?ids={{skuIds}}"
           }
         },
         {
           "name": "List Products",
           "request": {
             "method": "GET",
-            "url": "{{baseUrl}}/api/product?page=1&size=20&status=1"
+            "url": "{{baseUrl}}/api/products?page=1&size=20&status=1"
           }
         },
         {
           "name": "List Manage Products",
           "request": {
             "method": "GET",
-            "url": "{{baseUrl}}/api/product/manage?page=1&size=20&merchantId={{merchantId}}",
+            "url": "{{baseUrl}}/api/spus?page=1&size=20&merchantId={{merchantId}}",
             "description": "Merchant/admin management list. Merchant callers are limited to their own merchant scope."
           }
         },
@@ -415,7 +415,7 @@
           "name": "Search Products By Name",
           "request": {
             "method": "GET",
-            "url": "{{baseUrl}}/api/product/search?name={{searchKeyword}}&size=10"
+            "url": "{{baseUrl}}/api/search/products?keyword={{searchKeyword}}&page=0&size=10"
           }
         },
         {
@@ -429,7 +429,7 @@
           "name": "Smart Search",
           "request": {
             "method": "GET",
-            "url": "{{baseUrl}}/api/search/smart-search?keyword={{searchKeyword}}&page=1&size=20"
+            "url": "{{baseUrl}}/api/search/products?keyword={{searchKeyword}}&page=0&size=20"
           }
         },
         {
@@ -484,8 +484,8 @@
         {
           "name": "Complex Product Search",
           "request": {
-            "method": "POST",
-            "url": "{{baseUrl}}/api/search/products/searches",
+            "method": "PUT",
+            "url": "{{baseUrl}}/api/search/products",
             "header": [
               {
                 "key": "Content-Type",
@@ -514,7 +514,7 @@
           "name": "Shop Filters",
           "request": {
             "method": "POST",
-            "url": "{{baseUrl}}/api/search/shops/filter-groups",
+            "url": "{{baseUrl}}/api/search/shops/filters",
             "header": [
               {
                 "key": "Content-Type",
@@ -536,7 +536,7 @@
           "name": "Complex Shop Search",
           "request": {
             "method": "POST",
-            "url": "{{baseUrl}}/api/search/shops/searches",
+            "url": "{{baseUrl}}/api/search/shops",
             "header": [
               {
                 "key": "Content-Type",
@@ -572,7 +572,7 @@
           "name": "Shop By Id",
           "request": {
             "method": "GET",
-            "url": "{{baseUrl}}/api/search/shops/{{shopId}}"
+            "url": "{{baseUrl}}/api/shops/{{shopId}}"
           }
         },
         {
@@ -591,7 +591,7 @@
           "name": "Get Current Cart",
           "request": {
             "method": "GET",
-            "url": "{{baseUrl}}/api/cart",
+            "url": "{{baseUrl}}/api/users/me/cart",
             "description": "Returns the current authenticated user's active cart and creates one if missing."
           },
           "event": [
@@ -610,8 +610,8 @@
         {
           "name": "Sync Current Cart",
           "request": {
-            "method": "POST",
-            "url": "{{baseUrl}}/api/cart/sync",
+            "method": "PUT",
+            "url": "{{baseUrl}}/api/users/me/cart/items",
             "description": "Full cart replacement. The request body should contain the complete item snapshot for the current active cart.",
             "header": [
               {
@@ -621,7 +621,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"items\": [\n    {\n      \"spuId\": {{spuId}},\n      \"skuId\": {{skuId}},\n      \"skuName\": \"Cloud Phone\",\n      \"quantity\": 1,\n      \"unitPrice\": 4999.00,\n      \"selected\": true\n    }\n  ]\n}",
+              "raw": "{\n  \"items\": [\n    {\n      \"spuId\": {{spuId}},\n      \"skuId\": {{skuId}},\n      \"skuName\": \"Cloud Phone\",\n      \"quantity\": 1,\n      \"unitPrice\": 4999.00,\n      \"selected\": 1\n    }\n  ]\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -650,7 +650,7 @@
         {
           "name": "Create Order (Direct Buy)",
           "request": {
-            "method": "POST",
+            "method": "PUT",
             "url": "{{baseUrl}}/api/orders",
             "description": "Direct-buy sample. clientOrderId is required by the current backend contract.",
             "header": [
@@ -734,14 +734,14 @@
           "name": "Cancel Order",
           "request": {
             "method": "POST",
-            "url": "{{baseUrl}}/api/orders/{{mainOrderId}}/cancel?cancelReason=postman-cancel"
+            "url": "{{baseUrl}}/api/orders/{{mainOrderId}}/cancellation?cancelReason=postman-cancel"
           }
         },
         {
           "name": "Ship Order",
           "request": {
             "method": "POST",
-            "url": "{{baseUrl}}/api/orders/{{mainOrderId}}/ship?shippingCompany=SF&trackingNumber=SF12345678",
+            "url": "{{baseUrl}}/api/orders/{{mainOrderId}}/shipments?shippingCompany=SF&trackingNumber=SF12345678",
             "description": "Requires merchant or admin role."
           }
         },
@@ -749,7 +749,7 @@
           "name": "Complete Order",
           "request": {
             "method": "POST",
-            "url": "{{baseUrl}}/api/orders/{{mainOrderId}}/complete",
+            "url": "{{baseUrl}}/api/orders/{{mainOrderId}}/completion",
             "description": "Requires regular user (owner) or admin role."
           }
         },
@@ -757,7 +757,7 @@
           "name": "Apply After-Sale",
           "request": {
             "method": "POST",
-            "url": "{{baseUrl}}/api/orders/after-sales",
+            "url": "{{baseUrl}}/api/after-sales",
             "header": [
               {
                 "key": "Content-Type",
@@ -791,7 +791,7 @@
           "name": "Cancel After-Sale",
           "request": {
             "method": "POST",
-            "url": "{{baseUrl}}/api/orders/after-sales/{{afterSaleId}}/actions/CANCEL?remark=postman"
+            "url": "{{baseUrl}}/api/after-sales/{{afterSaleId}}/events?action=CANCEL&remark=postman"
           }
         }
       ]
@@ -803,7 +803,7 @@
           "name": "Create Payment Order",
           "request": {
             "method": "POST",
-            "url": "{{baseUrl}}/api/payments/orders",
+            "url": "{{baseUrl}}/api/payment-orders",
             "description": "Regular user payment creation is owner-bound. The amount must match the payable amount of the order.",
             "header": [
               {
@@ -839,21 +839,21 @@
           "name": "Get Payment Order By Number",
           "request": {
             "method": "GET",
-            "url": "{{baseUrl}}/api/payments/orders/{{paymentNo}}"
+            "url": "{{baseUrl}}/api/payment-orders/{{paymentNo}}"
           }
         },
         {
           "name": "Get Payment Order By Order Pair",
           "request": {
             "method": "GET",
-            "url": "{{baseUrl}}/api/payments/orders/by-order?mainOrderNo={{mainOrderNo}}&subOrderNo={{subOrderNo}}"
+            "url": "{{baseUrl}}/api/payment-orders?mainOrderNo={{mainOrderNo}}&subOrderNo={{subOrderNo}}"
           }
         },
         {
           "name": "Create Checkout Session",
           "request": {
             "method": "POST",
-            "url": "{{baseUrl}}/api/payments/orders/{{paymentNo}}/checkout-session"
+            "url": "{{baseUrl}}/api/payment-orders/{{paymentNo}}/checkout-sessions"
           },
           "event": [
             {
@@ -872,7 +872,7 @@
           "name": "Get Checkout HTML Page",
           "request": {
             "method": "GET",
-            "url": "{{baseUrl}}/api/payments/checkout/{{checkoutTicket}}",
+            "url": "{{baseUrl}}/api/payment-checkouts/{{checkoutTicket}}",
             "description": "Public ticketed checkout page.",
             "auth": {
               "type": "noauth"
@@ -883,21 +883,21 @@
           "name": "Get Payment Status",
           "request": {
             "method": "GET",
-            "url": "{{baseUrl}}/api/payments/orders/{{paymentNo}}/status"
+            "url": "{{baseUrl}}/api/payment-orders/{{paymentNo}}/status"
           }
         },
         {
           "name": "Get Refund",
           "request": {
             "method": "GET",
-            "url": "{{baseUrl}}/api/payments/refunds/{{refundNo}}"
+            "url": "{{baseUrl}}/api/payment-refunds/{{refundNo}}"
           }
         },
         {
           "name": "Create Refund",
           "request": {
             "method": "POST",
-            "url": "{{baseUrl}}/api/payments/refunds",
+            "url": "{{baseUrl}}/api/payment-refunds",
             "description": "Requires a paid payment order and a valid afterSaleNo. The order-only requests in this collection do not by themselves complete the payment callback chain.",
             "header": [
               {
@@ -994,21 +994,21 @@
           "name": "Get Merchants",
           "request": {
             "method": "GET",
-            "url": "{{baseUrl}}/api/merchant?page=1&size=10&auditStatus=0"
+            "url": "{{baseUrl}}/api/merchants?page=1&size=10&auditStatus=0"
           }
         },
         {
           "name": "Get Merchant Detail",
           "request": {
             "method": "GET",
-            "url": "{{baseUrl}}/api/merchant/{{merchantId}}"
+            "url": "{{baseUrl}}/api/merchants/{{merchantId}}"
           }
         },
         {
           "name": "Apply Merchant Auth",
           "request": {
-            "method": "POST",
-            "url": "{{baseUrl}}/api/merchant/auth/apply/{{merchantId}}",
+            "method": "PUT",
+            "url": "{{baseUrl}}/api/merchants/{{merchantId}}/authentication",
             "header": [
               {
                 "key": "Content-Type",
@@ -1030,91 +1030,147 @@
           "name": "Get Merchant Auth",
           "request": {
             "method": "GET",
-            "url": "{{baseUrl}}/api/merchant/auth/get/{{merchantId}}"
+            "url": "{{baseUrl}}/api/merchants/{{merchantId}}/authentication"
           }
         },
         {
           "name": "Review Merchant Auth",
           "request": {
             "method": "POST",
-            "url": "{{baseUrl}}/api/merchant/auth/review/{{merchantId}}?authStatus=1&remark=ok"
+            "url": "{{baseUrl}}/api/merchants/{{merchantId}}/authentication/reviews?authStatus=1&remark=ok"
           }
         },
         {
           "name": "Get Admins",
           "request": {
             "method": "GET",
-            "url": "{{baseUrl}}/api/admin?page=1&size=10"
+            "url": "{{baseUrl}}/api/admins?page=1&size=10"
           }
         },
         {
           "name": "Search Users",
           "request": {
             "method": "GET",
-            "url": "{{baseUrl}}/api/query/users/search?page=1&size=20&status=1"
+            "url": "{{baseUrl}}/api/admin/users?page=1&size=20&status=1"
           }
         },
         {
           "name": "Get Token Stats",
           "request": {
             "method": "GET",
-            "url": "{{baseUrl}}/auth/tokens/stats"
+            "url": "{{baseUrl}}/auth/authorizations/statistics"
+          }
+        },
+        {
+          "name": "Get Authorization Details",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/auth/authorizations/{{authorizationId}}"
+          }
+        },
+        {
+          "name": "Revoke Authorization",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/auth/authorizations/{{authorizationId}}"
+          }
+        },
+        {
+          "name": "Cleanup Authorizations",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/cleanups/authorizations"
+          }
+        },
+        {
+          "name": "Get Authorization Storage Structure",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/auth/authorizations/storage-structure"
+          }
+        },
+        {
+          "name": "Get Blacklist Stats",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/auth/blacklist-entries/statistics"
+          }
+        },
+        {
+          "name": "Add Blacklist Entry",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/blacklist-entries?tokenValue={{revokedTokenValue}}&reason=admin_manual"
+          }
+        },
+        {
+          "name": "Check Blacklist Entry",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/auth/blacklist-entries/check?tokenValue={{revokedTokenValue}}"
+          }
+        },
+        {
+          "name": "Cleanup Blacklist Entries",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/cleanups/blacklist-entries"
           }
         },
         {
           "name": "Get Statistics Overview",
           "request": {
             "method": "GET",
-            "url": "{{baseUrl}}/api/statistics/overview"
+            "url": "{{baseUrl}}/api/admin/statistics/overview"
           }
         },
         {
           "name": "Get Registration Trend",
           "request": {
             "method": "GET",
-            "url": "{{baseUrl}}/api/statistics/registration-trend?days=7"
+            "url": "{{baseUrl}}/api/admin/statistics/registration-trend/async?days=7"
           }
         },
         {
           "name": "Get Role Distribution",
           "request": {
             "method": "GET",
-            "url": "{{baseUrl}}/api/statistics/role-distribution"
+            "url": "{{baseUrl}}/api/admin/statistics/role-distribution"
           }
         },
         {
           "name": "Get Status Distribution",
           "request": {
             "method": "GET",
-            "url": "{{baseUrl}}/api/statistics/status-distribution"
+            "url": "{{baseUrl}}/api/admin/statistics/status-distribution"
           }
         },
         {
           "name": "Get Growth Rate",
           "request": {
             "method": "GET",
-            "url": "{{baseUrl}}/api/statistics/growth-rate"
+            "url": "{{baseUrl}}/api/admin/statistics/growth-rate"
           }
         },
         {
           "name": "Refresh Statistics Cache",
           "request": {
             "method": "POST",
-            "url": "{{baseUrl}}/api/statistics/refresh-cache"
+            "url": "{{baseUrl}}/api/admin/statistics/cache-refreshes"
           }
         },
         {
           "name": "Get Thread Pools",
           "request": {
             "method": "GET",
-            "url": "{{baseUrl}}/api/thread-pool/info"
+            "url": "{{baseUrl}}/api/admin/thread-pools"
           }
         },
         {
           "name": "Get Stock Ledger",
           "request": {
             "method": "GET",
-            "url": "{{baseUrl}}/api/stocks/ledger/{{skuId}}",
+            "url": "{{baseUrl}}/api/admin/stocks/ledger/{{skuId}}",
             "description": "Admin-only stock ledger endpoint."
           }
         }

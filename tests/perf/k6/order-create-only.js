@@ -47,7 +47,11 @@ function isSuccess(response) {
   return parsed && Number(parsed.code) === 200;
 }
 
-function buildOrderCreateBody(userId) {
+function buildClientOrderId(userId) {
+  return `k6-order-only-${userId}-${__VU}-${__ITER}-${Date.now()}`;
+}
+
+function buildOrderCreateBody(userId, clientOrderId) {
   const quantity = Number(__ENV.ORDER_ITEM_QUANTITY || 1);
   const unitPrice = String(__ENV.ORDER_ITEM_PRICE || "99.99");
   const totalAmount = String(__ENV.ORDER_TOTAL_AMOUNT || unitPrice);
@@ -62,13 +66,14 @@ function buildOrderCreateBody(userId) {
     receiverAddress: __ENV.RECEIVER_ADDRESS || "k6 road",
     totalAmount,
     payableAmount,
+    clientOrderId,
     remark: "k6 order-only",
   };
   return JSON.stringify(payload);
 }
 
-function buildIdempotencyKey(userId) {
-  return `k6-order-only-${userId}-${__VU}-${__ITER}-${Date.now()}`;
+function buildIdempotencyKey(clientOrderId) {
+  return clientOrderId;
 }
 
 export const options = {
@@ -122,10 +127,11 @@ export default function run(data) {
   }
 
   const startedAt = Date.now();
-  const idempotencyKey = buildIdempotencyKey(authUserId);
+  const clientOrderId = buildClientOrderId(authUserId);
+  const idempotencyKey = buildIdempotencyKey(clientOrderId);
   const response = http.post(
     `${BASE_URL}/api/orders`,
-    buildOrderCreateBody(authUserId),
+    buildOrderCreateBody(authUserId, clientOrderId),
     authParams(authToken, idempotencyKey)
   );
   const ok = isSuccess(response);

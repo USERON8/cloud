@@ -78,9 +78,9 @@ export function mainChain() {
   const keyword = keywordByIteration();
   const params = { timeout: REQUEST_TIMEOUT };
   const requests = [
-    ["GET", `${BASE_URL}/api/search/search?keyword=${encodeURIComponent(keyword)}&page=0&size=10`, null, params],
-    ["GET", `${BASE_URL}/api/search/smart-search?keyword=${encodeURIComponent(keyword)}&page=1&size=10`, null, params],
-    ["GET", `${BASE_URL}/api/search/suggestions?keyword=${encodeURIComponent(keyword)}&size=10`, null, params],
+    ["GET", `${BASE_URL}/api/search/products?keyword=${encodeURIComponent(keyword)}&page=0&size=10`, null, params],
+    ["GET", `${BASE_URL}/api/search/products?keyword=${encodeURIComponent(keyword)}&page=0&size=10&sortBy=hotScore&sortDir=desc`, null, params],
+    ["GET", `${BASE_URL}/api/search/products/suggestions?keyword=${encodeURIComponent(keyword)}&size=10`, null, params],
   ];
 
   const responses = http.batch(requests);
@@ -97,8 +97,8 @@ export function fallbackChain() {
   const keyword = keywordByIteration();
   const params = { timeout: REQUEST_TIMEOUT };
   const requests = [
-    ["GET", `${BASE_URL}/gateway/fallback/search?route=search&keyword=${encodeURIComponent(keyword)}`, null, params],
-    ["GET", `${BASE_URL}/gateway/fallback/search?route=smart-search&keyword=${encodeURIComponent(keyword)}`, null, params],
+    ["GET", `${BASE_URL}/gateway/fallback/search?route=search&keyword=${encodeURIComponent(keyword)}&page=0&size=10`, null, params],
+    ["GET", `${BASE_URL}/gateway/fallback/search?route=search&keyword=${encodeURIComponent(keyword)}&page=0&size=10&sortBy=hotScore&sortDir=desc`, null, params],
     ["GET", `${BASE_URL}/gateway/fallback/search?route=suggestions&keyword=${encodeURIComponent(keyword)}&size=10`, null, params],
   ];
 

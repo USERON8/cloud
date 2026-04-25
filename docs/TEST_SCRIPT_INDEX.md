@@ -1,35 +1,42 @@
 # Test Script Index
-Version: 1.1.0
 
-This repository keeps executable test scripts in two stable groups.
+Updated: 2026-04-22
 
-## Contract checks
+## Contract Checks
 
 - `scripts/tools/check-api-contract.sh`
 - `scripts/tools/check-api-contract.ps1`
-  - Static controller contract check.
-  - Canonical entry point for API path, `@PathVariable`, and `Result<T>` wrapper checks.
 
-## Performance and smoke tests
+Purpose:
+
+- verify controller path contracts
+- verify `@PathVariable` alignment
+- verify `Result<T>` wrapper conventions
+
+## Smoke And Performance
 
 - `scripts/ci/smoke-local.sh`
 - `scripts/ci/smoke-local.ps1`
-  - Local smoke checks for the started platform.
-  - Treat secured actuator endpoints (`401`/redirect) as healthy.
-
 - `tests/perf/k6/run-k6.sh`
 - `tests/perf/k6/run-k6.ps1`
-  - Canonical k6 runners.
-  - Pick scenarios with `acceptance`, `smoke`, `search-chain`, `search-max`, `route-only`, or `order-only`.
-
 - `tests/perf/k6/*.js`
-  - Scenario implementations.
-
 - `tests/perf/k6/lib/preflight.sh`
 - `tests/perf/k6/lib/preflight.ps1`
-  - Shared preflight checks for k6 runs.
 
-## Cleanup rules
+Current k6 scenarios:
 
-- Thin per-scenario wrapper scripts have been removed; use `run-k6.sh` or `run-k6.ps1`.
-- Keep the API contract checker under `scripts/tools/`; prefer `check-api-contract.sh` in WSL/Linux.
+- `acceptance-cases.js`
+- `all-services-smoke.js`
+- `gateway-route-only.js`
+- `order-create-only.js`
+- `search-chain.js`
+- `search-singleton-max.js`
+
+## Usage Notes
+
+- Prefer `run-k6.sh` or `run-k6.ps1` instead of creating new thin wrapper scripts.
+- Run smoke checks before pressure tests.
+- Historical performance numbers are no longer kept as a separate baseline document; rerun local k6 tests for current results.
+- `scripts/tools/check-api-contract.*` currently has two intentional raw-response exceptions:
+  - `GET /api/payment-checkouts/{ticket}`
+  - `GET /api/admin/observability/grafana/open`

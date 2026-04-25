@@ -41,6 +41,7 @@ CREATE TABLE IF NOT EXISTS spu
     updated_at       DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted          TINYINT         NOT NULL DEFAULT 0,
     version          INT             NOT NULL DEFAULT 0,
+    INDEX idx_spu_deleted_status_id (deleted, status, id),
     INDEX idx_spu_category_status_deleted (category_id, status, deleted),
     INDEX idx_spu_merchant_deleted (merchant_id, deleted)
 ) ENGINE = InnoDB

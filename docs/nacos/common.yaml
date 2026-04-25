@@ -81,10 +81,16 @@ app:
     public-actuator-enabled: false
     testenv-bypass-enabled: true
     test-token-value: TEST_ENV_PERMANENT_TOKEN
+    signature:
+      secret: ${GATEWAY_SIGNATURE_SECRET:cloud-gateway-signature-dev}
     internal-identity:
       enabled: ${APP_SECURITY_INTERNAL_IDENTITY_ENABLED:true}
-      secret: ${GATEWAY_INTERNAL_IDENTITY_SECRET:${GATEWAY_SIGNATURE_SECRET}}
+      secret: ${GATEWAY_INTERNAL_IDENTITY_SECRET:${GATEWAY_SIGNATURE_SECRET:cloud-gateway-signature-dev}}
       timestamp-skew-seconds: ${APP_SECURITY_INTERNAL_IDENTITY_TIMESTAMP_SKEW_SECONDS:30}
+    internal-hmac:
+      enabled: ${app.security.internal-identity.enabled:${APP_SECURITY_INTERNAL_IDENTITY_ENABLED:true}}
+      secret: ${app.security.internal-identity.secret:${app.security.signature.secret:}}
+      timestamp-skew-seconds: ${app.security.internal-identity.timestamp-skew-seconds:${APP_SECURITY_INTERNAL_IDENTITY_TIMESTAMP_SKEW_SECONDS:30}}
     cors:
       allowed-origin-patterns: ${APP_SECURITY_CORS_ALLOWED_ORIGIN_PATTERNS:http://127.0.0.1:*,https://127.0.0.1:*,http://localhost:*,https://localhost:*}
   mybatis:

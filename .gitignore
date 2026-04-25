@@ -97,6 +97,9 @@ my-shop-uniapp/unpackage/
 *-backup.*
 *-old.*
 *-new.*
+findings.md
+progress.md
+task_plan.md
 
 # OS Files
 .DS_Store

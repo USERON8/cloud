@@ -15,7 +15,9 @@ run_sql_dir() {
   echo "[mysql-bootstrap] Loading ${label} SQL from ${dir}"
   while IFS= read -r -d '' sql_file; do
     echo "[mysql-bootstrap] -> ${sql_file}"
-    mysql --default-character-set=utf8mb4 -uroot -p"${MYSQL_ROOT_PASSWORD}" < "${sql_file}"
+    sql_content="$(<"${sql_file}")"
+    sql_content="${sql_content//\\r\\n/$'\n'}"
+    mysql --binary-mode=1 --default-character-set=utf8mb4 -uroot -p"${MYSQL_ROOT_PASSWORD}" --execute="${sql_content}"
   done < <(find "${dir}" -type f -name "*.sql" -print0 | sort -z)
 }
 

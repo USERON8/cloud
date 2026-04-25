@@ -36,7 +36,7 @@ const defaultTargets = [
   `${origin.scheme}://${origin.host}:8085/actuator/health`,
   `${origin.scheme}://${origin.host}:8086/actuator/health`,
   `${origin.scheme}://${origin.host}:8087/actuator/health`,
-  `${BASE_URL}/api/search/smart-search?keyword=demo&page=1&size=2`,
+  `${BASE_URL}/api/search/products?keyword=demo&page=0&size=2&sortBy=hotScore&sortDir=desc`,
 ];
 
 const targetRaw = String(__ENV.SERVICE_TARGETS || "").trim();

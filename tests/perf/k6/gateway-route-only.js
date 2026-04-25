@@ -17,12 +17,12 @@ const REQUEST_PARAMS = Object.freeze({
 });
 
 const ROUTES = [
-  "/api/query/users?username=admin",
-  "/api/product/spu/1",
+  "/api/admin/users?username=admin",
+  "/api/spus/1",
   "/api/orders?page=1&size=1",
-  "/api/payments/orders/contract-check",
-  "/api/stocks/ledger/1",
-  "/api/search/basic?keyword=demo&page=0&size=1",
+  "/api/payment-orders/contract-check",
+  "/api/admin/stocks/ledger/1",
+  "/api/search/products?keyword=demo&page=0&size=1",
 ];
 
 const route404Count = new Counter("gateway_route_404_count");

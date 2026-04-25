@@ -90,6 +90,9 @@ service_environment_overrides() {
     payment-service)
       printf '%s\n' "DUBBO_PROTOCOL_PORT=20888"
       ;;
+    governance-service)
+      printf '%s\n' "DUBBO_PROTOCOL_PORT=20892"
+      ;;
     auth-service|search-service)
       if [ "$service_name" = "search-service" ]; then
         printf '%s\n' "DUBBO_PROTOCOL_PORT=20890"
@@ -118,6 +121,7 @@ ALL_SERVICES=(
   "payment-service|8086|services/payment-service/target/payment-service-1.1.0.jar|dev"
   "order-service|8083|services/order-service/target/order-service-1.1.0.jar|dev"
   "search-service|8087|services/search-service/target/search-service-1.1.0.jar|dev"
+  "governance-service|8088|services/governance-service/target/governance-service-1.1.0.jar|dev"
   "gateway|8080|services/gateway/target/gateway-1.1.0.jar|dev,route"
 )
 

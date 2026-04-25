@@ -1,7 +1,7 @@
 # Product Service
 Version: 1.1.0
 
-Product domain service providing product, category, and batch operation endpoints.
+Product domain service for products, categories, SPUs, SKUs, and catalog management.
 
 - Service name: `product-service`
 - Port: `8084`
@@ -10,33 +10,23 @@ Product domain service providing product, category, and batch operation endpoint
 
 ## Responsibilities
 
-- Owns product, SKU, SPU, and category domain data.
-- Provides product read/write interfaces to frontend and other services.
-- Supplies product data to `search-service` document building and synchronization flows.
-- Acts as a major upstream for stock, search, and order display information.
+- Owns product, SKU, SPU, and category data.
+- Serves product browse and catalog-management APIs.
+- Provides upstream product data for search indexing and stock display.
+- Emits product and category changes that feed downstream search synchronization.
 
-## Core Endpoints
+## HTTP Surface
 
-- Products: `/api/product/**`
-- Categories: `/api/category/**`
-- Internal access: `/internal/product/**`
+- Products: `/api/products`
+- Categories: `/api/categories/**`
+- Catalog management: `/api/spus/**`, `/api/skus`, `/api/categories/{categoryId}/spus`
 
-## Current Design Notes
+## Runtime Notes
 
-- `product-service` is a core read-heavy domain service and a natural candidate for multi-level caching on hot product detail paths.
-- Product detail now keeps its dedicated explicit multi-level cache implementation in `ProductDetailCacheService`.
-- Category tree and shop query caches now use explicit Redis cache services instead of `Spring Cache` annotations.
-- Product, category, and shop cache invalidation now follows post-commit eviction plus delayed double delete.
-- Search document synchronization depends on product data shape staying stable.
-- Product and category writes publish sync signals consumed by `search-service`.
-
-## Known Findings In This Sync
-
-- Product detail still uses local Caffeine + Redis hash storage, which matches the service's current hot-detail multi-level cache goal.
-- Category tree and shop read/query/statistics cache paths have been moved to explicit Redis cache services, and `ProductApplication` no longer depends on `@EnableCaching`.
-- Category and shop write paths now evict cache after commit and schedule delayed second eviction to reduce stale reads.
-- Product and category changes now serve as authoritative upstream signals for Elasticsearch document rebuild.
-- If cache cleanup continues later, the next product-side review target should be whether category and shop caches also need a local L1 layer for very high read traffic.
+- Hot product detail reads keep the dedicated multi-level cache path in `ProductDetailCacheService`.
+- Category and shop-oriented caches use explicit Redis services.
+- Product and category writes follow post-commit eviction plus delayed double delete.
+- Search-side document rebuilding depends on this service staying the source of truth for product and category shape.
 
 ## Local Run
 

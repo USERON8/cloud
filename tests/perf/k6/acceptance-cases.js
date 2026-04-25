@@ -63,12 +63,12 @@ const DEFAULT_STOCK_SKU_ID = String(__ENV.SKU_ID || "51001").trim();
 const DEFAULT_SEARCH_KEYWORD = String(__ENV.SEARCH_KEYWORD || "demo").trim();
 
 const GATEWAY_BATCH_REQUESTS = [
-  `/api/query/users?username=${encodeURIComponent(DEFAULT_QUERY_USERNAME || "t_admin_24001")}`,
-  "/api/category/tree?enabledOnly=true",
+  `/api/admin/users?username=${encodeURIComponent(DEFAULT_QUERY_USERNAME || "t_admin_24001")}`,
+  "/api/categories/tree?enabledOnly=true",
   "/api/orders",
-  `/api/payments/orders/${encodeURIComponent(DEFAULT_PAYMENT_NO || "PAY202603050001")}`,
-  `/api/stocks/ledger/${encodeURIComponent(DEFAULT_STOCK_SKU_ID || "51001")}`,
-  `/api/search/search?keyword=${encodeURIComponent(DEFAULT_SEARCH_KEYWORD || "demo")}&page=0&size=1`,
+  `/api/payment-orders/${encodeURIComponent(DEFAULT_PAYMENT_NO || "PAY202603050001")}`,
+  `/api/admin/stocks/ledger/${encodeURIComponent(DEFAULT_STOCK_SKU_ID || "51001")}`,
+  `/api/search/products?keyword=${encodeURIComponent(DEFAULT_SEARCH_KEYWORD || "demo")}&page=0&size=1`,
 ].map((path) => ["GET", `${BASE_URL}${path}`]);
 
 function getLongEnv(name, fallback = 0) {
@@ -97,6 +97,10 @@ function getIdEnv(name, fallback = "") {
   }
 
   return "";
+}
+
+function buildClientOrderId(prefix = "k6-order") {
+  return `${prefix}-${__VU}-${__ITER}-${Date.now()}`;
 }
 
 function parseTargetList(raw) {
@@ -130,7 +134,7 @@ const CASE07_AUTH_TOKEN = String(__ENV.CASE07_AUTH_TOKEN || "").trim();
 const AUTH_USER_ID = getIdEnv("AUTH_USER_ID");
 const AUTH_PRIMARY_ROLE_ENV = String(__ENV.AUTH_PRIMARY_ROLE || "USER").toUpperCase();
 
-function buildOrderCreateBody(userId) {
+function buildOrderCreateBody(userId, clientOrderId) {
   const skuId = Number(TEST_DATA.skuId || __ENV.ORDER_SKU_ID || 0);
   const spuId = Number(TEST_DATA.spuId || __ENV.ORDER_SPU_ID || 0);
   const quantity = Number(__ENV.ORDER_ITEM_QUANTITY || 1);
@@ -145,6 +149,7 @@ function buildOrderCreateBody(userId) {
     quantity,
     totalAmount,
     payableAmount,
+    clientOrderId,
     remark: "k6 acceptance case02",
     receiverName: __ENV.RECEIVER_NAME || "k6 user",
     receiverPhone: __ENV.RECEIVER_PHONE || "13800138000",
@@ -475,9 +480,15 @@ export function case02OrderCreated(data) {
     }
 
     const authParams = jsonHeaders(authToken, true);
-    authParams.headers["Idempotency-Key"] = `k6-order-${__VU}-${__ITER}-${Date.now()}`;
-    const createOrderBody = buildOrderCreateBody(authUserId);
-    const createOrderResponse = http.post(`${BASE_URL}/api/orders`, createOrderBody, authParams);
+    const clientOrderId = buildClientOrderId();
+    const createOrderBody = buildOrderCreateBody(authUserId, clientOrderId);
+    const createOrderResponse = http.post(`${BASE_URL}/api/orders`, createOrderBody, {
+      ...authParams,
+      headers: {
+        ...authParams.headers,
+        "Idempotency-Key": clientOrderId,
+      },
+    });
     const createOk = isResultSuccess(createOrderResponse) && isResultEnvelope(createOrderResponse);
     if (!createOk && DEBUG_CASE02) {
       const truncatedBody = String(createOrderResponse?.body || "").slice(0, 300);
@@ -502,7 +513,7 @@ export function case02OrderCreated(data) {
     const authReachableParams = jsonHeaders(authToken, true);
     const [orderResponse, stockResponse] = http.batch([
       ["GET", `${BASE_URL}/api/orders/${orderId}`, null, authReachableParams],
-      ["GET", `${BASE_URL}/api/stocks/ledger/${TEST_DATA.skuId}`, null, authReachableParams],
+      ["GET", `${BASE_URL}/api/admin/stocks/ledger/${TEST_DATA.skuId}`, null, authReachableParams],
     ]);
 
     const orderReachable = orderResponse.status !== 404 && isResultEnvelope(orderResponse);
@@ -534,7 +545,7 @@ export function case03PaymentSuccess(data) {
     const authParams = jsonHeaders(authToken, true);
     const tolerantAuthParams = jsonHeaders(authToken, true);
     const paySuccessResponse = http.get(
-      `${BASE_URL}/api/payments/orders/${encodeURIComponent(paymentNo)}`,
+      `${BASE_URL}/api/payment-orders/${encodeURIComponent(paymentNo)}`,
       authParams
     );
     const paySuccessOk = paySuccessResponse.status !== 404 && isResultEnvelope(paySuccessResponse);
@@ -542,21 +553,17 @@ export function case03PaymentSuccess(data) {
       "case03 payment query route reachable": () => paySuccessOk,
     });
 
-    const callbackBody = JSON.stringify({
-      paymentNo,
-      callbackNo: `k6-cb-${Date.now()}`,
-      callbackStatus: String(__ENV.CALLBACK_STATUS || "SUCCESS"),
-      providerTxnNo: __ENV.CALLBACK_PROVIDER_TXN || `txn-${Date.now()}`,
-      idempotencyKey: __ENV.CALLBACK_IDEMPOTENCY_KEY || `k6-cb-key-${Date.now()}`,
-      payload: "{\"source\":\"k6\"}",
-    });
-    const callbackResp = http.post(`${BASE_URL}/api/payments/callbacks`, callbackBody, tolerantAuthParams);
-    const callbackOk = callbackResp.status !== 404 && isResultEnvelope(callbackResp);
-    check(callbackResp, {
-      "case03 payment callback route reachable": () => callbackOk,
+    const checkoutResponse = http.post(
+      `${BASE_URL}/api/payment-orders/${encodeURIComponent(paymentNo)}/checkout-sessions`,
+      null,
+      tolerantAuthParams
+    );
+    const checkoutOk = checkoutResponse.status !== 404 && isResultEnvelope(checkoutResponse);
+    check(checkoutResponse, {
+      "case03 checkout-session route reachable": () => checkoutOk,
     });
 
-    return paySuccessOk && callbackOk ? "success" : "failed";
+    return paySuccessOk && checkoutOk ? "success" : "failed";
   });
 
   sleepBetweenCases();
@@ -565,20 +572,37 @@ export function case03PaymentSuccess(data) {
 export function case04StockInsufficient(data) {
   runCase("04", "stock-insufficient", () => {
     const authToken = CASE04_AUTH_TOKEN || getAuthTokenFromSetup(data);
-    if (!CASE04_AUTH_TOKEN && !hasMerchantOrAdminRole(getAuthPrimaryRoleFromSetup(data))) {
-      return "skipped";
-    }
-    if (!authToken || !TEST_DATA.skuId) {
+    const authUserId = getAuthUserIdFromSetup(data);
+    if (!authToken || !TEST_DATA.spuId || !TEST_DATA.skuId) {
       return "skipped";
     }
 
-    const authParams = jsonHeaders(authToken, true);
-    const response = http.post(`${BASE_URL}/api/stocks/reserve`, JSON.stringify({
-      subOrderNo: __ENV.STOCK_SUB_ORDER_NO || `k6-sub-${Date.now()}`,
-      skuId: Number(TEST_DATA.skuId),
-      quantity: Number(TEST_DATA.insufficientQuantity),
-      reason: "k6 stock insufficient check",
-    }), authParams);
+    const unitPrice = String(__ENV.ORDER_ITEM_PRICE || "99.99");
+    const quantity = Number(TEST_DATA.insufficientQuantity || 999999);
+    const totalAmount = (Number(unitPrice) * quantity).toFixed(2);
+    const response = http.post(
+      `${BASE_URL}/api/orders`,
+      JSON.stringify({
+        userId: authUserId ? Number(authUserId) : undefined,
+        spuId: Number(TEST_DATA.spuId),
+        skuId: Number(TEST_DATA.skuId),
+        quantity,
+        totalAmount,
+        payableAmount: totalAmount,
+        clientOrderId: `k6-insufficient-${Date.now()}`,
+        remark: "k6 stock insufficient check",
+        receiverName: __ENV.RECEIVER_NAME || "k6 user",
+        receiverPhone: __ENV.RECEIVER_PHONE || "13800138000",
+        receiverAddress: __ENV.RECEIVER_ADDRESS || "k6 road",
+      }),
+      {
+        ...jsonHeaders(authToken, true),
+        headers: {
+          ...jsonHeaders(authToken, true).headers,
+          "Idempotency-Key": `k6-insufficient-${__VU}-${__ITER}-${Date.now()}`,
+        },
+      }
+    );
 
     if (response.status === 404) {
       return "failed";
@@ -607,7 +631,7 @@ export function case05RefundFlow(data) {
     }
 
     const response = http.post(
-      `${BASE_URL}/api/payments/refunds`,
+      `${BASE_URL}/api/payment-refunds`,
       REFUND_CREATE_BODY,
       jsonHeaders(authToken, true)
     );
@@ -631,22 +655,14 @@ export function case06EventIdempotency(data) {
     }
 
     const tolerantAuthParams = jsonHeaders(authToken, true);
-    const callbackBody = JSON.stringify({
-      paymentNo: TEST_DATA.paymentNo,
-      callbackNo: __ENV.IDEMPOTENCY_CALLBACK_NO || "k6-idempotency-callback",
-      callbackStatus: String(__ENV.CALLBACK_STATUS || "SUCCESS"),
-      providerTxnNo: __ENV.IDEMPOTENCY_PROVIDER_TXN || "k6-idempotency-txn",
-      idempotencyKey: __ENV.IDEMPOTENCY_KEY || "k6-fixed-idempotency-key",
-      payload: "{\"source\":\"k6-idempotency\"}",
-    });
     const first = http.post(
-      `${BASE_URL}/api/payments/callbacks`,
-      callbackBody,
+      `${BASE_URL}/api/payment-orders/${encodeURIComponent(TEST_DATA.paymentNo)}/checkout-sessions`,
+      null,
       tolerantAuthParams
     );
     const second = http.post(
-      `${BASE_URL}/api/payments/callbacks`,
-      callbackBody,
+      `${BASE_URL}/api/payment-orders/${encodeURIComponent(TEST_DATA.paymentNo)}/checkout-sessions`,
+      null,
       tolerantAuthParams
     );
 
@@ -677,7 +693,7 @@ export function case07SearchSync(data) {
     }
 
     const authParams = jsonHeaders(authToken);
-    const productResponse = http.get(`${BASE_URL}/api/product/spu/${TEST_DATA.spuId}`, authParams);
+    const productResponse = http.get(`${BASE_URL}/api/spus/${TEST_DATA.spuId}`, authParams);
     if (!isResultSuccess(productResponse)) {
       return "failed";
     }
@@ -717,7 +733,7 @@ export function case07SearchSync(data) {
     }
 
     const updateResponse = http.put(
-      `${BASE_URL}/api/product/spu/${TEST_DATA.spuId}`,
+      `${BASE_URL}/api/spus/${TEST_DATA.spuId}`,
       JSON.stringify(updatePayload),
       authParams
     );
@@ -728,7 +744,9 @@ export function case07SearchSync(data) {
     sleep(SEARCH_DELAY_SECONDS);
 
     const keyword = encodeURIComponent((product.spuName || product.name || "k6").split("-")[0]);
-    const searchResponse = http.get(`${BASE_URL}/api/search/search?keyword=${keyword}&page=0&size=5`);
+    const searchResponse = http.get(
+      `${BASE_URL}/api/search/products?keyword=${keyword}&page=0&size=5`
+    );
     const searchOk = searchResponse.status !== 404 && isResultEnvelope(searchResponse);
 
     check(searchResponse, {

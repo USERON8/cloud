@@ -111,10 +111,102 @@ function Resolve-PublicBaseUrl {
     return $trimmedUrl.TrimEnd("/")
 }
 
+function Get-FirstNonEmptyValue {
+    param(
+        [string[]]$Candidates
+    )
+
+    foreach ($candidate in $Candidates) {
+        if (-not [string]::IsNullOrWhiteSpace($candidate)) {
+            return $candidate.Trim()
+        }
+    }
+
+    return ""
+}
+
+function Get-CpolarDomainMap {
+    param(
+        [string]$RawValue
+    )
+
+    $map = [ordered]@{}
+    if ([string]::IsNullOrWhiteSpace($RawValue)) {
+        return $map
+    }
+
+    foreach ($entry in $RawValue.Split(",")) {
+        $trimmedEntry = $entry.Trim()
+        if ([string]::IsNullOrWhiteSpace($trimmedEntry)) {
+            continue
+        }
+        $parts = $trimmedEntry -split "=", 2
+        if ($parts.Count -ne 2) {
+            continue
+        }
+        $key = $parts[0].Trim().ToLowerInvariant()
+        $value = Resolve-PublicBaseUrl -Url $parts[1]
+        if (-not [string]::IsNullOrWhiteSpace($key) -and -not [string]::IsNullOrWhiteSpace($value)) {
+            $map[$key] = $value
+        }
+    }
+
+    return $map
+}
+
+function New-CpolarDomainMapValue {
+    param(
+        [string]$PublicBaseUrl,
+        [string]$FrontendBaseUrl
+    )
+
+    $parts = [System.Collections.Generic.List[string]]::new()
+    if (-not [string]::IsNullOrWhiteSpace($PublicBaseUrl)) {
+        $parts.Add("public=$PublicBaseUrl")
+    }
+    if (-not [string]::IsNullOrWhiteSpace($FrontendBaseUrl)) {
+        $parts.Add("frontend=$FrontendBaseUrl")
+    }
+
+    return ($parts -join ",")
+}
+
+function Add-UniqueValue {
+    param(
+        [Parameter(Mandatory = $true)]
+        [AllowEmptyCollection()]
+        [System.Collections.Generic.List[string]]$Values,
+        [string]$Value
+    )
+
+    if (-not [string]::IsNullOrWhiteSpace($Value) -and -not $Values.Contains($Value)) {
+        $Values.Add($Value)
+    }
+}
+
+function Add-OriginVariants {
+    param(
+        [Parameter(Mandatory = $true)]
+        [AllowEmptyCollection()]
+        [System.Collections.Generic.List[string]]$Origins,
+        [string]$BaseUrl
+    )
+
+    $resolvedBaseUrl = Resolve-PublicBaseUrl -Url $BaseUrl
+    if ([string]::IsNullOrWhiteSpace($resolvedBaseUrl)) {
+        return
+    }
+
+    Add-UniqueValue -Values $Origins -Value $resolvedBaseUrl
+    if ($resolvedBaseUrl -match '^http://') {
+        Add-UniqueValue -Values $Origins -Value ($resolvedBaseUrl -replace '^http://', 'https://')
+    }
+}
+
 function Import-EnvMap {
     param(
         [Parameter(Mandatory = $true)]
-        [hashtable]$Values
+        [System.Collections.IDictionary]$Values
     )
 
     foreach ($key in $Values.Keys) {
@@ -141,58 +233,87 @@ function Sync-EnvironmentFiles {
         $dockerEnv[$key] = $rootEnv[$key]
     }
 
-    $cpolarDomain = [string]($rootEnv["CPOLAR_DOMAIN"])
-    $publicBaseUrl = Resolve-PublicBaseUrl -Url $cpolarDomain
     $nginxHttpPort = if ($dockerEnv.Contains("PORT_NGINX_HTTP")) { [string]$dockerEnv["PORT_NGINX_HTTP"] } else { "18080" }
     $localGatewayBaseUrl = "http://127.0.0.1:{0}" -f $nginxHttpPort
     $preferredLocalIpv4 = Get-PreferredLocalIpv4
     $gatewayUpstream = if (-not [string]::IsNullOrWhiteSpace($preferredLocalIpv4)) { "{0}:8080" -f $preferredLocalIpv4 } else { "host.docker.internal:8080" }
     $authUpstream = if (-not [string]::IsNullOrWhiteSpace($preferredLocalIpv4)) { "{0}:8081" -f $preferredLocalIpv4 } else { "host.docker.internal:8081" }
+    $cpolarDomainMap = Get-CpolarDomainMap -RawValue (
+        Get-FirstNonEmptyValue @(
+            [string]$rootEnv["CPOLAR_DOMAIN_MAP"],
+            [string]$dockerEnv["CPOLAR_DOMAIN_MAP"]
+        )
+    )
+    $publicBaseUrl = Get-FirstNonEmptyValue @(
+        [string]$cpolarDomainMap["public"],
+        (Resolve-PublicBaseUrl -Url ([string]$rootEnv["CPOLAR_PUBLIC_BASE_URL"])),
+        (Resolve-PublicBaseUrl -Url ([string]$rootEnv["CPOLAR_DOMAIN"])),
+        (Resolve-PublicBaseUrl -Url ([string]$dockerEnv["CPOLAR_PUBLIC_BASE_URL"])),
+        (Resolve-PublicBaseUrl -Url ([string]$dockerEnv["CPOLAR_DOMAIN"])),
+        $localGatewayBaseUrl
+    )
+    $frontendBaseUrl = Get-FirstNonEmptyValue @(
+        [string]$cpolarDomainMap["frontend"],
+        (Resolve-PublicBaseUrl -Url ([string]$rootEnv["CPOLAR_FRONTEND_BASE_URL"])),
+        (Resolve-PublicBaseUrl -Url ([string]$dockerEnv["CPOLAR_FRONTEND_BASE_URL"])),
+        $publicBaseUrl
+    )
+    $cpolarDomainMapValue = New-CpolarDomainMapValue -PublicBaseUrl $publicBaseUrl -FrontendBaseUrl $frontendBaseUrl
 
     Set-EnvValue -Values $dockerEnv -Name "NGINX_GATEWAY_UPSTREAM" -Value $gatewayUpstream
     Set-EnvValue -Values $dockerEnv -Name "NGINX_AUTH_UPSTREAM" -Value $authUpstream
 
-    if (-not [string]::IsNullOrWhiteSpace($publicBaseUrl)) {
-        Set-EnvValue -Values $rootEnv -Name "CPOLAR_DOMAIN" -Value $publicBaseUrl
-        Set-EnvValue -Values $rootEnv -Name "CPOLAR_PUBLIC_BASE_URL" -Value $publicBaseUrl
-        Set-EnvValue -Values $rootEnv -Name "CPOLAR_FRONTEND_BASE_URL" -Value $publicBaseUrl
-        Set-EnvValue -Values $dockerEnv -Name "CPOLAR_DOMAIN" -Value $publicBaseUrl
-        Set-EnvValue -Values $dockerEnv -Name "CPOLAR_PUBLIC_BASE_URL" -Value $publicBaseUrl
-        Set-EnvValue -Values $dockerEnv -Name "CPOLAR_FRONTEND_BASE_URL" -Value $publicBaseUrl
-        Set-EnvValue -Values $dockerEnv -Name "ALIPAY_NOTIFY_URL" -Value ("{0}/api/v1/payment/alipay/notify" -f $dockerEnv["CPOLAR_PUBLIC_BASE_URL"])
-        Set-EnvValue -Values $dockerEnv -Name "ALIPAY_RETURN_URL" -Value ("{0}/#/pages/app/payments/index" -f $dockerEnv["CPOLAR_FRONTEND_BASE_URL"])
-        Set-EnvValue -Values $dockerEnv -Name "GITHUB_REDIRECT_URI" -Value ("{0}/login/oauth2/code/github" -f $dockerEnv["CPOLAR_PUBLIC_BASE_URL"])
-        Set-EnvValue -Values $dockerEnv -Name "APP_OAUTH2_GITHUB_ERROR_URL" -Value ("{0}/auth/error" -f $dockerEnv["CPOLAR_FRONTEND_BASE_URL"])
-        Set-EnvValue -Values $dockerEnv -Name "APP_OAUTH2_WEB_REDIRECT_URIS" -Value (
-            "{0}/callback,http://127.0.0.1:{1}/callback,http://127.0.0.1:3000/callback,http://127.0.0.1:5173/callback,http://localhost:5173/callback" -f
-            $dockerEnv["CPOLAR_PUBLIC_BASE_URL"],
-            $nginxHttpPort
-        )
-        $originPatterns = [System.Collections.Generic.List[string]]::new()
-        foreach ($pattern in @(
-            "http://127.0.0.1:*",
-            "https://127.0.0.1:*",
-            "http://localhost:*",
-            "https://localhost:*",
-            [string]$dockerEnv["CPOLAR_PUBLIC_BASE_URL"],
-            ([string]$dockerEnv["CPOLAR_PUBLIC_BASE_URL"] -replace '^http://', 'https://')
-        )) {
-            if (-not [string]::IsNullOrWhiteSpace($pattern) -and -not $originPatterns.Contains($pattern)) {
-                $originPatterns.Add($pattern)
-            }
-        }
-        Set-EnvValue -Values $dockerEnv -Name "APP_SECURITY_CORS_ALLOWED_ORIGIN_PATTERNS" -Value ($originPatterns -join ",")
+    Set-EnvValue -Values $rootEnv -Name "CPOLAR_DOMAIN_MAP" -Value $cpolarDomainMapValue
+    Set-EnvValue -Values $dockerEnv -Name "CPOLAR_DOMAIN_MAP" -Value $cpolarDomainMapValue
+    Set-EnvValue -Values $rootEnv -Name "CPOLAR_DOMAIN" -Value $publicBaseUrl
+    Set-EnvValue -Values $rootEnv -Name "CPOLAR_PUBLIC_BASE_URL" -Value $publicBaseUrl
+    Set-EnvValue -Values $rootEnv -Name "CPOLAR_FRONTEND_BASE_URL" -Value $frontendBaseUrl
+    Set-EnvValue -Values $dockerEnv -Name "CPOLAR_DOMAIN" -Value $publicBaseUrl
+    Set-EnvValue -Values $dockerEnv -Name "CPOLAR_PUBLIC_BASE_URL" -Value $publicBaseUrl
+    Set-EnvValue -Values $dockerEnv -Name "CPOLAR_FRONTEND_BASE_URL" -Value $frontendBaseUrl
+
+    $oauthRedirectUris = [System.Collections.Generic.List[string]]::new()
+    foreach ($redirectUri in @(
+        ("{0}/callback" -f $frontendBaseUrl),
+        ("{0}/callback" -f $publicBaseUrl),
+        ("http://127.0.0.1:{0}/callback" -f $nginxHttpPort),
+        "http://127.0.0.1:3000/callback",
+        "http://127.0.0.1:5173/callback",
+        "http://localhost:5173/callback"
+    )) {
+        Add-UniqueValue -Values $oauthRedirectUris -Value $redirectUri
+    }
+
+    $originPatterns = [System.Collections.Generic.List[string]]::new()
+    foreach ($pattern in @(
+        "http://127.0.0.1:*",
+        "https://127.0.0.1:*",
+        "http://localhost:*",
+        "https://localhost:*"
+    )) {
+        Add-UniqueValue -Values $originPatterns -Value $pattern
+    }
+    Add-OriginVariants -Origins $originPatterns -BaseUrl $publicBaseUrl
+    Add-OriginVariants -Origins $originPatterns -BaseUrl $frontendBaseUrl
+
+    foreach ($values in @($rootEnv, $dockerEnv)) {
+        Set-EnvValue -Values $values -Name "ALIPAY_NOTIFY_URL" -Value ("{0}/api/v1/payment/alipay/notify" -f $publicBaseUrl)
+        Set-EnvValue -Values $values -Name "ALIPAY_RETURN_URL" -Value ("{0}/#/pages/app/payments/index" -f $frontendBaseUrl)
+        Set-EnvValue -Values $values -Name "GITHUB_REDIRECT_URI" -Value ("{0}/login/oauth2/code/github" -f $publicBaseUrl)
+        Set-EnvValue -Values $values -Name "APP_OAUTH2_GITHUB_ERROR_URL" -Value ("{0}/auth/error" -f $frontendBaseUrl)
+        Set-EnvValue -Values $values -Name "APP_OAUTH2_WEB_REDIRECT_URIS" -Value ($oauthRedirectUris -join ",")
+        Set-EnvValue -Values $values -Name "APP_SECURITY_CORS_ALLOWED_ORIGIN_PATTERNS" -Value ($originPatterns -join ",")
     }
 
     Write-EnvFile -Path $rootEnvPath -Values $rootEnv
     Write-EnvFile -Path $dockerEnvPath -Values $dockerEnv
 
     $frontendEnv = [ordered]@{
-        VITE_API_BASE_URL       = if (-not [string]::IsNullOrWhiteSpace([string]$dockerEnv["CPOLAR_PUBLIC_BASE_URL"])) { [string]$dockerEnv["CPOLAR_PUBLIC_BASE_URL"] } else { $localGatewayBaseUrl }
+        VITE_API_BASE_URL       = $publicBaseUrl
         VITE_DEV_PROXY_TARGET   = $localGatewayBaseUrl
-        VITE_CPOLAR_DOMAIN      = [string]$dockerEnv["CPOLAR_PUBLIC_BASE_URL"]
+        VITE_CPOLAR_DOMAIN      = $frontendBaseUrl
         VITE_OAUTH_CLIENT_ID    = "web-client"
-        VITE_OAUTH_REDIRECT_URI = if (-not [string]::IsNullOrWhiteSpace([string]$dockerEnv["CPOLAR_PUBLIC_BASE_URL"])) { "{0}/callback" -f $dockerEnv["CPOLAR_PUBLIC_BASE_URL"] } else { "{0}/callback" -f $localGatewayBaseUrl }
+        VITE_OAUTH_REDIRECT_URI = "{0}/callback" -f $frontendBaseUrl
         VITE_SEARCH_FALLBACK_TIMEOUT = "5000"
     }
 
@@ -365,6 +486,7 @@ function Set-ServiceRuntimeEnvironment {
     $env:GATEWAY_ROUTE_STOCK_URI = "http://127.0.0.1:8085"
     $env:GATEWAY_ROUTE_PAYMENT_URI = "http://127.0.0.1:8086"
     $env:GATEWAY_ROUTE_SEARCH_URI = "http://127.0.0.1:8087"
+    $env:GATEWAY_ROUTE_GOVERNANCE_URI = "http://127.0.0.1:8088"
     if ([string]::IsNullOrWhiteSpace($env:DUBBO_APPLICATION_QOS_ENABLE)) {
         $env:DUBBO_APPLICATION_QOS_ENABLE = "false"
     }

@@ -1,7 +1,7 @@
 # Gateway
 Version: 1.1.0
 
-Unified entry gateway responsible for routing, public-token validation, internal identity forwarding, rate limiting, and shared CORS handling.
+Unified public entry for routing, JWT validation, internal identity forwarding, rate limiting, and degraded fallback responses.
 
 - Service name: `gateway`
 - Port: `8080`
@@ -9,62 +9,33 @@ Unified entry gateway responsible for routing, public-token validation, internal
 
 ## Responsibilities
 
-- Provides the single public HTTP entrance for browser and app clients.
-- Routes requests to the correct downstream service.
-- Performs JWT validation on public protected routes and forwards trusted internal identity headers to downstream services.
-- Applies shared CORS handling, trace propagation, and response-header normalization.
-- Carries search fallback cache logic for degraded scenarios.
-- Owns gateway-level degradation endpoints for payment and user downstream failures.
+- Defines the public route map for browser and app traffic.
+- Validates public JWTs and restores trusted downstream identity.
+- Verifies gateway-signature headers for non-bearer mutating `/api/**` traffic.
+- Applies route-level and user-level rate limiting.
+- Hosts degraded fallback endpoints for search, payment, and user routes.
 
-## Current Route Prefixes
+## Current Route Map
 
 - `/auth/**`, `/oauth2/**`, `/.well-known/**` -> `auth-service`
-- `/api/manage/users/**`, `/api/query/users/**`, `/api/user/**`, `/api/merchant/**`, `/api/admin/**`, `/api/statistics/**` -> `user-service`
-- `/api/product/**`, `/api/category/**` -> `product-service`
-- `/api/orders/**` -> `order-service`
-- `/api/payments/**`, `/api/v1/payment/alipay/**` -> `payment-service`
-- `/api/stocks/**` -> `stock-service`
-- `/api/search/**` -> `search-service`
+- `/api/users/**`, `/api/addresses/**`, `/api/merchants/**`, `/api/merchant-authentications/**`, `/api/admins/**` -> `user-service`
+- `/api/products/**`, `/api/categories/**`, `/api/spus/**`, `/api/skus/**` -> `product-service`
+- `/api/orders/**`, `/api/users/me/cart`, `/api/users/me/cart/**`, `/api/after-sales/**` -> `order-service`
+- `/api/payment-orders/**`, `/api/payment-refunds/**`, `/api/payment-checkouts/**`, `/api/v1/payment/alipay/**` -> `payment-service`
+- `/api/search/**`, `/api/shops/**` -> `search-service`
+- `/api/admin/stocks/internal/**` -> `stock-service`
+- `/api/admin/stocks/ledger/**`, `/api/admin/governance/**`, `/api/admin/thread-pools/**`, `/api/admin/statistics/**`, `/api/admin/users/**`, `/api/admin/mq/**`, `/api/admin/outbox/**`, `/api/admin/observability/**`, `/api/admin/notifications/**`, `/auth/authorizations/**`, `/auth/cleanups/**`, `/auth/blacklist-entries/**` -> `governance-service`
 
-## Identity And Downstream Trust
+## Runtime Notes
 
-- `JwtTokenForwardFilter` signs and forwards gateway-trusted identity headers.
-- Downstream services restore `Authentication` through `GatewayInternalAuthenticationFilter`.
-- Shared secret is configured through `GATEWAY_INTERNAL_IDENTITY_SECRET` and falls back to `GATEWAY_SIGNATURE_SECRET` in local dev.
-- Public JWT validation and internal identity validation are intentionally separated concerns.
-
-## Rate Limiting And Fallback Cache
-
-- Sentinel is enabled at both route level and user-header level.
-- Route rules protect main API groups by default, with a dedicated lower threshold for search traffic.
-- User-level rules parse `X-User-Id` and apply per-API limits to reduce single-user abuse.
-- Search fallback cache: `SearchFallbackCache` stores fallback responses with route- and parameter-aware TTLs.
-- Cache keys are normalized from route-effective params only, so irrelevant query params do not fragment degraded-cache hit rate.
-- Configuration prefix: `app.search.fallback.cache`
-
-Gateway degradation endpoints:
-
-- `/gateway/fallback/search`
-- `/gateway/fallback/payment`
-- `/gateway/fallback/user`
-
-## Operational Notes
-
-- The gateway is the place where public path conventions are effectively defined.
-- If downstream service endpoints change but gateway route definitions do not, external behavior breaks even if the target service still works internally.
-- The startup scripts and Nginx host/cluster linked flows assume gateway remains the public entry service.
-
-## CORS Notes
-
-The gateway enables `DedupeResponseHeader` to prevent duplicate `Access-Control-Allow-Origin` headers from being rejected by browsers.
-
-## Known Findings In This Sync
-
-- JWT blacklist Redis failures now reject tokens by default in gateway fail-closed mode.
-- Gateway JWT validation now assumes short-lived access tokens from `auth-service`; otherwise a strict blacklist outage policy becomes operationally expensive.
-- Gateway fallback cache should be treated separately from business caches because its role is degradation control, not domain read acceleration.
-- Payment and user downstream fallbacks now return explicit degraded responses instead of generic proxy failures.
-- Trace ids are included in blocked and fallback responses so gateway degradation remains debuggable.
+- Public JWT validation and downstream HMAC trust restoration are separate concerns and both live here.
+- Search uses a dedicated fallback cache path through `SearchFallbackCache`.
+- Payment and user fallbacks are exposed at:
+  - `/gateway/fallback/payment`
+  - `/gateway/fallback/user`
+- Search fallback is exposed at:
+  - `/gateway/fallback/search`
+- If a downstream route changes, `application-route.yml`, `docs/backend-api.md`, and the corresponding service README should be updated together.
 
 ## Local Run
 

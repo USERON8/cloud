@@ -4,6 +4,49 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+function Get-RepoRoot {
+    return (Resolve-Path (Join-Path $PSScriptRoot "..\\..")).Path
+}
+
+function Get-EnvValueFromFile {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Path,
+        [Parameter(Mandatory = $true)]
+        [string]$Name,
+        [string]$DefaultValue = ""
+    )
+
+    if (-not (Test-Path $Path)) {
+        return $DefaultValue
+    }
+
+    $match = Get-Content $Path |
+        Where-Object { $_ -match ("^{0}=(.*)$" -f [Regex]::Escape($Name)) } |
+        Select-Object -First 1
+    if ($null -eq $match) {
+        return $DefaultValue
+    }
+
+    return ($match -split "=", 2)[1]
+}
+
+function Get-NginxHttpPort {
+    $direct = [string]$env:PORT_NGINX_HTTP
+    $parsed = 0
+    if ([int]::TryParse($direct, [ref]$parsed)) {
+        return $parsed
+    }
+
+    $repoRoot = Get-RepoRoot
+    $fromFile = Get-EnvValueFromFile -Path (Join-Path $repoRoot ".env") -Name "PORT_NGINX_HTTP" -DefaultValue "18080"
+    if ([int]::TryParse([string]$fromFile, [ref]$parsed)) {
+        return $parsed
+    }
+
+    return 18080
+}
+
 function Get-HealthStatus {
     param($ResponseObject)
 
@@ -95,6 +138,26 @@ function Test-HttpUp {
     throw ("SMOKE_FAIL {0} {1}" -f $Name, $Url)
 }
 
+function Test-ContainerRunning {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string[]]$ContainerNames
+    )
+
+    foreach ($containerName in $ContainerNames) {
+        try {
+            $status = docker inspect --format '{{.State.Status}}' $containerName 2>$null
+        } catch {
+            continue
+        }
+        if ($LASTEXITCODE -eq 0 -and $status.Trim() -eq "running") {
+            return $true
+        }
+    }
+
+    return $false
+}
+
 function Assert-ContainerRunning {
     param(
         [Parameter(Mandatory = $true)]
@@ -113,6 +176,12 @@ function Assert-ContainerRunning {
 }
 
 Write-Host "Smoke: verify backend services"
+$publicEntryPort = Get-NginxHttpPort
+if (Test-ContainerRunning -ContainerNames @("nginx", "cloud-nginx-gateway")) {
+    Test-HttpUp -Name "public-entry" -Url ("http://127.0.0.1:{0}/actuator/health" -f $publicEntryPort) -TimeoutSeconds $HttpTimeoutSeconds
+} else {
+    Write-Host ("SMOKE_SKIP public-entry http://127.0.0.1:{0}/actuator/health container=nginx-not-running" -f $publicEntryPort)
+}
 Test-HttpUp -Name "gateway" -Url "http://127.0.0.1:8080/actuator/health" -TimeoutSeconds $HttpTimeoutSeconds
 Test-HttpUp -Name "auth-service" -Url "http://127.0.0.1:8081/actuator/health" -TimeoutSeconds $HttpTimeoutSeconds
 Test-HttpUp -Name "user-service" -Url "http://127.0.0.1:8082/actuator/health" -TimeoutSeconds $HttpTimeoutSeconds

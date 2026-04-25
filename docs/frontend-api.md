@@ -1,249 +1,92 @@
 # UniApp API Guide
 
-Generated on: 2026-04-02
-Source of truth: `my-shop-uniapp/src/api/*.ts`
+Updated: 2026-04-22
 
-## Runtime Notes
+Source of truth:
 
-- Default gateway base URL: `http://127.0.0.1:18080`
-- Frontend uses OAuth2 for login and JWT bearer tokens for protected APIs.
-- Payment flow is no longer based on direct order pay transitions. The app creates a payment order, creates a checkout session, opens the checkout webview, and polls payment status.
-- The cart UI now synchronizes local cart state to the backend cart API and uses backend `cartId` checkout when submitting the cart page.
-- The profile page now refreshes and updates data through `/api/user/profile/current` instead of rendering JWT claims only.
+- API callers under `my-shop-uniapp/src/api`
+- session handling in `my-shop-uniapp/src/auth/session.ts`
+- role handling in `my-shop-uniapp/src/auth/permission.ts`
 
-## Frontend Chains
+## Runtime Rules
 
-### 1. Authentication
+- Default public entry: `http://127.0.0.1:18080`
+- `src/api/http.ts` attaches the current bearer token automatically when a session exists.
+- Frontend identity comes from JWT claims normalized in `src/auth/session.ts`; backend authorization still remains authoritative.
+- Frontend must never send `X-Internal-*`, `X-Signature`, `X-Timestamp`, or `X-Nonce`.
+- Anonymous browse is centered on `/api/search/**` and `/api/shops/**`. Most other modules require an authenticated session.
 
-Modules:
-- `src/api/auth.ts`
-- `src/api/auth-tokens.ts`
+## API Module Map
 
-Primary APIs:
-- `POST /auth/users/register`
-- `GET /oauth2/authorize`
-- `POST /oauth2/token`
-- `GET /auth/oauth2/github/login-url`
-- `GET /auth/oauth2/github/status`
-- `GET /auth/oauth2/github/user-info`
-- `DELETE /auth/sessions`
-- `DELETE /auth/users/{username}/sessions`
-- `GET /auth/tokens/validate`
+| Module | Route groups | Current role |
+| --- | --- | --- |
+| `src/api/auth.ts` | `/oauth2/**`, `/auth/users/register`, `/auth/sessions`, `/auth/tokens/validate`, `/auth/oauth2/github/**` | Login, registration, logout, token exchange, GitHub OAuth |
+| `src/api/auth-tokens.ts` | `/auth/authorizations/**`, `/auth/blacklist-entries/**`, `/auth/cleanups/**` | Admin token governance |
+| `src/api/user.ts` | `/api/users/me/**` | Profile, password, avatar |
+| `src/api/address.ts` | `/api/users/{userId}/addresses/**`, `/api/addresses/**` | Address management |
+| `src/api/merchant.ts` | `/api/merchants/**` | Merchant CRUD, review, status, statistics |
+| `src/api/merchant-auth.ts` | `/api/merchants/{merchantId}/authentication/**`, `/api/merchant-authentications/**` | Merchant verification and file upload entrypoints |
+| `src/api/admin.ts` | `/api/admins/**` | Admin account management |
+| `src/api/user-management.ts` | `/api/admin/users/**` | Admin user search and batch operations |
+| `src/api/statistics.ts` | `/api/admin/statistics/**` | Dashboard statistics |
+| `src/api/thread-pool.ts` | `/api/admin/thread-pools/**` | Thread-pool monitoring |
+| `src/api/stock.ts` | `/api/admin/stocks/ledger/{skuId}` | Stock ledger read |
+| `src/api/category.ts` | `/api/categories/**` | Category tree and category management |
+| `src/api/product.ts` | `/api/products`, `/api/spus`, `/api/search/products/**` | Product browse and search-facing product reads |
+| `src/api/product-catalog.ts` | `/api/spus/**`, `/api/skus`, `/api/categories/{categoryId}/spus` | Catalog management |
+| `src/api/search-ops.ts` | `/api/search/products/**` | Product search, filters, suggestions, hot keywords |
+| `src/api/shop-search.ts` | `/api/search/shops/**`, `/api/shops/{shopId}` | Shop search and discovery |
+| `src/api/cart.ts` | `/api/users/me/cart/**` | Remote cart |
+| `src/api/order.ts` | `/api/orders/**`, `/api/after-sales/**` | Order lifecycle and after-sale |
+| `src/api/payment.ts` | `/api/payment-orders/**`, `/api/payment-refunds/**` | Payment orders, checkout sessions, status, refunds |
 
-### 2. Profile And Address
+## Current Frontend Chains
 
-Modules:
-- `src/api/user.ts`
-- `src/api/address.ts`
+### Authentication and session
 
-Primary APIs:
-- `GET /api/user/profile/current`
-- `PUT /api/user/profile/current`
-- `PUT /api/user/profile/current/password`
-- `POST /api/user/profile/current/avatar`
-- `GET /api/user/address/list/{userId}`
-- `GET /api/user/address/default/{userId}`
-- `POST /api/user/address/add/{userId}`
-- `PUT /api/user/address/update/{addressId}`
-- `DELETE /api/user/address/delete/{addressId}`
-- `POST /api/user/address/page`
-- `DELETE /api/user/address/deleteBatch`
-- `PUT /api/user/address/updateBatch`
+1. Frontend redirects the browser to `GET /oauth2/authorize`.
+2. Token exchange happens through `POST /oauth2/token`.
+3. `src/auth/session.ts` decodes JWT claims and stores:
+   - access token
+   - token type
+   - expiry time
+   - normalized user roles
+4. `src/auth/permission.ts` reduces role handling to `USER`, `MERCHANT`, or `ADMIN`.
 
-Notes:
-- The profile page now supports backend-backed refresh, profile update, password change, and avatar upload.
-- Avatar upload on the page uses `uni.uploadFile` against `POST /api/user/profile/current/avatar` with the current bearer token.
+### Cart checkout
 
-### 3. Catalog And Search
+1. `src/api/cart.ts` reads or updates `/api/users/me/cart`.
+2. The server returns the remote cart `id`.
+3. `src/api/order.ts` sends `POST /api/orders` with:
+   - `cartId`
+   - `clientOrderId`
+   - header `Idempotency-Key`
 
-Modules:
-- `src/api/category.ts`
-- `src/api/product.ts`
-- `src/api/product-catalog.ts`
-- `src/api/search-ops.ts`
-- `src/api/shop-search.ts`
+The frontend should always use the server-issued cart identifier instead of rebuilding checkout data from local cart state alone.
 
-Primary APIs:
-- `GET /api/category`
-- `GET /api/category/{id}`
-- `GET /api/category/tree`
-- `GET /api/category/{id}/children`
-- `GET /api/product`
-- `GET /api/product/manage`
-- `GET /api/product/search`
-- `GET /api/product/spu/{spuId}`
-- `GET /api/product/spu/category/{categoryId}`
-- `GET /api/product/sku/batch`
-- `GET /api/search/products`
-- `GET /api/search/products/optimized-searches`
-- `POST /api/search/products/searches`
-- `POST /api/search/products/filtered-searches`
-- `POST /api/search/products/filter-groups`
-- `GET /api/search/products/recommendations`
-- `GET /api/search/products/latest`
-- `GET /api/search/products/popular`
-- `GET /api/search/products/popular/today`
-- `GET /api/search/categories/{categoryId}/products`
-- `GET /api/search/shops/{shopId}/products`
-- `GET /api/search/shops/recommendations`
-- `GET /api/search/shops/suggestions`
-- `GET /api/search/shops/popular`
-- `GET /api/search/shops/{shopId}`
-- `GET /api/search/shops/nearby`
-- `POST /api/search/shops/searches`
-- `POST /api/search/shops/filter-groups`
+### Payment flow
 
-Notes:
-- Empty-keyword market landing now prefers `GET /api/search/products/popular/today`.
-- Search APIs now follow resource-oriented naming under `/api/search/products/**` and `/api/search/shops/**`.
-- Merchant catalog management now uses `GET /api/product/manage` so unpublished products remain visible to the merchant owner and can be published again.
-- `src/api/product-catalog.ts` is the frontend entry for SPU and SKU maintenance APIs.
-- `src/api/shop-search.ts` is the frontend entry for shop discovery and recommendation APIs.
-- The operations workspace now imports and executes its token, category, catalog, search, and thread-pool helpers through the current frontend API modules.
+1. `src/api/payment.ts` creates or reads a payment order.
+2. The frontend calls `POST /api/payment-orders/{paymentNo}/checkout-sessions`.
+3. The UI opens `session.checkoutPath`, which resolves to `GET /api/payment-checkouts/{ticket}`.
+4. The app polls `GET /api/payment-orders/{paymentNo}/status` until the payment reaches a terminal state.
 
-### 4. Order And After-Sale
+Frontend code should not construct checkout URLs manually. The checkout ticket endpoint returns raw HTML and is intentionally not wrapped in `Result<T>`.
 
-Module:
-- `src/api/order.ts`
+### Admin and governance flow
 
-Primary APIs:
-- `POST /api/orders`
-- `GET /api/orders`
-- `GET /api/orders/{orderId}`
-- `POST /api/orders/{orderId}/cancel`
-- `POST /api/orders/{orderId}/ship`
-- `POST /api/orders/{orderId}/complete`
-- `POST /api/orders/batch/cancel`
-- `POST /api/orders/batch/ship`
-- `POST /api/orders/batch/complete`
-- `POST /api/orders/after-sales`
-- `POST /api/orders/after-sales/{afterSaleId}/actions/{action}`
+- Admin pages use gateway-facing routes such as `/api/admin/users/**`, `/api/admin/statistics/**`, and `/api/admin/thread-pools/**`.
+- The frontend does not call `/internal/governance/**` directly.
+- Governance and auth-token admin functions still stay on public admin routes exposed by `gateway`.
 
-Notes:
-- Real payment starts from the payment module after order creation.
-- The frontend no longer exports direct order pay helpers. Current payment flow must go through the payment module.
-- `GET /api/orders` now sends merchant filtering only through `merchantId`. The old `shopId` query alias has been removed from the frontend contract.
-- `createOrder(payload)` in `src/api/order.ts` currently implements direct-buy only. It auto-generates `clientOrderId` when the caller does not provide one.
-- `createCartOrder(payload)` now implements cart checkout through backend `cartId`.
-- `listOrders` and `getOrderById` now return `items[]`. Each item includes immutable `skuSnapshot` data and an optional `latestProduct` view when the backend can still resolve the SKU.
-- User and merchant order pages now render `items[]` with snapshot-first product details.
+## Upload and Security Notes
 
-### 5. Payment And Checkout
+- Avatar upload uses `resolveApiUrl('/api/users/me/avatar')` together with the current bearer token.
+- Merchant-auth file uploads use the route templates declared in `src/api/merchant-auth.ts`.
+- Frontend code must not attempt to emulate internal service headers or gateway HMAC signatures.
 
-Module:
-- `src/api/payment.ts`
+## References
 
-Primary APIs:
-- `POST /api/payments/orders`
-- `GET /api/payments/orders/{paymentNo}`
-- `GET /api/payments/orders/by-order`
-- `POST /api/payments/orders/{paymentNo}/checkout-session`
-- `GET /api/payments/orders/{paymentNo}/status`
-- `GET /api/payments/refunds/{refundNo}`
-- `POST /api/payments/refunds`
-- `GET /api/payments/checkout/{ticket}`
-
-Notes:
-- Checkout opens the webview page with a ticketed checkout URL.
-- The payment page and webview both support auto-poll for final payment status.
-- Refund query is owner/admin protected and is wired into the order page.
-- Refund creation is not exposed from the normal frontend payment flow yet. It remains a downstream backend capability after payment success and after-sale progression.
-
-### 6. Merchant, Admin, Notifications, Statistics, Operations
-
-Modules:
-- `src/api/merchant.ts`
-- `src/api/merchant-auth.ts`
-- `src/api/admin.ts`
-- `src/api/user-management.ts`
-- `src/api/notification.ts`
-- `src/api/statistics.ts`
-- `src/api/thread-pool.ts`
-- `src/api/stock.ts`
-
-Primary APIs:
-- Merchant management: `/api/merchant/**`
-- Merchant auth: `/api/merchant/auth/**`
-- Admin: `/api/admin/**`
-- User management: `/api/admin/query/users/**`, `/api/admin/manage/users/**`
-- Notifications: `/api/app/user/notification/**`
-- Statistics: `/api/admin/statistics/**`
-- Thread pool: `/api/admin/thread-pool/**`
-- MQ governance: `/api/admin/mq/**`
-- Outbox governance: `/api/admin/outbox/**`
-- Observability entry: `/api/admin/observability/**`
-- Stock: `/api/stocks/**`
-- Auth token ops: `/auth/tokens/**`
-
-Notes:
-- Stock ledger view is admin-only in current backend policy.
-- Stock mutation APIs are internal-scope APIs and are not part of normal frontend user flows.
-- Stock pre-check API (`POST /api/stocks/pre-check`) is available for batch stock validation before order creation.
-- Stock ledger responses expose integer `status` values from the backend. The stock page now renders `1` as `Active` and derives low-stock warnings from `availableQty` and `alertThreshold` instead of assuming string enums.
-- Admin workspace currently consumes `/api/admin`, `/api/admin/query/users/search`, `/api/merchant/auth/list`, `/api/merchant/auth/review/{merchantId}`, `/api/admin/statistics/overview`, and `/api/admin/thread-pool/info`.
-- Admin workspace notification operations should continue using `/api/app/user/notification/**`, which is now governance-owned behind gateway routing.
-- Merchant certification and shop certification operations continue using `/api/merchant/**` and `/api/merchant/auth/**`, which intentionally remain on the original service boundary in this phase.
-- App shell navigation now hides `Payments` from `MERCHANT` and hides `Ops` from non-admin users because the current backend access policy only closes those pages for owner/admin payment reads and admin operational APIs.
-- Merchant-facing quick actions now avoid linking directly to the standalone payments page, and home quick links only surface `Payments` for roles that can complete the current payment-query flow.
-- Merchant review actions in the admin UI are now unified on `/api/merchant/auth/review/{merchantId}`. The merchant list is read-only for audit status and no longer calls `/api/merchant/{id}/approve|reject`.
-- Admin workspace merchant list and merchant-auth review queue now align with backend access by allowing pure `ADMIN` accounts to read `/api/merchant` and to use `/api/merchant/auth/list|review/*`.
-- Token management utilities exposed in `src/api/auth-tokens.ts` are admin-only operational tools rather than normal user flows.
-- Operations workspace now closes the current admin toolchain for `/auth/tokens/**`, `/api/category/**`, `/api/product/spu/**`, `/api/search/**`, `/api/search/shops/**`, `/api/admin/thread-pool/**`, `/api/admin/statistics/**`, `/api/admin/mq/**`, `/api/admin/outbox/**`, `/api/admin/observability/**`, and payment admin helpers already exposed in the frontend API layer.
-- Outbox governance now supports both single-event requeue and bounded batch requeue under `/api/admin/outbox/requeue` and `/api/admin/outbox/requeue-batch`.
-- Grafana can now be opened through the governed redirect endpoint `/api/admin/observability/grafana/open`, so the admin workspace does not need to construct Grafana dashboard URLs itself.
-- The optional `dashboardUid` query parameter is whitelist-bound by `governance-service` configuration. Frontend callers should only use dashboard UIDs returned from the governance entry metadata.
-
-## Request And Behavior Notes
-
-### Create order payload
-
-`createOrder(payload, idempotencyKey)` must include:
-- `skuId` for direct buy
-- Receiver fields: `receiverName`, `receiverPhone`, `receiverAddress`
-- `spuId` together with `skuId` for direct buy
-
-Notes:
-- `createCartOrder(payload)` uses backend cart checkout with `cartId`.
-- The cart store synchronizes local cart items to `/api/cart/sync` before cart checkout submission.
-
-### Order summary payload
-
-`OrderSummaryDTO` now includes:
-- Summary fields: `id`, `orderNo`, `userId`, `subOrderId`, `subOrderNo`, `merchantId`, `afterSaleId`, `afterSaleNo`, `afterSaleType`, `refundNo`, `totalAmount`, `payAmount`, `status`, `afterSaleStatus`, `createdAt`
-- `items[]` with `id`, `subOrderId`, `spuId`, `skuId`, `skuCode`, `skuName`, `quantity`, `unitPrice`, `totalPrice`
-- `items[].skuSnapshot` as parsed immutable order-time product snapshot data
-- `items[].latestProduct` as optional live product projection for display enhancement
-
-### Create payment order payload
-
-`createPaymentOrder(payload)` sends:
-- `paymentNo`
-- `mainOrderNo`
-- `subOrderNo`
-- `userId`
-- `amount`
-- `channel`
-- `idempotencyKey`
-
-Backend now binds this request to the authenticated owner for regular users.
-
-### Address page expectations
-
-The address page now supports:
-- create
-- update
-- delete
-- set default address through the default flag in the payload
-
-### Admin console expectations
-
-The admin UI now depends on:
-- merchant list query fields `status` and `auditStatus`
-- user search fields `username`, `email`, `phone`, `nickname`, `status`, `roleCode`
-- admin password reset returning a generated password string
-
-## Postman Alignment
-
-The backend reference is maintained in `docs/backend-api.md`.
-The Postman collection under `docs/postman/cloud-shop.postman_collection.json` follows the same chain order used here.
-Consolidated status and audit findings are maintained in `docs/backend-rpc-refactor-plan.md`.
+- Backend route ownership: `docs/backend-api.md`
+- Backend runtime rules: `docs/backend-runtime.md`
+- Postman collection: `docs/postman/cloud-shop.postman_collection.json`

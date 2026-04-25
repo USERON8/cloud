@@ -61,9 +61,9 @@ export function runSearch() {
   const keyword = encodeURIComponent(pickKeyword());
   const page = __ITER % 5;
 
-  const response1 = call(`${BASE_URL}/api/search/smart-search?keyword=${keyword}&page=${page + 1}&size=16`);
-  const response2 = call(`${BASE_URL}/api/search/suggestions?keyword=${keyword}&size=10`);
-  const response3 = call(`${BASE_URL}/api/search/search?keyword=${keyword}&page=${page}&size=16`);
+  const response1 = call(`${BASE_URL}/api/search/products?keyword=${keyword}&page=${page}&size=16&sortBy=hotScore&sortDir=desc`);
+  const response2 = call(`${BASE_URL}/api/search/products/suggestions?keyword=${keyword}&size=10`);
+  const response3 = call(`${BASE_URL}/api/search/products?keyword=${keyword}&page=${page}&size=16`);
 
   check([response1, response2, response3], {
     "search singleton max all endpoints status=200": (arr) => arr.every((r) => r.status === 200),

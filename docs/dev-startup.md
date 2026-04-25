@@ -1,140 +1,82 @@
 # Dev Startup
-Version: 1.1.0
 
-This project now has a unified startup entrypoint for local development.
+Updated: 2026-04-22
 
-## Recommended entrypoints
+## Primary Entrypoints
 
-WSL/Linux (recommended):
+Recommended:
 
 ```bash
 bash scripts/dev/start-platform.sh --with-monitoring
 ```
 
-PowerShell compatibility:
+PowerShell:
 
 ```powershell
 powershell -File scripts/dev/start-platform.ps1 --with-monitoring
 ```
 
-Compatibility aliases:
+Related scripts:
 
-```bash
-bash scripts/dev/start-all.sh --with-monitoring
-```
+- `start-containers.*`: start only infrastructure
+- `start-services.*`: start only Java services
+- `start-host-linked.*`: validate host-started services first
+- `start-cluster-linked.*`: attach validated host services back into the container cluster
+- `stop-*.sh`, `restart-*.sh`: stop or restart local environment pieces
 
-```powershell
-powershell -File scripts/dev/start-all.ps1 --with-monitoring
-```
+## What `start-platform.*` Does
 
-## Behavior
+- starts containers through `start-containers.*`
+- waits for infrastructure readiness
+- exports local runtime addresses and development secrets
+- prepares SkyWalking agent when enabled
+- starts Java services through `start-services.*`
 
-`start-platform.*` orchestrates:
-- `start-containers.*`
-- infrastructure readiness checks using host ports from `docker/.env`
-- runtime env export for `NACOS_SERVER_ADDR` and `ROCKETMQ_NAME_SERVER`
-- automatic SkyWalking agent wiring with local cache/download
-- scheduled outbox relay inside `order-service`, `payment-service`, and `stock-service`
-- `start-services.*`
+Logs:
 
-`start-containers.*` and `start-services.*` are still available when you want finer control.
-When `start-services.*` is run directly, it now auto-exports local runtime addresses and development secrets from `scripts/dev/lib/runtime.*`, so gateway/auth no longer depend on a prior `start-platform.*` run just to get required keys. It also auto-resolves the SkyWalking javaagent from `.tmp/skywalking/`, downloading it on first use when `SKYWALKING_AUTO_ENABLE` is not disabled.
+- process stdout/stderr: `.tmp/service-runtime/<service>/`
+- rolling service logs: `services/<service>/logs/`
+- fallback app logs when module directory is not writable: `.tmp/service-runtime/<service>/app-logs/`
 
-Service process logs are written under `.tmp/service-runtime/<service>/stdout.log` and `.tmp/service-runtime/<service>/stderr.log`.
-Rolling application and error logs are written to `services/<service>/logs/` by default, or `.tmp/service-runtime/<service>/app-logs/` if the module log directory is not writable.
-SkyWalking agent logs are written under `.tmp/service-runtime/<service>/skywalking-agent/`.
+## Common Flags
 
-## Validated startup notes
-
-- The local Windows-oriented profile already avoids the reserved-port conflict that affected Canal in earlier runs; use the current `docker/.env` defaults instead of older screenshots or notes.
-- `start-services.*` now exports the Redis aliases required by both Spring Data Redis and Redisson, so host-started services no longer depend on manually prepared Redis env variables.
-- Local smoke and preflight scripts accept both current and older container aliases, so startup checks no longer depend on one exact compose naming variant.
-- First-time SkyWalking startup may still require network access to download the javaagent unless `.tmp/skywalking/` is already warm.
-
-## Common flags
-
-- `--with-monitoring`: start Prometheus, Grafana, and exporters together with the base containers
-- `--no-kill-ports`: do not terminate existing listeners before startup
-- `--skip-containers`: only run the service startup phase
-- `--skip-services`: only run the container startup phase
-- `--services=order-service,stock-service`: only restart the named services and leave the others running
+- `--with-monitoring`: include Prometheus, Grafana, exporters, and SkyWalking stack
+- `--skip-containers`: reuse existing containers and only start services
+- `--skip-services`: only start containers
+- `--services=order-service,stock-service`: only start or restart selected services
+- `--no-kill-ports`: do not clean occupied ports before startup
 - `--open-dashboards`: open local console URLs after startup
-- `--enable-skywalking`: fail fast if the SkyWalking agent cannot be resolved or downloaded
-- `--skywalking-agent-path=/path/to/skywalking-agent.jar`: set the agent path explicitly instead of the cached copy
-- `--skywalking-backend=127.0.0.1:11800`: override the SkyWalking OAP backend address
-- `--dry-run`: validate argument flow without starting containers or services
+- `--dry-run`: validate flow without actually starting anything
 
-Environment overrides:
-- `SKYWALKING_AUTO_ENABLE=false`: disable automatic agent lookup/download
-- `SKYWALKING_AGENT_PATH=/path/to/skywalking-agent.jar`: use a custom agent jar
-- `SKYWALKING_AGENT_DOWNLOAD_URL=...`: override the default download source
-- `SKYWALKING_AGENT_DOWNLOAD_TIMEOUT_SECONDS=180`: override the download timeout
-- `SKYWALKING_COLLECTOR_BACKEND_SERVICE=127.0.0.1:11800`: override the OAP gRPC endpoint
+## SkyWalking Notes
 
-## Frontend (UniApp H5)
+- `start-services.*` can resolve the agent automatically from `.tmp/skywalking/`
+- first run may download the agent if cache is empty
+- use `SKYWALKING_AUTO_ENABLE=false` to disable auto-attach
+- use `SKYWALKING_AGENT_PATH` to provide a fixed agent jar
 
-Build the H5 frontend:
+## Host-Linked Workflow
+
+Use this when some Java services run on the host but the rest of the platform stays in Docker.
+
+1. Run `start-host-linked.* --services=...`
+2. The script checks `.tmp/acceptance/startup.csv`
+3. Only `UP` or `UP_SECURED` counts as accepted
+4. Run `start-cluster-linked.* --services=...` to reconnect through Nginx and the cluster network
+
+`start-cluster-linked.*` switches `NGINX_GATEWAY_UPSTREAM` to `gateway:8080`.
+
+## Frontend
 
 ```bash
 pnpm --dir my-shop-uniapp install
+pnpm --dir my-shop-uniapp dev:h5
+```
+
+Build output for Nginx:
+
+```bash
 pnpm --dir my-shop-uniapp build:h5
 ```
 
-`docker/docker-compose.yml` mounts `my-shop-uniapp/dist` to Nginx `/usr/share/nginx/html`.
-
-## Examples
-
-Start everything with monitoring:
-
-```bash
-bash scripts/dev/start-platform.sh --with-monitoring
-```
-
-Start services only, reusing existing containers:
-
-```bash
-bash scripts/dev/start-platform.sh --skip-containers
-```
-
-Restart only the services you changed:
-
-```bash
-bash scripts/dev/start-platform.sh --skip-containers --services=order-service,stock-service
-```
-
-```powershell
-powershell -File scripts/dev/start-platform.ps1 --skip-containers --services=order-service
-```
-
-Start containers only:
-
-```bash
-bash scripts/dev/start-platform.sh --skip-services --with-monitoring
-```
-
-Start platform and open dashboards:
-
-```bash
-bash scripts/dev/start-platform.sh --with-monitoring --open-dashboards
-```
-
-Enable SkyWalking explicitly and fail if the agent cannot be prepared:
-
-```bash
-bash scripts/dev/start-platform.sh \
-  --enable-skywalking
-```
-
-```powershell
-powershell -File scripts/dev/start-platform.ps1 `
-  --enable-skywalking
-```
-
-Use a custom agent path when needed:
-
-```bash
-bash scripts/dev/start-platform.sh \
-  --enable-skywalking \
-  --skywalking-agent-path=/path/to/skywalking-agent.jar \
-  --skywalking-backend=127.0.0.1:11800
-```
+`docker/docker-compose.yml` mounts `my-shop-uniapp/dist/h5` into Nginx.

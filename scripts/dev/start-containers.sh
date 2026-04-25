@@ -4,6 +4,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 source "$SCRIPT_DIR/lib/port-guard.sh"
+source "$SCRIPT_DIR/lib/runtime.sh"
 
 WITH_MONITORING=0
 KILL_PORTS=1
@@ -22,6 +23,8 @@ if [ ! -f "$ENV_FILE" ]; then
   echo "docker/.env not found" >&2
   exit 1
 fi
+
+sync_environment_files "$ROOT_DIR"
 
 assert_docker_daemon_ready() {
   docker version >/dev/null 2>&1 || {
