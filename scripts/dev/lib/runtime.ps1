@@ -111,106 +111,14 @@ function Resolve-PublicBaseUrl {
     return $trimmedUrl.TrimEnd("/")
 }
 
-function Get-FirstNonEmptyValue {
-    param(
-        [string[]]$Candidates
-    )
-
-    foreach ($candidate in $Candidates) {
-        if (-not [string]::IsNullOrWhiteSpace($candidate)) {
-            return $candidate.Trim()
-        }
-    }
-
-    return ""
-}
-
-function Get-CpolarDomainMap {
-    param(
-        [string]$RawValue
-    )
-
-    $map = [ordered]@{}
-    if ([string]::IsNullOrWhiteSpace($RawValue)) {
-        return $map
-    }
-
-    foreach ($entry in $RawValue.Split(",")) {
-        $trimmedEntry = $entry.Trim()
-        if ([string]::IsNullOrWhiteSpace($trimmedEntry)) {
-            continue
-        }
-        $parts = $trimmedEntry -split "=", 2
-        if ($parts.Count -ne 2) {
-            continue
-        }
-        $key = $parts[0].Trim().ToLowerInvariant()
-        $value = Resolve-PublicBaseUrl -Url $parts[1]
-        if (-not [string]::IsNullOrWhiteSpace($key) -and -not [string]::IsNullOrWhiteSpace($value)) {
-            $map[$key] = $value
-        }
-    }
-
-    return $map
-}
-
-function New-CpolarDomainMapValue {
-    param(
-        [string]$PublicBaseUrl,
-        [string]$FrontendBaseUrl
-    )
-
-    $parts = [System.Collections.Generic.List[string]]::new()
-    if (-not [string]::IsNullOrWhiteSpace($PublicBaseUrl)) {
-        $parts.Add("public=$PublicBaseUrl")
-    }
-    if (-not [string]::IsNullOrWhiteSpace($FrontendBaseUrl)) {
-        $parts.Add("frontend=$FrontendBaseUrl")
-    }
-
-    return ($parts -join ",")
-}
-
-function Add-UniqueValue {
+function Import-EnvMapFromObject {
     param(
         [Parameter(Mandatory = $true)]
-        [AllowEmptyCollection()]
-        [System.Collections.Generic.List[string]]$Values,
-        [string]$Value
+        [object]$Values
     )
 
-    if (-not [string]::IsNullOrWhiteSpace($Value) -and -not $Values.Contains($Value)) {
-        $Values.Add($Value)
-    }
-}
-
-function Add-OriginVariants {
-    param(
-        [Parameter(Mandatory = $true)]
-        [AllowEmptyCollection()]
-        [System.Collections.Generic.List[string]]$Origins,
-        [string]$BaseUrl
-    )
-
-    $resolvedBaseUrl = Resolve-PublicBaseUrl -Url $BaseUrl
-    if ([string]::IsNullOrWhiteSpace($resolvedBaseUrl)) {
-        return
-    }
-
-    Add-UniqueValue -Values $Origins -Value $resolvedBaseUrl
-    if ($resolvedBaseUrl -match '^http://') {
-        Add-UniqueValue -Values $Origins -Value ($resolvedBaseUrl -replace '^http://', 'https://')
-    }
-}
-
-function Import-EnvMap {
-    param(
-        [Parameter(Mandatory = $true)]
-        [System.Collections.IDictionary]$Values
-    )
-
-    foreach ($key in $Values.Keys) {
-        Set-Item -Path ("Env:{0}" -f $key) -Value ([string]$Values[$key])
+    foreach ($property in $Values.PSObject.Properties) {
+        Set-Item -Path ("Env:{0}" -f $property.Name) -Value ([string]$property.Value)
     }
 }
 
@@ -221,112 +129,31 @@ function Sync-EnvironmentFiles {
         [switch]$ImportProcessEnvironment
     )
 
-    $rootEnvPath = Join-Path $Root ".env"
-    $dockerEnvPath = Join-Path $Root "docker\.env"
-    $frontendDevEnvPath = Join-Path $Root "my-shop-uniapp\.env.development"
-    $frontendProdEnvPath = Join-Path $Root "my-shop-uniapp\.env.production"
-
-    $rootEnv = Read-EnvFile -Path $rootEnvPath
-    $dockerEnv = Read-EnvFile -Path $dockerEnvPath
-
-    foreach ($key in $rootEnv.Keys) {
-        $dockerEnv[$key] = $rootEnv[$key]
+    $nodeCommand = Get-Command node -ErrorAction SilentlyContinue
+    if ($null -eq $nodeCommand) {
+        throw "node is required to synchronize development environment files"
     }
 
-    $nginxHttpPort = if ($dockerEnv.Contains("PORT_NGINX_HTTP")) { [string]$dockerEnv["PORT_NGINX_HTTP"] } else { "18080" }
-    $localGatewayBaseUrl = "http://127.0.0.1:{0}" -f $nginxHttpPort
+    $scriptPath = Join-Path $Root "scripts\dev\lib\runtime-sync.mjs"
     $preferredLocalIpv4 = Get-PreferredLocalIpv4
-    $gatewayUpstream = if (-not [string]::IsNullOrWhiteSpace($preferredLocalIpv4)) { "{0}:8080" -f $preferredLocalIpv4 } else { "host.docker.internal:8080" }
-    $authUpstream = if (-not [string]::IsNullOrWhiteSpace($preferredLocalIpv4)) { "{0}:8081" -f $preferredLocalIpv4 } else { "host.docker.internal:8081" }
-    $cpolarDomainMap = Get-CpolarDomainMap -RawValue (
-        Get-FirstNonEmptyValue @(
-            [string]$rootEnv["CPOLAR_DOMAIN_MAP"],
-            [string]$dockerEnv["CPOLAR_DOMAIN_MAP"]
-        )
-    )
-    $publicBaseUrl = Get-FirstNonEmptyValue @(
-        [string]$cpolarDomainMap["public"],
-        (Resolve-PublicBaseUrl -Url ([string]$rootEnv["CPOLAR_PUBLIC_BASE_URL"])),
-        (Resolve-PublicBaseUrl -Url ([string]$rootEnv["CPOLAR_DOMAIN"])),
-        (Resolve-PublicBaseUrl -Url ([string]$dockerEnv["CPOLAR_PUBLIC_BASE_URL"])),
-        (Resolve-PublicBaseUrl -Url ([string]$dockerEnv["CPOLAR_DOMAIN"])),
-        $localGatewayBaseUrl
-    )
-    $frontendBaseUrl = Get-FirstNonEmptyValue @(
-        [string]$cpolarDomainMap["frontend"],
-        (Resolve-PublicBaseUrl -Url ([string]$rootEnv["CPOLAR_FRONTEND_BASE_URL"])),
-        (Resolve-PublicBaseUrl -Url ([string]$dockerEnv["CPOLAR_FRONTEND_BASE_URL"])),
-        $publicBaseUrl
-    )
-    $cpolarDomainMapValue = New-CpolarDomainMapValue -PublicBaseUrl $publicBaseUrl -FrontendBaseUrl $frontendBaseUrl
-
-    Set-EnvValue -Values $dockerEnv -Name "NGINX_GATEWAY_UPSTREAM" -Value $gatewayUpstream
-    Set-EnvValue -Values $dockerEnv -Name "NGINX_AUTH_UPSTREAM" -Value $authUpstream
-
-    Set-EnvValue -Values $rootEnv -Name "CPOLAR_DOMAIN_MAP" -Value $cpolarDomainMapValue
-    Set-EnvValue -Values $dockerEnv -Name "CPOLAR_DOMAIN_MAP" -Value $cpolarDomainMapValue
-    Set-EnvValue -Values $rootEnv -Name "CPOLAR_DOMAIN" -Value $publicBaseUrl
-    Set-EnvValue -Values $rootEnv -Name "CPOLAR_PUBLIC_BASE_URL" -Value $publicBaseUrl
-    Set-EnvValue -Values $rootEnv -Name "CPOLAR_FRONTEND_BASE_URL" -Value $frontendBaseUrl
-    Set-EnvValue -Values $dockerEnv -Name "CPOLAR_DOMAIN" -Value $publicBaseUrl
-    Set-EnvValue -Values $dockerEnv -Name "CPOLAR_PUBLIC_BASE_URL" -Value $publicBaseUrl
-    Set-EnvValue -Values $dockerEnv -Name "CPOLAR_FRONTEND_BASE_URL" -Value $frontendBaseUrl
-
-    $oauthRedirectUris = [System.Collections.Generic.List[string]]::new()
-    foreach ($redirectUri in @(
-        ("{0}/callback" -f $frontendBaseUrl),
-        ("{0}/callback" -f $publicBaseUrl),
-        ("http://127.0.0.1:{0}/callback" -f $nginxHttpPort),
-        "http://127.0.0.1:3000/callback",
-        "http://127.0.0.1:5173/callback",
-        "http://localhost:5173/callback"
-    )) {
-        Add-UniqueValue -Values $oauthRedirectUris -Value $redirectUri
+    $arguments = @($scriptPath, $Root)
+    if (-not [string]::IsNullOrWhiteSpace($preferredLocalIpv4)) {
+        $arguments += "--preferred-local-ipv4=$preferredLocalIpv4"
     }
 
-    $originPatterns = [System.Collections.Generic.List[string]]::new()
-    foreach ($pattern in @(
-        "http://127.0.0.1:*",
-        "https://127.0.0.1:*",
-        "http://localhost:*",
-        "https://localhost:*"
-    )) {
-        Add-UniqueValue -Values $originPatterns -Value $pattern
-    }
-    Add-OriginVariants -Origins $originPatterns -BaseUrl $publicBaseUrl
-    Add-OriginVariants -Origins $originPatterns -BaseUrl $frontendBaseUrl
-
-    foreach ($values in @($rootEnv, $dockerEnv)) {
-        Set-EnvValue -Values $values -Name "ALIPAY_NOTIFY_URL" -Value ("{0}/api/v1/payment/alipay/notify" -f $publicBaseUrl)
-        Set-EnvValue -Values $values -Name "ALIPAY_RETURN_URL" -Value ("{0}/#/pages/app/payments/index" -f $frontendBaseUrl)
-        Set-EnvValue -Values $values -Name "GITHUB_REDIRECT_URI" -Value ("{0}/login/oauth2/code/github" -f $publicBaseUrl)
-        Set-EnvValue -Values $values -Name "APP_OAUTH2_GITHUB_ERROR_URL" -Value ("{0}/auth/error" -f $frontendBaseUrl)
-        Set-EnvValue -Values $values -Name "APP_OAUTH2_WEB_REDIRECT_URIS" -Value ($oauthRedirectUris -join ",")
-        Set-EnvValue -Values $values -Name "APP_SECURITY_CORS_ALLOWED_ORIGIN_PATTERNS" -Value ($originPatterns -join ",")
+    $json = & $nodeCommand.Source @arguments
+    if ($LASTEXITCODE -ne 0) {
+        throw "failed to synchronize development environment files"
     }
 
-    Write-EnvFile -Path $rootEnvPath -Values $rootEnv
-    Write-EnvFile -Path $dockerEnvPath -Values $dockerEnv
-
-    $frontendEnv = [ordered]@{
-        VITE_API_BASE_URL       = $publicBaseUrl
-        VITE_DEV_PROXY_TARGET   = $localGatewayBaseUrl
-        VITE_CPOLAR_DOMAIN      = $frontendBaseUrl
-        VITE_OAUTH_CLIENT_ID    = "web-client"
-        VITE_OAUTH_REDIRECT_URI = "{0}/callback" -f $frontendBaseUrl
-        VITE_SEARCH_FALLBACK_TIMEOUT = "5000"
-    }
-
-    Write-EnvFile -Path $frontendDevEnvPath -Values $frontendEnv
-    Write-EnvFile -Path $frontendProdEnvPath -Values $frontendEnv
-
+    $syncResult = $json | ConvertFrom-Json
     if ($ImportProcessEnvironment) {
-        Import-EnvMap -Values $dockerEnv
-        Import-EnvMap -Values $frontendEnv
+        Import-EnvMapFromObject -Values $syncResult.dockerEnv
+        Import-EnvMapFromObject -Values $syncResult.frontendEnv
     }
 
-    Write-Host ("ENV_SYNC root={0} docker={1} frontend={2}" -f $rootEnvPath, $dockerEnvPath, $frontendDevEnvPath)
-    return $dockerEnv
+    Write-Host ("ENV_SYNC root={0} docker={1} frontend={2}" -f $syncResult.rootEnvPath, $syncResult.dockerEnvPath, $syncResult.frontendDevEnvPath)
+    return $syncResult.dockerEnv
 }
 
 function Get-DockerEnvValue {
