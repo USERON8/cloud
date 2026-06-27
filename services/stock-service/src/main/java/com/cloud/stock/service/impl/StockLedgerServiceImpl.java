@@ -12,7 +12,6 @@ import com.cloud.stock.module.entity.StockSegment;
 import com.cloud.stock.module.entity.StockTxn;
 import com.cloud.stock.service.StockLedgerService;
 import com.cloud.stock.service.support.StockRedisCacheService;
-import com.cloud.stock.service.support.StockSearchSyncService;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashSet;
@@ -35,7 +34,6 @@ public class StockLedgerServiceImpl implements StockLedgerService {
   private final StockMessageProducer stockMessageProducer;
   private final TradeMetrics tradeMetrics;
   private final StockRedisCacheService stockRedisCacheService;
-  private final StockSearchSyncService stockSearchSyncService;
 
   @Override
   public StockLedgerVO getLedgerBySkuId(Long skuId) {
@@ -96,7 +94,6 @@ public class StockLedgerServiceImpl implements StockLedgerService {
         writeTxn(command, allocation, "RESERVE", command.getReason());
       }
       stockRedisCacheService.evictLedgerAfterCommit(command.getSkuId());
-      stockSearchSyncService.syncProductsBySkuIds(List.of(command.getSkuId()));
       tradeMetrics.incrementStockFreeze("success");
       return true;
     } catch (Exception ex) {
@@ -138,7 +135,6 @@ public class StockLedgerServiceImpl implements StockLedgerService {
           command.getReason());
     }
     stockRedisCacheService.evictLedgerAfterCommit(command.getSkuId());
-    stockSearchSyncService.syncProductsBySkuIds(List.of(command.getSkuId()));
     return true;
   }
 
@@ -179,7 +175,6 @@ public class StockLedgerServiceImpl implements StockLedgerService {
       }
       if (releasedQty > 0) {
         stockRedisCacheService.evictLedgerAfterCommit(command.getSkuId());
-        stockSearchSyncService.syncProductsBySkuIds(List.of(command.getSkuId()));
       }
       tradeMetrics.incrementStockRelease("success");
       return true;
@@ -264,9 +259,6 @@ public class StockLedgerServiceImpl implements StockLedgerService {
     }
     if (restoredFromLocked > 0 || restoredFromSold > 0) {
       stockRedisCacheService.evictLedgerAfterCommit(command.getSkuId());
-    }
-    if (restoredFromLocked > 0 || restoredFromSold > 0) {
-      stockSearchSyncService.syncProductsBySkuIds(List.of(command.getSkuId()));
     }
   }
 

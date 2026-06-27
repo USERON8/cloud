@@ -3,6 +3,7 @@ package com.cloud.auth.service;
 import com.cloud.api.user.UserDubboApi;
 import com.cloud.common.domain.dto.user.UserProfileDTO;
 import com.cloud.common.remote.RemoteCallSupport;
+import com.cloud.common.security.JwtClaimResolver;
 import java.util.Collection;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -65,7 +66,7 @@ public class PermissionCheckService {
     Object principal = authentication.getPrincipal();
     if (principal instanceof Jwt) {
       Jwt jwt = (Jwt) principal;
-      Long userId = resolveUserId(jwt);
+      Long userId = JwtClaimResolver.resolveUserId(jwt);
 
       if (isAdmin(authentication)) {
         return true;
@@ -99,7 +100,7 @@ public class PermissionCheckService {
     Object principal = authentication.getPrincipal();
     if (principal instanceof Jwt) {
       Jwt jwt = (Jwt) principal;
-      return resolveUserId(jwt);
+      return JwtClaimResolver.resolveUserId(jwt);
     }
 
     return null;
@@ -129,7 +130,7 @@ public class PermissionCheckService {
     Object principal = authentication.getPrincipal();
     if (principal instanceof Jwt) {
       Jwt jwt = (Jwt) principal;
-      Long userId = resolveUserId(jwt);
+      Long userId = JwtClaimResolver.resolveUserId(jwt);
       if (userId == null) {
         return null;
       }
@@ -143,21 +144,5 @@ public class PermissionCheckService {
     }
 
     return null;
-  }
-
-  private Long resolveUserId(Jwt jwt) {
-    Long userId = jwt.getClaim("user_id");
-    if (userId != null) {
-      return userId;
-    }
-    Object claim = jwt.getClaim("userId");
-    if (claim == null) {
-      return null;
-    }
-    try {
-      return Long.valueOf(claim.toString());
-    } catch (NumberFormatException ex) {
-      return null;
-    }
   }
 }

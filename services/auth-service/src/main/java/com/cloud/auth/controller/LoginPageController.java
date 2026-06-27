@@ -413,7 +413,7 @@ public class LoginPageController {
                   <form method="post" action="/login">
                     <label>
                       Username
-                      <input type="text" name="username" autocomplete="username" placeholder="Username" />
+                      <input type="text" name="username" autocomplete="username" placeholder="用户名" />
                     </label>
                     <label>
                       Password

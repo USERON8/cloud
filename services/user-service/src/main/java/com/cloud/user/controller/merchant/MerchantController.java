@@ -41,14 +41,14 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/merchants")
 @RequiredArgsConstructor
-@Tag(name = "Merchant Management", description = "Merchant REST APIs")
+@Tag(name = "商户管理", description = "商户 REST 接口")
 @Validated
 @ApiResponses({
-  @ApiResponse(responseCode = "400", description = "Invalid merchant parameters or business state"),
-  @ApiResponse(responseCode = "401", description = "Authentication required"),
-  @ApiResponse(responseCode = "403", description = "Insufficient permissions"),
-  @ApiResponse(responseCode = "404", description = "Merchant resource not found"),
-  @ApiResponse(responseCode = "500", description = "Internal merchant service error")
+  @ApiResponse(responseCode = "400", description = "商户参数或业务状态无效"),
+  @ApiResponse(responseCode = "401", description = "需要认证"),
+  @ApiResponse(responseCode = "403", description = "权限不足"),
+  @ApiResponse(responseCode = "404", description = "商户资源不存在"),
+  @ApiResponse(responseCode = "500", description = "商户服务内部错误")
 })
 public class MerchantController {
 
@@ -58,20 +58,20 @@ public class MerchantController {
   @GetMapping
   @PreAuthorize("hasAuthority('admin:all') or hasAuthority('merchant:manage')")
   @Operation(
-      summary = "Get merchants",
-      description = "Get merchants with pagination and status filter")
+      summary = "查询商户列表",
+      description = "按分页和状态筛选查询商户")
   public Result<PageResult<MerchantDTO>> getMerchants(
-      @Parameter(description = "Page number")
+      @Parameter(description = "页码")
           @RequestParam(defaultValue = "1")
           @Min(value = 1, message = "page must be greater than 0")
           Integer page,
-      @Parameter(description = "Page size")
+      @Parameter(description = "每页数量")
           @RequestParam(defaultValue = "10")
           @Min(value = 1, message = "size must be greater than 0")
           @Max(value = 100, message = "size must be less than or equal to 100")
           Integer size,
-      @Parameter(description = "Merchant status") @RequestParam(required = false) Integer status,
-      @Parameter(description = "Merchant audit status") @RequestParam(required = false)
+      @Parameter(description = "商户状态") @RequestParam(required = false) Integer status,
+      @Parameter(description = "商户审核状态") @RequestParam(required = false)
           Integer auditStatus,
       Authentication authentication) {
     if (auditStatus != null && !isValidAuditStatus(auditStatus)) {
@@ -112,9 +112,9 @@ public class MerchantController {
       "hasAuthority('admin:all') "
           + "or (hasAuthority('merchant:manage') "
           + "and @permissionManager.isMerchantOwner(#id, authentication))")
-  @Operation(summary = "Get merchant by ID", description = "Get merchant details by merchant ID")
+  @Operation(summary = "按 ID 查询商户", description = "按商户 ID 查询商户详情")
   public Result<MerchantDTO> getMerchantById(
-      @Parameter(description = "Merchant ID")
+      @Parameter(description = "商户 ID")
           @PathVariable
           @NotNull(message = "merchant id is required")
           @Positive(message = "merchant id must be positive")
@@ -130,9 +130,9 @@ public class MerchantController {
 
   @PostMapping
   @PreAuthorize("hasAuthority('admin:all')")
-  @Operation(summary = "Create merchant", description = "Create a merchant")
+  @Operation(summary = "创建商户", description = "创建一个商户")
   public Result<MerchantDTO> createMerchant(
-      @Parameter(description = "Merchant payload")
+      @Parameter(description = "商户请求体")
           @RequestBody
           @Valid
           @NotNull(message = "merchant payload is required")
@@ -146,14 +146,14 @@ public class MerchantController {
       "hasAuthority('admin:all') "
           + "or (hasAuthority('merchant:manage') "
           + "and @permissionManager.isMerchantOwner(#id, authentication))")
-  @Operation(summary = "Update merchant", description = "Update merchant details")
+  @Operation(summary = "更新商户", description = "更新商户详情")
   public Result<Boolean> updateMerchant(
-      @Parameter(description = "Merchant ID")
+      @Parameter(description = "商户 ID")
           @PathVariable
           @NotNull(message = "merchant id is required")
           @Positive(message = "merchant id must be positive")
           Long id,
-      @Parameter(description = "Merchant payload")
+      @Parameter(description = "商户请求体")
           @RequestBody
           @Valid
           @NotNull(message = "merchant payload is required")
@@ -166,9 +166,9 @@ public class MerchantController {
 
   @DeleteMapping("/{id}")
   @PreAuthorize("hasAuthority('admin:all')")
-  @Operation(summary = "Delete merchant", description = "Delete merchant by ID")
+  @Operation(summary = "删除商户", description = "按 ID 删除商户")
   public Result<Boolean> deleteMerchant(
-      @Parameter(description = "Merchant ID")
+      @Parameter(description = "商户 ID")
           @PathVariable
           @NotNull(message = "merchant id is required")
           @Positive(message = "merchant id must be positive")
@@ -179,19 +179,19 @@ public class MerchantController {
 
   @PostMapping("/{id}/reviews")
   @PreAuthorize("hasAuthority('merchant:audit')")
-  @Operation(summary = "Review merchant", description = "Review merchant")
+  @Operation(summary = "审核商户", description = "审核商户")
   public Result<Boolean> reviewMerchant(
-      @Parameter(description = "Merchant ID")
+      @Parameter(description = "商户 ID")
           @PathVariable
           @NotNull(message = "merchant id is required")
           @Positive(message = "merchant id must be positive")
           Long id,
-      @Parameter(description = "Review approved flag")
+      @Parameter(description = "审核是否通过")
           @RequestParam
           @NotNull(message = "approved is required")
           Boolean approved,
-      @Parameter(description = "Review remark") @RequestParam(required = false) String remark,
-      @Parameter(description = "Review reason") @RequestParam(required = false) String reason) {
+      @Parameter(description = "审核备注") @RequestParam(required = false) String remark,
+      @Parameter(description = "审核原因") @RequestParam(required = false) String reason) {
     String reviewRemark = StrUtil.isNotBlank(remark) ? remark : reason;
     if (!approved && StrUtil.isBlank(reviewRemark)) {
       throw new BizException(ResultCode.BAD_REQUEST, "reason cannot be blank");
@@ -206,14 +206,14 @@ public class MerchantController {
 
   @PatchMapping("/{id}/status")
   @PreAuthorize("hasAuthority('admin:all')")
-  @Operation(summary = "Update merchant status", description = "Update merchant status")
+  @Operation(summary = "更新商户状态", description = "更新商户状态")
   public Result<Boolean> updateMerchantStatus(
-      @Parameter(description = "Merchant ID")
+      @Parameter(description = "商户 ID")
           @PathVariable
           @NotNull(message = "merchant id is required")
           @Positive(message = "merchant id must be positive")
           Long id,
-      @Parameter(description = "Merchant status") @RequestParam Integer status) {
+      @Parameter(description = "商户状态") @RequestParam Integer status) {
     boolean result = merchantService.updateMerchantStatus(id, status);
     return Result.success("merchant status updated", result);
   }
@@ -223,9 +223,9 @@ public class MerchantController {
       "hasAuthority('admin:all') "
           + "or (hasAuthority('merchant:manage') "
           + "and @permissionManager.isMerchantOwner(#id, authentication))")
-  @Operation(summary = "Get merchant statistics", description = "Get statistics for one merchant")
+  @Operation(summary = "查询商户统计", description = "查询单个商户统计")
   public Result<Object> getMerchantStatistics(
-      @Parameter(description = "Merchant ID")
+      @Parameter(description = "商户 ID")
           @PathVariable
           @NotNull(message = "merchant id is required")
           @Positive(message = "merchant id must be positive")
@@ -238,9 +238,9 @@ public class MerchantController {
 
   @DeleteMapping("/batch")
   @PreAuthorize("hasAuthority('admin:all')")
-  @Operation(summary = "Batch delete merchants", description = "Batch delete merchants by IDs")
+  @Operation(summary = "批量删除商户", description = "按 ID 批量删除商户")
   public Result<Boolean> deleteMerchantsBatch(
-      @Parameter(description = "Merchant IDs")
+      @Parameter(description = "商户 ID 列表")
           @RequestBody
           @NotNull(message = "merchant ids are required")
           @NotEmpty(message = "merchant ids cannot be empty")
@@ -259,17 +259,17 @@ public class MerchantController {
   @PatchMapping("/batch/status")
   @PreAuthorize("hasAuthority('admin:all')")
   @Operation(
-      summary = "Batch update merchant status",
-      description = "Batch update merchant status by IDs")
+      summary = "批量更新商户状态",
+      description = "按 ID 批量更新商户状态")
   public Result<Boolean> updateMerchantStatusBatch(
-      @Parameter(description = "Merchant IDs")
+      @Parameter(description = "商户 ID 列表")
           @RequestParam
           @NotNull(message = "merchant ids are required")
           List<
                   @NotNull(message = "merchant id cannot be null")
                   @Positive(message = "merchant id must be positive") Long>
               ids,
-      @Parameter(description = "Merchant status")
+      @Parameter(description = "商户状态")
           @RequestParam
           @NotNull(message = "status is required")
           Integer status) {
@@ -288,9 +288,9 @@ public class MerchantController {
 
   @PostMapping("/bulk/reviews")
   @PreAuthorize("hasAuthority('merchant:audit')")
-  @Operation(summary = "Batch review merchants", description = "Batch review merchants by IDs")
+  @Operation(summary = "批量审核商户", description = "按 ID 批量审核商户")
   public Result<Boolean> reviewMerchantsBatch(
-      @Parameter(description = "Merchant IDs")
+      @Parameter(description = "商户 ID 列表")
           @RequestBody
           @NotNull(message = "merchant ids are required")
           @NotEmpty(message = "merchant ids cannot be empty")
@@ -298,12 +298,12 @@ public class MerchantController {
                   @NotNull(message = "merchant id cannot be null")
                   @Positive(message = "merchant id must be positive") Long>
               ids,
-      @Parameter(description = "Review approved flag")
+      @Parameter(description = "审核是否通过")
           @RequestParam
           @NotNull(message = "approved is required")
           Boolean approved,
-      @Parameter(description = "Review remark") @RequestParam(required = false) String remark,
-      @Parameter(description = "Review reason") @RequestParam(required = false) String reason) {
+      @Parameter(description = "审核备注") @RequestParam(required = false) String remark,
+      @Parameter(description = "审核原因") @RequestParam(required = false) String reason) {
     if (ids.size() > 100) {
       throw new BizException(ResultCode.BAD_REQUEST, "batch size cannot exceed 100");
     }

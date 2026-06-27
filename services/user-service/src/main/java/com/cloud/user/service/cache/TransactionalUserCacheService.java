@@ -2,7 +2,6 @@ package com.cloud.user.service.cache;
 
 import cn.hutool.core.util.StrUtil;
 import com.cloud.user.module.entity.User;
-import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -17,7 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class TransactionalUserCacheService {
+public class TransactionalUserCacheService extends AbstractTransactionalHashCacheSupport {
 
   private static final String KEY_ID_PREFIX = "user:info:";
   private static final String KEY_NAME_PREFIX = "user:info:name:";
@@ -67,11 +66,11 @@ public class TransactionalUserCacheService {
     try {
       HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
       hashOperations.putAll(idKey(user.getId()), fields);
-      redisTemplate.expire(idKey(user.getId()), ttl());
+      redisTemplate.expire(idKey(user.getId()), ttl(ttlSeconds));
 
       if (StrUtil.isNotBlank(user.getUsername())) {
         hashOperations.putAll(nameKey(user.getUsername()), fields);
-        redisTemplate.expire(nameKey(user.getUsername()), ttl());
+        redisTemplate.expire(nameKey(user.getUsername()), ttl(ttlSeconds));
       }
     } catch (Exception ex) {
       log.warn("Write user info cache failed: userId={}", user.getId(), ex);
@@ -106,7 +105,7 @@ public class TransactionalUserCacheService {
       if (entries == null || entries.isEmpty()) {
         return null;
       }
-      redisTemplate.expire(key, ttl());
+      redisTemplate.expire(key, ttl(ttlSeconds));
       return fromMap(entries);
     } catch (Exception ex) {
       log.warn("Read user info cache failed: key={}", key, ex);
@@ -130,12 +129,6 @@ public class TransactionalUserCacheService {
     return fields;
   }
 
-  private void putIfNotBlank(Map<String, String> map, String key, String value) {
-    if (StrUtil.isNotBlank(value)) {
-      map.put(key, value);
-    }
-  }
-
   private UserCache fromMap(Map<Object, Object> map) {
     Long id = parseLong(map.get(FIELD_ID));
     if (id == null) {
@@ -151,42 +144,12 @@ public class TransactionalUserCacheService {
         parseInteger(map.get(FIELD_STATUS)));
   }
 
-  private Long parseLong(Object value) {
-    if (value == null) {
-      return null;
-    }
-    try {
-      return Long.parseLong(value.toString());
-    } catch (NumberFormatException ex) {
-      return null;
-    }
-  }
-
-  private Integer parseInteger(Object value) {
-    if (value == null) {
-      return null;
-    }
-    try {
-      return Integer.parseInt(value.toString());
-    } catch (NumberFormatException ex) {
-      return null;
-    }
-  }
-
-  private String parseString(Object value) {
-    return value == null ? null : value.toString();
-  }
-
   private String idKey(Long id) {
     return KEY_ID_PREFIX + id;
   }
 
   private String nameKey(String username) {
     return KEY_NAME_PREFIX + username;
-  }
-
-  private Duration ttl() {
-    return Duration.ofSeconds(Math.max(60L, ttlSeconds));
   }
 
   public record UserCache(

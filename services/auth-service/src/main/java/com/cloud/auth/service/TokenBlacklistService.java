@@ -1,6 +1,7 @@
 package com.cloud.auth.service;
 
 import com.cloud.auth.util.RedisKeyHelper;
+import com.cloud.common.security.RedisKeyScanSupport;
 import java.io.Serial;
 import java.io.Serializable;
 import java.time.Duration;
@@ -88,7 +89,7 @@ public class TokenBlacklistService {
 
   public int cleanupExpiredEntries() {
     try {
-      Set<String> allKeys = RedisKeyHelper.scanKeys(redisTemplate, BLACKLIST_KEY_PREFIX + "*");
+      Set<String> allKeys = RedisKeyScanSupport.scanKeys(redisTemplate, BLACKLIST_KEY_PREFIX + "*");
       if (allKeys == null || allKeys.isEmpty()) {
         redisTemplate.opsForHash().put(BLACKLIST_STATS_KEY, "active_blacklisted", 0);
         redisTemplate

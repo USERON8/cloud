@@ -21,9 +21,6 @@ public class ResourceServerConfig {
           AuthorizeHttpRequestsConfigurer<HttpSecurity>.AuthorizationManagerRequestMatcherRegistry
               authz) {
         authz
-            .requestMatchers("/internal/governance/**")
-            .hasAnyAuthority("SCOPE_internal", "admin:all", "ROLE_ADMIN");
-        authz
             .requestMatchers(
                 "/api/admin",
                 "/api/admin/**",

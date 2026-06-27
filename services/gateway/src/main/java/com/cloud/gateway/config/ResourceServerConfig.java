@@ -3,15 +3,12 @@ package com.cloud.gateway.config;
 import com.cloud.common.enums.ResultCode;
 import com.cloud.common.security.AudienceTokenValidator;
 import com.cloud.common.security.InternalScopeClientValidator;
+import com.cloud.common.security.LocalJwtBlacklistCache;
+import com.cloud.common.security.SecurityTextParsers;
 import com.cloud.gateway.support.GatewayResponseWriter;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -41,11 +38,10 @@ import reactor.core.publisher.Mono;
 public class ResourceServerConfig {
 
   private static final String BLACKLIST_KEY_PREFIX = "auth:blacklist:";
-  private static final Duration LOCAL_BLACKLIST_GRACE_PERIOD = Duration.ofMinutes(10);
 
   private final ReactiveStringRedisTemplate reactiveStringRedisTemplate;
   private final GatewayResponseWriter gatewayResponseWriter;
-  private final ConcurrentMap<String, Instant> localBlacklistCache = new ConcurrentHashMap<>();
+  private final LocalJwtBlacklistCache localBlacklistCache = new LocalJwtBlacklistCache();
 
   @Value(
       "${spring.security.oauth2.resourceserver.jwt.jwk-set-uri:${AUTH_JWK_SET_URI:http://${AUTH_HOST:127.0.0.1}:${AUTH_PORT:8081}/.well-known/jwks.json}}")
@@ -87,7 +83,7 @@ public class ResourceServerConfig {
                   exchanges
                       .pathMatchers(HttpMethod.OPTIONS, "/**")
                       .permitAll()
-                      .pathMatchers("/actuator/health", "/actuator/prometheus", "/nacos/**")
+                      .pathMatchers("/actuator/health", "/nacos/**")
                       .permitAll()
                       .pathMatchers(
                           "/auth/authorizations/statistics",
@@ -165,19 +161,10 @@ public class ResourceServerConfig {
               authExchanges
                   .pathMatchers("/api/search/**", "/api/shops/**")
                   .permitAll()
-                  .pathMatchers("/api/admin/governance/**")
-                  .hasRole("ADMIN")
                   .pathMatchers("/api/admin/mq/**")
                   .hasRole("ADMIN")
                   .pathMatchers("/api/admin/outbox/**", "/api/admin/observability/**")
                   .hasRole("ADMIN")
-                  .pathMatchers(
-                      "/api/admin/thread-pool/internal/**",
-                      "/api/admin/statistics/internal/**",
-                      "/api/admin/stocks/internal/**")
-                  .hasAuthority("SCOPE_internal")
-                  .pathMatchers("/internal/governance/**")
-                  .hasAuthority("SCOPE_internal")
                   .pathMatchers("/api/admin/notifications/**")
                   .hasAuthority("admin:all")
                   .pathMatchers("/api/users/**", "/api/addresses/**")
@@ -273,7 +260,8 @@ public class ResourceServerConfig {
   public CorsConfigurationSource corsConfigurationSource() {
     CorsConfiguration config = new CorsConfiguration();
     config.setAllowCredentials(true);
-    config.setAllowedOriginPatterns(parseCsv(corsAllowedOriginPatterns).stream().toList());
+    config.setAllowedOriginPatterns(
+        SecurityTextParsers.parseCsv(corsAllowedOriginPatterns).stream().toList());
     config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
     config.setAllowedHeaders(List.of("*"));
     config.setExposedHeaders(List.of("Authorization", "Content-Type"));
@@ -289,9 +277,9 @@ public class ResourceServerConfig {
     NimbusReactiveJwtDecoder decoder = NimbusReactiveJwtDecoder.withJwkSetUri(jwkSetUri).build();
     OAuth2TokenValidator<Jwt> withIssuer = JwtValidators.createDefaultWithIssuer(issuerUri);
     OAuth2TokenValidator<Jwt> withAudience =
-        new AudienceTokenValidator(parseCsv(acceptedAudiences));
+        new AudienceTokenValidator(SecurityTextParsers.parseCsv(acceptedAudiences));
     OAuth2TokenValidator<Jwt> withInternalClient =
-        new InternalScopeClientValidator(parseCsv(allowedInternalClientIds));
+        new InternalScopeClientValidator(SecurityTextParsers.parseCsv(allowedInternalClientIds));
     decoder.setJwtValidator(
         new org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator<>(
             withIssuer, withAudience, withInternalClient));
@@ -332,35 +320,25 @@ public class ResourceServerConfig {
 
   // Token value is used directly as blacklist key suffix to match auth:blacklist:{token} design.
 
-  private Set<String> parseCsv(String raw) {
-    if (raw == null || raw.isBlank()) {
-      return Set.of();
-    }
-    return Arrays.stream(raw.split(","))
-        .map(String::trim)
-        .filter(value -> !value.isBlank())
-        .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
-  }
-
   Mono<Jwt> validateBlacklist(Jwt jwt, String tokenValue) {
     if (jwt == null || tokenValue == null || tokenValue.isBlank()) {
       return Mono.justOrEmpty(jwt);
     }
-    evictExpiredLocalEntry(tokenValue);
+    localBlacklistCache.evictExpired(tokenValue);
     return reactiveStringRedisTemplate
         .hasKey(BLACKLIST_KEY_PREFIX + tokenValue)
         .flatMap(
             blacklisted -> {
               if (Boolean.TRUE.equals(blacklisted)) {
-                rememberBlacklistedToken(tokenValue, jwt);
+                localBlacklistCache.remember(tokenValue, jwt);
                 return Mono.error(new BadJwtException("Token is blacklisted"));
               }
-              localBlacklistCache.remove(tokenValue);
+              localBlacklistCache.clear(tokenValue);
               return Mono.just(jwt);
             })
         .onErrorResume(
             ex -> {
-              if (isLocallyBlacklisted(tokenValue)) {
+              if (localBlacklistCache.contains(tokenValue)) {
                 log.warn(
                     "Gateway blacklist validation fell back to local cache: sub={}, jti={}",
                     jwt.getSubject(),
@@ -383,32 +361,5 @@ public class ResourceServerConfig {
                   ex);
               return Mono.just(jwt);
             });
-  }
-
-  private void rememberBlacklistedToken(String tokenValue, Jwt jwt) {
-    Instant expiresAt = jwt.getExpiresAt();
-    if (expiresAt == null || expiresAt.isBefore(Instant.now())) {
-      expiresAt = Instant.now().plus(LOCAL_BLACKLIST_GRACE_PERIOD);
-    }
-    localBlacklistCache.put(tokenValue, expiresAt);
-  }
-
-  private boolean isLocallyBlacklisted(String tokenValue) {
-    Instant expiresAt = localBlacklistCache.get(tokenValue);
-    if (expiresAt == null) {
-      return false;
-    }
-    if (expiresAt.isBefore(Instant.now())) {
-      localBlacklistCache.remove(tokenValue, expiresAt);
-      return false;
-    }
-    return true;
-  }
-
-  private void evictExpiredLocalEntry(String tokenValue) {
-    Instant expiresAt = localBlacklistCache.get(tokenValue);
-    if (expiresAt != null && expiresAt.isBefore(Instant.now())) {
-      localBlacklistCache.remove(tokenValue, expiresAt);
-    }
   }
 }

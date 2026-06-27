@@ -14,8 +14,6 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
-import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @SecurityScheme(
     name = "Authorization",
@@ -36,18 +34,10 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @Slf4j
 @EnableAspectJAutoProxy(proxyTargetClass = true)
 @MapperScan("com.cloud.user.mapper")
-public class UserApplication implements WebMvcConfigurer {
+public class UserApplication {
 
   public static void main(String[] args) {
     CloudBootstrap.initialize();
     SpringApplication.run(UserApplication.class, args);
-  }
-
-  @Override
-  public void addResourceHandlers(ResourceHandlerRegistry registry) {
-    registry.addResourceHandler("doc.html").addResourceLocations("classpath:/META-INF/resources/");
-    registry
-        .addResourceHandler("/webjars/**")
-        .addResourceLocations("classpath:/META-INF/resources/webjars/");
   }
 }

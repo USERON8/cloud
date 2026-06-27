@@ -1,13 +1,11 @@
 package com.cloud.user.service.cache;
 
+import com.cloud.common.cache.AbstractJsonRedisCacheSupport;
 import com.cloud.common.domain.vo.user.UserStatisticsVO;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.time.Duration;
 import java.time.LocalDate;
 import java.util.Map;
-import java.util.Set;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -15,16 +13,17 @@ import org.springframework.stereotype.Service;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
-public class UserStatisticsCacheService {
+public class UserStatisticsCacheService extends AbstractJsonRedisCacheSupport {
 
   private static final String PREFIX = "user:statistics:";
 
-  private final StringRedisTemplate redisTemplate;
-  private final ObjectMapper objectMapper;
-
   @Value("${user.cache.statistics.ttl-seconds:300}")
   private long ttlSeconds;
+
+  public UserStatisticsCacheService(
+      StringRedisTemplate stringRedisTemplate, ObjectMapper objectMapper) {
+    super(stringRedisTemplate, objectMapper);
+  }
 
   public UserStatisticsVO getOverview() {
     return get(overviewKey(), UserStatisticsVO.class);
@@ -69,53 +68,19 @@ public class UserStatisticsCacheService {
   }
 
   public void clearAll() {
-    try {
-      Set<String> keys = redisTemplate.keys(PREFIX + "*");
-      if (keys != null && !keys.isEmpty()) {
-        redisTemplate.delete(keys);
-      }
-    } catch (Exception ex) {
-      log.warn("Clear user statistics cache failed", ex);
-    }
+    clearAllByPrefix(PREFIX, log, "user statistics");
   }
 
   private <T> T get(String key, Class<T> type) {
-    try {
-      String json = redisTemplate.opsForValue().get(key);
-      if (json == null || json.isBlank()) {
-        return null;
-      }
-      redisTemplate.expire(key, ttl());
-      return objectMapper.readValue(json, type);
-    } catch (Exception ex) {
-      log.warn("Read statistics cache failed: key={}", key, ex);
-      return null;
-    }
+    return getValue(key, type, ttl(ttlSeconds), log, "user statistics");
   }
 
   private <T> T get(String key, TypeReference<T> typeReference) {
-    try {
-      String json = redisTemplate.opsForValue().get(key);
-      if (json == null || json.isBlank()) {
-        return null;
-      }
-      redisTemplate.expire(key, ttl());
-      return objectMapper.readValue(json, typeReference);
-    } catch (Exception ex) {
-      log.warn("Read statistics cache failed: key={}", key, ex);
-      return null;
-    }
+    return getValue(key, typeReference, ttl(ttlSeconds), log, "user statistics");
   }
 
   private void put(String key, Object value) {
-    if (value == null) {
-      return;
-    }
-    try {
-      redisTemplate.opsForValue().set(key, objectMapper.writeValueAsString(value), ttl());
-    } catch (Exception ex) {
-      log.warn("Write statistics cache failed: key={}", key, ex);
-    }
+    putValue(key, value, ttl(ttlSeconds), log, "user statistics");
   }
 
   private String overviewKey() {
@@ -137,9 +102,5 @@ public class UserStatisticsCacheService {
   private String activeUsersKey(Integer days) {
     int safeDays = days == null || days <= 0 ? 7 : days;
     return PREFIX + "active:" + safeDays;
-  }
-
-  private Duration ttl() {
-    return Duration.ofSeconds(Math.max(60L, ttlSeconds));
   }
 }

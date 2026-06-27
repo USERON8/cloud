@@ -2,6 +2,7 @@ package com.cloud.auth.config;
 
 import cn.hutool.core.util.StrUtil;
 import com.cloud.common.security.JwtAuthorityUtils;
+import com.cloud.common.security.PasswordEncoderFactory;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
@@ -17,19 +18,12 @@ import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.RSAPublicKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
-import java.util.HashMap;
-import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
-import org.springframework.security.crypto.argon2.Argon2PasswordEncoder;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.DelegatingPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.crypto.password.Pbkdf2PasswordEncoder;
-import org.springframework.security.crypto.scrypt.SCryptPasswordEncoder;
 import org.springframework.security.oauth2.core.OAuth2Token;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
@@ -109,28 +103,7 @@ public class JwtPasswordConfig {
 
   @Bean
   public PasswordEncoder passwordEncoder() {
-    Map<String, PasswordEncoder> encoders = new HashMap<>();
-    encoders.put("bcrypt", new BCryptPasswordEncoder(12));
-    encoders.put(
-        "noop",
-        new PasswordEncoder() {
-          @Override
-          public String encode(CharSequence rawPassword) {
-            return rawPassword.toString();
-          }
-
-          @Override
-          public boolean matches(CharSequence rawPassword, String encodedPassword) {
-            return rawPassword.toString().equals(encodedPassword);
-          }
-        });
-    encoders.put("pbkdf2", Pbkdf2PasswordEncoder.defaultsForSpringSecurity_v5_8());
-    encoders.put("scrypt", SCryptPasswordEncoder.defaultsForSpringSecurity_v5_8());
-    encoders.put("argon2", Argon2PasswordEncoder.defaultsForSpringSecurity_v5_8());
-    DelegatingPasswordEncoder delegatingPasswordEncoder =
-        new DelegatingPasswordEncoder("bcrypt", encoders);
-    delegatingPasswordEncoder.setDefaultPasswordEncoderForMatches(encoders.get("bcrypt"));
-    return delegatingPasswordEncoder;
+    return PasswordEncoderFactory.createDelegatingPasswordEncoder();
   }
 
   @Bean

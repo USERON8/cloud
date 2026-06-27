@@ -6,9 +6,8 @@ import com.cloud.common.annotation.DistributedLock;
 import com.cloud.common.domain.vo.product.SkuDetailVO;
 import com.cloud.common.domain.vo.product.SpuDetailVO;
 import com.cloud.common.domain.vo.stock.StockLedgerVO;
-import com.cloud.common.enums.ResultCode;
-import com.cloud.common.exception.RemoteException;
 import com.cloud.common.messaging.event.StockAlertEvent;
+import com.cloud.common.remote.RemoteCallSupport;
 import com.cloud.common.task.XxlJobSupport;
 import com.cloud.stock.messaging.StockMessageProducer;
 import com.cloud.stock.service.StockLedgerQueryService;
@@ -21,11 +20,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Supplier;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.dubbo.config.annotation.DubboReference;
-import org.apache.dubbo.rpc.RpcException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
@@ -38,6 +35,7 @@ public class StockAlertXxlJob {
   private static final int DEFAULT_PAGE_SIZE = 200;
   private static final String WS_CHANNEL_PREFIX = "ws:message:";
 
+  private final RemoteCallSupport remoteCallSupport;
   private final StockLedgerQueryService stockLedgerQueryService;
   private final StringRedisTemplate stringRedisTemplate;
   private final ObjectMapper objectMapper;
@@ -128,8 +126,9 @@ public class StockAlertXxlJob {
       return Map.of();
     }
     List<SkuDetailVO> skuDetails =
-        invokeProductService(
-            "list sku by ids", () -> productDubboApi.listSkuByIds(new ArrayList<>(skuIds)));
+        remoteCallSupport.query(
+            "product-service.listSkuByIds",
+            () -> productDubboApi.listSkuByIds(new ArrayList<>(skuIds)));
     if (skuDetails == null || skuDetails.isEmpty()) {
       return Map.of();
     }
@@ -152,7 +151,8 @@ public class StockAlertXxlJob {
         continue;
       }
       SpuDetailVO spu =
-          invokeProductService("get spu by id", () -> productDubboApi.getSpuById(spuId));
+          remoteCallSupport.query(
+              "product-service.getSpuById", () -> productDubboApi.getSpuById(spuId));
       if (spu != null && spu.getMerchantId() != null) {
         mapping.put(spuId, spu.getMerchantId());
       }
@@ -191,14 +191,5 @@ public class StockAlertXxlJob {
             .alertThreshold(ledger.getAlertThreshold())
             .build();
     return stockMessageProducer.sendStockAlertEvent(event);
-  }
-
-  private <T> T invokeProductService(String action, Supplier<T> supplier) {
-    try {
-      return supplier.get();
-    } catch (RpcException ex) {
-      throw new RemoteException(
-          ResultCode.REMOTE_SERVICE_UNAVAILABLE, "product-service unavailable when " + action, ex);
-    }
   }
 }

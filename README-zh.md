@@ -116,9 +116,9 @@ pnpm --dir my-shop-uniapp build:h5
 
 | 文档 | 说明 |
 | --- | --- |
-| `docs/backend-api.md` | 当前后端路由归属、信任边界和接口面 |
+| `docs/backend-api.md` | 当前后端路由归属、信任边界、接口面和服务链路归属 |
 | `docs/frontend-api.md` | 当前 UniApp API 模块和前端请求规则 |
-| `docs/backend-runtime.md` | 后端边界、事务一致性、缓存和异常规则 |
+| `docs/backend-runtime.md` | 后端运行边界、事务一致性、缓存、异常和统一风格规则 |
 | `docs/dev-startup.md` | 本地启动脚本、参数和联调流程 |
 | `docs/observability-stack.md` | SkyWalking、Prometheus、Grafana 说明 |
 | `docs/TEST_SCRIPT_INDEX.md` | 契约、冒烟和性能脚本入口 |

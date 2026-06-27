@@ -80,7 +80,6 @@ Service summary:
 - `BizException`: business rule or invalid-state failure
 - `SystemException`: database, transaction, or infrastructure failure
 - `RemoteException`: RPC, MQ, or remote dependency failure
-- `BusinessException`: compatibility type aligned with business exception semantics
 
 Shared handling:
 
@@ -94,6 +93,24 @@ Boundary rules:
 - services catch only when translating semantics
 - DAO and infrastructure code do not catch by default
 - MQ consumers ACK business errors and retry remote/system failures
+
+## Style And Maintenance Rules
+
+- Do not reintroduce Spotless or another compile-blocking formatter without a separate formatting-only change.
+- `.editorconfig` is the source for basic whitespace rules: Java/YAML/JSON use 2 spaces; XML and Maven POM keep 4 spaces.
+- Normal `/api/**` controller methods return `Result<T>` unless listed as a raw-response exception in `docs/backend-api.md`.
+- Controller code handles HTTP parameters, permission annotations, response wrapping, and orchestration only.
+- Business state checks belong in service or support classes.
+- Service-to-service synchronous calls prefer `common-api` Dubbo contracts.
+- Do not keep two HTTP routes for the same capability unless the comment and docs state the compatibility reason and removal condition.
+- Service README files should stay short: responsibility, public surface, runtime notes, local run command.
+
+Recommended local checks:
+
+1. `powershell -ExecutionPolicy Bypass -File scripts/tools/check-api-contract.ps1 -Root .`
+2. `mvn -pl <changed-module> -am test`
+3. `mvn -DskipTests compile`
+4. For gateway route changes, run `GatewayRouteDefinitionTest`.
 
 ## Related Documents
 

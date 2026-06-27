@@ -6,9 +6,9 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public enum ReviewType {
-  PRODUCT(1, "鍟嗗搧璇勪环"),
+  PRODUCT(1, "商品评价"),
 
-  SHOP(2, "搴楅摵璇勪环");
+  SHOP(2, "店铺评价");
 
   private final Integer code;
 
@@ -23,6 +23,6 @@ public enum ReviewType {
         return type;
       }
     }
-    throw new IllegalArgumentException("鏈煡鐨勮瘎浠风被鍨? " + code);
+    throw new IllegalArgumentException("未知的评价类型: " + code);
   }
 }

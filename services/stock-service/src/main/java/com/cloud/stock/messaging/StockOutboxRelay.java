@@ -1,6 +1,5 @@
 package com.cloud.stock.messaging;
 
-import com.cloud.common.messaging.event.ProductSyncEvent;
 import com.cloud.common.messaging.event.StockAlertEvent;
 import com.cloud.common.messaging.event.StockFreezeFailedEvent;
 import com.cloud.common.messaging.event.StockReservedEvent;
@@ -44,7 +43,6 @@ public class StockOutboxRelay extends AbstractOutboxRelay {
       case "STOCK_RESERVED" -> sendStockReserved(event);
       case "STOCK_FREEZE_FAILED" -> sendStockFreezeFailed(event);
       case "STOCK_ALERT" -> sendStockAlert(event);
-      case "PRODUCT_UPSERT" -> sendProductSync(event);
       default -> {
         log.warn(
             "Unknown outbox event type: eventId={}, eventType={}", event.getEventId(), eventType);
@@ -82,17 +80,6 @@ public class StockOutboxRelay extends AbstractOutboxRelay {
         payload,
         payload.getEventId(),
         payload.getEventType(),
-        payload.getEventId(),
-        payload.getEventType());
-  }
-
-  private boolean sendProductSync(OutboxEvent event) throws Exception {
-    ProductSyncEvent payload = readPayload(event, ProductSyncEvent.class);
-    return sendMessage(
-        "productSyncProducer-out-0",
-        payload,
-        String.valueOf(payload.getSpuId()),
-        "PRODUCT_UPSERT",
         payload.getEventId(),
         payload.getEventType());
   }

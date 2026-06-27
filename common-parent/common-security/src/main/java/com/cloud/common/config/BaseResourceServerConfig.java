@@ -4,9 +4,7 @@ import com.cloud.common.security.AudienceTokenValidator;
 import com.cloud.common.security.InternalRequestAuthenticationFilter;
 import com.cloud.common.security.InternalScopeClientValidator;
 import com.cloud.common.security.JwtBlacklistTokenValidator;
-import java.util.Arrays;
-import java.util.LinkedHashSet;
-import java.util.Set;
+import com.cloud.common.security.SecurityTextParsers;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -173,9 +171,9 @@ public class BaseResourceServerConfig {
     NimbusJwtDecoder decoder = NimbusJwtDecoder.withJwkSetUri(jwkSetUri).build();
     OAuth2TokenValidator<Jwt> withIssuer = JwtValidators.createDefaultWithIssuer(issuerUri);
     OAuth2TokenValidator<Jwt> withAudience =
-        new AudienceTokenValidator(parseCsv(acceptedAudiences));
+        new AudienceTokenValidator(SecurityTextParsers.parseCsv(acceptedAudiences));
     OAuth2TokenValidator<Jwt> withInternalClient =
-        new InternalScopeClientValidator(parseCsv(allowedInternalClientIds));
+        new InternalScopeClientValidator(SecurityTextParsers.parseCsv(allowedInternalClientIds));
     decoder.setJwtValidator(
         new DelegatingOAuth2TokenValidator<>(
             withIssuer, withAudience, withInternalClient, blacklistTokenValidator));
@@ -185,15 +183,5 @@ public class BaseResourceServerConfig {
   @Bean
   JwtAuthenticationConverter jwtAuthenticationConverter() {
     return serviceSecurityCustomizer.buildJwtAuthenticationConverter();
-  }
-
-  private Set<String> parseCsv(String raw) {
-    if (raw == null || raw.isBlank()) {
-      return Set.of();
-    }
-    return Arrays.stream(raw.split(","))
-        .map(String::trim)
-        .filter(value -> !value.isBlank())
-        .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
   }
 }

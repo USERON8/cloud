@@ -2,12 +2,12 @@ package com.cloud.stock.service.support;
 
 import com.cloud.common.domain.dto.stock.StockOperateCommandDTO;
 import com.cloud.common.domain.vo.stock.StockLedgerVO;
+import com.cloud.common.util.TransactionCommitSupport;
 import com.cloud.stock.mapper.StockSegmentMapper;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import jakarta.annotation.PostConstruct;
 import java.time.Duration;
-import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.HashMap;
@@ -20,8 +20,6 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @Slf4j
 @Service
@@ -178,11 +176,8 @@ public class StockRedisCacheService {
     if (skuId == null) {
       return;
     }
-    runAfterCommit(
-        () -> {
-          deleteLedgerNow(skuId);
-          scheduleDelayedDelete(skuId);
-        });
+    TransactionCommitSupport.runAfterCommitRepeated(
+        () -> deleteLedgerNow(skuId), taskScheduler, delayedDoubleDeleteMs);
   }
 
   public void evictLedgersAfterCommit(Collection<Long> skuIds) {
@@ -304,27 +299,5 @@ public class StockRedisCacheService {
     } catch (Exception ex) {
       log.warn("Delete stock ledger cache failed: skuId={}", skuId, ex);
     }
-  }
-
-  private void runAfterCommit(Runnable task) {
-    if (TransactionSynchronizationManager.isSynchronizationActive()) {
-      TransactionSynchronizationManager.registerSynchronization(
-          new TransactionSynchronization() {
-            @Override
-            public void afterCommit() {
-              task.run();
-            }
-          });
-      return;
-    }
-    task.run();
-  }
-
-  private void scheduleDelayedDelete(Long skuId) {
-    long delayMs = Math.max(0L, delayedDoubleDeleteMs);
-    if (delayMs <= 0L) {
-      return;
-    }
-    taskScheduler.schedule(() -> deleteLedgerNow(skuId), Instant.now().plusMillis(delayMs));
   }
 }

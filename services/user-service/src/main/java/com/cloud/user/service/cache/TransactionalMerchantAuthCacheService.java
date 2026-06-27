@@ -1,7 +1,6 @@
 package com.cloud.user.service.cache;
 
 import com.cloud.user.module.entity.MerchantAuth;
-import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -18,7 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class TransactionalMerchantAuthCacheService {
+public class TransactionalMerchantAuthCacheService extends AbstractTransactionalHashCacheSupport {
 
   private static final String KEY_ID_PREFIX = "merchant:auth:";
   private static final String KEY_MERCHANT_ID_PREFIX = "merchant:auth:merchant:";
@@ -75,9 +74,9 @@ public class TransactionalMerchantAuthCacheService {
     try {
       HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
       hashOperations.putAll(idKey(merchantAuth.getId()), fields);
-      redisTemplate.expire(idKey(merchantAuth.getId()), ttl());
+      redisTemplate.expire(idKey(merchantAuth.getId()), ttl(ttlSeconds));
       hashOperations.putAll(merchantIdKey(merchantAuth.getMerchantId()), fields);
-      redisTemplate.expire(merchantIdKey(merchantAuth.getMerchantId()), ttl());
+      redisTemplate.expire(merchantIdKey(merchantAuth.getMerchantId()), ttl(ttlSeconds));
     } catch (Exception ex) {
       log.warn("Write merchant auth cache failed: merchantAuthId={}", merchantAuth.getId(), ex);
     }
@@ -111,7 +110,7 @@ public class TransactionalMerchantAuthCacheService {
       if (entries == null || entries.isEmpty()) {
         return null;
       }
-      redisTemplate.expire(key, ttl());
+      redisTemplate.expire(key, ttl(ttlSeconds));
       return fromMap(entries);
     } catch (Exception ex) {
       log.warn("Read merchant auth cache failed: key={}", key, ex);
@@ -159,63 +158,12 @@ public class TransactionalMerchantAuthCacheService {
         parseTime(map.get(FIELD_UPDATED_AT)));
   }
 
-  private void putIfNotBlank(Map<String, String> map, String key, String value) {
-    if (value != null && !value.isBlank()) {
-      map.put(key, value);
-    }
-  }
-
-  private Long parseLong(Object value) {
-    if (value == null) {
-      return null;
-    }
-    try {
-      return Long.parseLong(value.toString());
-    } catch (NumberFormatException ex) {
-      return null;
-    }
-  }
-
-  private Integer parseInteger(Object value) {
-    if (value == null) {
-      return null;
-    }
-    try {
-      return Integer.parseInt(value.toString());
-    } catch (NumberFormatException ex) {
-      return null;
-    }
-  }
-
-  private LocalDateTime parseTime(Object value) {
-    if (value == null) {
-      return null;
-    }
-    try {
-      return LocalDateTime.parse(value.toString());
-    } catch (Exception ex) {
-      return null;
-    }
-  }
-
-  private String parseString(Object value) {
-    return value == null ? null : value.toString();
-  }
-
-  private String formatTime(LocalDateTime value) {
-    return value == null ? null : value.toString();
-  }
-
   private String idKey(Long id) {
     return KEY_ID_PREFIX + id;
   }
 
   private String merchantIdKey(Long merchantId) {
     return KEY_MERCHANT_ID_PREFIX + merchantId;
-  }
-
-  private Duration ttl() {
-    return Duration.ofSeconds(Math.max(60L, ttlSeconds));
   }
 
   public record MerchantAuthCache(

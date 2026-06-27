@@ -9,12 +9,9 @@ import com.cloud.search.service.ElasticsearchOptimizedService;
 import com.cloud.search.service.ProductSearchService;
 import com.cloud.search.service.support.HotKeywordKeys;
 import com.cloud.search.service.support.SearchHotDataCacheService;
+import com.cloud.search.service.support.SearchResultSupport;
 import com.cloud.search.service.support.SellRankKeys;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -40,16 +37,12 @@ import org.springframework.transaction.annotation.Transactional;
 public class ProductSearchServiceImpl implements ProductSearchService {
 
   private static final int ACTIVE_STATUS = 1;
-  private static final List<DateTimeFormatter> SUPPORTED_DATE_TIME_FORMATTERS =
-      List.of(
-          DateTimeFormatter.ISO_LOCAL_DATE_TIME,
-          DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
 
   private final ProductDocumentRepository productDocumentRepository;
   private final StringRedisTemplate redisTemplate;
   private final ElasticsearchOptimizedService elasticsearchOptimizedService;
   private final SearchHotDataCacheService searchHotDataCacheService;
-  private final ObjectMapper objectMapper;
+  private final SearchResultSupport searchResultSupport;
 
   @Value("${search.hot-keyword.daily-ttl-days:7}")
   private long hotKeywordDailyTtlDays;
@@ -133,7 +126,7 @@ public class ProductSearchServiceImpl implements ProductSearchService {
   @Override
   @Transactional(readOnly = true)
   public SearchResultDTO<ProductDocument> getProductFilters(ProductSearchRequest request) {
-    ProductSearchRequest aggregationRequest = copyRequest(request);
+    ProductSearchRequest aggregationRequest = searchResultSupport.copyRequest(request);
     aggregationRequest.setIncludeAggregations(true);
     long start = System.currentTimeMillis();
     ElasticsearchOptimizedService.SearchResultDTO esResult =
@@ -144,7 +137,8 @@ public class ProductSearchServiceImpl implements ProductSearchService {
             normalizePage(aggregationRequest.getPage()),
             normalizeSize(aggregationRequest.getSize()),
             System.currentTimeMillis() - start);
-    result.setAggregations(normalizeProductAggregations(result.getAggregations()));
+    result.setAggregations(
+        searchResultSupport.normalizeProductAggregations(result.getAggregations()));
     return result;
   }
 
@@ -450,34 +444,9 @@ public class ProductSearchServiceImpl implements ProductSearchService {
     return Sort.by(direction, field);
   }
 
-  private ProductSearchRequest copyRequest(ProductSearchRequest request) {
-    if (request == null) {
-      return new ProductSearchRequest();
-    }
-    return objectMapper.convertValue(request, ProductSearchRequest.class);
-  }
-
   private SearchResultDTO<ProductDocument> toSearchResultDTO(
       ElasticsearchOptimizedService.SearchResultDTO esResult, int page, int size, long took) {
-    List<ProductDocument> list =
-        esResult == null || esResult.getDocuments() == null
-            ? Collections.emptyList()
-            : esResult.getDocuments().stream().map(this::toProductDocument).toList();
-    long total = esResult == null ? list.size() : esResult.getTotal();
-    int totalPages = size <= 0 ? 0 : (int) Math.ceil((double) total / size);
-    return SearchResultDTO.<ProductDocument>builder()
-        .list(list)
-        .total(total)
-        .page(page)
-        .size(size)
-        .totalPages(totalPages)
-        .hasNext(page < totalPages - 1)
-        .hasPrevious(page > 0)
-        .took(took)
-        .aggregations(esResult == null ? Map.of() : esResult.getAggregations())
-        .highlights(esResult == null ? Map.of() : esResult.getHighlights())
-        .searchAfter(esResult == null ? List.of() : esResult.getSearchAfter())
-        .build();
+    return searchResultSupport.toSearchResultDTO(esResult, page, size, took, false);
   }
 
   private Page<ProductDocument> loadActiveProductFallback(int page, int size, String sortField) {
@@ -513,91 +482,5 @@ public class ProductSearchServiceImpl implements ProductSearchService {
     document.setHotScore(hotScore);
     document.setSearchWeight(hotScore + (document.getProductName() == null ? 0D : 10D));
     return document;
-  }
-
-  private Map<String, Object> normalizeProductAggregations(Map<String, Object> rawAggregations) {
-    if (rawAggregations == null || rawAggregations.isEmpty()) {
-      return Map.of();
-    }
-    Map<String, Object> normalized = new LinkedHashMap<>();
-    normalized.put("categories", normalizeBucketCounts(rawAggregations.get("categories")));
-    normalized.put("brands", normalizeBucketCounts(rawAggregations.get("brands")));
-    if (rawAggregations.containsKey("priceRanges")) {
-      normalized.put("priceRanges", rawAggregations.get("priceRanges"));
-    }
-    return normalized;
-  }
-
-  private Map<String, Long> normalizeBucketCounts(Object rawBuckets) {
-    if (!(rawBuckets instanceof Map<?, ?> bucketMap)) {
-      return Map.of();
-    }
-    Map<String, Long> normalized = new LinkedHashMap<>();
-    for (Map.Entry<?, ?> entry : bucketMap.entrySet()) {
-      String key = entry.getKey() == null ? "" : String.valueOf(entry.getKey()).trim();
-      if (key.isEmpty() || !(entry.getValue() instanceof Number number)) {
-        continue;
-      }
-      normalized.put(key, number.longValue());
-    }
-    return normalized;
-  }
-
-  private ProductDocument toProductDocument(Object document) {
-    if (document instanceof ProductDocument productDocument) {
-      return productDocument;
-    }
-    if (document instanceof Map<?, ?> source) {
-      Map<String, Object> normalized = new LinkedHashMap<>();
-      LocalDateTime createdAt = null;
-      LocalDateTime updatedAt = null;
-      for (Map.Entry<?, ?> entry : source.entrySet()) {
-        if (entry.getKey() == null) {
-          continue;
-        }
-        String key = String.valueOf(entry.getKey());
-        Object value = entry.getValue();
-        if ("createdAt".equals(key)) {
-          createdAt = parseDateTimeValue(value);
-          normalized.put(key, createdAt);
-          continue;
-        }
-        if ("updatedAt".equals(key)) {
-          updatedAt = parseDateTimeValue(value);
-          normalized.put(key, updatedAt);
-          continue;
-        }
-        normalized.put(key, value);
-      }
-      ProductDocument mapped = objectMapper.convertValue(normalized, ProductDocument.class);
-      if (createdAt != null) {
-        mapped.setCreatedAt(createdAt);
-      }
-      if (updatedAt != null) {
-        mapped.setUpdatedAt(updatedAt);
-      }
-      return mapped;
-    }
-    return objectMapper.convertValue(document, ProductDocument.class);
-  }
-
-  private LocalDateTime parseDateTimeValue(Object value) {
-    if (value instanceof LocalDateTime localDateTime) {
-      return localDateTime;
-    }
-    if (!(value instanceof String text)) {
-      return null;
-    }
-    String normalized = text.trim();
-    if (normalized.isEmpty()) {
-      return null;
-    }
-    for (DateTimeFormatter formatter : SUPPORTED_DATE_TIME_FORMATTERS) {
-      try {
-        return LocalDateTime.parse(normalized, formatter);
-      } catch (DateTimeParseException ignored) {
-      }
-    }
-    return null;
   }
 }

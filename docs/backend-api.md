@@ -40,9 +40,7 @@ Raw-response exceptions:
 | `/api/orders/**`, `/api/users/me/cart`, `/api/users/me/cart/**`, `/api/after-sales/**` | `order-service` | Cart, orders, and after-sale |
 | `/api/payment-orders/**`, `/api/payment-refunds/**`, `/api/payment-checkouts/**`, `/api/v1/payment/alipay/**` | `payment-service` | Payment, refund, checkout, callback |
 | `/api/search/**`, `/api/shops/**` | `search-service` | Public browse and search |
-| `/api/admin/stocks/internal/**` | `stock-service` | Internal stock ledger route |
 | `/api/admin/stocks/ledger/**`, `/api/admin/thread-pools/**`, `/api/admin/statistics/**`, `/api/admin/users/**`, `/api/admin/mq/**`, `/api/admin/outbox/**`, `/api/admin/observability/**`, `/api/admin/notifications/**`, `/auth/authorizations/**`, `/auth/cleanups/**`, `/auth/blacklist-entries/**` | `governance-service` | Admin aggregation and governance |
-| `/api/admin/governance/**` | `governance-service` | Rewritten to `/internal/governance/**` |
 
 ## Business Surface Summary
 
@@ -106,16 +104,32 @@ Raw-response exceptions:
 - Observability redirects: `/api/admin/observability/**`
 - `GET /api/admin/observability/grafana/open` is a redirect response endpoint and is intentionally not wrapped in `Result<T>`.
 - Stock ledger: `/api/admin/stocks/ledger/{skuId}`
-- Governance compatibility proxy: `/api/admin/governance/**`
+- Removed compatibility proxy: `/api/admin/governance/**` is no longer routed. Use the explicit `/api/admin/**` governance routes above.
 
 ## Internal-Only Surfaces
+
+The previous internal HTTP surfaces have been removed from the gateway route map:
 
 - `/internal/governance/**`
 - `/api/admin/stocks/internal/**`
 - `/api/admin/thread-pool/internal/**`
 - `/api/admin/statistics/internal/**`
 
-These routes are operational or internal and are not part of the normal frontend flow.
+Use explicit governance admin routes for HTTP traffic. Service-to-service aggregation should use
+`common-api` Dubbo contracts such as `UserGovernanceDubboApi` and `StockDubboApi`.
+
+## Service Chain Ownership
+
+- User profile, address, merchant, merchant-auth, admin, statistics, and thread-pool source data belong to `user-service`.
+- Login principals, passwords, roles, token state, and OAuth2 authorization data belong to `auth-service`.
+- Product, category, SPU, and SKU source data belong to `product-service`.
+- Search indexes are read models owned by `search-service`; they must not become write truth.
+- Order state transitions belong to `order-service`.
+- Inventory quantity and ledger truth belong to `stock-service`.
+- Payment orders, refunds, and provider callback verification belong to `payment-service`.
+- Admin governance views belong to `governance-service`; it aggregates through `common-api` Dubbo contracts or explicit governance support endpoints.
+
+Cross-service rule: add or extend a `common-api` contract first. Do not add controller-to-controller REST calls for normal business integration.
 
 ## Consistency Notes
 

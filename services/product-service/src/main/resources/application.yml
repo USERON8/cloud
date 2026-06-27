@@ -8,7 +8,6 @@ spring:
     import: "optional:nacos:common.yaml,optional:nacos:product-service.yaml"
   profiles:
     active: dev
-    include: rocketmq
   cloud:
     nacos:
       discovery:

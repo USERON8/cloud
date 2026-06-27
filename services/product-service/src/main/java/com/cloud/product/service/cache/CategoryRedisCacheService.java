@@ -1,34 +1,35 @@
 package com.cloud.product.service.cache;
 
+import com.cloud.common.cache.AbstractJsonRedisCacheSupport;
 import com.cloud.common.domain.dto.product.CategoryDTO;
+import com.cloud.common.util.TransactionCommitSupport;
 import com.cloud.product.module.entity.Category;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.time.Duration;
-import java.time.Instant;
 import java.util.List;
-import java.util.Set;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
-public class CategoryRedisCacheService {
+public class CategoryRedisCacheService extends AbstractJsonRedisCacheSupport {
 
   private static final String PREFIX = "product:category:";
   private static final String KEY_ENTITY_TREE = PREFIX + "tree:entity";
   private static final String KEY_DTO_TREE_PREFIX = PREFIX + "tree:dto:";
 
-  private final StringRedisTemplate stringRedisTemplate;
-  private final ObjectMapper objectMapper;
   private final TaskScheduler taskScheduler;
+
+  public CategoryRedisCacheService(
+      StringRedisTemplate stringRedisTemplate,
+      ObjectMapper objectMapper,
+      TaskScheduler taskScheduler) {
+    super(stringRedisTemplate, objectMapper);
+    this.taskScheduler = taskScheduler;
+  }
 
   @Value("${product.cache.category.ttl-seconds:1800}")
   private long ttlSeconds;
@@ -57,76 +58,23 @@ public class CategoryRedisCacheService {
   }
 
   public void clearAllAfterCommit() {
-    runAfterCommit(
-        () -> {
-          clearAllNow();
-          scheduleDelayedDelete();
-        });
+    TransactionCommitSupport.runAfterCommitRepeated(
+        this::clearAllNow, taskScheduler, delayedDoubleDeleteMs);
   }
 
   private void clearAllNow() {
-    try {
-      Set<String> keys = stringRedisTemplate.keys(PREFIX + "*");
-      if (keys != null && !keys.isEmpty()) {
-        stringRedisTemplate.delete(keys);
-      }
-    } catch (Exception ex) {
-      log.warn("Clear category cache failed", ex);
-    }
+    clearAllByPrefix(PREFIX, log, "category");
   }
 
   private <T> T get(String key, TypeReference<T> typeReference) {
-    try {
-      String json = stringRedisTemplate.opsForValue().get(key);
-      if (json == null || json.isBlank()) {
-        return null;
-      }
-      stringRedisTemplate.expire(key, ttl());
-      return objectMapper.readValue(json, typeReference);
-    } catch (Exception ex) {
-      log.warn("Read category cache failed: key={}", key, ex);
-      return null;
-    }
+    return getValue(key, typeReference, ttl(ttlSeconds), log, "category");
   }
 
   private void put(String key, Object value) {
-    if (value == null) {
-      return;
-    }
-    try {
-      stringRedisTemplate.opsForValue().set(key, objectMapper.writeValueAsString(value), ttl());
-    } catch (Exception ex) {
-      log.warn("Write category cache failed: key={}", key, ex);
-    }
+    putValue(key, value, ttl(ttlSeconds), log, "category");
   }
 
   private String dtoTreeKey(Boolean onlyEnabled) {
     return KEY_DTO_TREE_PREFIX + (Boolean.TRUE.equals(onlyEnabled) ? "enabled" : "all");
-  }
-
-  private Duration ttl() {
-    return Duration.ofSeconds(Math.max(60L, ttlSeconds));
-  }
-
-  private void runAfterCommit(Runnable task) {
-    if (TransactionSynchronizationManager.isSynchronizationActive()) {
-      TransactionSynchronizationManager.registerSynchronization(
-          new TransactionSynchronization() {
-            @Override
-            public void afterCommit() {
-              task.run();
-            }
-          });
-      return;
-    }
-    task.run();
-  }
-
-  private void scheduleDelayedDelete() {
-    long delayMs = Math.max(0L, delayedDoubleDeleteMs);
-    if (delayMs <= 0L) {
-      return;
-    }
-    taskScheduler.schedule(this::clearAllNow, Instant.now().plusMillis(delayMs));
   }
 }

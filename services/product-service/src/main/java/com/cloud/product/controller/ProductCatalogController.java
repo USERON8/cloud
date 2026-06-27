@@ -8,6 +8,7 @@ import com.cloud.common.exception.BizException;
 import com.cloud.common.result.Result;
 import com.cloud.common.security.SecurityPermissionUtils;
 import com.cloud.product.controller.support.ProductMerchantGuard;
+import com.cloud.product.controller.support.ProductPublicStatusSupport;
 import com.cloud.product.service.ProductCatalogService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -32,7 +33,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor
-@Tag(name = "Product Catalog API", description = "SPU/SKU catalog management APIs")
+@Tag(name = "商品目录接口", description = "SPU/SKU 商品目录管理接口")
 public class ProductCatalogController {
 
   private final ProductCatalogService productCatalogService;
@@ -40,7 +41,7 @@ public class ProductCatalogController {
 
   @PostMapping("/spus")
   @PreAuthorize("hasAuthority('product:create')")
-  @Operation(summary = "Create SPU")
+  @Operation(summary = "创建 SPU")
   public Result<Long> createSpu(
       @Valid @RequestBody SpuCreateRequestDTO request, Authentication authentication) {
     productMerchantGuard.assertCanWriteMerchant(authentication, request.getSpu().getMerchantId());
@@ -49,7 +50,7 @@ public class ProductCatalogController {
 
   @PutMapping("/spus/{spuId}")
   @PreAuthorize("hasAuthority('product:edit')")
-  @Operation(summary = "Update SPU")
+  @Operation(summary = "更新 SPU")
   public Result<Boolean> updateSpu(
       @PathVariable Long spuId,
       @Valid @RequestBody SpuCreateRequestDTO request,
@@ -62,7 +63,7 @@ public class ProductCatalogController {
   }
 
   @GetMapping("/spus/{spuId}")
-  @Operation(summary = "Get SPU detail")
+  @Operation(summary = "查询 SPU 详情")
   public Result<SpuDetailVO> getSpu(@PathVariable Long spuId, Authentication authentication) {
     SpuDetailVO detail = productCatalogService.getSpuById(spuId);
     if (detail == null) {
@@ -79,7 +80,7 @@ public class ProductCatalogController {
   }
 
   @GetMapping("/categories/{categoryId}/spus")
-  @Operation(summary = "List SPU by category")
+  @Operation(summary = "按分类查询 SPU")
   public Result<List<SpuDetailVO>> listByCategory(
       @PathVariable Long categoryId,
       @RequestParam(required = false) Integer status,
@@ -87,7 +88,7 @@ public class ProductCatalogController {
     if (SecurityPermissionUtils.isAdmin(authentication)) {
       return Result.success(productCatalogService.listSpuByCategory(categoryId, status));
     }
-    Integer effectiveStatus = normalizePublicStatus(status);
+    Integer effectiveStatus = ProductPublicStatusSupport.normalizePublicStatus(status);
     return Result.success(
         productCatalogService.listSpuByCategory(categoryId, effectiveStatus).stream()
             .map(this::toPublicSpu)
@@ -96,7 +97,7 @@ public class ProductCatalogController {
   }
 
   @GetMapping("/skus")
-  @Operation(summary = "Batch query SKU details")
+  @Operation(summary = "批量查询 SKU 明细")
   public Result<List<SkuDetailVO>> listSkuByIds(
       @RequestParam("ids") List<Long> ids, Authentication authentication) {
     List<SkuDetailVO> skuDetails = productCatalogService.listSkuByIds(ids);
@@ -119,7 +120,7 @@ public class ProductCatalogController {
 
   @PatchMapping("/spus/{spuId}/status")
   @PreAuthorize("hasAuthority('product:edit')")
-  @Operation(summary = "Update SPU status")
+  @Operation(summary = "更新 SPU 状态")
   public Result<Boolean> updateSpuStatus(
       @PathVariable Long spuId, @RequestParam Integer status, Authentication authentication) {
     productMerchantGuard.requireWritableSpu(authentication, spuId);
@@ -147,17 +148,6 @@ public class ProductCatalogController {
 
   private boolean isActiveSpu(SpuDetailVO detail) {
     return detail != null && Integer.valueOf(1).equals(detail.getStatus());
-  }
-
-  private Integer normalizePublicStatus(Integer status) {
-    if (status == null) {
-      return 1;
-    }
-    if (!Integer.valueOf(1).equals(status)) {
-      throw new BizException(
-          ResultCode.BAD_REQUEST, "public product queries only support active status");
-    }
-    return status;
   }
 
   private Map<Long, SpuDetailVO> loadSpuDetailsById(List<SkuDetailVO> skuDetails) {

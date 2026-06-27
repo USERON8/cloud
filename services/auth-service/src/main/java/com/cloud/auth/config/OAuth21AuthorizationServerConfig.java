@@ -43,7 +43,7 @@ public class OAuth21AuthorizationServerConfig {
   @Value("${app.oauth2.clients.web.id:web-client}")
   private String webClientId;
 
-  @Value("${app.oauth2.clients.web.secret:${APP_OAUTH2_WEB_CLIENT_SECRET:cloud-shop-secret}}")
+  @Value("${app.oauth2.clients.web.secret:${APP_OAUTH2_WEB_CLIENT_SECRET}}")
   private String webClientSecret;
 
   @Value(
@@ -54,13 +54,13 @@ public class OAuth21AuthorizationServerConfig {
   private String internalClientId;
 
   @Value(
-      "${app.oauth2.clients.internal.secret:${APP_OAUTH2_INTERNAL_CLIENT_SECRET:${CLIENT_SERVICE_SECRET:cloud-client-service-secret-dev}}}")
+      "${app.oauth2.clients.internal.secret:${APP_OAUTH2_INTERNAL_CLIENT_SECRET:${CLIENT_SERVICE_SECRET}}}")
   private String internalClientSecret;
 
   @Value("${app.oauth2.clients.mobile.id:mobile-client}")
   private String mobileClientId;
 
-  @Value("${app.oauth2.clients.mobile.secret:${APP_OAUTH2_MOBILE_CLIENT_SECRET:cloud-mini-secret}}")
+  @Value("${app.oauth2.clients.mobile.secret:${APP_OAUTH2_MOBILE_CLIENT_SECRET}}")
   private String mobileClientSecret;
 
   @Value("${app.oauth2.clients.mobile.redirect-uris:weixin://oauth2/callback}")

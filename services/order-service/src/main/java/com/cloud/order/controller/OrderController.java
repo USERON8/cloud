@@ -1,7 +1,6 @@
 package com.cloud.order.controller;
 
 import cn.hutool.core.util.StrUtil;
-import com.cloud.api.user.UserDubboApi;
 import com.cloud.common.enums.ResultCode;
 import com.cloud.common.exception.BizException;
 import com.cloud.common.result.PageResult;
@@ -19,6 +18,7 @@ import com.cloud.order.service.OrderBatchService;
 import com.cloud.order.service.OrderPlacementService;
 import com.cloud.order.service.OrderQueryService;
 import com.cloud.order.service.OrderService;
+import com.cloud.order.service.support.OrderOperatorSupport;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -47,14 +47,14 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api")
 @RequiredArgsConstructor
 @Validated
-@Tag(name = "Order API", description = "Order creation and after-sale APIs")
+@Tag(name = "订单接口", description = "订单创建、查询和售后接口")
 @ApiResponses({
-  @ApiResponse(responseCode = "400", description = "Invalid request or business state"),
-  @ApiResponse(responseCode = "401", description = "Authentication required"),
-  @ApiResponse(responseCode = "403", description = "Insufficient permissions"),
-  @ApiResponse(responseCode = "404", description = "Order or after-sale resource not found"),
-  @ApiResponse(responseCode = "409", description = "Concurrent or status conflict"),
-  @ApiResponse(responseCode = "500", description = "Internal server error")
+  @ApiResponse(responseCode = "400", description = "请求参数或业务状态无效"),
+  @ApiResponse(responseCode = "401", description = "需要认证"),
+  @ApiResponse(responseCode = "403", description = "权限不足"),
+  @ApiResponse(responseCode = "404", description = "订单或售后资源不存在"),
+  @ApiResponse(responseCode = "409", description = "并发或状态冲突"),
+  @ApiResponse(responseCode = "500", description = "服务内部错误")
 })
 public class OrderController {
 
@@ -74,23 +74,21 @@ public class OrderController {
   private final OrderBatchService orderBatchService;
   private final OrderQueryService orderQueryService;
   private final AfterSaleDtoConverter afterSaleDtoConverter;
-
-  @org.apache.dubbo.config.annotation.DubboReference(check = false, timeout = 5000, retries = 0)
-  private UserDubboApi userDubboApi;
+  private final OrderOperatorSupport orderOperatorSupport;
 
   @PostMapping("/orders")
   @PreAuthorize("hasAuthority('order:create')")
-  @Operation(summary = "Create main order")
+  @Operation(summary = "创建主订单")
   public Result<OrderAggregateResponse> createMainOrder(
       @RequestBody @Valid CreateMainOrderRequest request,
       @Parameter(
-              description = "Request idempotency key for duplicate submission protection",
+              description = "用于防重复提交的请求幂等键",
               required = true)
           @RequestHeader("Idempotency-Key")
           @NotBlank(message = "Idempotency-Key header is required")
           String idempotencyKey,
       Authentication authentication) {
-    Long currentUserId = requireCurrentUserId(authentication);
+    Long currentUserId = orderOperatorSupport.requireCurrentUserId(authentication);
     if (!isAdmin(authentication)) {
       if (request.getUserId() == null) {
         request.setUserId(currentUserId);
@@ -106,7 +104,7 @@ public class OrderController {
 
   @GetMapping("/orders")
   @PreAuthorize("hasAuthority('order:query')")
-  @Operation(summary = "List orders")
+  @Operation(summary = "分页查询订单")
   public Result<PageResult<OrderSummaryDTO>> listOrders(
       @RequestParam(required = false) Integer page,
       @RequestParam(required = false) Integer size,
@@ -120,7 +118,7 @@ public class OrderController {
 
   @GetMapping("/orders/{orderId}")
   @PreAuthorize("hasAuthority('order:query')")
-  @Operation(summary = "Get order detail")
+  @Operation(summary = "查询订单详情")
   public Result<OrderSummaryDTO> getOrder(
       @PathVariable Long orderId, Authentication authentication) {
     return Result.success(orderQueryService.getOrderSummary(orderId, authentication));
@@ -128,7 +126,7 @@ public class OrderController {
 
   @PostMapping("/orders/{orderId}/cancellation")
   @PreAuthorize("hasAuthority('order:cancel')")
-  @Operation(summary = "Cancel order")
+  @Operation(summary = "取消订单")
   public Result<Boolean> cancelOrder(
       @PathVariable Long orderId,
       @RequestParam(required = false) String cancelReason,
@@ -140,7 +138,7 @@ public class OrderController {
 
   @PostMapping("/orders/{orderId}/shipments")
   @PreAuthorize("hasAnyRole('ADMIN','MERCHANT')")
-  @Operation(summary = "Ship order")
+  @Operation(summary = "订单发货")
   public Result<Boolean> shipOrderStandard(
       @PathVariable Long orderId,
       @RequestParam(required = false) String shippingCompany,
@@ -156,7 +154,7 @@ public class OrderController {
 
   @PostMapping("/orders/{orderId}/completion")
   @PreAuthorize("hasAuthority('order:query')")
-  @Operation(summary = "Complete order")
+  @Operation(summary = "确认订单完成")
   public Result<Boolean> completeOrder(@PathVariable Long orderId, Authentication authentication) {
     orderBatchService.applyOrderAction(orderId, authentication, OrderAction.DONE, null, null, null);
     return Result.success(true);
@@ -164,7 +162,7 @@ public class OrderController {
 
   @PostMapping("/orders/bulk/cancellations")
   @PreAuthorize("hasAuthority('order:cancel')")
-  @Operation(summary = "Batch cancel orders")
+  @Operation(summary = "批量取消订单")
   public Result<Integer> batchCancel(
       @RequestBody List<Long> orderIds,
       @RequestParam(required = false) String cancelReason,
@@ -176,7 +174,7 @@ public class OrderController {
 
   @PostMapping("/orders/bulk/shipments")
   @PreAuthorize("hasAnyRole('ADMIN','MERCHANT')")
-  @Operation(summary = "Batch ship orders")
+  @Operation(summary = "批量订单发货")
   public Result<Integer> batchShip(
       @RequestBody List<Long> orderIds,
       @RequestParam(required = false) String shippingCompany,
@@ -192,7 +190,7 @@ public class OrderController {
 
   @PostMapping("/orders/bulk/completions")
   @PreAuthorize("hasAuthority('order:query')")
-  @Operation(summary = "Batch complete orders")
+  @Operation(summary = "批量确认订单完成")
   public Result<Integer> batchComplete(
       @RequestBody List<Long> orderIds, Authentication authentication) {
     return Result.success(
@@ -201,14 +199,14 @@ public class OrderController {
 
   @PostMapping("/after-sales")
   @PreAuthorize("hasAuthority('order:refund')")
-  @Operation(summary = "Apply after-sale")
+  @Operation(summary = "申请售后")
   public Result<AfterSaleDTO> applyAfterSale(
       @Valid @RequestBody AfterSaleDTO afterSaleDTO, Authentication authentication) {
     if (afterSaleDTO == null) {
       throw new BizException(ResultCode.BAD_REQUEST, "after sale payload is required");
     }
     AfterSale afterSale = afterSaleDtoConverter.toEntity(afterSaleDTO);
-    Long currentUserId = requireCurrentUserId(authentication);
+    Long currentUserId = orderOperatorSupport.requireCurrentUserId(authentication);
     if (!isAdmin(authentication)) {
       if (afterSale.getUserId() == null) {
         afterSale.setUserId(currentUserId);
@@ -223,7 +221,7 @@ public class OrderController {
 
   @PostMapping("/after-sales/{afterSaleId}/events")
   @PreAuthorize("hasAuthority('order:refund')")
-  @Operation(summary = "Advance after-sale status")
+  @Operation(summary = "推进售后状态")
   public Result<AfterSaleDTO> advanceAfterSaleStatus(
       @PathVariable Long afterSaleId,
       @RequestParam String action,
@@ -234,9 +232,9 @@ public class OrderController {
       throw new BizException(ResultCode.NOT_FOUND, "after sale not found");
     }
     if (!isAdmin(authentication)) {
-      Long currentUserId = requireCurrentUserId(authentication);
+      Long currentUserId = orderOperatorSupport.requireCurrentUserId(authentication);
       if (isMerchant(authentication)) {
-        Long currentMerchantId = requireCurrentMerchantId(authentication);
+        Long currentMerchantId = orderOperatorSupport.requireCurrentMerchantId(authentication);
         if (!Objects.equals(currentMerchantId, afterSale.getMerchantId())) {
           throw new BizException(
               ResultCode.FORBIDDEN, "forbidden to operate another merchant's after-sale");
@@ -280,23 +278,10 @@ public class OrderController {
     throw new BizException(ResultCode.FORBIDDEN, "shipping requires merchant or admin privileges");
   }
 
-  private Long requireCurrentMerchantId(Authentication authentication) {
-    Long currentUserId = requireCurrentUserId(authentication);
-    Long currentMerchantId = userDubboApi.findMerchantIdByOwnerUserId(currentUserId);
-    if (currentMerchantId == null) {
-      throw new BizException("current merchant not found");
-    }
-    return currentMerchantId;
-  }
-
   private String requireShippingValue(String value, String fieldName) {
     if (StrUtil.isBlank(value)) {
       throw new BizException(ResultCode.BAD_REQUEST, fieldName + " is required");
     }
     return value.trim();
-  }
-
-  private Long requireCurrentUserId(Authentication authentication) {
-    return SecurityPermissionUtils.requireCurrentUserIdAsLong(authentication);
   }
 }

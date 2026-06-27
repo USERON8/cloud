@@ -145,6 +145,8 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
+      broker:
+        condition: service_started
     healthcheck:
       test: [ "CMD-SHELL", "curl -fsS http://127.0.0.1:8848/nacos/actuator/health >/dev/null" ]
       interval: 10s
@@ -500,9 +502,11 @@ services:
       canal.instance.master.address: mysql:3306
       canal.instance.dbUsername: ${MYSQL_ROOT_USERNAME:-root}
       canal.instance.dbPassword: ${MYSQL_ROOT_PASSWORD}
-      canal.instance.filter.regex: product_db\\..*
+      canal.instance.filter.regex: product_db\\.(spu|sku|category|merchant_shop),stock_db\\.stock_segment
       canal.destinations: product
-      canal.serverMode: tcp
+      canal.serverMode: rocketMQ
+      canal.mq.servers: namesrv:9876
+      canal.mq.topic: product-canal
     volumes:
       - type: bind
         source: ./docker-compose/canal/logs

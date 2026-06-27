@@ -24,12 +24,12 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/users/me/cart")
 @RequiredArgsConstructor
 @Validated
-@Tag(name = "Cart API", description = "Current user cart APIs")
+@Tag(name = "购物车接口", description = "当前用户购物车接口")
 @ApiResponses({
-  @ApiResponse(responseCode = "400", description = "Invalid request or cart state"),
-  @ApiResponse(responseCode = "401", description = "Authentication required"),
-  @ApiResponse(responseCode = "403", description = "Insufficient permissions"),
-  @ApiResponse(responseCode = "500", description = "Internal server error")
+  @ApiResponse(responseCode = "400", description = "请求参数或购物车状态无效"),
+  @ApiResponse(responseCode = "401", description = "需要认证"),
+  @ApiResponse(responseCode = "403", description = "权限不足"),
+  @ApiResponse(responseCode = "500", description = "服务内部错误")
 })
 public class CartController {
 
@@ -37,7 +37,7 @@ public class CartController {
 
   @GetMapping
   @PreAuthorize("isAuthenticated()")
-  @Operation(summary = "Get current user active cart")
+  @Operation(summary = "获取当前用户有效购物车")
   public Result<CartDTO> getCurrentCart(Authentication authentication) {
     return Result.success(
         cartService.getCurrentCart(
@@ -46,7 +46,7 @@ public class CartController {
 
   @PutMapping("/items")
   @PreAuthorize("isAuthenticated()")
-  @Operation(summary = "Synchronize current user cart")
+  @Operation(summary = "同步当前用户购物车")
   public Result<CartDTO> syncCart(
       @Valid @RequestBody CartSyncRequest request, Authentication authentication) {
     return Result.success(

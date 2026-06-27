@@ -3,17 +3,16 @@ package com.cloud.user.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.cloud.common.domain.vo.user.UserStatisticsVO;
+import com.cloud.common.security.RedisKeyScanSupport;
 import com.cloud.user.mapper.UserMapper;
 import com.cloud.user.module.entity.User;
 import com.cloud.user.service.UserStatisticsService;
 import com.cloud.user.service.cache.UserStatisticsCacheService;
 import com.cloud.user.service.support.AuthPrincipalService;
-import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -22,9 +21,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.redis.core.Cursor;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -201,7 +198,7 @@ public class UserStatisticsServiceImpl implements UserStatisticsService {
       if (cached != null) {
         return cached;
       }
-      Set<String> keys = scanKeys("user:last_login:*");
+      Set<String> keys = RedisKeyScanSupport.scanKeys(redisTemplate, "user:last_login:*");
       if (keys == null || keys.isEmpty()) {
         return 0L;
       }
@@ -311,7 +308,7 @@ public class UserStatisticsServiceImpl implements UserStatisticsService {
       Integer limit, Integer days) {
     try {
       int safeLimit = limit == null || limit <= 0 ? 10 : limit;
-      Set<String> keys = scanKeys("user:activity:*");
+      Set<String> keys = RedisKeyScanSupport.scanKeys(redisTemplate, "user:activity:*");
       if (keys == null || keys.isEmpty()) {
         return CompletableFuture.completedFuture(Collections.emptyMap());
       }
@@ -374,20 +371,5 @@ public class UserStatisticsServiceImpl implements UserStatisticsService {
       log.error("Failed to refresh statistics cache", e);
       return CompletableFuture.completedFuture(false);
     }
-  }
-
-  private Set<String> scanKeys(String pattern) {
-    return redisTemplate.execute(
-        (org.springframework.data.redis.core.RedisCallback<Set<String>>)
-            connection -> {
-              Set<String> keys = new HashSet<>();
-              ScanOptions options = ScanOptions.scanOptions().match(pattern).count(500).build();
-              try (Cursor<byte[]> cursor = connection.keyCommands().scan(options)) {
-                while (cursor.hasNext()) {
-                  keys.add(new String(cursor.next(), StandardCharsets.UTF_8));
-                }
-              }
-              return keys;
-            });
   }
 }

@@ -9,8 +9,6 @@ import com.cloud.common.domain.vo.payment.PaymentOrderVO;
 import com.cloud.common.domain.vo.payment.PaymentRefundVO;
 import com.cloud.common.enums.ResultCode;
 import com.cloud.common.exception.BizException;
-import com.cloud.common.exception.SystemException;
-import com.cloud.common.messaging.event.PaymentSuccessEvent;
 import com.cloud.common.metrics.TradeMetrics;
 import com.cloud.common.util.HtmlEscapeUtils;
 import com.cloud.payment.config.AlipayConfig;
@@ -18,7 +16,6 @@ import com.cloud.payment.converter.PaymentOrderConverter;
 import com.cloud.payment.mapper.PaymentCallbackLogMapper;
 import com.cloud.payment.mapper.PaymentOrderMapper;
 import com.cloud.payment.mapper.PaymentRefundMapper;
-import com.cloud.payment.messaging.PaymentMessageProducer;
 import com.cloud.payment.module.entity.PaymentCallbackLogEntity;
 import com.cloud.payment.module.entity.PaymentOrderEntity;
 import com.cloud.payment.module.entity.PaymentRefundEntity;
@@ -29,9 +26,11 @@ import com.cloud.payment.service.support.OrderStatusRemoteService;
 import com.cloud.payment.service.support.PaymentCallbackContext;
 import com.cloud.payment.service.support.PaymentCallbackVerificationResult;
 import com.cloud.payment.service.support.PaymentCallbackVerifier;
+import com.cloud.payment.service.support.PaymentFlowSupport;
 import com.cloud.payment.service.support.PaymentOrderStateSupport;
 import com.cloud.payment.service.support.PaymentSecurityCacheService;
 import com.cloud.payment.service.support.PaymentStateMachine;
+import com.cloud.payment.service.support.PaymentTextSupport;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -57,13 +56,12 @@ public class PaymentOrderServiceImpl implements PaymentOrderService {
   private final PaymentOrderConverter paymentOrderConverter;
   private final PaymentCompensationService paymentCompensationService;
   private final AlipayConfig alipayConfig;
-  private final PaymentMessageProducer paymentMessageProducer;
   private final OrderStatusRemoteService orderStatusRemoteService;
   private final PaymentCallbackVerifier paymentCallbackVerifier;
+  private final PaymentFlowSupport paymentFlowSupport;
   private final PaymentStateMachine paymentStateMachine;
   private final PaymentOrderStateSupport paymentOrderStateSupport;
   private final PaymentSecurityCacheService paymentSecurityCacheService;
-  private final List<PaymentProviderGateway> providerGateways;
   private final TradeMetrics tradeMetrics;
 
   @Override
@@ -203,7 +201,7 @@ public class PaymentOrderServiceImpl implements PaymentOrderService {
     if (PaymentOrderStateSupport.ORDER_STATUS_FAILED.equals(order.getStatus())) {
       return buildStatusPage("Payment unavailable", "This payment order is no longer available.");
     }
-    PaymentProviderGateway gateway = resolveGateway(order.getChannel());
+    PaymentProviderGateway gateway = paymentFlowSupport.resolveGateway(order.getChannel());
     if (gateway == null) {
       throw new BizException("unsupported payment channel: " + order.getChannel());
     }
@@ -251,7 +249,7 @@ public class PaymentOrderServiceImpl implements PaymentOrderService {
       order.setLastPollError(null);
       paymentOrderMapper.updateById(order);
       paymentOrderStateSupport.handlePersistedState(order, previousStatus);
-      publishPaymentSuccessIfNeeded(order, previousStatus);
+      paymentFlowSupport.publishPaymentSuccessIfNeeded(order, previousStatus);
       tradeMetrics.incrementPaymentCallback("success");
       return true;
     } catch (Exception ex) {
@@ -448,15 +446,6 @@ public class PaymentOrderServiceImpl implements PaymentOrderService {
     return order != null && PaymentOrderStateSupport.ORDER_STATUS_FAILED.equals(order.getStatus());
   }
 
-  private PaymentProviderGateway resolveGateway(String channel) {
-    for (PaymentProviderGateway gateway : providerGateways) {
-      if (gateway.supports(channel)) {
-        return gateway;
-      }
-    }
-    return null;
-  }
-
   private String buildStatusPage(String title, String message) {
     return """
         <!DOCTYPE html>
@@ -540,7 +529,7 @@ public class PaymentOrderServiceImpl implements PaymentOrderService {
   }
 
   private void applyProviderFields(PaymentRefundEntity refund, PaymentOrderEntity order) {
-    String provider = firstNonBlank(order.getProvider(), order.getChannel());
+    String provider = PaymentTextSupport.firstNonBlank(order.getProvider(), order.getChannel());
     refund.setProvider(provider);
     refund.setProviderAppId(resolveProviderAppId(provider, order));
     refund.setProviderMerchantId(resolveProviderMerchantId(provider, order));
@@ -552,7 +541,7 @@ public class PaymentOrderServiceImpl implements PaymentOrderService {
 
   private String resolveProviderAppId(String provider, PaymentOrderEntity order) {
     if ("ALIPAY".equalsIgnoreCase(provider)) {
-      return firstNonBlank(
+      return PaymentTextSupport.firstNonBlank(
           alipayConfig.getAppId(), order == null ? null : order.getProviderAppId());
     }
     return order == null ? null : order.getProviderAppId();
@@ -564,7 +553,7 @@ public class PaymentOrderServiceImpl implements PaymentOrderService {
 
   private String resolveProviderMerchantId(String provider, PaymentOrderEntity order) {
     if ("ALIPAY".equalsIgnoreCase(provider)) {
-      return firstNonBlank(
+      return PaymentTextSupport.firstNonBlank(
           alipayConfig.getMerchantId(), order == null ? null : order.getProviderMerchantId());
     }
     return order == null ? null : order.getProviderMerchantId();
@@ -592,40 +581,6 @@ public class PaymentOrderServiceImpl implements PaymentOrderService {
       return null;
     }
     return channel.trim().toUpperCase();
-  }
-
-  private String firstNonBlank(String... values) {
-    if (values == null) {
-      return null;
-    }
-    for (String value : values) {
-      if (StringUtils.hasText(value)) {
-        return value;
-      }
-    }
-    return null;
-  }
-
-  private void publishPaymentSuccessIfNeeded(PaymentOrderEntity order, String previousStatus) {
-    if (PaymentOrderStateSupport.ORDER_STATUS_PAID.equals(previousStatus)) {
-      return;
-    }
-    if (!PaymentOrderStateSupport.ORDER_STATUS_PAID.equals(order.getStatus())) {
-      return;
-    }
-    PaymentSuccessEvent event =
-        PaymentSuccessEvent.builder()
-            .paymentId(order.getId())
-            .orderNo(order.getMainOrderNo())
-            .subOrderNo(order.getSubOrderNo())
-            .userId(order.getUserId())
-            .amount(order.getAmount())
-            .paymentMethod(order.getChannel())
-            .transactionNo(order.getProviderTxnNo())
-            .build();
-    if (!paymentMessageProducer.sendPaymentSuccessEvent(event)) {
-      throw new SystemException("failed to enqueue payment success event");
-    }
   }
 
   private String hashPayload(String payload) {

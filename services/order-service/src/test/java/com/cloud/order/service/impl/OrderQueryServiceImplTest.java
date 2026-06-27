@@ -10,7 +10,6 @@ import static org.mockito.Mockito.when;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cloud.api.product.ProductDubboApi;
-import com.cloud.api.user.UserDubboApi;
 import com.cloud.common.result.PageResult;
 import com.cloud.order.dto.OrderSummaryDTO;
 import com.cloud.order.entity.AfterSale;
@@ -21,6 +20,7 @@ import com.cloud.order.mapper.OrderItemMapper;
 import com.cloud.order.mapper.OrderMainMapper;
 import com.cloud.order.mapper.OrderSubMapper;
 import com.cloud.order.service.OrderService;
+import com.cloud.order.service.support.OrderOperatorSupport;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -43,15 +43,14 @@ class OrderQueryServiceImplTest {
   @Mock private OrderItemMapper orderItemMapper;
   @Mock private AfterSaleMapper afterSaleMapper;
   @Mock private com.cloud.common.remote.RemoteCallSupport remoteCallSupport;
+  @Mock private OrderOperatorSupport orderOperatorSupport;
   @Mock private ProductDubboApi productDubboApi;
-  @Mock private UserDubboApi userDubboApi;
 
   @InjectMocks private OrderQueryServiceImpl orderQueryService;
 
   @BeforeEach
   void setUp() {
     ReflectionTestUtils.setField(orderQueryService, "productDubboApi", productDubboApi);
-    ReflectionTestUtils.setField(orderQueryService, "userDubboApi", userDubboApi);
     ReflectionTestUtils.setField(orderQueryService, "objectMapper", new ObjectMapper());
   }
 
@@ -77,6 +76,7 @@ class OrderQueryServiceImplTest {
     when(orderMainMapper.selectPageActive(any(Page.class), eq(20001L))).thenReturn(page);
     when(orderSubMapper.listActiveByMainOrderIds(List.of(10001L))).thenReturn(List.of(subOrder));
     when(orderItemMapper.listActiveBySubOrderIds(List.of(11001L))).thenReturn(List.of());
+    when(orderOperatorSupport.requireCurrentUserId(any())).thenReturn(20001L);
 
     PageResult<OrderSummaryDTO> result =
         orderQueryService.listOrders(userAuthentication(20001L), 1, 20, null, null, null);
@@ -117,6 +117,7 @@ class OrderQueryServiceImplTest {
     when(orderSubMapper.listActiveByMainOrderIds(List.of(10001L))).thenReturn(List.of(subOrder));
     when(orderItemMapper.listActiveBySubOrderIds(List.of(11001L))).thenReturn(List.of());
     when(afterSaleMapper.selectLatestActiveBySubOrderId(11001L)).thenReturn(afterSale);
+    when(orderOperatorSupport.requireCurrentUserId(any())).thenReturn(20001L);
 
     PageResult<OrderSummaryDTO> result =
         orderQueryService.listOrders(userAuthentication(20001L), 1, 20, null, null, null);
@@ -138,7 +139,8 @@ class OrderQueryServiceImplTest {
         authentication(30001L, AuthorityUtils.createAuthorityList("ROLE_MERCHANT"));
 
     when(orderService.getMainOrder(10001L)).thenReturn(mainOrder);
-    when(userDubboApi.findMerchantIdByOwnerUserId(30001L)).thenReturn(30001L);
+    when(orderOperatorSupport.requireCurrentUserId(authentication)).thenReturn(30001L);
+    when(orderOperatorSupport.requireCurrentMerchantId(authentication)).thenReturn(30001L);
     when(orderSubMapper.countActiveByMainOrderIdAndMerchantId(10001L, 30001L)).thenReturn(1L);
 
     OrderMain result = orderQueryService.requireAccessibleMainOrder(10001L, authentication);

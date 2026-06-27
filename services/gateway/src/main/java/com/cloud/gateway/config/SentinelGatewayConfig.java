@@ -60,7 +60,7 @@ public class SentinelGatewayConfig {
   private String searchRouteIds;
 
   @Value(
-      "${app.sentinel.gateway.route-ids:auth-service-api,user-service-app,user-service-admin,product-service-app,order-service-app,payment-service-app,stock-service-admin,search-service-public}")
+      "${app.sentinel.gateway.route-ids:auth-service-api,user-service-app,user-service-admin,product-service-app,order-service-app,payment-service-app,governance-service-admin,governance-service-admin-stock,search-service-public}")
   private String routeIds;
 
   @PostConstruct

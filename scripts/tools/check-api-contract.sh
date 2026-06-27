@@ -123,6 +123,10 @@ def main() -> int:
 
     issues: list[dict[str, str]] = []
     checked_methods = 0
+    allowed_raw_response_paths = {
+        "/api/payment-checkouts/{ticket}",
+        "/api/admin/observability/grafana/open",
+    }
 
     for file_path in controller_files:
         content = file_path.read_text(encoding="utf-8", errors="ignore")
@@ -221,11 +225,13 @@ def main() -> int:
             is_api_endpoint = any(path.startswith("/api/") for path in full_paths)
             is_internal_api = any(path.startswith("/internal/") for path in full_paths)
             is_gateway_fallback = any(path.startswith("/gateway/") for path in full_paths)
+            is_allowed_raw_response = any(path in allowed_raw_response_paths for path in full_paths)
             if (
                 is_api_endpoint
                 and not is_internal_api
                 and not is_gateway_fallback
                 and not is_api_adapter_controller
+                and not is_allowed_raw_response
                 and re.search(r"(^|[<\s])Result<", return_type) is None
             ):
                 issues.append(

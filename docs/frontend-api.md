@@ -76,7 +76,7 @@ Frontend code should not construct checkout URLs manually. The checkout ticket e
 ### Admin and governance flow
 
 - Admin pages use gateway-facing routes such as `/api/admin/users/**`, `/api/admin/statistics/**`, and `/api/admin/thread-pools/**`.
-- The frontend does not call `/internal/governance/**` directly.
+- Internal governance HTTP routes have been removed from the gateway route map.
 - Governance and auth-token admin functions still stay on public admin routes exposed by `gateway`.
 
 ## Upload and Security Notes

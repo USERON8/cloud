@@ -8,6 +8,7 @@ import com.cloud.payment.config.AlipayConfig;
 import com.cloud.payment.service.PaymentOrderService;
 import com.cloud.payment.service.support.PaymentCallbackContext;
 import com.cloud.payment.service.support.PaymentDigestSupport;
+import com.cloud.payment.service.support.PaymentTextSupport;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.annotations.Operation;
@@ -27,7 +28,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/payment/alipay")
 @RequiredArgsConstructor
-@Tag(name = "Payment Callback API", description = "External payment callback APIs")
+@Tag(name = "支付回调接口", description = "外部支付平台回调接口")
 public class AlipayCallbackController {
 
   private final PaymentOrderService paymentOrderService;
@@ -36,7 +37,7 @@ public class AlipayCallbackController {
   private final PaymentDigestSupport paymentDigestSupport;
 
   @PostMapping(value = "/notify", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
-  @Operation(summary = "Handle Alipay notify callback")
+  @Operation(summary = "处理支付宝异步通知回调")
   public String handleNotifyCallback(@RequestParam Map<String, String> params)
       throws AlipayApiException, JsonProcessingException {
     if (!verifySignature(params) || !verifyAppId(params)) {
@@ -68,15 +69,17 @@ public class AlipayCallbackController {
 
   private boolean verifyAppId(Map<String, String> params) {
     String appId = params.get("app_id");
-    return !StringUtils.hasText(appId) || alipayConfig.getAppId().equals(appId);
+    return StringUtils.hasText(appId)
+        && StringUtils.hasText(alipayConfig.getAppId())
+        && alipayConfig.getAppId().equals(appId);
   }
 
   private boolean verifySellerId(Map<String, String> params) {
     String sellerId = params.get("seller_id");
     String merchantId = alipayConfig.getMerchantId();
-    return !StringUtils.hasText(sellerId)
-        || !StringUtils.hasText(merchantId)
-        || merchantId.equals(sellerId);
+    return StringUtils.hasText(sellerId)
+        && StringUtils.hasText(merchantId)
+        && merchantId.equals(sellerId);
   }
 
   private PaymentCallbackCommandDTO buildCommand(Map<String, String> params, String callbackStatus)
@@ -97,7 +100,7 @@ public class AlipayCallbackController {
         "ALIPAY",
         params.get("trade_status"),
         alipayConfig.getAppId(),
-        firstNonBlank(params.get("seller_id"), alipayConfig.getMerchantId()),
+        PaymentTextSupport.firstNonBlank(params.get("seller_id"), alipayConfig.getMerchantId()),
         paymentDigestSupport.sha256Hex(payload));
   }
 
@@ -137,17 +140,5 @@ public class AlipayCallbackController {
       return null;
     }
     return new BigDecimal(amount.trim());
-  }
-
-  private String firstNonBlank(String... values) {
-    if (values == null) {
-      return null;
-    }
-    for (String value : values) {
-      if (StringUtils.hasText(value)) {
-        return value;
-      }
-    }
-    return null;
   }
 }

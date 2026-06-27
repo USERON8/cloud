@@ -42,16 +42,16 @@ import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequiredArgsConstructor
-@Tag(name = "Merchant Auth", description = "Merchant authentication APIs")
+@Tag(name = "商户认证", description = "商户认证接口")
 @Validated
 @ApiResponses({
   @ApiResponse(
       responseCode = "400",
-      description = "Invalid merchant auth parameters or review state"),
-  @ApiResponse(responseCode = "401", description = "Authentication required"),
-  @ApiResponse(responseCode = "403", description = "Insufficient permissions"),
-  @ApiResponse(responseCode = "404", description = "Merchant or auth record not found"),
-  @ApiResponse(responseCode = "500", description = "Internal merchant auth service error")
+      description = "商户认证参数或审核状态无效"),
+  @ApiResponse(responseCode = "401", description = "需要认证"),
+  @ApiResponse(responseCode = "403", description = "权限不足"),
+  @ApiResponse(responseCode = "404", description = "商户或认证记录不存在"),
+  @ApiResponse(responseCode = "500", description = "商户认证服务内部错误")
 })
 public class MerchantAuthController {
 
@@ -76,16 +76,16 @@ public class MerchantAuthController {
           + "or (hasAuthority('merchant:manage') "
           + "and @permissionManager.isMerchantOwner(#merchantId, authentication))")
   @Operation(
-      summary = "Apply merchant auth",
-      description = "Create or update merchant auth application")
+      summary = "提交商户认证",
+      description = "创建或更新商户认证申请")
   public Result<MerchantAuthDTO> applyForAuth(
       @PathVariable("merchantId")
-          @Parameter(description = "Merchant ID")
+          @Parameter(description = "商户 ID")
           @NotNull(message = "merchant id is required")
           @Positive(message = "merchant id must be positive")
           Long merchantId,
       @RequestBody
-          @Parameter(description = "Merchant auth request body")
+          @Parameter(description = "商户认证请求体")
           @Valid
           @NotNull(message = "merchant auth request is required")
           MerchantAuthRequestDTO merchantAuthRequestDTO,
@@ -145,11 +145,11 @@ public class MerchantAuthController {
           + "or (hasAuthority('merchant:manage') "
           + "and @permissionManager.isMerchantOwner(#merchantId, authentication))")
   @Operation(
-      summary = "Upload business license",
-      description = "Upload business license for merchant auth")
+      summary = "上传营业执照",
+      description = "上传商户认证营业执照")
   public Result<MerchantAuthFileUploadDTO> uploadBusinessLicense(
       @PathVariable("merchantId")
-          @Parameter(description = "Merchant ID")
+          @Parameter(description = "商户 ID")
           @NotNull(message = "merchant id is required")
           @Positive(message = "merchant id must be positive")
           Long merchantId,
@@ -178,11 +178,11 @@ public class MerchantAuthController {
           + "or (hasAuthority('merchant:manage') "
           + "and @permissionManager.isMerchantOwner(#merchantId, authentication))")
   @Operation(
-      summary = "Upload ID card front",
-      description = "Upload ID card front image for merchant auth")
+      summary = "上传身份证正面",
+      description = "上传商户认证身份证正面图片")
   public Result<MerchantAuthFileUploadDTO> uploadIdCardFront(
       @PathVariable("merchantId")
-          @Parameter(description = "Merchant ID")
+          @Parameter(description = "商户 ID")
           @NotNull(message = "merchant id is required")
           @Positive(message = "merchant id must be positive")
           Long merchantId,
@@ -203,11 +203,11 @@ public class MerchantAuthController {
           + "or (hasAuthority('merchant:manage') "
           + "and @permissionManager.isMerchantOwner(#merchantId, authentication))")
   @Operation(
-      summary = "Upload ID card back",
-      description = "Upload ID card back image for merchant auth")
+      summary = "上传身份证反面",
+      description = "上传商户认证身份证反面图片")
   public Result<MerchantAuthFileUploadDTO> uploadIdCardBack(
       @PathVariable("merchantId")
-          @Parameter(description = "Merchant ID")
+          @Parameter(description = "商户 ID")
           @NotNull(message = "merchant id is required")
           @Positive(message = "merchant id must be positive")
           Long merchantId,
@@ -228,11 +228,11 @@ public class MerchantAuthController {
           + "or (hasAuthority('merchant:manage') "
           + "and @permissionManager.isMerchantOwner(#merchantId, authentication))")
   @Operation(
-      summary = "Get merchant auth",
-      description = "Get merchant auth information by merchant ID")
+      summary = "查询商户认证",
+      description = "按商户 ID 查询商户认证信息")
   public Result<MerchantAuthDTO> getAuthInfo(
       @PathVariable("merchantId")
-          @Parameter(description = "Merchant ID")
+          @Parameter(description = "商户 ID")
           @NotNull(message = "merchant id is required")
           @Positive(message = "merchant id must be positive")
           Long merchantId,
@@ -253,11 +253,11 @@ public class MerchantAuthController {
           + "or (hasAuthority('merchant:manage') "
           + "and @permissionManager.isMerchantOwner(#merchantId, authentication))")
   @Operation(
-      summary = "Revoke merchant auth",
-      description = "Delete merchant auth application by merchant ID")
+      summary = "撤销商户认证",
+      description = "按商户 ID 删除商户认证申请")
   public Result<Boolean> revokeAuth(
       @PathVariable("merchantId")
-          @Parameter(description = "Merchant ID")
+          @Parameter(description = "商户 ID")
           @NotNull(message = "merchant id is required")
           @Positive(message = "merchant id must be positive")
           Long merchantId,
@@ -276,21 +276,21 @@ public class MerchantAuthController {
   @PostMapping("/api/merchants/{merchantId}/authentication/reviews")
   @PreAuthorize("hasAuthority('admin:all') or hasAuthority('merchant:audit')")
   @Operation(
-      summary = "Review merchant auth",
-      description = "Review merchant auth application by merchant ID")
+      summary = "审核商户认证",
+      description = "按商户 ID 审核商户认证申请")
   public Result<Boolean> reviewAuth(
       @PathVariable("merchantId")
-          @Parameter(description = "Merchant ID")
+          @Parameter(description = "商户 ID")
           @NotNull(message = "merchant id is required")
           @Positive(message = "merchant id must be positive")
           Long merchantId,
       @RequestParam("authStatus")
-          @Parameter(description = "Auth status")
+          @Parameter(description = "认证状态")
           @NotNull(message = "auth status is required")
           @Min(value = 1, message = "auth status must be 1 or 2")
           @Max(value = 2, message = "auth status must be 1 or 2")
           Integer authStatus,
-      @RequestParam(value = "remark", required = false) @Parameter(description = "Review remark")
+      @RequestParam(value = "remark", required = false) @Parameter(description = "审核备注")
           String remark) {
     if (!isReviewStatus(authStatus)) {
       throw new BizException(
@@ -320,21 +320,21 @@ public class MerchantAuthController {
   @GetMapping("/api/merchant-authentications")
   @PreAuthorize("hasAuthority('admin:all') or hasAuthority('merchant:audit')")
   @Operation(
-      summary = "List merchant auth by status",
-      description = "List merchant auth records by auth status")
+      summary = "按状态查询商户认证",
+      description = "按认证状态查询商户认证记录")
   public Result<PageResult<MerchantAuthDTO>> listAuthByStatus(
       @RequestParam("authStatus")
-          @Parameter(description = "Auth status")
+          @Parameter(description = "认证状态")
           @NotNull(message = "auth status is required")
           @Min(value = 0, message = "auth status must be between 0 and 2")
           @Max(value = 2, message = "auth status must be between 0 and 2")
           Integer authStatus,
       @RequestParam(defaultValue = "1")
-          @Parameter(description = "Page number")
+          @Parameter(description = "页码")
           @Min(value = 1, message = "page must be greater than 0")
           Integer page,
       @RequestParam(defaultValue = "20")
-          @Parameter(description = "Page size")
+          @Parameter(description = "每页数量")
           @Min(value = 1, message = "size must be greater than 0")
           @Max(value = 200, message = "size must be less than or equal to 200")
           Integer size) {
@@ -438,11 +438,11 @@ public class MerchantAuthController {
   @PostMapping("/api/merchant-authentications/bulk/reviews")
   @PreAuthorize("hasAuthority('admin:all') or hasAuthority('merchant:audit')")
   @Operation(
-      summary = "Batch review merchant auth",
-      description = "Batch review merchant auth records")
+      summary = "批量审核商户认证",
+      description = "批量审核商户认证记录")
   public Result<Boolean> reviewAuthBatch(
       @RequestBody
-          @Parameter(description = "Merchant IDs")
+          @Parameter(description = "商户 ID 列表")
           @NotNull(message = "merchant ids are required")
           @NotEmpty(message = "merchant ids cannot be empty")
           List<
@@ -450,12 +450,12 @@ public class MerchantAuthController {
                   @Positive(message = "merchant id must be positive") Long>
               merchantIds,
       @RequestParam("authStatus")
-          @Parameter(description = "Auth status")
+          @Parameter(description = "认证状态")
           @NotNull(message = "auth status is required")
           @Min(value = 1, message = "auth status must be 1 or 2")
           @Max(value = 2, message = "auth status must be 1 or 2")
           Integer authStatus,
-      @RequestParam(value = "remark", required = false) @Parameter(description = "Review remark")
+      @RequestParam(value = "remark", required = false) @Parameter(description = "审核备注")
           String remark) {
     if (merchantIds.isEmpty()) {
       throw new BizException(ResultCode.BAD_REQUEST, "merchant ids cannot be empty");

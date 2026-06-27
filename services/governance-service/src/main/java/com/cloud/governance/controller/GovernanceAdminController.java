@@ -1,8 +1,5 @@
 package com.cloud.governance.controller;
 
-import com.cloud.api.auth.AuthGovernanceDubboApi;
-import com.cloud.api.user.AdminGovernanceDubboApi;
-import com.cloud.api.user.UserAdminGovernanceDubboApi;
 import com.cloud.api.user.UserGovernanceDubboApi;
 import com.cloud.api.user.UserNotificationGovernanceDubboApi;
 import com.cloud.common.domain.dto.governance.OutboxBatchRequeueRequestDTO;
@@ -10,13 +7,8 @@ import com.cloud.common.domain.dto.user.AdminDTO;
 import com.cloud.common.domain.dto.user.AdminUpsertRequestDTO;
 import com.cloud.common.domain.dto.user.UserNotificationBatchRequestDTO;
 import com.cloud.common.domain.dto.user.UserNotificationStatusChangeRequestDTO;
-import com.cloud.common.domain.dto.user.UserPageDTO;
 import com.cloud.common.domain.dto.user.UserSystemAnnouncementRequestDTO;
 import com.cloud.common.domain.dto.user.UserUpsertRequestDTO;
-import com.cloud.common.domain.support.AuthGovernancePayloadMapper;
-import com.cloud.common.domain.vo.auth.AuthAuthorizationDetailVO;
-import com.cloud.common.domain.vo.auth.AuthTokenStorageStatsVO;
-import com.cloud.common.domain.vo.auth.TokenBlacklistCheckVO;
 import com.cloud.common.domain.vo.auth.TokenBlacklistStatsVO;
 import com.cloud.common.domain.vo.governance.ThreadPoolMetricsVO;
 import com.cloud.common.domain.vo.user.AdminPageVO;
@@ -26,6 +18,10 @@ import com.cloud.common.enums.ResultCode;
 import com.cloud.common.exception.BizException;
 import com.cloud.common.remote.RemoteCallSupport;
 import com.cloud.common.result.Result;
+import com.cloud.common.threadpool.ThreadPoolResponseMapper;
+import com.cloud.common.util.DateRangeValidator;
+import com.cloud.governance.service.AuthGovernanceManagementService;
+import com.cloud.governance.service.GovernanceUserManagementService;
 import com.cloud.governance.service.MqGovernanceAggregationService;
 import com.cloud.governance.service.ObservabilityEntryService;
 import com.cloud.governance.service.OutboxGovernanceAggregationService;
@@ -38,10 +34,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import java.net.URI;
-import java.time.Instant;
 import java.time.LocalDate;
-import java.time.temporal.ChronoUnit;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -66,32 +59,30 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequiredArgsConstructor
 @Validated
-@Tag(name = "Governance Admin API", description = "Governance-owned admin APIs")
+@Tag(name = "治理管理员接口", description = "治理服务承载的管理员接口")
+/**
+ * 后台治理公开聚合入口。
+ *
+ * <p>这里承载后台页面直接调用的 /api/admin/** 路由。后续新增治理页面应优先放在这里，并通过 Dubbo 或受控内部客户端访问业务服务。
+ */
 public class GovernanceAdminController {
 
   @DubboReference(check = false, timeout = 5000, retries = 0)
   private UserGovernanceDubboApi userGovernanceDubboApi;
 
   @DubboReference(check = false, timeout = 5000, retries = 0)
-  private AdminGovernanceDubboApi adminGovernanceDubboApi;
-
-  @DubboReference(check = false, timeout = 5000, retries = 0)
-  private UserAdminGovernanceDubboApi userAdminGovernanceDubboApi;
-
-  @DubboReference(check = false, timeout = 5000, retries = 0)
-  private AuthGovernanceDubboApi authGovernanceDubboApi;
-
-  @DubboReference(check = false, timeout = 5000, retries = 0)
   private UserNotificationGovernanceDubboApi userNotificationGovernanceDubboApi;
 
   private final RemoteCallSupport remoteCallSupport;
+  private final GovernanceUserManagementService governanceUserManagementService;
+  private final AuthGovernanceManagementService authGovernanceManagementService;
   private final MqGovernanceAggregationService mqGovernanceAggregationService;
   private final OutboxGovernanceAggregationService outboxGovernanceAggregationService;
   private final ObservabilityEntryService observabilityEntryService;
 
   @GetMapping("/api/admin/statistics/overview")
   @PreAuthorize("hasAuthority('admin:all')")
-  @Operation(summary = "Get statistics overview through governance-service")
+  @Operation(summary = "通过治理服务获取统计总览")
   public Result<UserStatisticsVO> getStatisticsOverview() {
     return Result.success(
         "query successful",
@@ -102,18 +93,18 @@ public class GovernanceAdminController {
 
   @GetMapping("/api/admin/statistics/overview/async")
   @PreAuthorize("hasAuthority('admin:all')")
-  @Operation(summary = "Get statistics overview async through governance-service")
+  @Operation(summary = "通过治理服务异步获取统计总览")
   public CompletableFuture<Result<UserStatisticsVO>> getStatisticsOverviewAsync() {
     return CompletableFuture.completedFuture(getStatisticsOverview());
   }
 
   @GetMapping("/api/admin/statistics/registration-trend")
   @PreAuthorize("hasAuthority('admin:all')")
-  @Operation(summary = "Get registration trend through governance-service")
+  @Operation(summary = "通过治理服务获取注册趋势")
   public Result<Map<LocalDate, Long>> getRegistrationTrend(
       @RequestParam @DateTimeFormat(iso = ISO.DATE) LocalDate startDate,
       @RequestParam @DateTimeFormat(iso = ISO.DATE) LocalDate endDate) {
-    validateDateRange(startDate, endDate);
+    DateRangeValidator.validateInclusiveRange(startDate, endDate, 365);
     return Result.success(
         "query successful",
         remoteCallSupport.query(
@@ -123,7 +114,7 @@ public class GovernanceAdminController {
 
   @GetMapping("/api/admin/statistics/registration-trend/async")
   @PreAuthorize("hasAuthority('admin:all')")
-  @Operation(summary = "Get registration trend async through governance-service")
+  @Operation(summary = "通过治理服务异步获取注册趋势")
   public CompletableFuture<Result<Map<LocalDate, Long>>> getRegistrationTrendAsync(
       @RequestParam(defaultValue = "30") @Min(1) @Max(365) Integer days) {
     LocalDate endDate = LocalDate.now();
@@ -208,7 +199,7 @@ public class GovernanceAdminController {
                 "user-service.governance.getThreadPoolInfoList",
                 userGovernanceDubboApi::getThreadPoolInfoList)
             .stream()
-            .map(this::toThreadPoolMap)
+            .map(ThreadPoolResponseMapper::toResponse)
             .toList();
     return Result.success(items);
   }
@@ -216,7 +207,7 @@ public class GovernanceAdminController {
   @GetMapping("/api/admin/thread-pools/{name}")
   @PreAuthorize("hasAuthority('admin:all')")
   public Result<Map<String, Object>> getThreadPoolInfoByName(
-      @PathVariable @Parameter(description = "Thread pool bean name") String name) {
+      @PathVariable @Parameter(description = "线程池 Bean 名称") String name) {
     ThreadPoolMetricsVO metrics =
         remoteCallSupport.query(
             "user-service.governance.getThreadPoolInfo",
@@ -224,7 +215,7 @@ public class GovernanceAdminController {
     if (metrics == null) {
       throw new BizException(ResultCode.NOT_FOUND, "Thread pool bean not found: " + name);
     }
-    return Result.success(toThreadPoolMap(metrics));
+    return Result.success(ThreadPoolResponseMapper.toResponse(metrics));
   }
 
   @GetMapping("/api/admins")
@@ -232,30 +223,19 @@ public class GovernanceAdminController {
   public Result<AdminPageVO> getAdmins(
       @RequestParam(defaultValue = "1") @Min(1) Integer page,
       @RequestParam(defaultValue = "10") @Min(1) @Max(100) Integer size) {
-    return Result.success(
-        remoteCallSupport.query(
-            "user-service.governance.getAdminsPage",
-            () -> adminGovernanceDubboApi.getAdminsPage(page, size)));
+    return Result.success(governanceUserManagementService.getAdmins(page, size));
   }
 
   @GetMapping("/api/admins/{id}")
   @PreAuthorize("hasAuthority('admin:all')")
   public Result<AdminDTO> getAdminById(@PathVariable @NotNull @Positive Long id) {
-    return Result.success(
-        "Query successful",
-        remoteCallSupport.query(
-            "user-service.governance.getAdminById",
-            () -> adminGovernanceDubboApi.getAdminById(id)));
+    return Result.success("Query successful", governanceUserManagementService.getAdminById(id));
   }
 
   @PostMapping("/api/admins")
   @PreAuthorize("hasAuthority('admin:all')")
   public Result<AdminDTO> createAdmin(@RequestBody @Validated AdminUpsertRequestDTO requestDTO) {
-    return Result.success(
-        "Admin created",
-        remoteCallSupport.command(
-            "user-service.governance.createAdmin",
-            () -> adminGovernanceDubboApi.createAdmin(requestDTO)));
+    return Result.success("Admin created", governanceUserManagementService.createAdmin(requestDTO));
   }
 
   @PutMapping("/api/admins/{id}")
@@ -264,19 +244,13 @@ public class GovernanceAdminController {
       @PathVariable @NotNull @Positive Long id,
       @RequestBody @Validated AdminUpsertRequestDTO requestDTO) {
     return Result.success(
-        "Admin updated",
-        remoteCallSupport.command(
-            "user-service.governance.updateAdmin",
-            () -> adminGovernanceDubboApi.updateAdmin(id, requestDTO)));
+        "Admin updated", governanceUserManagementService.updateAdmin(id, requestDTO));
   }
 
   @DeleteMapping("/api/admins/{id}")
   @PreAuthorize("hasAuthority('admin:all')")
   public Result<Boolean> deleteAdmin(@PathVariable @NotNull @Positive Long id) {
-    return Result.success(
-        "Deleted successfully",
-        remoteCallSupport.command(
-            "user-service.governance.deleteAdmin", () -> adminGovernanceDubboApi.deleteAdmin(id)));
+    return Result.success("Deleted successfully", governanceUserManagementService.deleteAdmin(id));
   }
 
   @PatchMapping("/api/admins/{id}/status")
@@ -284,20 +258,14 @@ public class GovernanceAdminController {
   public Result<Boolean> updateAdminStatus(
       @PathVariable @NotNull @Positive Long id, @RequestParam Integer status) {
     return Result.success(
-        "Status updated",
-        remoteCallSupport.command(
-            "user-service.governance.updateAdminStatus",
-            () -> adminGovernanceDubboApi.updateAdminStatus(id, status)));
+        "Status updated", governanceUserManagementService.updateAdminStatus(id, status));
   }
 
   @PostMapping("/api/admins/{id}/password-resets")
   @PreAuthorize("hasAuthority('admin:all')")
   public Result<String> resetPassword(@PathVariable @NotNull @Positive Long id) {
     return Result.success(
-        "Password reset successful",
-        remoteCallSupport.command(
-            "user-service.governance.resetPassword",
-            () -> adminGovernanceDubboApi.resetPassword(id)));
+        "Password reset successful", governanceUserManagementService.resetPassword(id));
   }
 
   @GetMapping("/api/admin/users")
@@ -311,19 +279,9 @@ public class GovernanceAdminController {
       @RequestParam(required = false) String nickname,
       @RequestParam(required = false) Integer status,
       @RequestParam(required = false) String roleCode) {
-    UserPageDTO request = new UserPageDTO();
-    request.setCurrent(page.longValue());
-    request.setSize(size.longValue());
-    request.setUsername(username);
-    request.setEmail(email);
-    request.setPhone(phone);
-    request.setNickname(nickname);
-    request.setStatus(status);
-    request.setRoleCode(roleCode);
     return Result.success(
-        remoteCallSupport.query(
-            "user-service.governance.searchUsers",
-            () -> userAdminGovernanceDubboApi.searchUsers(request)));
+        governanceUserManagementService.searchUsers(
+            page, size, username, email, phone, nickname, status, roleCode));
   }
 
   @PutMapping("/api/admin/users/{id}")
@@ -332,20 +290,13 @@ public class GovernanceAdminController {
       @PathVariable @NotNull @Positive Long id,
       @RequestBody @Validated UserUpsertRequestDTO requestDTO) {
     return Result.success(
-        "user updated",
-        remoteCallSupport.command(
-            "user-service.governance.updateUser",
-            () -> userAdminGovernanceDubboApi.updateUser(id, requestDTO)));
+        "user updated", governanceUserManagementService.updateUser(id, requestDTO));
   }
 
   @DeleteMapping("/api/admin/users/{id}")
   @PreAuthorize("hasAuthority('admin:all')")
   public Result<Boolean> deleteUser(@PathVariable @NotNull @Positive Long id) {
-    return Result.success(
-        "user deleted",
-        remoteCallSupport.command(
-            "user-service.governance.deleteUser",
-            () -> userAdminGovernanceDubboApi.deleteUser(id)));
+    return Result.success("user deleted", governanceUserManagementService.deleteUser(id));
   }
 
   @DeleteMapping("/api/admin/users/batch")
@@ -353,9 +304,7 @@ public class GovernanceAdminController {
   public Result<Boolean> deleteUsers(@RequestBody @NotNull List<Long> ids) {
     return Result.success(
         String.format("batch delete completed: %d", ids.size()),
-        remoteCallSupport.command(
-            "user-service.governance.deleteUsers",
-            () -> userAdminGovernanceDubboApi.deleteUsers(ids)));
+        governanceUserManagementService.deleteUsers(ids));
   }
 
   @PutMapping("/api/admin/users/batch")
@@ -364,22 +313,14 @@ public class GovernanceAdminController {
       @RequestBody @Validated @NotNull List<UserUpsertRequestDTO> requestDTOList) {
     return Result.success(
         String.format("batch update completed: %d", requestDTOList.size()),
-        remoteCallSupport.command(
-            "user-service.governance.updateUsersBatch",
-            () -> userAdminGovernanceDubboApi.updateUsersBatch(requestDTOList)));
+        governanceUserManagementService.updateUsersBatch(requestDTOList));
   }
 
   @PatchMapping("/api/admin/users/status/batch")
   @PreAuthorize("hasAuthority('admin:all')")
   public Result<Boolean> updateUserStatusBatch(
       @RequestParam List<Long> ids, @RequestParam Integer status) {
-    Integer successCount =
-        remoteCallSupport.command(
-            "user-service.governance.updateUserStatusBatch",
-            () -> userAdminGovernanceDubboApi.updateUserStatusBatch(ids, status));
-    if (successCount == null) {
-      successCount = 0;
-    }
+    int successCount = governanceUserManagementService.updateUserStatusBatch(ids, status);
     return Result.success(
         String.format("batch status update completed: %d/%d", successCount, ids.size()), true);
   }
@@ -387,64 +328,37 @@ public class GovernanceAdminController {
   @GetMapping("/auth/authorizations/statistics")
   @PreAuthorize("hasAuthority('admin:all')")
   public Result<Map<String, Object>> getTokenStats() {
-    AuthTokenStorageStatsVO stats =
-        remoteCallSupport.query(
-            "auth-service.governance.getTokenStats", authGovernanceDubboApi::getTokenStats);
-    Map<String, Object> payload = new HashMap<>();
-    payload.put("authorizationCount", stats.getAuthorizationCount());
-    payload.put("accessIndexCount", stats.getAccessIndexCount());
-    payload.put("refreshIndexCount", stats.getRefreshIndexCount());
-    payload.put("codeIndexCount", stats.getCodeIndexCount());
-    payload.put("principalIndexCount", stats.getPrincipalIndexCount());
-    payload.put("redisInfo", stats.getRedisInfo());
-    payload.put("storageType", stats.getStorageType());
-    return Result.success(payload);
+    return authGovernanceManagementService.getTokenStats();
   }
 
   @GetMapping("/auth/authorizations/{id}")
   @PreAuthorize("hasAuthority('admin:all')")
   public Result<Map<String, Object>> getAuthorizationDetails(@PathVariable @NotBlank String id) {
-    AuthAuthorizationDetailVO detail =
-        remoteCallSupport.query(
-            "auth-service.governance.getAuthorizationDetails",
-            () -> authGovernanceDubboApi.getAuthorizationDetails(id));
-    return Result.success(AuthGovernancePayloadMapper.toAuthorizationDetailPayload(detail));
+    return authGovernanceManagementService.getAuthorizationDetails(id);
   }
 
   @DeleteMapping("/auth/authorizations/{id}")
   @PreAuthorize("hasAuthority('admin:all')")
   public Result<Void> revokeAuthorization(@PathVariable @NotBlank String id) {
-    remoteCallSupport.command(
-        "auth-service.governance.revokeAuthorization",
-        () -> authGovernanceDubboApi.revokeAuthorization(id));
-    return Result.success();
+    return authGovernanceManagementService.revokeAuthorization(id);
   }
 
   @PostMapping("/auth/cleanups/authorizations")
   @PreAuthorize("hasAuthority('admin:all')")
   public Result<Map<String, Object>> cleanupExpiredTokens() {
-    return Result.success(
-        remoteCallSupport.command(
-            "auth-service.governance.cleanupAuthorizations",
-            authGovernanceDubboApi::cleanupAuthorizations));
+    return authGovernanceManagementService.cleanupAuthorizations();
   }
 
   @GetMapping("/auth/authorizations/storage-structure")
   @PreAuthorize("hasAuthority('admin:all')")
   public Result<Map<String, Object>> getStorageStructure() {
-    return Result.success(
-        remoteCallSupport.query(
-            "auth-service.governance.getAuthorizationStorageStructure",
-            authGovernanceDubboApi::getAuthorizationStorageStructure));
+    return authGovernanceManagementService.getAuthorizationStorageStructure();
   }
 
   @GetMapping("/auth/blacklist-entries/statistics")
   @PreAuthorize("hasAuthority('admin:all')")
   public Result<TokenBlacklistStatsVO> getBlacklistStats() {
-    return Result.success(
-        remoteCallSupport.query(
-            "auth-service.governance.getBlacklistStats",
-            authGovernanceDubboApi::getBlacklistStats));
+    return authGovernanceManagementService.getBlacklistStats();
   }
 
   @PostMapping("/auth/blacklist-entries")
@@ -452,37 +366,19 @@ public class GovernanceAdminController {
   public Result<Void> addToBlacklist(
       @RequestParam @NotBlank String tokenValue,
       @RequestParam(defaultValue = "admin_manual") @NotBlank String reason) {
-    remoteCallSupport.command(
-        "auth-service.governance.addToBlacklist",
-        () -> authGovernanceDubboApi.addToBlacklist(tokenValue, reason));
-    return Result.success();
+    return authGovernanceManagementService.addToBlacklist(tokenValue, reason);
   }
 
   @GetMapping("/auth/blacklist-entries/check")
   @PreAuthorize("hasAuthority('admin:all')")
   public Result<Map<String, Object>> checkBlacklist(@RequestParam @NotBlank String tokenValue) {
-    TokenBlacklistCheckVO result =
-        remoteCallSupport.query(
-            "auth-service.governance.checkBlacklist",
-            () -> authGovernanceDubboApi.checkBlacklist(tokenValue));
-    Map<String, Object> payload = new HashMap<>();
-    payload.put("tokenValue", result.getTokenPreview());
-    payload.put("isBlacklisted", result.getBlacklisted());
-    payload.put("checkTime", result.getCheckedAt());
-    return Result.success(payload);
+    return authGovernanceManagementService.checkBlacklist(tokenValue);
   }
 
   @PostMapping("/auth/cleanups/blacklist-entries")
   @PreAuthorize("hasAuthority('admin:all')")
   public Result<Map<String, Object>> cleanupBlacklist() {
-    Integer cleanedCount =
-        remoteCallSupport.command(
-            "auth-service.governance.cleanupBlacklist", authGovernanceDubboApi::cleanupBlacklist);
-    Map<String, Object> payload = new HashMap<>();
-    payload.put("cleanedCount", cleanedCount);
-    payload.put("message", "Blacklist cleanup completed");
-    payload.put("cleanupTime", Instant.now());
-    return Result.success(payload);
+    return authGovernanceManagementService.cleanupBlacklist();
   }
 
   @GetMapping("/api/admin/mq/consumers")
@@ -608,29 +504,5 @@ public class GovernanceAdminController {
         remoteCallSupport.command(
             "user-service.governance.sendSystemAnnouncement",
             () -> userNotificationGovernanceDubboApi.sendSystemAnnouncement(requestDTO)));
-  }
-
-  private void validateDateRange(LocalDate startDate, LocalDate endDate) {
-    if (endDate.isBefore(startDate)) {
-      throw new BizException(
-          ResultCode.BAD_REQUEST, "endDate must be greater than or equal to startDate");
-    }
-    if (ChronoUnit.DAYS.between(startDate, endDate) > 365) {
-      throw new BizException(ResultCode.BAD_REQUEST, "date range cannot exceed 365 days");
-    }
-  }
-
-  private Map<String, Object> toThreadPoolMap(ThreadPoolMetricsVO metrics) {
-    Map<String, Object> item = new HashMap<>();
-    item.put("name", metrics.getName());
-    item.put("corePoolSize", metrics.getCorePoolSize());
-    item.put("maxPoolSize", metrics.getMaxPoolSize());
-    item.put("activeCount", metrics.getActiveCount());
-    item.put("poolSize", metrics.getPoolSize());
-    item.put("queueSize", metrics.getQueueSize());
-    item.put("completedTaskCount", metrics.getCompletedTaskCount());
-    item.put("taskCount", metrics.getTaskCount());
-    item.put("queueRemainingCapacity", metrics.getQueueRemainingCapacity());
-    return item;
   }
 }

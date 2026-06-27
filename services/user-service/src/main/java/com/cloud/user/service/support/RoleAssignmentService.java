@@ -63,7 +63,7 @@ public class RoleAssignmentService {
             .collect(
                 Collectors.toMap(
                     Role::getId,
-                    role -> stripRolePrefix(role.getCode()),
+                    role -> RoleCodeSupport.stripRolePrefix(role.getCode()),
                     (left, right) -> left,
                     LinkedHashMap::new));
 
@@ -82,7 +82,7 @@ public class RoleAssignmentService {
 
   @Transactional(readOnly = true)
   public List<Long> getUserIdsByRoleCode(String roleCode) {
-    String normalizedRoleCode = normalizeRoleCode(roleCode);
+    String normalizedRoleCode = RoleCodeSupport.normalizeRoleCode(roleCode);
     if (normalizedRoleCode == null) {
       return List.of();
     }
@@ -129,7 +129,7 @@ public class RoleAssignmentService {
       if (roleCode == null) {
         continue;
       }
-      distribution.merge(stripRolePrefix(roleCode), 1L, Long::sum);
+      distribution.merge(RoleCodeSupport.stripRolePrefix(roleCode), 1L, Long::sum);
     }
     return distribution;
   }
@@ -163,7 +163,7 @@ public class RoleAssignmentService {
             .filter(Objects::nonNull)
             .collect(Collectors.toSet());
 
-    for (String role : normalizeRoleCodes(roles)) {
+    for (String role : RoleCodeSupport.normalizeRoleCodes(roles)) {
       Role roleEntity = roleByCode.get(role);
       if (roleEntity == null || existingRoleIds.contains(roleEntity.getId())) {
         continue;
@@ -177,7 +177,7 @@ public class RoleAssignmentService {
   }
 
   private Map<String, Role> loadRolesByCode(Collection<String> roles) {
-    Set<String> normalized = normalizeRoleCodes(roles);
+    Set<String> normalized = RoleCodeSupport.normalizeRoleCodes(roles);
     if (normalized.isEmpty()) {
       return Collections.emptyMap();
     }
@@ -187,27 +187,5 @@ public class RoleAssignmentService {
         .collect(
             Collectors.toMap(
                 Role::getCode, Function.identity(), (left, right) -> left, LinkedHashMap::new));
-  }
-
-  private Set<String> normalizeRoleCodes(Collection<String> roles) {
-    return roles.stream()
-        .map(this::normalizeRoleCode)
-        .filter(Objects::nonNull)
-        .collect(Collectors.toCollection(LinkedHashSet::new));
-  }
-
-  private String normalizeRoleCode(String role) {
-    if (role == null || role.isBlank()) {
-      return null;
-    }
-    String trimmed = role.trim().toUpperCase();
-    return trimmed.startsWith("ROLE_") ? trimmed : "ROLE_" + trimmed;
-  }
-
-  private String stripRolePrefix(String roleCode) {
-    if (roleCode == null || roleCode.isBlank()) {
-      return roleCode;
-    }
-    return roleCode.startsWith("ROLE_") ? roleCode.substring("ROLE_".length()) : roleCode;
   }
 }

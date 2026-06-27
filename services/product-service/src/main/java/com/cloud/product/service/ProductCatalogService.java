@@ -16,6 +16,8 @@ public interface ProductCatalogService {
 
   List<SpuDetailVO> listSpuByCategory(Long categoryId, Integer status);
 
+  List<SpuDetailVO> listSpuByMerchantId(Long merchantId, Integer status);
+
   List<SpuDetailVO> listSpuByPage(Integer page, Integer size, Integer status);
 
   List<SkuDetailVO> listSkuByIds(List<Long> skuIds);

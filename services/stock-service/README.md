@@ -13,12 +13,12 @@ Inventory service for reservation, confirmation, release, restoration, and stock
 - Owns segmented stock rows and inventory quantity transitions.
 - Consumes stock reservation, confirmation, release, and restore commands.
 - Publishes stock failure or alert events when needed.
-- Serves stock ledger reads for admin and internal operations.
+- Serves stock ledger reads for admin operations and the `StockDubboApi` governance contract.
 
 ## HTTP Surface
 
-- Public admin ledger: `GET /api/admin/stocks/ledger/{skuId}`
-- Internal ledger: `GET /api/admin/stocks/internal/ledger/{skuId}`
+- Direct service admin ledger: `GET /api/admin/stocks/ledger/{skuId}`
+- Gateway-facing stock governance uses `governance-service` and `StockDubboApi`; `/api/admin/stocks/internal/**` is no longer exposed.
 
 ## Runtime Notes
 

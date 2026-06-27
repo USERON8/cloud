@@ -13,6 +13,7 @@ import com.cloud.payment.module.entity.PaymentOrderEntity;
 import com.cloud.payment.module.entity.PaymentRefundEntity;
 import com.cloud.payment.service.provider.model.PaymentOrderQueryResult;
 import com.cloud.payment.service.provider.model.PaymentRefundResult;
+import com.cloud.payment.service.support.PaymentTextSupport;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.LocalDateTime;
@@ -46,7 +47,8 @@ public class AlipayPaymentProviderGateway implements PaymentProviderGateway {
     bizContent.put("total_amount", order.getAmount().toPlainString());
     bizContent.put(
         "subject",
-        firstNonBlank(order.getSubOrderNo(), order.getMainOrderNo(), order.getPaymentNo()));
+        PaymentTextSupport.firstNonBlank(
+            order.getSubOrderNo(), order.getMainOrderNo(), order.getPaymentNo()));
     bizContent.put("product_code", "QUICK_WAP_WAY");
     request.setBizContent(writeJson(bizContent));
     if (StringUtils.hasText(alipayConfig.getNotifyUrl())) {
@@ -85,8 +87,9 @@ public class AlipayPaymentProviderGateway implements PaymentProviderGateway {
         return PaymentOrderQueryResult.error(
             buildFailureMessage(response.getSubMsg(), response.getMsg()));
       }
-      String providerTxnNo = firstNonBlank(response.getTradeNo(), order.getProviderTxnNo());
-      String tradeStatus = firstNonBlank(response.getTradeStatus(), "UNKNOWN");
+      String providerTxnNo =
+          PaymentTextSupport.firstNonBlank(response.getTradeNo(), order.getProviderTxnNo());
+      String tradeStatus = PaymentTextSupport.firstNonBlank(response.getTradeStatus(), "UNKNOWN");
       return switch (tradeStatus.toUpperCase()) {
         case "TRADE_SUCCESS", "TRADE_FINISHED" ->
             PaymentOrderQueryResult.paid(
@@ -122,10 +125,10 @@ public class AlipayPaymentProviderGateway implements PaymentProviderGateway {
       if ("Y".equalsIgnoreCase(response.getFundChange()) || response.getGmtRefundPay() != null) {
         return PaymentRefundResult.refunded(
             toLocalDateTime(response.getGmtRefundPay()),
-            firstNonBlank(response.getFundChange(), "SUCCESS"));
+            PaymentTextSupport.firstNonBlank(response.getFundChange(), "SUCCESS"));
       }
       return PaymentRefundResult.pending(
-          firstNonBlank(response.getFundChange(), response.getMsg()));
+          PaymentTextSupport.firstNonBlank(response.getFundChange(), response.getMsg()));
     } catch (AlipayApiException ex) {
       return PaymentRefundResult.error(ex.getMessage());
     }
@@ -144,19 +147,7 @@ public class AlipayPaymentProviderGateway implements PaymentProviderGateway {
   }
 
   private String buildFailureMessage(String subMsg, String msg) {
-    return firstNonBlank(subMsg, msg, "provider call failed");
-  }
-
-  private String firstNonBlank(String... values) {
-    if (values == null) {
-      return null;
-    }
-    for (String value : values) {
-      if (StringUtils.hasText(value)) {
-        return value;
-      }
-    }
-    return null;
+    return PaymentTextSupport.firstNonBlank(subMsg, msg, "provider call failed");
   }
 
   private String appendCheckoutContext(String url, String paymentNo) {

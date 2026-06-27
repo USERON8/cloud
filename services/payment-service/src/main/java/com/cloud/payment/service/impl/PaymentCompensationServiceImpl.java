@@ -2,7 +2,6 @@ package com.cloud.payment.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.cloud.common.exception.SystemException;
-import com.cloud.common.messaging.event.PaymentSuccessEvent;
 import com.cloud.common.messaging.event.RefundCompletedEvent;
 import com.cloud.payment.config.PaymentCompensationProperties;
 import com.cloud.payment.mapper.PaymentOrderMapper;
@@ -15,6 +14,7 @@ import com.cloud.payment.service.provider.PaymentProviderGateway;
 import com.cloud.payment.service.provider.model.PaymentOrderQueryResult;
 import com.cloud.payment.service.provider.model.PaymentRefundResult;
 import com.cloud.payment.service.support.PaymentCallbackVerificationResult;
+import com.cloud.payment.service.support.PaymentFlowSupport;
 import com.cloud.payment.service.support.PaymentOrderStateSupport;
 import com.cloud.payment.service.support.PaymentStateMachine;
 import java.time.LocalDateTime;
@@ -36,8 +36,8 @@ public class PaymentCompensationServiceImpl implements PaymentCompensationServic
   private final PaymentOrderMapper paymentOrderMapper;
   private final PaymentRefundMapper paymentRefundMapper;
   private final PaymentCompensationProperties properties;
-  private final List<PaymentProviderGateway> providerGateways;
   private final PaymentMessageProducer paymentMessageProducer;
+  private final PaymentFlowSupport paymentFlowSupport;
   private final PaymentOrderStateSupport paymentOrderStateSupport;
   private final PaymentStateMachine paymentStateMachine;
 
@@ -170,7 +170,7 @@ public class PaymentCompensationServiceImpl implements PaymentCompensationServic
     }
     paymentOrderMapper.updateById(order);
     paymentOrderStateSupport.handlePersistedState(order, previousStatus);
-    publishPaymentSuccessIfNeeded(order, previousStatus);
+    paymentFlowSupport.publishPaymentSuccessIfNeeded(order, previousStatus);
   }
 
   private void applyRefundAttempt(
@@ -233,30 +233,8 @@ public class PaymentCompensationServiceImpl implements PaymentCompensationServic
     }
   }
 
-  private void publishPaymentSuccessIfNeeded(PaymentOrderEntity order, String previousStatus) {
-    if (PaymentOrderStateSupport.ORDER_STATUS_PAID.equals(previousStatus)) {
-      return;
-    }
-    if (!PaymentOrderStateSupport.ORDER_STATUS_PAID.equals(order.getStatus())) {
-      return;
-    }
-    PaymentSuccessEvent event =
-        PaymentSuccessEvent.builder()
-            .paymentId(order.getId())
-            .orderNo(order.getMainOrderNo())
-            .subOrderNo(order.getSubOrderNo())
-            .userId(order.getUserId())
-            .amount(order.getAmount())
-            .paymentMethod(order.getChannel())
-            .transactionNo(order.getProviderTxnNo())
-            .build();
-    if (!paymentMessageProducer.sendPaymentSuccessEvent(event)) {
-      throw new SystemException("failed to enqueue payment success event");
-    }
-  }
-
   private PaymentOrderQueryResult queryOrder(PaymentOrderEntity order) {
-    PaymentProviderGateway gateway = resolveGateway(order.getChannel());
+    PaymentProviderGateway gateway = paymentFlowSupport.resolveGateway(order.getChannel());
     if (gateway == null) {
       return PaymentOrderQueryResult.error("unsupported payment channel: " + order.getChannel());
     }
@@ -264,20 +242,11 @@ public class PaymentCompensationServiceImpl implements PaymentCompensationServic
   }
 
   private PaymentRefundResult executeRefund(PaymentOrderEntity order, PaymentRefundEntity refund) {
-    PaymentProviderGateway gateway = resolveGateway(order.getChannel());
+    PaymentProviderGateway gateway = paymentFlowSupport.resolveGateway(order.getChannel());
     if (gateway == null) {
       return PaymentRefundResult.failed("unsupported payment channel: " + order.getChannel());
     }
     return gateway.executeRefund(order, refund);
-  }
-
-  private PaymentProviderGateway resolveGateway(String channel) {
-    for (PaymentProviderGateway gateway : providerGateways) {
-      if (gateway.supports(channel)) {
-        return gateway;
-      }
-    }
-    return null;
   }
 
   private int defaultNumber(Integer value) {

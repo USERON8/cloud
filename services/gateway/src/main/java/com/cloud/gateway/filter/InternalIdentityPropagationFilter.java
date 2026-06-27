@@ -3,6 +3,7 @@ package com.cloud.gateway.filter;
 import cn.hutool.core.util.StrUtil;
 import com.cloud.common.security.InternalRequestHeaders;
 import com.cloud.common.security.InternalRequestSigner;
+import com.cloud.common.security.JwtClaimResolver;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.LinkedHashSet;
@@ -70,7 +71,7 @@ public class InternalIdentityPropagationFilter implements GlobalFilter, Ordered 
     Jwt jwt = jwtAuth.getToken();
     String timestamp = String.valueOf(Instant.now().getEpochSecond());
     String subject = jwt.getSubject();
-    String userId = firstNonBlank(jwt.getClaimAsString("user_id"), jwt.getClaimAsString("userId"));
+    String userId = JwtClaimResolver.resolveUserIdString(jwt);
     String username =
         firstNonBlank(
             jwt.getClaimAsString("preferred_username"),

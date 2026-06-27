@@ -24,23 +24,23 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/admin/users")
 @RequiredArgsConstructor
 @Validated
-@Tag(name = "User Query", description = "User query APIs")
+@Tag(name = "用户查询", description = "用户查询接口")
 public class UserQueryController {
 
   private final UserService userService;
 
   @GetMapping
   @PreAuthorize("hasAuthority('admin:all')")
-  @Operation(summary = "Find user by username", description = "Get one user by username")
+  @Operation(summary = "按用户名查询用户", description = "按用户名获取单个用户")
   public Result<UserDTO> findByUsername(
-      @RequestParam @Parameter(description = "Username") @NotBlank(message = "username is required")
+      @RequestParam @Parameter(description = "用户名") @NotBlank(message = "username is required")
           String username) {
     return Result.success("query successful", userService.findByUsername(username));
   }
 
   @GetMapping("/search")
   @PreAuthorize("hasAuthority('admin:all')")
-  @Operation(summary = "Search users", description = "Search users with paging")
+  @Operation(summary = "搜索用户", description = "分页搜索用户")
   public Result<PageResult<UserVO>> search(
       @RequestParam(defaultValue = "1") Integer page,
       @RequestParam(defaultValue = "20") Integer size,

@@ -1,6 +1,7 @@
 package com.cloud.gateway.websocket;
 
 import cn.hutool.core.util.StrUtil;
+import com.cloud.common.security.JwtClaimResolver;
 import java.net.URI;
 import java.security.Principal;
 import lombok.RequiredArgsConstructor;
@@ -98,16 +99,6 @@ public class UserWebSocketHandler implements WebSocketHandler {
   }
 
   private String resolveUserId(Jwt jwt) {
-    if (jwt == null) {
-      return null;
-    }
-    String userId = jwt.getClaimAsString("user_id");
-    if (StrUtil.isBlank(userId)) {
-      userId = jwt.getClaimAsString("userId");
-    }
-    if (StrUtil.isBlank(userId)) {
-      userId = jwt.getSubject();
-    }
-    return StrUtil.isBlank(userId) ? null : userId;
+    return JwtClaimResolver.resolveUserIdOrSubject(jwt);
   }
 }

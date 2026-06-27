@@ -79,17 +79,17 @@ app:
   security:
     api-docs-enabled: false
     public-actuator-enabled: false
-    testenv-bypass-enabled: true
-    test-token-value: TEST_ENV_PERMANENT_TOKEN
+    testenv-bypass-enabled: ${APP_SECURITY_TESTENV_BYPASS_ENABLED:false}
+    test-token-value: ${APP_SECURITY_TEST_TOKEN_VALUE}
     signature:
-      secret: ${GATEWAY_SIGNATURE_SECRET:cloud-gateway-signature-dev}
+      secret: ${GATEWAY_SIGNATURE_SECRET}
     internal-identity:
       enabled: ${APP_SECURITY_INTERNAL_IDENTITY_ENABLED:true}
-      secret: ${GATEWAY_INTERNAL_IDENTITY_SECRET:${GATEWAY_SIGNATURE_SECRET:cloud-gateway-signature-dev}}
+      secret: ${GATEWAY_INTERNAL_IDENTITY_SECRET:${GATEWAY_SIGNATURE_SECRET}}
       timestamp-skew-seconds: ${APP_SECURITY_INTERNAL_IDENTITY_TIMESTAMP_SKEW_SECONDS:30}
     internal-hmac:
       enabled: ${app.security.internal-identity.enabled:${APP_SECURITY_INTERNAL_IDENTITY_ENABLED:true}}
-      secret: ${app.security.internal-identity.secret:${app.security.signature.secret:}}
+      secret: ${app.security.internal-identity.secret:${GATEWAY_INTERNAL_IDENTITY_SECRET:${app.security.signature.secret:${GATEWAY_SIGNATURE_SECRET}}}}
       timestamp-skew-seconds: ${app.security.internal-identity.timestamp-skew-seconds:${APP_SECURITY_INTERNAL_IDENTITY_TIMESTAMP_SKEW_SECONDS:30}}
     cors:
       allowed-origin-patterns: ${APP_SECURITY_CORS_ALLOWED_ORIGIN_PATTERNS:http://127.0.0.1:*,https://127.0.0.1:*,http://localhost:*,https://localhost:*}

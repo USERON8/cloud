@@ -1,5 +1,6 @@
 package com.cloud.auth.util;
 
+import com.cloud.common.security.RedisKeyScanSupport;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -11,17 +12,9 @@ public final class RedisKeyHelper {
 
   private RedisKeyHelper() {}
 
-  public static Set<String> scanKeys(RedisTemplate<String, Object> redisTemplate, String pattern) {
-    if (redisTemplate == null || pattern == null || pattern.isBlank()) {
-      return Collections.emptySet();
-    }
-    Set<String> keys = redisTemplate.keys(pattern);
-    return keys != null ? keys : Collections.emptySet();
-  }
-
   public static long countKeysByPattern(
       RedisTemplate<String, Object> redisTemplate, String pattern) {
-    return scanKeys(redisTemplate, pattern).size();
+    return RedisKeyScanSupport.countKeysByPattern(redisTemplate, pattern);
   }
 
   public static Map<String, Long> batchTtlSeconds(

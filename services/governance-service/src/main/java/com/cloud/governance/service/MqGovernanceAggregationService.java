@@ -1,10 +1,8 @@
 package com.cloud.governance.service;
 
 import com.cloud.common.result.Result;
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
@@ -22,7 +20,7 @@ public class MqGovernanceAggregationService {
   private static final ParameterizedTypeReference<Result<Boolean>> BOOLEAN_RESULT_TYPE =
       new ParameterizedTypeReference<>() {};
 
-  private final InternalOperationsClientSupport clientSupport;
+  private final GovernanceAggregationHttpSupport aggregationHttpSupport;
 
   @Value(
       "${app.governance.mq.service-ids:auth-service,user-service,product-service,search-service,order-service,payment-service,stock-service}")
@@ -34,7 +32,7 @@ public class MqGovernanceAggregationService {
       List<Map<String, Object>> items =
           getForList(serviceId, "/internal/mq/governance/consumers", Map.of());
       for (Map<String, Object> item : items) {
-        aggregated.add(withServiceId(serviceId, item));
+        aggregated.add(aggregationHttpSupport.withServiceId(serviceId, item));
       }
     }
     aggregated.sort(
@@ -54,7 +52,7 @@ public class MqGovernanceAggregationService {
               "/internal/mq/dead-letters/pending",
               Map.of("limit", String.valueOf(limit)));
       for (Map<String, Object> item : items) {
-        aggregated.add(withServiceId(serviceId, item));
+        aggregated.add(aggregationHttpSupport.withServiceId(serviceId, item));
       }
     }
     aggregated.sort(
@@ -67,7 +65,7 @@ public class MqGovernanceAggregationService {
 
   public boolean markDeadLetterHandled(String serviceId, String topic, String msgId) {
     Result<Boolean> result =
-        postForResult(
+        aggregationHttpSupport.postForResult(
             serviceId,
             "/internal/mq/dead-letters/handle",
             Map.of("topic", topic, "msgId", msgId),
@@ -78,56 +76,9 @@ public class MqGovernanceAggregationService {
 
   private List<Map<String, Object>> getForList(
       String serviceId, String path, Map<String, String> queryParams) {
-    Result<List<Map<String, Object>>> result = getForResult(serviceId, path, queryParams);
+    Result<List<Map<String, Object>>> result =
+        aggregationHttpSupport.getForResult(serviceId, path, queryParams, LIST_OF_MAP_RESULT_TYPE);
     List<Map<String, Object>> data = result.getData();
     return data == null ? List.of() : data;
-  }
-
-  private Result<List<Map<String, Object>>> getForResult(
-      String serviceId, String path, Map<String, String> queryParams) {
-    URI uri = clientSupport.resolveUri(serviceId, path, queryParams);
-    try {
-      Result<List<Map<String, Object>>> result =
-          clientSupport
-              .restClient()
-              .get()
-              .uri(uri)
-              .headers(headers -> clientSupport.applyInternalHeaders(headers, "GET", path))
-              .retrieve()
-              .body(LIST_OF_MAP_RESULT_TYPE);
-      return clientSupport.assertSuccess(result, serviceId, path);
-    } catch (Exception ex) {
-      throw clientSupport.translateRemoteError(serviceId, path, ex);
-    }
-  }
-
-  private <T> Result<T> postForResult(
-      String serviceId,
-      String path,
-      Map<String, String> queryParams,
-      ParameterizedTypeReference<Result<T>> responseType) {
-    URI uri = clientSupport.resolveUri(serviceId, path, queryParams);
-    try {
-      Result<T> result =
-          clientSupport
-              .restClient()
-              .post()
-              .uri(uri)
-              .headers(headers -> clientSupport.applyInternalHeaders(headers, "POST", path))
-              .retrieve()
-              .body(responseType);
-      return clientSupport.assertSuccess(result, serviceId, path);
-    } catch (Exception ex) {
-      throw clientSupport.translateRemoteError(serviceId, path, ex);
-    }
-  }
-
-  private Map<String, Object> withServiceId(String serviceId, Map<String, Object> source) {
-    Map<String, Object> target = new LinkedHashMap<>();
-    target.put("serviceId", serviceId);
-    if (source != null) {
-      target.putAll(source);
-    }
-    return target;
   }
 }

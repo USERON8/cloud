@@ -31,7 +31,7 @@ import org.springframework.web.multipart.MultipartFile;
 @RestController
 @RequestMapping("/api/users/me")
 @RequiredArgsConstructor
-@Tag(name = "User Profile", description = "Current user profile APIs")
+@Tag(name = "用户个人资料", description = "当前用户个人资料接口")
 public class UserProfileController {
 
   private final UserService userService;
@@ -40,7 +40,7 @@ public class UserProfileController {
 
   @GetMapping("/profile")
   @PreAuthorize("isAuthenticated()")
-  @Operation(summary = "Get current profile", description = "Get current logged-in user profile")
+  @Operation(summary = "查询当前用户资料", description = "查询当前登录用户资料")
   public Result<UserDTO> getCurrentProfile(Authentication authentication) {
     Long currentUserId = parseCurrentUserId(authentication);
     if (currentUserId == null) {
@@ -52,7 +52,7 @@ public class UserProfileController {
 
   @PutMapping("/profile")
   @PreAuthorize("isAuthenticated()")
-  @Operation(summary = "Update current profile", description = "Update current user profile fields")
+  @Operation(summary = "更新当前用户资料", description = "更新当前用户资料字段")
   public Result<Boolean> updateCurrentProfile(
       @RequestBody @Valid UserProfileUpdateDTO updateDTO, Authentication authentication) {
     Long currentUserId = parseCurrentUserId(authentication);
@@ -77,8 +77,8 @@ public class UserProfileController {
   @PutMapping("/password")
   @PreAuthorize("isAuthenticated()")
   @Operation(
-      summary = "Change current password",
-      description = "Change current logged-in user password")
+      summary = "修改当前用户密码",
+      description = "修改当前登录用户密码")
   public Result<Boolean> changeCurrentPassword(
       @RequestBody @Valid UserProfilePasswordChangeDTO requestDTO, Authentication authentication) {
     Long currentUserId = parseCurrentUserId(authentication);
@@ -95,8 +95,8 @@ public class UserProfileController {
   @PostMapping(value = "/avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   @PreAuthorize("isAuthenticated()")
   @Operation(
-      summary = "Upload current avatar",
-      description = "Upload avatar image for current logged-in user")
+      summary = "上传当前用户头像",
+      description = "上传当前登录用户头像图片")
   public Result<String> uploadCurrentAvatar(
       @RequestPart("file") MultipartFile file, Authentication authentication) {
     Long currentUserId = parseCurrentUserId(authentication);

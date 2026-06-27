@@ -15,13 +15,13 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor
-@Tag(name = "Payment API", description = "Payment order and refund APIs")
+@Tag(name = "支付接口", description = "支付单和退款接口")
 public class PaymentCheckoutController {
 
   private final PaymentOrderService paymentOrderService;
 
   @GetMapping(value = "/payment-checkouts/{ticket}", produces = MediaType.TEXT_HTML_VALUE)
-  @Operation(summary = "Render payment checkout page")
+  @Operation(summary = "渲染支付收银台页面")
   public String renderCheckoutPage(@PathVariable String ticket) {
     return paymentOrderService.renderCheckoutPage(ticket);
   }

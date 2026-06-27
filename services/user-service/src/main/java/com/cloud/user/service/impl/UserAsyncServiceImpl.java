@@ -5,18 +5,17 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.cloud.common.domain.dto.user.UserDTO;
 import com.cloud.common.domain.vo.user.UserVO;
 import com.cloud.common.exception.BizException;
+import com.cloud.common.security.RedisKeyScanSupport;
 import com.cloud.user.converter.UserConverter;
 import com.cloud.user.mapper.UserMapper;
 import com.cloud.user.module.entity.User;
 import com.cloud.user.service.UserAsyncService;
 import com.cloud.user.service.UserService;
 import com.cloud.user.service.cache.TransactionalUserCacheService;
-import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,9 +25,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.redis.core.Cursor;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -201,7 +198,7 @@ public class UserAsyncServiceImpl implements UserAsyncService {
   public CompletableFuture<Long> countActiveUsersAsync(Integer days) {
     try {
       int safeDays = days == null || days <= 0 ? 7 : days;
-      Set<String> keys = scanKeys("user:last_login:*");
+      Set<String> keys = RedisKeyScanSupport.scanKeys(redisTemplate, "user:last_login:*");
       if (keys == null || keys.isEmpty()) {
         return CompletableFuture.completedFuture(0L);
       }
@@ -257,21 +254,6 @@ public class UserAsyncServiceImpl implements UserAsyncService {
       log.error("Failed to get user growth trend asynchronously", e);
       return CompletableFuture.completedFuture(Collections.emptyMap());
     }
-  }
-
-  private Set<String> scanKeys(String pattern) {
-    return redisTemplate.execute(
-        (org.springframework.data.redis.core.RedisCallback<Set<String>>)
-            connection -> {
-              Set<String> keys = new HashSet<>();
-              ScanOptions options = ScanOptions.scanOptions().match(pattern).count(500).build();
-              try (Cursor<byte[]> cursor = connection.keyCommands().scan(options)) {
-                while (cursor.hasNext()) {
-                  keys.add(new String(cursor.next(), StandardCharsets.UTF_8));
-                }
-              }
-              return keys;
-            });
   }
 
   private void refreshUserCacheDirect(Long userId) {

@@ -4,6 +4,7 @@ import cn.hutool.core.util.StrUtil;
 import com.cloud.api.product.ProductDubboApi;
 import com.cloud.common.domain.dto.product.ProductSearchItemDTO;
 import com.cloud.common.result.Result;
+import com.cloud.common.util.SearchInputNormalizer;
 import com.cloud.gateway.cache.SearchFallbackCache;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.Counter;
@@ -41,7 +42,7 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 @Tag(
     name = "Gateway Search Fallback",
-    description = "Search fallback endpoints for gateway degradation")
+    description = "网关搜索降级端点")
 public class SearchFallbackController {
 
   private static final String FALLBACK_METRIC_COUNT = "gateway.search.fallback.count";
@@ -60,7 +61,7 @@ public class SearchFallbackController {
   private long fallbackTimeoutMs;
 
   @GetMapping("/gateway/fallback/search")
-  @Operation(summary = "Search fallback handler")
+  @Operation(summary = "搜索降级处理")
   public Mono<ResponseEntity<String>> searchFallback(
       ServerWebExchange exchange,
       @RequestParam(value = "route", required = false) String explicitRoute) {
@@ -110,7 +111,7 @@ public class SearchFallbackController {
   }
 
   private Mono<ResponseEntity<String>> fallbackSearch(MultiValueMap<String, String> queryParams) {
-    String keyword = normalizeKeyword(queryParams.getFirst("keyword"));
+    String keyword = SearchInputNormalizer.normalizeKeyword(queryParams.getFirst("keyword"));
     int page = parsePage(queryParams.getFirst("page"));
     int size = parseSize(queryParams.getFirst("size"));
     if (StrUtil.isBlank(keyword)) {
@@ -134,7 +135,7 @@ public class SearchFallbackController {
 
   private Mono<ResponseEntity<String>> fallbackSuggestions(
       MultiValueMap<String, String> queryParams) {
-    String keyword = normalizeKeyword(queryParams.getFirst("keyword"));
+    String keyword = SearchInputNormalizer.normalizeKeyword(queryParams.getFirst("keyword"));
     int size = parseSize(queryParams.getFirst("size"));
     if (StrUtil.isBlank(keyword)) {
       String json =
@@ -218,13 +219,6 @@ public class SearchFallbackController {
       return 10;
     }
     return Math.min(parsed, 50);
-  }
-
-  private String normalizeKeyword(String keyword) {
-    if (StrUtil.isBlank(keyword)) {
-      return "";
-    }
-    return keyword.trim();
   }
 
   private Map<String, Object> buildSearchResult(
@@ -319,7 +313,9 @@ public class SearchFallbackController {
   private MultiValueMap<String, String> normalizeCacheQueryParams(
       String routeType, MultiValueMap<String, String> queryParams) {
     LinkedMultiValueMap<String, String> normalized = new LinkedMultiValueMap<>();
-    String keyword = normalizeKeyword(queryParams != null ? queryParams.getFirst("keyword") : null);
+    String keyword =
+        SearchInputNormalizer.normalizeKeyword(
+            queryParams != null ? queryParams.getFirst("keyword") : null);
     if (StrUtil.isNotBlank(keyword)) {
       normalized.add("keyword", keyword);
     }

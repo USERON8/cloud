@@ -1,6 +1,6 @@
 package com.cloud.auth.service;
 
-import com.cloud.auth.util.RedisKeyHelper;
+import com.cloud.common.security.RedisKeyScanSupport;
 import java.time.Duration;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -156,7 +156,7 @@ public class RedisOAuth2AuthorizationConsentService implements OAuth2Authorizati
 
   public long getConsentCount() {
     try {
-      return RedisKeyHelper.countKeysByPattern(redisTemplate, CONSENT_KEY_PREFIX + "*");
+      return RedisKeyScanSupport.countKeysByPattern(redisTemplate, CONSENT_KEY_PREFIX + "*");
     } catch (Exception e) {
       log.warn("Failed to get consent count from Redis", e);
       return -1;

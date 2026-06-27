@@ -18,6 +18,12 @@ spring:
           max-wait: ${REDIS_MAX_WAIT:2000ms}
           max-idle: ${REDIS_MAX_IDLE:30}
           min-idle: ${REDIS_MIN_IDLE:10}
+  security:
+    oauth2:
+      client:
+        registration:
+          client-service:
+            client-secret: ${APP_OAUTH2_INTERNAL_CLIENT_SECRET:${CLIENT_SERVICE_SECRET:cloud-client-service-secret-dev}}
 logging:
   level:
     com.cloud.auth: debug
@@ -29,6 +35,14 @@ app:
   jwt:
     test-mode: true
     issuer: ${AUTH_ISSUER_URI:http://${AUTH_HOST:127.0.0.1}:${AUTH_PORT:8081}}
+  oauth2:
+    clients:
+      web:
+        secret: ${APP_OAUTH2_WEB_CLIENT_SECRET:cloud-shop-secret}
+      mobile:
+        secret: ${APP_OAUTH2_MOBILE_CLIENT_SECRET:cloud-mini-secret}
+      internal:
+        secret: ${APP_OAUTH2_INTERNAL_CLIENT_SECRET:${CLIENT_SERVICE_SECRET:cloud-client-service-secret-dev}}
   security:
     api-docs-enabled: true
 springdoc:

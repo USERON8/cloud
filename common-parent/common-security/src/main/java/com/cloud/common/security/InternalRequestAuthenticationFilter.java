@@ -10,7 +10,6 @@ import java.time.Instant;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
@@ -112,9 +111,9 @@ public class InternalRequestAuthenticationFilter extends OncePerRequestFilter {
             userId,
             username,
             clientId,
-            parseCsv(rolesHeader),
-            parseCsv(permissionsHeader),
-            parseCsv(scopesHeader));
+            SecurityTextParsers.parseCsv(rolesHeader),
+            SecurityTextParsers.parseCsv(permissionsHeader),
+            SecurityTextParsers.parseCsv(scopesHeader));
     Collection<GrantedAuthority> authorities = buildAuthorities(principal);
     AbstractAuthenticationToken authentication =
         new AbstractAuthenticationToken(authorities) {
@@ -172,16 +171,6 @@ public class InternalRequestAuthenticationFilter extends OncePerRequestFilter {
         .map(SimpleGrantedAuthority::new)
         .forEach(authorities::add);
     return authorities;
-  }
-
-  private Set<String> parseCsv(String raw) {
-    if (StrUtil.isBlank(raw)) {
-      return Set.of();
-    }
-    return java.util.Arrays.stream(raw.split(","))
-        .map(String::trim)
-        .filter(StrUtil::isNotBlank)
-        .collect(Collectors.toCollection(LinkedHashSet::new));
   }
 
   private void reject(HttpServletResponse response, int status, String message) throws IOException {

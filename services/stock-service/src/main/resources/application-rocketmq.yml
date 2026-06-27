@@ -34,6 +34,3 @@ spring:
         stockAlertProducer-out-0:
           destination: stock-alert
           content-type: application/json
-        productSyncProducer-out-0:
-          destination: product-sync
-          content-type: application/json

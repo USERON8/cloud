@@ -27,10 +27,9 @@ Authorization server responsible for OAuth2 flows, JWT issuance, session logout,
   - `DELETE /auth/sessions`
   - `DELETE /auth/users/{username}/sessions`
   - `GET /auth/tokens/validate`
-- Token governance data:
-  - `/auth/authorizations/**`
-  - `/auth/blacklist-entries/**`
-  - `/auth/cleanups/**`
+- Token governance:
+  - Public admin HTTP routes are owned by `governance-service`.
+  - `auth-service` exposes token-governance capabilities through `AuthGovernanceDubboApi`.
 
 ## Runtime Notes
 

@@ -1,5 +1,6 @@
 package com.cloud.auth.service;
 
+import com.cloud.common.security.JwtClaimResolver;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,7 +24,7 @@ public class PolicyBasedAccessManager {
       return false;
     }
 
-    Long userId = resolveUserId(jwt);
+    Long userId = JwtClaimResolver.resolveUserId(jwt);
     if (userId == null) {
       return false;
     }
@@ -87,21 +88,5 @@ public class PolicyBasedAccessManager {
   private boolean checkUserAddressAccess(Long userId, String action, Map<String, Object> context) {
     Long addressId = (Long) context.get("addressId");
     return addressId != null;
-  }
-
-  private Long resolveUserId(Jwt jwt) {
-    Long userId = jwt.getClaim("user_id");
-    if (userId != null) {
-      return userId;
-    }
-    Object claim = jwt.getClaim("userId");
-    if (claim == null) {
-      return null;
-    }
-    try {
-      return Long.valueOf(claim.toString());
-    } catch (NumberFormatException ex) {
-      return null;
-    }
   }
 }

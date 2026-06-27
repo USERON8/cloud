@@ -1,13 +1,13 @@
 package com.cloud.auth.service;
 
 import cn.hutool.core.util.StrUtil;
-import com.cloud.auth.util.RedisKeyHelper;
 import com.cloud.common.domain.vo.auth.AuthAuthorizationDetailVO;
 import com.cloud.common.domain.vo.auth.AuthTokenStorageStatsVO;
 import com.cloud.common.domain.vo.auth.AuthTokenSummaryVO;
 import com.cloud.common.domain.vo.auth.TokenBlacklistCheckVO;
 import com.cloud.common.domain.vo.auth.TokenBlacklistStatsVO;
 import com.cloud.common.exception.ResourceNotFoundException;
+import com.cloud.common.security.RedisKeyScanSupport;
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -33,11 +33,13 @@ public class AuthGovernanceService {
 
   public AuthTokenStorageStatsVO getTokenStats() {
     return AuthTokenStorageStatsVO.builder()
-        .authorizationCount(RedisKeyHelper.countKeysByPattern(redisTemplate, "oauth2:token:*"))
-        .accessIndexCount(RedisKeyHelper.countKeysByPattern(redisTemplate, "oauth2:access:*"))
-        .refreshIndexCount(RedisKeyHelper.countKeysByPattern(redisTemplate, "oauth2:refresh:*"))
-        .codeIndexCount(RedisKeyHelper.countKeysByPattern(redisTemplate, "oauth2:code:*"))
-        .principalIndexCount(RedisKeyHelper.countKeysByPattern(redisTemplate, "oauth2:principal:*"))
+        .authorizationCount(RedisKeyScanSupport.countKeysByPattern(redisTemplate, "oauth2:token:*"))
+        .accessIndexCount(RedisKeyScanSupport.countKeysByPattern(redisTemplate, "oauth2:access:*"))
+        .refreshIndexCount(
+            RedisKeyScanSupport.countKeysByPattern(redisTemplate, "oauth2:refresh:*"))
+        .codeIndexCount(RedisKeyScanSupport.countKeysByPattern(redisTemplate, "oauth2:code:*"))
+        .principalIndexCount(
+            RedisKeyScanSupport.countKeysByPattern(redisTemplate, "oauth2:principal:*"))
         .redisInfo("Key/value storage mode")
         .storageType("Redis Key")
         .build();

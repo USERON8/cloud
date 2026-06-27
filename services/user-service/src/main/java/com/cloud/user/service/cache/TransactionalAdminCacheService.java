@@ -2,7 +2,6 @@ package com.cloud.user.service.cache;
 
 import cn.hutool.core.util.StrUtil;
 import com.cloud.user.module.entity.Admin;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -18,7 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class TransactionalAdminCacheService {
+public class TransactionalAdminCacheService extends AbstractTransactionalHashCacheSupport {
 
   private static final String KEY_ID_PREFIX = "admin:info:";
   private static final String KEY_NAME_PREFIX = "admin:info:name:";
@@ -67,11 +66,11 @@ public class TransactionalAdminCacheService {
     try {
       HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
       hashOperations.putAll(idKey(admin.getId()), fields);
-      redisTemplate.expire(idKey(admin.getId()), ttl());
+      redisTemplate.expire(idKey(admin.getId()), ttl(ttlSeconds));
 
       if (StrUtil.isNotBlank(admin.getUsername())) {
         hashOperations.putAll(nameKey(admin.getUsername()), fields);
-        redisTemplate.expire(nameKey(admin.getUsername()), ttl());
+        redisTemplate.expire(nameKey(admin.getUsername()), ttl(ttlSeconds));
       }
     } catch (Exception ex) {
       log.warn("Write admin cache failed: adminId={}", admin.getId(), ex);
@@ -101,19 +100,8 @@ public class TransactionalAdminCacheService {
   }
 
   public void clearAll() {
-    deleteByPattern(KEY_ID_PREFIX + "*");
-    deleteByPattern(KEY_NAME_PREFIX + "*");
-  }
-
-  private void deleteByPattern(String pattern) {
-    try {
-      java.util.Set<String> keys = redisTemplate.keys(pattern);
-      if (keys != null && !keys.isEmpty()) {
-        redisTemplate.delete(keys);
-      }
-    } catch (Exception ex) {
-      log.warn("Clear admin cache by pattern failed: pattern={}", pattern, ex);
-    }
+    deleteByPattern(redisTemplate, KEY_ID_PREFIX + "*", log, "admin");
+    deleteByPattern(redisTemplate, KEY_NAME_PREFIX + "*", log, "admin");
   }
 
   private AdminCache getFromRedis(String key) {
@@ -122,7 +110,7 @@ public class TransactionalAdminCacheService {
       if (entries == null || entries.isEmpty()) {
         return null;
       }
-      redisTemplate.expire(key, ttl());
+      redisTemplate.expire(key, ttl(ttlSeconds));
       return fromMap(entries);
     } catch (Exception ex) {
       log.warn("Read admin cache failed: key={}", key, ex);
@@ -143,12 +131,6 @@ public class TransactionalAdminCacheService {
     return fields;
   }
 
-  private void putIfNotBlank(Map<String, String> map, String key, String value) {
-    if (StrUtil.isNotBlank(value)) {
-      map.put(key, value);
-    }
-  }
-
   private AdminCache fromMap(Map<Object, Object> map) {
     Long id = parseLong(map.get(FIELD_ID));
     if (id == null) {
@@ -163,42 +145,12 @@ public class TransactionalAdminCacheService {
         parseInteger(map.get(FIELD_STATUS)));
   }
 
-  private Long parseLong(Object value) {
-    if (value == null) {
-      return null;
-    }
-    try {
-      return Long.parseLong(value.toString());
-    } catch (NumberFormatException ex) {
-      return null;
-    }
-  }
-
-  private Integer parseInteger(Object value) {
-    if (value == null) {
-      return null;
-    }
-    try {
-      return Integer.parseInt(value.toString());
-    } catch (NumberFormatException ex) {
-      return null;
-    }
-  }
-
-  private String parseString(Object value) {
-    return value == null ? null : value.toString();
-  }
-
   private String idKey(Long id) {
     return KEY_ID_PREFIX + id;
   }
 
   private String nameKey(String username) {
     return KEY_NAME_PREFIX + username;
-  }
-
-  private Duration ttl() {
-    return Duration.ofSeconds(Math.max(60L, ttlSeconds));
   }
 
   public record AdminCache(

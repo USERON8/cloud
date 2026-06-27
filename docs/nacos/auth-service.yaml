@@ -1,0 +1,17 @@
+spring:
+  security:
+    oauth2:
+      client:
+        registration:
+          client-service:
+            client-secret: ${APP_OAUTH2_INTERNAL_CLIENT_SECRET:${CLIENT_SERVICE_SECRET}}
+
+app:
+  oauth2:
+    clients:
+      web:
+        secret: ${APP_OAUTH2_WEB_CLIENT_SECRET}
+      mobile:
+        secret: ${APP_OAUTH2_MOBILE_CLIENT_SECRET}
+      internal:
+        secret: ${APP_OAUTH2_INTERNAL_CLIENT_SECRET:${CLIENT_SERVICE_SECRET}}

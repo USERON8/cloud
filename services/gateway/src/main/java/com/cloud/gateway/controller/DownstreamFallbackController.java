@@ -32,8 +32,10 @@ public class DownstreamFallbackController {
     log.warn("Payment route fallback triggered: path={}", exchange.getRequest().getPath());
     return Mono.just(
         jsonResponse(
-            HttpStatus.OK,
-            Result.success("Payment is processing, please check the order status later", Map.of())
+            HttpStatus.SERVICE_UNAVAILABLE,
+            Result.error(
+                    ResultCode.REMOTE_SERVICE_UNAVAILABLE,
+                    "Payment service is unavailable, please retry later")
                 .withTraceId(traceId)));
   }
 

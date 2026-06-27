@@ -1,9 +1,8 @@
 package com.cloud.search.controller;
 
-import com.cloud.common.enums.ResultCode;
-import com.cloud.common.exception.BizException;
 import com.cloud.common.exception.ResourceNotFoundException;
 import com.cloud.common.result.Result;
+import com.cloud.search.controller.support.SearchPublicStatusSupport;
 import com.cloud.search.document.ShopDocument;
 import com.cloud.search.dto.SearchResultDTO;
 import com.cloud.search.dto.ShopSearchRequest;
@@ -26,53 +25,53 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor
-@Tag(name = "Shop Search", description = "Shop search APIs")
+@Tag(name = "店铺搜索", description = "店铺搜索接口")
 @Validated
 public class ShopSearchController {
 
   private final ShopSearchService shopSearchService;
 
-  @Operation(summary = "Complex shop search", description = "Search shops with rich conditions")
+  @Operation(summary = "复杂店铺搜索", description = "按多条件搜索店铺")
   @PostMapping("/search/shops")
   public Result<SearchResultDTO<ShopDocument>> complexSearch(
       @Valid @RequestBody ShopSearchRequest request) {
-    normalizePublicStatus(request);
+    SearchPublicStatusSupport.normalize(request);
     SearchResultDTO<ShopDocument> result = shopSearchService.searchShops(request);
     return Result.success("Search success", result);
   }
 
-  @Operation(summary = "Shop filter data", description = "Get shop filters by request")
+  @Operation(summary = "店铺筛选数据", description = "按请求获取店铺筛选项")
   @PostMapping("/search/shops/filters")
   public Result<SearchResultDTO<ShopDocument>> getShopFilters(
       @Valid @RequestBody ShopSearchRequest request) {
-    normalizePublicStatus(request);
+    SearchPublicStatusSupport.normalize(request);
     SearchResultDTO<ShopDocument> result = shopSearchService.getShopFilters(request);
     return Result.success("Get filters success", result);
   }
 
-  @Operation(summary = "Shop suggestions", description = "Get shop suggestions by keyword")
+  @Operation(summary = "店铺搜索建议", description = "按关键词获取店铺建议")
   @GetMapping("/search/shops/suggestions")
   public Result<List<String>> getSearchSuggestions(
-      @Parameter(description = "Keyword") @RequestParam String keyword,
-      @Parameter(description = "Size") @RequestParam(defaultValue = "10") Integer size) {
+      @Parameter(description = "关键词") @RequestParam String keyword,
+      @Parameter(description = "数量") @RequestParam(defaultValue = "10") Integer size) {
 
     List<String> suggestions = shopSearchService.getSearchSuggestions(keyword, size);
     return Result.success("Get suggestions success", suggestions);
   }
 
-  @Operation(summary = "Hot shops", description = "Get hot shops")
+  @Operation(summary = "热门店铺", description = "获取热门店铺")
   @GetMapping("/search/shops/popular")
   public Result<List<ShopDocument>> getHotShops(
-      @Parameter(description = "Size") @RequestParam(defaultValue = "10") Integer size) {
+      @Parameter(description = "数量") @RequestParam(defaultValue = "10") Integer size) {
 
     List<ShopDocument> hotShops = shopSearchService.getHotShops(size);
     return Result.success("Get hot shops success", hotShops);
   }
 
-  @Operation(summary = "Get shop by id", description = "Get shop detail by id")
+  @Operation(summary = "按 ID 查询店铺", description = "按 ID 查询店铺详情")
   @GetMapping("/shops/{shopId}")
   public Result<ShopDocument> getShopById(
-      @Parameter(description = "Shop id") @PathVariable Long shopId) {
+      @Parameter(description = "店铺 ID") @PathVariable Long shopId) {
     ShopDocument shop = shopSearchService.findByShopId(shopId);
     if (shop == null || !Integer.valueOf(1).equals(shop.getStatus())) {
       throw new ResourceNotFoundException("Shop", String.valueOf(shopId));
@@ -80,11 +79,11 @@ public class ShopSearchController {
     return Result.success("Query success", shop);
   }
 
-  @Operation(summary = "Recommended shops", description = "Get recommended shops")
+  @Operation(summary = "推荐店铺", description = "获取推荐店铺")
   @GetMapping("/search/shops/recommendations")
   public Result<SearchResultDTO<ShopDocument>> getRecommendedShops(
-      @Parameter(description = "Page") @RequestParam(defaultValue = "0") Integer page,
-      @Parameter(description = "Size") @RequestParam(defaultValue = "20") Integer size) {
+      @Parameter(description = "页码") @RequestParam(defaultValue = "0") Integer page,
+      @Parameter(description = "数量") @RequestParam(defaultValue = "20") Integer size) {
 
     ShopSearchRequest request = new ShopSearchRequest();
     request.setRecommended(true);
@@ -98,12 +97,12 @@ public class ShopSearchController {
     return Result.success("Query recommended shops success", result);
   }
 
-  @Operation(summary = "Search shops by location", description = "Search shops by address keyword")
+  @Operation(summary = "按位置搜索店铺", description = "按地址关键词搜索店铺")
   @GetMapping("/search/shops/nearby")
   public Result<SearchResultDTO<ShopDocument>> searchShopsByLocation(
-      @Parameter(description = "Location keyword") @RequestParam String location,
-      @Parameter(description = "Page") @RequestParam(defaultValue = "0") Integer page,
-      @Parameter(description = "Size") @RequestParam(defaultValue = "20") Integer size) {
+      @Parameter(description = "位置关键词") @RequestParam String location,
+      @Parameter(description = "页码") @RequestParam(defaultValue = "0") Integer page,
+      @Parameter(description = "数量") @RequestParam(defaultValue = "20") Integer size) {
 
     ShopSearchRequest request = new ShopSearchRequest();
     request.setAddressKeyword(location);
@@ -115,20 +114,5 @@ public class ShopSearchController {
 
     SearchResultDTO<ShopDocument> result = shopSearchService.searchShops(request);
     return Result.success("Search success", result);
-  }
-
-  private void normalizePublicStatus(ShopSearchRequest request) {
-    if (request == null) {
-      return;
-    }
-    Integer status = request.getStatus();
-    if (status == null) {
-      request.setStatus(1);
-      return;
-    }
-    if (!Integer.valueOf(1).equals(status)) {
-      throw new BizException(
-          ResultCode.BAD_REQUEST, "public shop search only supports active status");
-    }
   }
 }

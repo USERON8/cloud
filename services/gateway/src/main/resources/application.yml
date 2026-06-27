@@ -117,7 +117,7 @@ app:
       search-qps: ${APP_SENTINEL_GATEWAY_SEARCH_QPS:120}
       search-interval-sec: ${APP_SENTINEL_GATEWAY_SEARCH_INTERVAL_SEC:1}
       search-route-ids: ${APP_SENTINEL_GATEWAY_SEARCH_ROUTE_IDS:search-service-public}
-      route-ids: ${APP_SENTINEL_GATEWAY_ROUTE_IDS:auth-service-api,user-service-app,user-service-admin,product-service-app,order-service-app,payment-service-app,stock-service-admin,search-service-public}
+      route-ids: ${APP_SENTINEL_GATEWAY_ROUTE_IDS:auth-service-api,user-service-app,user-service-admin,product-service-app,order-service-app,payment-service-app,governance-service-admin,governance-service-admin-stock,search-service-public}
   security:
     enable-test-api: false
     jwt:

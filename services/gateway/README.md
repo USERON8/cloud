@@ -23,8 +23,7 @@ Unified public entry for routing, JWT validation, internal identity forwarding, 
 - `/api/orders/**`, `/api/users/me/cart`, `/api/users/me/cart/**`, `/api/after-sales/**` -> `order-service`
 - `/api/payment-orders/**`, `/api/payment-refunds/**`, `/api/payment-checkouts/**`, `/api/v1/payment/alipay/**` -> `payment-service`
 - `/api/search/**`, `/api/shops/**` -> `search-service`
-- `/api/admin/stocks/internal/**` -> `stock-service`
-- `/api/admin/stocks/ledger/**`, `/api/admin/governance/**`, `/api/admin/thread-pools/**`, `/api/admin/statistics/**`, `/api/admin/users/**`, `/api/admin/mq/**`, `/api/admin/outbox/**`, `/api/admin/observability/**`, `/api/admin/notifications/**`, `/auth/authorizations/**`, `/auth/cleanups/**`, `/auth/blacklist-entries/**` -> `governance-service`
+- `/api/admin/stocks/ledger/**`, `/api/admin/thread-pools/**`, `/api/admin/statistics/**`, `/api/admin/users/**`, `/api/admin/mq/**`, `/api/admin/outbox/**`, `/api/admin/observability/**`, `/api/admin/notifications/**`, `/auth/authorizations/**`, `/auth/cleanups/**`, `/auth/blacklist-entries/**` -> `governance-service`
 
 ## Runtime Notes
 

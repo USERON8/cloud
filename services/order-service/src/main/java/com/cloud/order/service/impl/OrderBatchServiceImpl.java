@@ -1,6 +1,5 @@
 package com.cloud.order.service.impl;
 
-import com.cloud.api.user.UserDubboApi;
 import com.cloud.common.domain.vo.payment.PaymentOrderVO;
 import com.cloud.common.enums.ResultCode;
 import com.cloud.common.exception.BizException;
@@ -12,6 +11,7 @@ import com.cloud.order.service.OrderBatchService;
 import com.cloud.order.service.OrderQueryService;
 import com.cloud.order.service.OrderService;
 import com.cloud.order.service.OrderShippingService;
+import com.cloud.order.service.support.OrderOperatorSupport;
 import com.cloud.order.service.support.PaymentOrderRemoteService;
 import java.util.List;
 import java.util.Objects;
@@ -31,9 +31,7 @@ public class OrderBatchServiceImpl implements OrderBatchService {
   private final OrderQueryService orderQueryService;
   private final OrderShippingService orderShippingService;
   private final PaymentOrderRemoteService paymentOrderRemoteService;
-
-  @org.apache.dubbo.config.annotation.DubboReference(check = false, timeout = 5000, retries = 0)
-  private UserDubboApi userDubboApi;
+  private final OrderOperatorSupport orderOperatorSupport;
 
   @Override
   public boolean applyOrderAction(
@@ -98,7 +96,7 @@ public class OrderBatchServiceImpl implements OrderBatchService {
     }
     Long currentMerchantId =
         SecurityPermissionUtils.isMerchant(authentication)
-            ? requireCurrentMerchantId(authentication)
+            ? orderOperatorSupport.requireCurrentMerchantId(authentication)
             : null;
     List<OrderSub> targetSubs = resolveTargetSubs(subs, currentMerchantId);
     if (action == OrderAction.CANCEL) {
@@ -183,18 +181,5 @@ public class OrderBatchServiceImpl implements OrderBatchService {
     }
     throw new BizException(
         ResultCode.FORBIDDEN, "order completion requires the order owner or admin privileges");
-  }
-
-  private Long requireCurrentMerchantId(Authentication authentication) {
-    Long currentUserId = requireCurrentUserId(authentication);
-    Long currentMerchantId = userDubboApi.findMerchantIdByOwnerUserId(currentUserId);
-    if (currentMerchantId == null) {
-      throw new BizException("current merchant not found");
-    }
-    return currentMerchantId;
-  }
-
-  private Long requireCurrentUserId(Authentication authentication) {
-    return SecurityPermissionUtils.requireCurrentUserIdAsLong(authentication);
   }
 }

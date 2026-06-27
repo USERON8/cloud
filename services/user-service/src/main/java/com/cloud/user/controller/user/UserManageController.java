@@ -28,18 +28,18 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/admin/users")
 @RequiredArgsConstructor
-@Tag(name = "User Management", description = "User management APIs")
+@Tag(name = "用户管理", description = "用户管理接口")
 public class UserManageController {
 
   private final UserService userService;
 
   @PutMapping("/{id}")
-  @Operation(summary = "Update user", description = "Update user by user ID")
+  @Operation(summary = "更新用户", description = "按用户 ID 更新用户")
   @PreAuthorize("hasAuthority('admin:all')")
   public Result<Boolean> update(
-      @PathVariable @Parameter(description = "User ID") Long id,
+      @PathVariable @Parameter(description = "用户 ID") Long id,
       @RequestBody
-          @Parameter(description = "User payload")
+          @Parameter(description = "用户请求体")
           @Valid
           @NotNull(message = "user payload is required")
           UserUpsertRequestDTO requestDTO,
@@ -49,40 +49,40 @@ public class UserManageController {
   }
 
   @DeleteMapping("/{id}")
-  @Operation(summary = "Delete user", description = "Delete user by user ID")
+  @Operation(summary = "删除用户", description = "按用户 ID 删除用户")
   @PreAuthorize("hasAuthority('admin:all')")
   public Result<Boolean> delete(
-      @PathVariable @Parameter(description = "User ID") Long id, Authentication authentication) {
+      @PathVariable @Parameter(description = "用户 ID") Long id, Authentication authentication) {
     boolean result = userService.deleteUserById(id);
     return Result.success("user deleted", result);
   }
 
   @DeleteMapping("/batch")
-  @Operation(summary = "Batch delete users", description = "Batch delete users by user IDs")
+  @Operation(summary = "批量删除用户", description = "按用户 ID 批量删除用户")
   @PreAuthorize("hasAuthority('admin:all')")
   public Result<Boolean> deleteBatch(
       @RequestBody
-          @Parameter(description = "User ID array")
+          @Parameter(description = "用户 ID 数组")
           @NotNull(message = "user ids are required")
           Long[] ids,
       Authentication authentication) {
-    BatchValidationUtils.validateIdArray(ids, "Batch delete users");
+    BatchValidationUtils.validateIdArray(ids, "批量删除用户");
     List<Long> userIds = Arrays.asList(ids);
     boolean result = userService.deleteUsersByIds(userIds);
     return Result.success(String.format("batch delete completed: %d", userIds.size()), result);
   }
 
   @PutMapping("/batch")
-  @Operation(summary = "Batch update users", description = "Batch update users by payload list")
+  @Operation(summary = "批量更新用户", description = "按请求列表批量更新用户")
   @PreAuthorize("hasAuthority('admin:all')")
   public Result<Boolean> updateBatch(
       @RequestBody
-          @Parameter(description = "User payload list")
+          @Parameter(description = "用户请求体列表")
           @Valid
           @NotNull(message = "user payload list is required")
           List<UserUpsertRequestDTO> requestDTOList,
       Authentication authentication) {
-    BatchValidationUtils.validateBatchSize(requestDTOList, "Batch update users");
+    BatchValidationUtils.validateBatchSize(requestDTOList, "批量更新用户");
     long missingIdCount = requestDTOList.stream().filter(dto -> dto.getId() == null).count();
     if (missingIdCount > 0) {
       throw new BizException(
@@ -94,15 +94,15 @@ public class UserManageController {
   }
 
   @PatchMapping("/status/batch")
-  @Operation(summary = "Batch update user status", description = "Batch update user status by IDs")
+  @Operation(summary = "批量更新用户状态", description = "按 ID 批量更新用户状态")
   @PreAuthorize("hasAuthority('admin:all')")
   public Result<Boolean> updateStatusBatch(
-      @RequestParam @Parameter(description = "User IDs") @NotNull(message = "user ids are required")
+      @RequestParam @Parameter(description = "用户 ID 列表") @NotNull(message = "user ids are required")
           List<Long> ids,
-      @RequestParam @Parameter(description = "User status") @NotNull(message = "status is required")
+      @RequestParam @Parameter(description = "用户状态") @NotNull(message = "status is required")
           Integer status,
       Authentication authentication) {
-    BatchValidationUtils.validateIdList(ids, "Batch update user status");
+    BatchValidationUtils.validateIdList(ids, "批量更新用户状态");
     Integer successCount = userService.batchUpdateUserStatus(ids, status);
     if (successCount == null) {
       successCount = 0;

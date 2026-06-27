@@ -7,6 +7,7 @@ import com.cloud.common.result.PageResult;
 import com.cloud.common.result.Result;
 import com.cloud.common.security.SecurityPermissionUtils;
 import com.cloud.product.controller.support.ProductMerchantGuard;
+import com.cloud.product.controller.support.ProductPublicStatusSupport;
 import com.cloud.product.dto.ProductItemDTO;
 import com.cloud.product.service.ProductQueryService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -23,7 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor
-@Tag(name = "Product Query API", description = "Product list and search APIs")
+@Tag(name = "商品查询接口", description = "商品列表与搜索接口")
 public class ProductQueryController {
 
   private final ProductQueryService productQueryService;
@@ -33,7 +34,7 @@ public class ProductQueryController {
   private UserDubboApi userDubboApi;
 
   @GetMapping("/products")
-  @Operation(summary = "List products")
+  @Operation(summary = "查询商品列表")
   public Result<PageResult<ProductItemDTO>> listProducts(
       @RequestParam(required = false) Integer page,
       @RequestParam(required = false) Integer size,
@@ -41,7 +42,7 @@ public class ProductQueryController {
       @RequestParam(required = false) Long categoryId,
       @RequestParam(required = false) Long brandId,
       @RequestParam(required = false) Integer status) {
-    Integer effectiveStatus = normalizePublicStatus(status);
+    Integer effectiveStatus = ProductPublicStatusSupport.normalizePublicStatus(status);
     return Result.success(
         productQueryService.listProducts(
             page, size, name, categoryId, brandId, null, effectiveStatus));
@@ -49,7 +50,7 @@ public class ProductQueryController {
 
   @GetMapping("/spus")
   @PreAuthorize("hasAuthority('product:edit')")
-  @Operation(summary = "List products for product management")
+  @Operation(summary = "查询商品管理列表")
   public Result<PageResult<ProductItemDTO>> listManageProducts(
       @RequestParam(required = false) Integer page,
       @RequestParam(required = false) Integer size,
@@ -63,17 +64,6 @@ public class ProductQueryController {
     return Result.success(
         productQueryService.listProducts(
             page, size, name, categoryId, brandId, effectiveMerchantId, status));
-  }
-
-  private Integer normalizePublicStatus(Integer status) {
-    if (status == null) {
-      return 1;
-    }
-    if (!Integer.valueOf(1).equals(status)) {
-      throw new BizException(
-          ResultCode.BAD_REQUEST, "public product queries only support active status");
-    }
-    return status;
   }
 
   private Long resolveManageMerchantId(Authentication authentication, Long merchantId) {

@@ -26,12 +26,12 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/auth/oauth2/github")
 @RequiredArgsConstructor
-@Tag(name = "GitHub OAuth2 API", description = "GitHub OAuth2 login endpoints")
+@Tag(name = "GitHub OAuth2 接口", description = "GitHub OAuth2 登录端点")
 @Validated
 @ApiResponses({
-  @ApiResponse(responseCode = "400", description = "Invalid GitHub OAuth2 request"),
-  @ApiResponse(responseCode = "401", description = "Authentication required"),
-  @ApiResponse(responseCode = "500", description = "Internal GitHub OAuth2 error")
+  @ApiResponse(responseCode = "400", description = "GitHub OAuth2 请求无效"),
+  @ApiResponse(responseCode = "401", description = "需要认证"),
+  @ApiResponse(responseCode = "500", description = "GitHub OAuth2 内部错误")
 })
 public class GitHubOAuth2Controller {
 
@@ -40,14 +40,14 @@ public class GitHubOAuth2Controller {
   private final AuthorizationRequestSessionService authorizationRequestSessionService;
 
   @GetMapping("/user-info")
-  @Operation(summary = "Get GitHub user info")
+  @Operation(summary = "获取 GitHub 用户信息")
   public Result<UserDTO> getUserInfo(@Parameter(hidden = true) Principal principal) {
     UserDTO user = gitHubUserInfoService.getAuthorizedUser(principal, authorizedClientService);
     return Result.success(user);
   }
 
   @GetMapping("/status")
-  @Operation(summary = "Check GitHub authorization status")
+  @Operation(summary = "检查 GitHub 授权状态")
   public Result<Boolean> checkAuthStatus(@Parameter(hidden = true) Principal principal) {
     boolean isAuthenticated =
         gitHubUserInfoService.checkAuthStatus(principal, authorizedClientService);
@@ -55,13 +55,13 @@ public class GitHubOAuth2Controller {
   }
 
   @GetMapping("/callback")
-  @Operation(summary = "Handle GitHub OAuth2 callback")
+  @Operation(summary = "处理 GitHub OAuth2 回调")
   public Result<String> handleCallback() {
     return Result.success("GitHub callback is handled by /login/oauth2/code/github");
   }
 
   @GetMapping("/login-url")
-  @Operation(summary = "Get GitHub OAuth2 login URL")
+  @Operation(summary = "获取 GitHub OAuth2 登录地址")
   public Result<String> getGitHubLoginUrl(
       @Valid @ModelAttribute AuthorizationRequestDTO authorizationRequest,
       @Parameter(hidden = true) HttpServletRequest request) {

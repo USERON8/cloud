@@ -3,7 +3,6 @@ package com.cloud.order.service.impl;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cloud.api.product.ProductDubboApi;
-import com.cloud.api.user.UserDubboApi;
 import com.cloud.common.domain.dto.order.ProductSellStatDTO;
 import com.cloud.common.domain.vo.order.OrderSubStatusVO;
 import com.cloud.common.domain.vo.product.SkuDetailVO;
@@ -23,6 +22,7 @@ import com.cloud.order.mapper.OrderMainMapper;
 import com.cloud.order.mapper.OrderSubMapper;
 import com.cloud.order.service.OrderQueryService;
 import com.cloud.order.service.OrderService;
+import com.cloud.order.service.support.OrderOperatorSupport;
 import com.cloud.order.service.support.OrderRefundSagaCoordinator;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -53,11 +53,9 @@ public class OrderQueryServiceImpl implements OrderQueryService {
   private final AfterSaleMapper afterSaleMapper;
   private final RemoteCallSupport remoteCallSupport;
   private final ObjectMapper objectMapper;
+  private final OrderOperatorSupport orderOperatorSupport;
 
   @org.apache.dubbo.config.annotation.DubboReference private ProductDubboApi productDubboApi;
-
-  @org.apache.dubbo.config.annotation.DubboReference(check = false, timeout = 5000, retries = 0)
-  private UserDubboApi userDubboApi;
 
   @Override
   public PageResult<OrderSummaryDTO> listOrders(
@@ -105,9 +103,9 @@ public class OrderQueryServiceImpl implements OrderQueryService {
     if (isAdmin(authentication)) {
       return main;
     }
-    Long currentUserId = requireCurrentUserId(authentication);
+    Long currentUserId = orderOperatorSupport.requireCurrentUserId(authentication);
     if (isMerchant(authentication)) {
-      Long currentMerchantId = requireCurrentMerchantId(authentication);
+      Long currentMerchantId = orderOperatorSupport.requireCurrentMerchantId(authentication);
       boolean belongs =
           orderSubMapper.countActiveByMainOrderIdAndMerchantId(main.getId(), currentMerchantId) > 0;
       if (!belongs) {
@@ -209,10 +207,10 @@ public class OrderQueryServiceImpl implements OrderQueryService {
         return orderMainMapper.selectPageByVisibleStatus(pageData, merchantId, userId, status);
       }
       if (isMerchant(authentication)) {
-        Long currentMerchantId = requireCurrentMerchantId(authentication);
+        Long currentMerchantId = orderOperatorSupport.requireCurrentMerchantId(authentication);
         return orderMainMapper.selectPageByVisibleStatus(pageData, currentMerchantId, null, status);
       }
-      Long currentUserId = requireCurrentUserId(authentication);
+      Long currentUserId = orderOperatorSupport.requireCurrentUserId(authentication);
       return orderMainMapper.selectPageByVisibleStatus(pageData, null, currentUserId, status);
     }
 
@@ -224,11 +222,11 @@ public class OrderQueryServiceImpl implements OrderQueryService {
     }
 
     if (isMerchant(authentication)) {
-      Long currentMerchantId = requireCurrentMerchantId(authentication);
+      Long currentMerchantId = orderOperatorSupport.requireCurrentMerchantId(authentication);
       return orderMainMapper.selectPageByMerchant(pageData, currentMerchantId, List.of(), null);
     }
 
-    Long currentUserId = requireCurrentUserId(authentication);
+    Long currentUserId = orderOperatorSupport.requireCurrentUserId(authentication);
     return orderMainMapper.selectPageActive(pageData, currentUserId);
   }
 
@@ -556,21 +554,8 @@ public class OrderQueryServiceImpl implements OrderQueryService {
 
   private Long resolveSummaryMerchantId(Authentication authentication, Long requestedMerchantId) {
     if (isMerchant(authentication)) {
-      return requireCurrentMerchantId(authentication);
+      return orderOperatorSupport.requireCurrentMerchantId(authentication);
     }
     return requestedMerchantId;
-  }
-
-  private Long requireCurrentMerchantId(Authentication authentication) {
-    Long currentUserId = requireCurrentUserId(authentication);
-    Long currentMerchantId = userDubboApi.findMerchantIdByOwnerUserId(currentUserId);
-    if (currentMerchantId == null) {
-      throw new BizException("current merchant not found");
-    }
-    return currentMerchantId;
-  }
-
-  private Long requireCurrentUserId(Authentication authentication) {
-    return SecurityPermissionUtils.requireCurrentUserIdAsLong(authentication);
   }
 }

@@ -34,8 +34,6 @@
 
         <mybatisplus.version>3.5.13</mybatisplus.version>
         <mapstruct.version>1.6.3</mapstruct.version>
-        <spotless.version>2.46.0</spotless.version>
-        <google-java-format.version>1.24.0</google-java-format.version>
 
         <mysql.version>9.3.0</mysql.version>
         <minio.version>8.6.0</minio.version>
@@ -51,20 +49,15 @@
         <swagger.version>2.2.34</swagger.version>
         <knife4j.version>4.4.0</knife4j.version>
 
-        <slf4j.version>2.0.16</slf4j.version>
-        <logback.version>1.5.13</logback.version>
-
         <redisson.version>3.51.0</redisson.version>
         <hutool.version>5.8.41</hutool.version>
         <lombok-mapstruct-binding.version>0.2.0</lombok-mapstruct-binding.version>
         <objenesis.version>3.3</objenesis.version>
-        <jackson.version>2.15.2</jackson.version>
         <jakarta-validation.version>3.0.2</jakarta-validation.version>
-        <jakarta-servlet.version>5.0.0</jakarta-servlet.version>
         <kotlin.version>1.9.24</kotlin.version>
         <alipay-sdk.version>4.40.452.ALL</alipay-sdk.version>
         <poi.version>5.4.0</poi.version>
-        <druid.version>1.2.24</druid.version>
+        <druid.version>1.2.27</druid.version>
         <skywalking.version>9.6.0</skywalking.version>
         <xxl-job.version>2.4.0</xxl-job.version>
         <sentinel.version>1.8.8</sentinel.version>
@@ -234,6 +227,11 @@
                 <artifactId>dubbo-registry-nacos</artifactId>
                 <version>${dubbo.version}</version>
             </dependency>
+            <dependency>
+                <groupId>org.apache.dubbo</groupId>
+                <artifactId>dubbo</artifactId>
+                <version>${dubbo.version}</version>
+            </dependency>
 
             <dependency>
                 <groupId>com.cloud</groupId>
@@ -287,24 +285,9 @@
                 <version>${lombok.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.fasterxml.jackson.core</groupId>
-                <artifactId>jackson-databind</artifactId>
-                <version>${jackson.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.fasterxml.jackson.datatype</groupId>
-                <artifactId>jackson-datatype-jsr310</artifactId>
-                <version>${jackson.version}</version>
-            </dependency>
-            <dependency>
                 <groupId>jakarta.validation</groupId>
                 <artifactId>jakarta.validation-api</artifactId>
                 <version>${jakarta-validation.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>jakarta.servlet</groupId>
-                <artifactId>jakarta.servlet-api</artifactId>
-                <version>${jakarta-servlet.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.objenesis</groupId>
@@ -327,19 +310,6 @@
     <build>
         <pluginManagement>
             <plugins>
-                <plugin>
-                    <groupId>com.diffplug.spotless</groupId>
-                    <artifactId>spotless-maven-plugin</artifactId>
-                    <version>${spotless.version}</version>
-                    <configuration>
-                        <java>
-                            <googleJavaFormat>
-                                <version>${google-java-format.version}</version>
-                            </googleJavaFormat>
-                            <removeUnusedImports />
-                        </java>
-                    </configuration>
-                </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
@@ -403,18 +373,6 @@
 
 
         <plugins>
-            <plugin>
-                <groupId>com.diffplug.spotless</groupId>
-                <artifactId>spotless-maven-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <phase>validate</phase>
-                        <goals>
-                            <goal>check</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
             <plugin>
                 <groupId>org.graalvm.buildtools</groupId>
                 <artifactId>native-maven-plugin</artifactId>

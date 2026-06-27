@@ -38,14 +38,14 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 @Validated
 @RequestMapping("/auth")
-@Tag(name = "Authentication API", description = "Authentication, login and token management APIs")
+@Tag(name = "认证接口", description = "认证、登录和令牌管理接口")
 @ApiResponses({
-  @ApiResponse(responseCode = "400", description = "Invalid authentication request"),
-  @ApiResponse(responseCode = "401", description = "Authentication required or token invalid"),
-  @ApiResponse(responseCode = "403", description = "Insufficient permissions"),
-  @ApiResponse(responseCode = "404", description = "Authentication target resource not found"),
-  @ApiResponse(responseCode = "409", description = "Authentication state conflict"),
-  @ApiResponse(responseCode = "500", description = "Internal authentication service error")
+  @ApiResponse(responseCode = "400", description = "认证请求参数无效"),
+  @ApiResponse(responseCode = "401", description = "需要认证或令牌无效"),
+  @ApiResponse(responseCode = "403", description = "权限不足"),
+  @ApiResponse(responseCode = "404", description = "认证目标资源不存在"),
+  @ApiResponse(responseCode = "409", description = "认证状态冲突"),
+  @ApiResponse(responseCode = "500", description = "认证服务内部错误")
 })
 public class AuthController {
 
@@ -55,7 +55,7 @@ public class AuthController {
   private final AuthUserAuthorityCacheService authorityCacheService;
 
   @PostMapping("/users/register")
-  @Operation(summary = "Register user")
+  @Operation(summary = "注册用户")
   public Result<RegisterResponseDTO> register(
       @RequestBody @Valid @NotNull(message = "Register request cannot be null")
           RegisterRequestDTO registerRequestDTO) {
@@ -77,7 +77,7 @@ public class AuthController {
 
   @DeleteMapping("/sessions")
   @PreAuthorize("isAuthenticated()")
-  @Operation(summary = "Logout current session")
+  @Operation(summary = "退出当前会话")
   public Result<Void> logout(jakarta.servlet.http.HttpServletRequest request) {
     String authorizationHeader = request.getHeader("Authorization");
     boolean logoutSuccess = false;
@@ -103,10 +103,10 @@ public class AuthController {
 
   @DeleteMapping("/users/{username}/sessions")
   @PreAuthorize("hasAuthority('admin:all')")
-  @Operation(summary = "Logout all user sessions")
+  @Operation(summary = "退出指定用户的全部会话")
   public Result<String> logoutAllSessions(
       @PathVariable
-          @Parameter(description = "Username", required = true)
+          @Parameter(description = "用户名", required = true)
           @NotBlank(message = "Username cannot be blank")
           String username) {
     int revokedCount = tokenManagementService.logoutAllSessions(username);
@@ -121,7 +121,7 @@ public class AuthController {
 
   @GetMapping("/tokens/validate")
   @PreAuthorize("isAuthenticated()")
-  @Operation(summary = "Validate access token")
+  @Operation(summary = "校验访问令牌")
   public Result<String> validateToken(jakarta.servlet.http.HttpServletRequest request) {
     String authorizationHeader = request.getHeader("Authorization");
     if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {

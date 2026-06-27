@@ -25,18 +25,18 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api")
 @RequiredArgsConstructor
 @PreAuthorize("isAuthenticated()")
-@Tag(name = "User Address", description = "User address APIs")
+@Tag(name = "用户地址", description = "用户地址接口")
 public class UserAddressController {
 
   private final UserAddressService userAddressService;
 
   @PostMapping("/users/{userId}/addresses")
-  @Operation(summary = "Add user address", description = "Add a new address for user")
+  @Operation(summary = "新增用户地址", description = "为用户新增地址")
   public Result<UserAddressDTO> addAddress(
-      @PathVariable @Parameter(description = "User ID") @NotNull(message = "user id is required")
+      @PathVariable @Parameter(description = "用户 ID") @NotNull(message = "user id is required")
           Long userId,
       @RequestBody
-          @Parameter(description = "Address payload")
+          @Parameter(description = "地址请求体")
           @Valid
           @NotNull(message = "address payload is required")
           UserAddressRequestDTO userAddressRequestDTO,
@@ -50,14 +50,14 @@ public class UserAddressController {
   }
 
   @PutMapping("/addresses/{addressId}")
-  @Operation(summary = "Update user address", description = "Update address by address ID")
+  @Operation(summary = "更新用户地址", description = "按地址 ID 更新地址")
   public Result<UserAddressDTO> updateAddress(
       @PathVariable
-          @Parameter(description = "Address ID")
+          @Parameter(description = "地址 ID")
           @NotNull(message = "address id is required")
           Long addressId,
       @RequestBody
-          @Parameter(description = "Address payload")
+          @Parameter(description = "地址请求体")
           @Valid
           @NotNull(message = "address payload is required")
           UserAddressRequestDTO userAddressRequestDTO,
@@ -76,10 +76,10 @@ public class UserAddressController {
   }
 
   @DeleteMapping("/addresses/{addressId}")
-  @Operation(summary = "Delete user address", description = "Delete address by address ID")
+  @Operation(summary = "删除用户地址", description = "按地址 ID 删除地址")
   public Result<Boolean> deleteAddress(
       @PathVariable
-          @Parameter(description = "Address ID")
+          @Parameter(description = "地址 ID")
           @NotNull(message = "address id is required")
           Long addressId,
       Authentication authentication) {
@@ -97,9 +97,9 @@ public class UserAddressController {
   }
 
   @GetMapping("/users/{userId}/addresses")
-  @Operation(summary = "List user addresses", description = "List all addresses for one user")
+  @Operation(summary = "查询用户地址列表", description = "查询指定用户的全部地址")
   public Result<List<UserAddressVO>> getAddressList(
-      @PathVariable @Parameter(description = "User ID") @NotNull(message = "user id is required")
+      @PathVariable @Parameter(description = "用户 ID") @NotNull(message = "user id is required")
           Long userId,
       Authentication authentication) {
     if (!SecurityPermissionUtils.isAdminOrOwner(authentication, userId)) {
@@ -111,9 +111,9 @@ public class UserAddressController {
   }
 
   @GetMapping("/users/{userId}/addresses/default")
-  @Operation(summary = "Get default address", description = "Get default address for one user")
+  @Operation(summary = "查询默认地址", description = "查询指定用户默认地址")
   public Result<UserAddressVO> getDefaultAddress(
-      @PathVariable @Parameter(description = "User ID") @NotNull(message = "user id is required")
+      @PathVariable @Parameter(description = "用户 ID") @NotNull(message = "user id is required")
           Long userId,
       Authentication authentication) {
     if (!SecurityPermissionUtils.isAdminOrOwner(authentication, userId)) {
@@ -129,9 +129,9 @@ public class UserAddressController {
   }
 
   @GetMapping("/addresses")
-  @Operation(summary = "Page user addresses", description = "Page query user addresses")
+  @Operation(summary = "分页查询用户地址", description = "分页查询用户地址")
   public Result<PageResult<UserAddressVO>> pageUserAddress(
-      @Parameter(description = "Page query payload") @Valid UserAddressPageDTO pageDTO,
+      @Parameter(description = "分页查询请求体") @Valid UserAddressPageDTO pageDTO,
       Authentication authentication) {
     if (pageDTO.getUserId() != null
         && !SecurityPermissionUtils.isAdminOrOwner(authentication, pageDTO.getUserId())) {
@@ -147,11 +147,11 @@ public class UserAddressController {
 
   @DeleteMapping("/addresses/bulk")
   @Operation(
-      summary = "Batch delete addresses",
-      description = "Batch delete addresses by address IDs")
+      summary = "批量删除地址",
+      description = "按地址 ID 批量删除地址")
   public Result<Boolean> deleteAddressBatch(
       @RequestBody
-          @Parameter(description = "Address IDs")
+          @Parameter(description = "地址 ID 列表")
           @NotNull(message = "address ids are required")
           List<Long> addressIds,
       Authentication authentication) {
@@ -170,11 +170,11 @@ public class UserAddressController {
 
   @PatchMapping("/addresses/bulk")
   @Operation(
-      summary = "Batch update addresses",
-      description = "Batch update addresses by address payload list")
+      summary = "批量更新地址",
+      description = "按地址请求体列表批量更新地址")
   public Result<Boolean> updateAddressBatch(
       @RequestBody
-          @Parameter(description = "Address payload list")
+          @Parameter(description = "地址请求体列表")
           @Valid
           @NotNull(message = "address payload list is required")
           List<UserAddressRequestDTO> addressList,

@@ -3,8 +3,7 @@ package com.cloud.search.task;
 import com.cloud.api.product.ProductDubboApi;
 import com.cloud.common.annotation.DistributedLock;
 import com.cloud.common.domain.vo.product.SpuDetailVO;
-import com.cloud.common.enums.ResultCode;
-import com.cloud.common.exception.RemoteException;
+import com.cloud.common.remote.RemoteCallSupport;
 import com.cloud.search.document.ProductDocument;
 import com.cloud.search.repository.ProductDocumentRepository;
 import com.cloud.search.service.CategorySearchService;
@@ -13,11 +12,9 @@ import com.cloud.search.service.ShopSearchService;
 import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.handler.annotation.XxlJob;
 import java.util.List;
-import java.util.function.Supplier;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.dubbo.config.annotation.DubboReference;
-import org.apache.dubbo.rpc.RpcException;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.springframework.stereotype.Component;
 
@@ -28,6 +25,7 @@ public class EsIndexRebuildXxlJob {
 
   private static final int DEFAULT_PAGE_SIZE = 200;
 
+  private final RemoteCallSupport remoteCallSupport;
   private final ProductDocumentRepository productDocumentRepository;
   private final ElasticsearchOperations elasticsearchOperations;
   private final CategorySearchService categorySearchService;
@@ -71,8 +69,9 @@ public class EsIndexRebuildXxlJob {
       int currentPage = page;
       int currentSize = size;
       List<SpuDetailVO> spus =
-          invokeProductService(
-              "list spu by page", () -> productDubboApi.listSpuByPage(currentPage, currentSize, 1));
+          remoteCallSupport.query(
+              "product-service.listSpuByPage",
+              () -> productDubboApi.listSpuByPage(currentPage, currentSize, 1));
       if (spus == null || spus.isEmpty()) {
         break;
       }
@@ -88,14 +87,5 @@ public class EsIndexRebuildXxlJob {
       page++;
     }
     return total;
-  }
-
-  private <T> T invokeProductService(String action, Supplier<T> supplier) {
-    try {
-      return supplier.get();
-    } catch (RpcException ex) {
-      throw new RemoteException(
-          ResultCode.REMOTE_SERVICE_UNAVAILABLE, "product-service unavailable when " + action, ex);
-    }
   }
 }

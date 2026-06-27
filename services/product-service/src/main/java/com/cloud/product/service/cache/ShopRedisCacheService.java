@@ -1,27 +1,22 @@
 package com.cloud.product.service.cache;
 
+import com.cloud.common.cache.AbstractJsonRedisCacheSupport;
 import com.cloud.common.result.PageResult;
+import com.cloud.common.util.TransactionCommitSupport;
 import com.cloud.product.module.dto.ShopPageDTO;
 import com.cloud.product.module.vo.ShopVO;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.time.Duration;
-import java.time.Instant;
 import java.util.List;
-import java.util.Set;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
-public class ShopRedisCacheService {
+public class ShopRedisCacheService extends AbstractJsonRedisCacheSupport {
 
   private static final String PREFIX = "product:shop:";
   private static final String ID_PREFIX = PREFIX + "id:";
@@ -31,9 +26,15 @@ public class ShopRedisCacheService {
   private static final String STATS_PREFIX = PREFIX + "stats:";
   private static final String PERMISSION_PREFIX = PREFIX + "permission:";
 
-  private final StringRedisTemplate stringRedisTemplate;
-  private final ObjectMapper objectMapper;
   private final TaskScheduler taskScheduler;
+
+  public ShopRedisCacheService(
+      StringRedisTemplate stringRedisTemplate,
+      ObjectMapper objectMapper,
+      TaskScheduler taskScheduler) {
+    super(stringRedisTemplate, objectMapper);
+    this.taskScheduler = taskScheduler;
+  }
 
   @Value("${product.cache.shop.ttl-seconds:1800}")
   private long ttlSeconds;
@@ -106,11 +107,8 @@ public class ShopRedisCacheService {
     if (id == null) {
       return;
     }
-    runAfterCommit(
-        () -> {
-          evictByIdNow(id);
-          scheduleDelayedDeleteById(id);
-        });
+    TransactionCommitSupport.runAfterCommitRepeated(
+        () -> evictByIdNow(id), taskScheduler, delayedDoubleDeleteMs);
   }
 
   private void evictByIdNow(Long id) {
@@ -126,61 +124,24 @@ public class ShopRedisCacheService {
   }
 
   public void clearAllAfterCommit() {
-    runAfterCommit(
-        () -> {
-          clearAllNow();
-          scheduleDelayedClearAll();
-        });
+    TransactionCommitSupport.runAfterCommitRepeated(
+        this::clearAllNow, taskScheduler, delayedDoubleDeleteMs);
   }
 
   private void clearAllNow() {
-    try {
-      Set<String> keys = stringRedisTemplate.keys(PREFIX + "*");
-      if (keys != null && !keys.isEmpty()) {
-        stringRedisTemplate.delete(keys);
-      }
-    } catch (Exception ex) {
-      log.warn("Clear shop cache failed", ex);
-    }
+    clearAllByPrefix(PREFIX, log, "shop");
   }
 
   private <T> T get(String key, Class<T> type) {
-    try {
-      String json = stringRedisTemplate.opsForValue().get(key);
-      if (json == null || json.isBlank()) {
-        return null;
-      }
-      stringRedisTemplate.expire(key, ttl());
-      return objectMapper.readValue(json, type);
-    } catch (Exception ex) {
-      log.warn("Read shop cache failed: key={}", key, ex);
-      return null;
-    }
+    return getValue(key, type, ttl(ttlSeconds), log, "shop");
   }
 
   private <T> T get(String key, TypeReference<T> typeReference) {
-    try {
-      String json = stringRedisTemplate.opsForValue().get(key);
-      if (json == null || json.isBlank()) {
-        return null;
-      }
-      stringRedisTemplate.expire(key, ttl());
-      return objectMapper.readValue(json, typeReference);
-    } catch (Exception ex) {
-      log.warn("Read shop cache failed: key={}", key, ex);
-      return null;
-    }
+    return getValue(key, typeReference, ttl(ttlSeconds), log, "shop");
   }
 
   private void put(String key, Object value) {
-    if (value == null) {
-      return;
-    }
-    try {
-      stringRedisTemplate.opsForValue().set(key, objectMapper.writeValueAsString(value), ttl());
-    } catch (Exception ex) {
-      log.warn("Write shop cache failed: key={}", key, ex);
-    }
+    putValue(key, value, ttl(ttlSeconds), log, "shop");
   }
 
   private String idKey(Long id) {
@@ -229,39 +190,5 @@ public class ShopRedisCacheService {
 
   private Long safeLong(Long value, Long fallback) {
     return value == null || value <= 0 ? fallback : value;
-  }
-
-  private Duration ttl() {
-    return Duration.ofSeconds(Math.max(60L, ttlSeconds));
-  }
-
-  private void runAfterCommit(Runnable task) {
-    if (TransactionSynchronizationManager.isSynchronizationActive()) {
-      TransactionSynchronizationManager.registerSynchronization(
-          new TransactionSynchronization() {
-            @Override
-            public void afterCommit() {
-              task.run();
-            }
-          });
-      return;
-    }
-    task.run();
-  }
-
-  private void scheduleDelayedDeleteById(Long id) {
-    long delayMs = Math.max(0L, delayedDoubleDeleteMs);
-    if (delayMs <= 0L) {
-      return;
-    }
-    taskScheduler.schedule(() -> evictByIdNow(id), Instant.now().plusMillis(delayMs));
-  }
-
-  private void scheduleDelayedClearAll() {
-    long delayMs = Math.max(0L, delayedDoubleDeleteMs);
-    if (delayMs <= 0L) {
-      return;
-    }
-    taskScheduler.schedule(this::clearAllNow, Instant.now().plusMillis(delayMs));
   }
 }

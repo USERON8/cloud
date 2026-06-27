@@ -72,6 +72,10 @@ $controllerFiles = Get-ChildItem -Path $Root -Recurse -File -Filter *Controller.
 
 $issues = [System.Collections.Generic.List[pscustomobject]]::new()
 $checkedMethods = 0
+$allowedRawResponsePaths = @(
+    "/api/payment-checkouts/{ticket}",
+    "/api/admin/observability/grafana/open"
+)
 
 $methodPattern = 'public\s+(?<return>.+?)\s+(?<name>[A-Za-z_]\w*)\s*\((?<params>.*?)\)\s*\{'
 
@@ -180,7 +184,8 @@ foreach ($file in $controllerFiles) {
         $isApiEndpoint = @($fullPaths | Where-Object { $_.StartsWith("/api/") }).Count -gt 0
         $isInternalApi = @($fullPaths | Where-Object { $_.StartsWith("/internal/") }).Count -gt 0
         $isGatewayFallback = @($fullPaths | Where-Object { $_.StartsWith("/gateway/") }).Count -gt 0
-        if ($isApiEndpoint -and -not $isInternalApi -and -not $isGatewayFallback -and -not $isApiAdapterController -and $returnType -notmatch '(^|[<\s])Result<') {
+        $isAllowedRawResponse = @($fullPaths | Where-Object { $_ -in $allowedRawResponsePaths }).Count -gt 0
+        if ($isApiEndpoint -and -not $isInternalApi -and -not $isGatewayFallback -and -not $isApiAdapterController -and -not $isAllowedRawResponse -and $returnType -notmatch '(^|[<\s])Result<') {
             $issues.Add([pscustomobject]@{
                     File   = $file.FullName
                     Method = $methodName

@@ -24,7 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/admin/notifications")
 @RequiredArgsConstructor
-@Tag(name = "User Notification", description = "User notification management APIs")
+@Tag(name = "用户通知", description = "用户通知管理接口")
 public class UserNotificationController {
 
   private final UserNotificationProducer userNotificationProducer;
@@ -32,10 +32,10 @@ public class UserNotificationController {
   @PostMapping("/welcome/{userId}")
   @PreAuthorize("hasAuthority('admin:all')")
   @Operation(
-      summary = "Send welcome notification",
-      description = "Send welcome notification to one user")
+      summary = "发送欢迎通知",
+      description = "向单个用户发送欢迎通知")
   public Result<Boolean> sendWelcomeNotification(
-      @PathVariable @Parameter(description = "User ID") Long userId) {
+      @PathVariable @Parameter(description = "用户 ID") Long userId) {
     if (userId == null || userId <= 0) {
       throw new BizException(ResultCode.BAD_REQUEST, "user id is invalid");
     }
@@ -54,10 +54,10 @@ public class UserNotificationController {
   @PostMapping("/status-change/{userId}")
   @PreAuthorize("hasAuthority('admin:all')")
   @Operation(
-      summary = "Send status change notification",
-      description = "Send user status change notification")
+      summary = "发送状态变更通知",
+      description = "发送用户状态变更通知")
   public Result<Boolean> sendStatusChangeNotification(
-      @PathVariable @Parameter(description = "User ID") Long userId,
+      @PathVariable @Parameter(description = "用户 ID") Long userId,
       @RequestBody @Valid UserNotificationStatusChangeRequestDTO requestDTO) {
     if (userId == null || userId <= 0) {
       throw new BizException(ResultCode.BAD_REQUEST, "user id is invalid");
@@ -79,8 +79,8 @@ public class UserNotificationController {
   @PostMapping("/batch")
   @PreAuthorize("hasAuthority('admin:all')")
   @Operation(
-      summary = "Send batch notification",
-      description = "Send one notification to multiple users")
+      summary = "发送批量通知",
+      description = "向多个用户发送同一通知")
   public Result<Boolean> sendBatchNotification(
       @RequestBody @Valid UserNotificationBatchRequestDTO requestDTO) {
     UserNotificationEvent event =
@@ -98,7 +98,7 @@ public class UserNotificationController {
 
   @PostMapping("/system")
   @PreAuthorize("hasAuthority('admin:all')")
-  @Operation(summary = "Send system announcement", description = "Send one system announcement")
+  @Operation(summary = "发送系统公告", description = "发送一条系统公告")
   public Result<Boolean> sendSystemAnnouncement(
       @RequestBody @Valid UserSystemAnnouncementRequestDTO requestDTO) {
     UserNotificationEvent event =

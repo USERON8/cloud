@@ -3,7 +3,6 @@ package com.cloud.governance.service;
 import com.cloud.common.domain.dto.governance.OutboxBatchRequeueRequestDTO;
 import com.cloud.common.messaging.outbox.OutboxEvent;
 import com.cloud.common.result.Result;
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -30,7 +29,7 @@ public class OutboxGovernanceAggregationService {
   private static final ParameterizedTypeReference<Result<Integer>> INTEGER_RESULT_TYPE =
       new ParameterizedTypeReference<>() {};
 
-  private final InternalOperationsClientSupport clientSupport;
+  private final GovernanceAggregationHttpSupport aggregationHttpSupport;
 
   @Value(
       "${app.governance.outbox.service-ids:user-service,order-service,payment-service,stock-service,product-service,search-service,auth-service}")
@@ -40,8 +39,9 @@ public class OutboxGovernanceAggregationService {
     List<Map<String, Object>> aggregated = new ArrayList<>();
     for (String serviceId : serviceIds) {
       Result<Map<String, Object>> result =
-          getForResult(serviceId, "/internal/outbox/governance/stats", Map.of(), MAP_RESULT_TYPE);
-      aggregated.add(withServiceId(serviceId, result.getData()));
+          aggregationHttpSupport.getForResult(
+              serviceId, "/internal/outbox/governance/stats", Map.of(), MAP_RESULT_TYPE);
+      aggregated.add(aggregationHttpSupport.withServiceId(serviceId, result.getData()));
     }
     aggregated.sort(
         Comparator.comparing(
@@ -59,7 +59,7 @@ public class OutboxGovernanceAggregationService {
 
   public boolean requeue(String serviceId, Long id) {
     Result<Boolean> result =
-        postForResult(
+        aggregationHttpSupport.postForResult(
             serviceId,
             "/internal/outbox/governance/requeue",
             Map.of("id", String.valueOf(id)),
@@ -71,7 +71,7 @@ public class OutboxGovernanceAggregationService {
     OutboxBatchRequeueRequestDTO requestDTO = new OutboxBatchRequeueRequestDTO();
     requestDTO.setIds(ids);
     Result<Integer> result =
-        postBodyForResult(
+        aggregationHttpSupport.postBodyForResult(
             serviceId,
             "/internal/outbox/governance/requeue-batch",
             requestDTO,
@@ -83,7 +83,7 @@ public class OutboxGovernanceAggregationService {
     List<Map<String, Object>> aggregated = new ArrayList<>();
     for (String serviceId : serviceIds) {
       Result<List<OutboxEvent>> result =
-          getForResult(
+          aggregationHttpSupport.getForResult(
               serviceId, path, Map.of("limit", String.valueOf(limit)), OUTBOX_LIST_RESULT_TYPE);
       List<OutboxEvent> events = result.getData();
       if (events == null) {
@@ -99,79 +99,6 @@ public class OutboxGovernanceAggregationService {
                 Comparator.reverseOrder())
             .thenComparing(item -> String.valueOf(item.getOrDefault("serviceId", ""))));
     return aggregated;
-  }
-
-  private <T> Result<T> getForResult(
-      String serviceId,
-      String path,
-      Map<String, String> queryParams,
-      ParameterizedTypeReference<Result<T>> responseType) {
-    URI uri = clientSupport.resolveUri(serviceId, path, queryParams);
-    try {
-      Result<T> result =
-          clientSupport
-              .restClient()
-              .get()
-              .uri(uri)
-              .headers(headers -> clientSupport.applyInternalHeaders(headers, "GET", path))
-              .retrieve()
-              .body(responseType);
-      return clientSupport.assertSuccess(result, serviceId, path);
-    } catch (Exception ex) {
-      throw clientSupport.translateRemoteError(serviceId, path, ex);
-    }
-  }
-
-  private <T> Result<T> postForResult(
-      String serviceId,
-      String path,
-      Map<String, String> queryParams,
-      ParameterizedTypeReference<Result<T>> responseType) {
-    URI uri = clientSupport.resolveUri(serviceId, path, queryParams);
-    try {
-      Result<T> result =
-          clientSupport
-              .restClient()
-              .post()
-              .uri(uri)
-              .headers(headers -> clientSupport.applyInternalHeaders(headers, "POST", path))
-              .retrieve()
-              .body(responseType);
-      return clientSupport.assertSuccess(result, serviceId, path);
-    } catch (Exception ex) {
-      throw clientSupport.translateRemoteError(serviceId, path, ex);
-    }
-  }
-
-  private <T> Result<T> postBodyForResult(
-      String serviceId,
-      String path,
-      Object body,
-      ParameterizedTypeReference<Result<T>> responseType) {
-    URI uri = clientSupport.resolveUri(serviceId, path, Map.of());
-    try {
-      Result<T> result =
-          clientSupport
-              .restClient()
-              .post()
-              .uri(uri)
-              .headers(headers -> clientSupport.applyInternalHeaders(headers, "POST", path))
-              .body(body)
-              .retrieve()
-              .body(responseType);
-      return clientSupport.assertSuccess(result, serviceId, path);
-    } catch (Exception ex) {
-      throw clientSupport.translateRemoteError(serviceId, path, ex);
-    }
-  }
-
-  private Map<String, Object> withServiceId(String serviceId, Map<String, Object> payload) {
-    Map<String, Object> result = new LinkedHashMap<>();
-    result.put("serviceId", serviceId);
-    if (payload != null) {
-      result.putAll(payload);
-    }
-    return result;
   }
 
   private Map<String, Object> asMap(String serviceId, OutboxEvent event) {

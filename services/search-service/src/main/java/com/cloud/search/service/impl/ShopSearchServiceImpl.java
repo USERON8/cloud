@@ -21,16 +21,14 @@ import com.cloud.search.dto.SearchResultDTO;
 import com.cloud.search.dto.ShopSearchRequest;
 import com.cloud.search.repository.ShopDocumentRepository;
 import com.cloud.search.service.ShopSearchService;
+import com.cloud.search.service.support.SearchProcessedEventSupport;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -51,9 +49,6 @@ public class ShopSearchServiceImpl implements ShopSearchService {
   private static final int ACTIVE_STATUS = 1;
   private static final String SHOP_INDEX = "shop_index";
   private static final String PROCESSED_EVENT_BUCKET_PREFIX = "search:shop:processed:bucket:";
-  private static final long PROCESSED_EVENT_TTL_SECONDS = 24 * 60 * 60;
-  private static final int PROCESSED_LOOKBACK_DAYS = 1;
-  private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.BASIC_ISO_DATE;
 
   private final ShopDocumentRepository shopDocumentRepository;
   private final ElasticsearchClient elasticsearchClient;
@@ -110,41 +105,14 @@ public class ShopSearchServiceImpl implements ShopSearchService {
 
   @Override
   public boolean isEventProcessed(String traceId) {
-    if (StrUtil.isBlank(traceId)) {
-      return false;
-    }
-    try {
-      for (int i = 0; i <= PROCESSED_LOOKBACK_DAYS; i++) {
-        String bucketKey = buildProcessedBucketKey(i);
-        Boolean exists = redisTemplate.opsForHash().hasKey(bucketKey, traceId);
-        if (Boolean.TRUE.equals(exists)) {
-          return true;
-        }
-      }
-      return false;
-    } catch (Exception e) {
-      log.warn("Check shop processed event failed: traceId={}", traceId, e);
-      return false;
-    }
+    return SearchProcessedEventSupport.isProcessed(
+        redisTemplate, PROCESSED_EVENT_BUCKET_PREFIX, traceId, log);
   }
 
   @Override
   public void markEventProcessed(String traceId) {
-    if (StrUtil.isBlank(traceId)) {
-      return;
-    }
-    try {
-      String bucketKey = buildProcessedBucketKey(0);
-      redisTemplate.opsForHash().put(bucketKey, traceId, "1");
-      redisTemplate.expire(bucketKey, PROCESSED_EVENT_TTL_SECONDS, TimeUnit.SECONDS);
-    } catch (Exception e) {
-      log.warn("Mark shop event processed failed: traceId={}", traceId, e);
-    }
-  }
-
-  private String buildProcessedBucketKey(int offsetDays) {
-    LocalDate date = LocalDate.now().minusDays(offsetDays);
-    return PROCESSED_EVENT_BUCKET_PREFIX + date.format(DATE_FORMATTER);
+    SearchProcessedEventSupport.markProcessed(
+        redisTemplate, PROCESSED_EVENT_BUCKET_PREFIX, traceId, log);
   }
 
   @Override

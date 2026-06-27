@@ -41,9 +41,9 @@ CREATE TABLE `config_info`
     `tenant_id`          varchar(128) COLLATE utf8mb3_bin           DEFAULT '' COMMENT '绉熸埛瀛楁',
     `c_desc`             varchar(256) COLLATE utf8mb3_bin           DEFAULT NULL COMMENT 'configuration description',
     `c_use`              varchar(64) COLLATE utf8mb3_bin            DEFAULT NULL COMMENT 'configuration usage',
-    `effect`             varchar(64) COLLATE utf8mb3_bin            DEFAULT NULL COMMENT '閰嶇疆鐢熸晥鐨勬弿杩?,
-    `type`               varchar(64) COLLATE utf8mb3_bin            DEFAULT NULL COMMENT '閰嶇疆鐨勭被鍨?,
-    `c_schema`           text COLLATE utf8mb3_bin COMMENT '閰嶇疆鐨勬ā寮?,
+    `effect`             varchar(64) COLLATE utf8mb3_bin            DEFAULT NULL COMMENT 'config effect description',
+    `type`               varchar(64) COLLATE utf8mb3_bin            DEFAULT NULL COMMENT 'config type',
+    `c_schema`           text COLLATE utf8mb3_bin COMMENT 'config schema',
     `encrypted_data_key` varchar(1024) COLLATE utf8mb3_bin NOT NULL DEFAULT '' COMMENT '瀵嗛挜',
     PRIMARY KEY (`id`),
     UNIQUE KEY `uk_configinfo_datagrouptenant` (`data_id`, `group_id`, `tenant_id`)
@@ -70,35 +70,35 @@ VALUES (1, 'common.yaml', 'DEFAULT_GROUP',
         NULL, '2025-07-21 13:39:22', '2025-07-21 13:39:22', 'nacos', '192.168.43.215', '',
         'public', NULL, NULL, NULL, 'yaml', NULL, ''),
        (3, 'gateway.yaml', 'DEFAULT_GROUP',
-        'SERVICE_LOCAL_URL: http://127.0.0.1:8080\r\nSERVICE_VIEW_URL: http://127.0.0.1:18080\r\nSERVICE_PUBLIC_URL: http://2d91127a.r6.cpolar.cn\r\nCPOLAR_DOMAIN: http://2d91127a.r6.cpolar.cn\r\nCPOLAR_PUBLIC_BASE_URL: http://2d91127a.r6.cpolar.cn\r\nCPOLAR_FRONTEND_BASE_URL: http://2d91127a.r6.cpolar.cn\r\nAPP_SECURITY_CORS_ALLOWED_ORIGIN_PATTERNS: http://127.0.0.1:*,https://127.0.0.1:*,http://localhost:*,https://localhost:*,http://2d91127a.r6.cpolar.cn,http://2d91127a.r6.cpolar.cn\r\nAPP_SENTINEL_GATEWAY_SEARCH_QPS: 120\r\nAPP_SECURITY_SEARCH_RATE_LIMIT_REPLENISH_RATE: 120\r\nAPP_SECURITY_SEARCH_RATE_LIMIT_BURST_CAPACITY: 240\r\nAPP_SECURITY_SEARCH_RATE_LIMIT_REQUESTED_TOKENS: 1\r\nGATEWAY_HTTPCLIENT_CONNECT_TIMEOUT_MS: 5000\r\nGATEWAY_HTTPCLIENT_RESPONSE_TIMEOUT: 20s\r\nAPP_REMOTE_HTTP_CONNECT_TIMEOUT_MS: 5000\r\nAPP_REMOTE_HTTP_RESPONSE_TIMEOUT_MS: 8000\r\nAPP_REMOTE_HTTP_READ_TIMEOUT_MS: 8000\r\nAPP_REMOTE_HTTP_WRITE_TIMEOUT_MS: 8000\r\nSEARCH_FALLBACK_TIMEOUT_MS: 2000',
+        'SERVICE_LOCAL_URL: http://127.0.0.1:8080\r\nSERVICE_VIEW_URL: http://127.0.0.1:18080\r\nSERVICE_PUBLIC_URL: https://44c5ad89.r6.cpolar.cn\r\nCPOLAR_DOMAIN: https://44c5ad89.r6.cpolar.cn\r\nCPOLAR_PUBLIC_BASE_URL: https://44c5ad89.r6.cpolar.cn\r\nCPOLAR_FRONTEND_BASE_URL: https://44c5ad89.r6.cpolar.cn\r\nAPP_SECURITY_CORS_ALLOWED_ORIGIN_PATTERNS: http://127.0.0.1:*,https://127.0.0.1:*,http://localhost:*,https://localhost:*,http://44c5ad89.r6.cpolar.cn,https://44c5ad89.r6.cpolar.cn\r\nAPP_SENTINEL_GATEWAY_SEARCH_QPS: 120\r\nAPP_SECURITY_SEARCH_RATE_LIMIT_REPLENISH_RATE: 120\r\nAPP_SECURITY_SEARCH_RATE_LIMIT_BURST_CAPACITY: 240\r\nAPP_SECURITY_SEARCH_RATE_LIMIT_REQUESTED_TOKENS: 1\r\nGATEWAY_HTTPCLIENT_CONNECT_TIMEOUT_MS: 5000\r\nGATEWAY_HTTPCLIENT_RESPONSE_TIMEOUT: 20s\r\nAPP_REMOTE_HTTP_CONNECT_TIMEOUT_MS: 5000\r\nAPP_REMOTE_HTTP_RESPONSE_TIMEOUT_MS: 8000\r\nAPP_REMOTE_HTTP_READ_TIMEOUT_MS: 8000\r\nAPP_REMOTE_HTTP_WRITE_TIMEOUT_MS: 8000\r\nSEARCH_FALLBACK_TIMEOUT_MS: 2000',
         NULL, '2026-04-07 20:20:00', '2026-04-07 20:20:00', 'codex', '127.0.0.1', '',
         'public', 'gateway custom config', 'service', NULL, 'yaml', NULL, ''),
        (4, 'auth-service.yaml', 'DEFAULT_GROUP',
-        'SERVICE_LOCAL_URL: http://127.0.0.1:8081\r\nSERVICE_VIEW_URL: http://127.0.0.1:18080\r\nSERVICE_PUBLIC_URL: http://2d91127a.r6.cpolar.cn\r\nCPOLAR_PUBLIC_BASE_URL: http://2d91127a.r6.cpolar.cn\r\nCPOLAR_FRONTEND_BASE_URL: http://2d91127a.r6.cpolar.cn\r\nGITHUB_REDIRECT_URI: http://2d91127a.r6.cpolar.cn/login/oauth2/code/github\r\nAPP_OAUTH2_GITHUB_ERROR_URL: http://2d91127a.r6.cpolar.cn/auth/error\r\nAPP_OAUTH2_WEB_REDIRECT_URIS: http://2d91127a.r6.cpolar.cn/callback,http://127.0.0.1:18080/callback,http://127.0.0.1:3000/callback,http://127.0.0.1:5173/callback,http://localhost:5173/callback',
+        'SERVICE_LOCAL_URL: http://127.0.0.1:8081\r\nSERVICE_VIEW_URL: http://127.0.0.1:18080\r\nSERVICE_PUBLIC_URL: https://44c5ad89.r6.cpolar.cn\r\nCPOLAR_PUBLIC_BASE_URL: https://44c5ad89.r6.cpolar.cn\r\nCPOLAR_FRONTEND_BASE_URL: https://44c5ad89.r6.cpolar.cn\r\nGITHUB_REDIRECT_URI: https://44c5ad89.r6.cpolar.cn/login/oauth2/code/github\r\nAPP_OAUTH2_GITHUB_ERROR_URL: https://44c5ad89.r6.cpolar.cn/auth/error\r\nAPP_OAUTH2_WEB_REDIRECT_URIS: https://44c5ad89.r6.cpolar.cn/callback,http://127.0.0.1:18080/callback,http://127.0.0.1:3000/callback,http://127.0.0.1:5173/callback,http://localhost:5173/callback',
         NULL, '2026-04-07 20:20:00', '2026-04-07 20:20:00', 'codex', '127.0.0.1', '',
         'public', 'auth service custom config', 'service', NULL, 'yaml', NULL, ''),
        (5, 'user-service.yaml', 'DEFAULT_GROUP',
-        'SERVICE_LOCAL_URL: http://127.0.0.1:8082\r\nSERVICE_VIEW_URL: http://127.0.0.1:18080\r\nSERVICE_PUBLIC_URL: http://2d91127a.r6.cpolar.cn',
+        'SERVICE_LOCAL_URL: http://127.0.0.1:8082\r\nSERVICE_VIEW_URL: http://127.0.0.1:18080\r\nSERVICE_PUBLIC_URL: https://44c5ad89.r6.cpolar.cn',
         NULL, '2026-04-07 20:20:00', '2026-04-07 20:20:00', 'codex', '127.0.0.1', '',
         'public', 'user service custom config', 'service', NULL, 'yaml', NULL, ''),
        (6, 'product-service.yaml', 'DEFAULT_GROUP',
-        'SERVICE_LOCAL_URL: http://127.0.0.1:8084\r\nSERVICE_VIEW_URL: http://127.0.0.1:18080\r\nSERVICE_PUBLIC_URL: http://2d91127a.r6.cpolar.cn',
+        'SERVICE_LOCAL_URL: http://127.0.0.1:8084\r\nSERVICE_VIEW_URL: http://127.0.0.1:18080\r\nSERVICE_PUBLIC_URL: https://44c5ad89.r6.cpolar.cn',
         NULL, '2026-04-07 20:20:00', '2026-04-07 20:20:00', 'codex', '127.0.0.1', '',
         'public', 'product service custom config', 'service', NULL, 'yaml', NULL, ''),
        (7, 'order-service.yaml', 'DEFAULT_GROUP',
-        'SERVICE_LOCAL_URL: http://127.0.0.1:8085\r\nSERVICE_VIEW_URL: http://127.0.0.1:18080\r\nSERVICE_PUBLIC_URL: http://2d91127a.r6.cpolar.cn',
+        'SERVICE_LOCAL_URL: http://127.0.0.1:8085\r\nSERVICE_VIEW_URL: http://127.0.0.1:18080\r\nSERVICE_PUBLIC_URL: https://44c5ad89.r6.cpolar.cn',
         NULL, '2026-04-07 20:20:00', '2026-04-07 20:20:00', 'codex', '127.0.0.1', '',
         'public', 'order service custom config', 'service', NULL, 'yaml', NULL, ''),
        (8, 'payment-service.yaml', 'DEFAULT_GROUP',
-        'SERVICE_LOCAL_URL: http://127.0.0.1:8086\r\nSERVICE_VIEW_URL: http://127.0.0.1:18080\r\nSERVICE_PUBLIC_URL: http://2d91127a.r6.cpolar.cn\r\nALIPAY_NOTIFY_URL: http://2d91127a.r6.cpolar.cn/api/v1/payment/alipay/notify\r\nALIPAY_RETURN_URL: http://2d91127a.r6.cpolar.cn/#/pages/app/payments/index',
+        'SERVICE_LOCAL_URL: http://127.0.0.1:8086\r\nSERVICE_VIEW_URL: http://127.0.0.1:18080\r\nSERVICE_PUBLIC_URL: https://44c5ad89.r6.cpolar.cn\r\nALIPAY_NOTIFY_URL: https://44c5ad89.r6.cpolar.cn/api/v1/payment/alipay/notify\r\nALIPAY_RETURN_URL: https://44c5ad89.r6.cpolar.cn/#/pages/app/payments/index',
         NULL, '2026-04-07 20:20:00', '2026-04-07 20:20:00', 'codex', '127.0.0.1', '',
         'public', 'payment service custom config', 'service', NULL, 'yaml', NULL, ''),
        (9, 'search-service.yaml', 'DEFAULT_GROUP',
-        'SERVICE_LOCAL_URL: http://127.0.0.1:8087\r\nSERVICE_VIEW_URL: http://127.0.0.1:18080\r\nSERVICE_PUBLIC_URL: http://2d91127a.r6.cpolar.cn\r\nSEARCH_ES_REQUEST_TIMEOUT_MS: 1500',
+        'SERVICE_LOCAL_URL: http://127.0.0.1:8087\r\nSERVICE_VIEW_URL: http://127.0.0.1:18080\r\nSERVICE_PUBLIC_URL: https://44c5ad89.r6.cpolar.cn\r\nSEARCH_ES_REQUEST_TIMEOUT_MS: 1500',
         NULL, '2026-04-07 20:20:00', '2026-04-07 20:20:00', 'codex', '127.0.0.1', '',
         'public', 'search service custom config', 'service', NULL, 'yaml', NULL, ''),
        (10, 'stock-service.yaml', 'DEFAULT_GROUP',
-        'SERVICE_LOCAL_URL: http://127.0.0.1:8088\r\nSERVICE_VIEW_URL: http://127.0.0.1:18080\r\nSERVICE_PUBLIC_URL: http://2d91127a.r6.cpolar.cn',
+        'SERVICE_LOCAL_URL: http://127.0.0.1:8088\r\nSERVICE_VIEW_URL: http://127.0.0.1:18080\r\nSERVICE_PUBLIC_URL: https://44c5ad89.r6.cpolar.cn',
         NULL, '2026-04-07 20:20:00', '2026-04-07 20:20:00', 'codex', '127.0.0.1', '',
         'public', 'stock service custom config', 'service', NULL, 'yaml', NULL, '');
 /*!40000 ALTER TABLE `config_info`
@@ -162,7 +162,7 @@ CREATE TABLE `config_tags_relation`
     `data_id`   varchar(255) COLLATE utf8mb3_bin NOT NULL COMMENT 'data_id',
     `group_id`  varchar(128) COLLATE utf8mb3_bin NOT NULL COMMENT 'group_id',
     `tenant_id` varchar(128) COLLATE utf8mb3_bin DEFAULT '' COMMENT 'tenant_id',
-    `nid`       bigint                           NOT NULL AUTO_INCREMENT COMMENT 'nid, 鑷闀挎爣璇?,
+    `nid`       bigint                           NOT NULL AUTO_INCREMENT COMMENT 'nid, auto increment id',
     PRIMARY KEY (`nid`),
     UNIQUE KEY `uk_configtagrelation_configidtag` (`id`, `tag_name`, `tag_type`),
     KEY `idx_tenant_id` (`tenant_id`)
@@ -193,12 +193,12 @@ CREATE TABLE `group_capacity`
 (
     `id`                bigint unsigned                  NOT NULL AUTO_INCREMENT COMMENT '涓婚敭ID',
     `group_id`          varchar(128) COLLATE utf8mb3_bin NOT NULL DEFAULT '' COMMENT 'Group ID锛岀┖瀛楃琛ㄧず鏁翠釜闆嗙兢',
-    `quota`             int unsigned                     NOT NULL DEFAULT '0' COMMENT '閰嶉锛?琛ㄧず浣跨敤榛樿鍊?,
-    `usage`             int unsigned                     NOT NULL DEFAULT '0' COMMENT '浣跨敤閲?,
-    `max_size`          int unsigned                     NOT NULL DEFAULT '0' COMMENT '鍗曚釜閰嶇疆澶у皬涓婇檺锛屽崟浣嶄负瀛楄妭锛?琛ㄧず浣跨敤榛樿鍊?,
-    `max_aggr_count`    int unsigned                     NOT NULL DEFAULT '0' COMMENT '鑱氬悎瀛愰厤缃渶澶т釜鏁帮紝锛?琛ㄧず浣跨敤榛樿鍊?,
-    `max_aggr_size`     int unsigned                     NOT NULL DEFAULT '0' COMMENT '鍗曚釜鑱氬悎鏁版嵁鐨勫瓙閰嶇疆澶у皬涓婇檺锛屽崟浣嶄负瀛楄妭锛?琛ㄧず浣跨敤榛樿鍊?,
-    `max_history_count` int unsigned                     NOT NULL DEFAULT '0' COMMENT '鏈€澶у彉鏇村巻鍙叉暟閲?,
+    `quota`             int unsigned                     NOT NULL DEFAULT '0' COMMENT 'quota, 0 uses default value',
+    `usage`             int unsigned                     NOT NULL DEFAULT '0' COMMENT 'usage',
+    `max_size`          int unsigned                     NOT NULL DEFAULT '0' COMMENT 'max config size in bytes, 0 uses default value',
+    `max_aggr_count`    int unsigned                     NOT NULL DEFAULT '0' COMMENT 'max aggregate sub-config count, 0 uses default value',
+    `max_aggr_size`     int unsigned                     NOT NULL DEFAULT '0' COMMENT 'max aggregate sub-config size in bytes, 0 uses default value',
+    `max_history_count` int unsigned                     NOT NULL DEFAULT '0' COMMENT 'max history count',
     `gmt_create`        datetime                         NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '鍒涘缓鏃堕棿',
     `gmt_modified`      datetime                         NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '淇敼鏃堕棿',
     PRIMARY KEY (`id`),
@@ -206,7 +206,7 @@ CREATE TABLE `group_capacity`
 ) ENGINE = InnoDB
   AUTO_INCREMENT = 2
   DEFAULT CHARSET = utf8mb3
-  COLLATE = utf8mb3_bin COMMENT ='闆嗙兢銆佸悇Group瀹归噺淇℃伅琛?;
+  COLLATE = utf8mb3_bin COMMENT ='cluster and group capacity info';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -255,7 +255,7 @@ CREATE TABLE `his_config_info`
 ) ENGINE = InnoDB
   AUTO_INCREMENT = 2
   DEFAULT CHARSET = utf8mb3
-  COLLATE = utf8mb3_bin COMMENT ='澶氱鎴锋敼閫?;
+  COLLATE = utf8mb3_bin COMMENT ='multi-tenant history config';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -344,12 +344,12 @@ CREATE TABLE `tenant_capacity`
 (
     `id`                bigint unsigned                  NOT NULL AUTO_INCREMENT COMMENT '涓婚敭ID',
     `tenant_id`         varchar(128) COLLATE utf8mb3_bin NOT NULL DEFAULT '' COMMENT 'Tenant ID',
-    `quota`             int unsigned                     NOT NULL DEFAULT '0' COMMENT '閰嶉锛?琛ㄧず浣跨敤榛樿鍊?,
-    `usage`             int unsigned                     NOT NULL DEFAULT '0' COMMENT '浣跨敤閲?,
-    `max_size`          int unsigned                     NOT NULL DEFAULT '0' COMMENT '鍗曚釜閰嶇疆澶у皬涓婇檺锛屽崟浣嶄负瀛楄妭锛?琛ㄧず浣跨敤榛樿鍊?,
-    `max_aggr_count`    int unsigned                     NOT NULL DEFAULT '0' COMMENT '鑱氬悎瀛愰厤缃渶澶т釜鏁?,
-    `max_aggr_size`     int unsigned                     NOT NULL DEFAULT '0' COMMENT '鍗曚釜鑱氬悎鏁版嵁鐨勫瓙閰嶇疆澶у皬涓婇檺锛屽崟浣嶄负瀛楄妭锛?琛ㄧず浣跨敤榛樿鍊?,
-    `max_history_count` int unsigned                     NOT NULL DEFAULT '0' COMMENT '鏈€澶у彉鏇村巻鍙叉暟閲?,
+    `quota`             int unsigned                     NOT NULL DEFAULT '0' COMMENT 'quota, 0 uses default value',
+    `usage`             int unsigned                     NOT NULL DEFAULT '0' COMMENT 'usage',
+    `max_size`          int unsigned                     NOT NULL DEFAULT '0' COMMENT 'max config size in bytes, 0 uses default value',
+    `max_aggr_count`    int unsigned                     NOT NULL DEFAULT '0' COMMENT 'max aggregate sub-config count',
+    `max_aggr_size`     int unsigned                     NOT NULL DEFAULT '0' COMMENT 'max aggregate sub-config size in bytes, 0 uses default value',
+    `max_history_count` int unsigned                     NOT NULL DEFAULT '0' COMMENT 'max history count',
     `gmt_create`        datetime                         NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '鍒涘缓鏃堕棿',
     `gmt_modified`      datetime                         NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '淇敼鏃堕棿',
     PRIMARY KEY (`id`),
@@ -357,7 +357,7 @@ CREATE TABLE `tenant_capacity`
 ) ENGINE = InnoDB
   AUTO_INCREMENT = 2
   DEFAULT CHARSET = utf8mb3
-  COLLATE = utf8mb3_bin COMMENT ='绉熸埛瀹归噺淇℃伅琛?;
+  COLLATE = utf8mb3_bin COMMENT ='tenant capacity info';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --

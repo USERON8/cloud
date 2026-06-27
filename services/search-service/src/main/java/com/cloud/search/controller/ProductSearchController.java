@@ -1,8 +1,7 @@
 package com.cloud.search.controller;
 
-import com.cloud.common.enums.ResultCode;
-import com.cloud.common.exception.BizException;
 import com.cloud.common.result.Result;
+import com.cloud.search.controller.support.SearchPublicStatusSupport;
 import com.cloud.search.document.ProductDocument;
 import com.cloud.search.dto.ProductSearchRequest;
 import com.cloud.search.dto.SearchResultDTO;
@@ -27,87 +26,87 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/search")
 @RequiredArgsConstructor
-@Tag(name = "Product Search", description = "Product search and filter APIs")
+@Tag(name = "商品搜索", description = "商品搜索和筛选接口")
 @Validated
 @ApiResponses({
-  @ApiResponse(responseCode = "400", description = "Invalid search parameters"),
-  @ApiResponse(responseCode = "401", description = "Authentication required when applicable"),
-  @ApiResponse(responseCode = "403", description = "Insufficient permissions"),
-  @ApiResponse(responseCode = "404", description = "Search resource not found"),
-  @ApiResponse(responseCode = "500", description = "Search service internal error")
+  @ApiResponse(responseCode = "400", description = "搜索参数无效"),
+  @ApiResponse(responseCode = "401", description = "需要认证时必须登录"),
+  @ApiResponse(responseCode = "403", description = "权限不足"),
+  @ApiResponse(responseCode = "404", description = "搜索资源不存在"),
+  @ApiResponse(responseCode = "500", description = "搜索服务内部错误")
 })
 public class ProductSearchController {
 
   private final SearchFacadeService searchFacadeService;
 
   @Operation(
-      summary = "Search products by request payload",
-      description = "Run full search by request payload")
+      summary = "按请求体搜索商品",
+      description = "按请求体执行完整商品搜索")
   @PostMapping("/products")
   public Result<SearchResultDTO<ProductDocument>> complexSearch(
       @Valid @RequestBody ProductSearchRequest request,
-      @Parameter(description = "search_after values, json array or comma separated")
+      @Parameter(description = "search_after 游标值，支持 JSON 数组或逗号分隔")
           @RequestParam(required = false)
           String searchAfter) {
-    normalizePublicStatus(request);
+    SearchPublicStatusSupport.normalize(request);
     return Result.success(
         "Search success", searchFacadeService.searchProducts(request, searchAfter));
   }
 
   @Operation(
-      summary = "Get filter data",
-      description = "Return available filter data for current search")
+      summary = "获取筛选数据",
+      description = "返回当前搜索可用筛选项")
   @PostMapping("/products/filters")
   public Result<SearchResultDTO<ProductDocument>> getProductFilters(
       @Valid @RequestBody ProductSearchRequest request,
-      @Parameter(description = "search_after values, json array or comma separated")
+      @Parameter(description = "search_after 游标值，支持 JSON 数组或逗号分隔")
           @RequestParam(required = false)
           String searchAfter) {
-    normalizePublicStatus(request);
+    SearchPublicStatusSupport.normalize(request);
     return Result.success(
         "Get filters success", searchFacadeService.getProductFilters(request, searchAfter));
   }
 
-  @Operation(summary = "Search suggestions", description = "Get search suggestions by keyword")
+  @Operation(summary = "搜索建议", description = "按关键词获取搜索建议")
   @GetMapping("/products/suggestions")
   public Result<List<String>> getSearchSuggestions(
-      @Parameter(description = "Keyword") @RequestParam String keyword,
-      @Parameter(description = "Result size") @RequestParam(defaultValue = "10") Integer size) {
+      @Parameter(description = "关键词") @RequestParam String keyword,
+      @Parameter(description = "结果数量") @RequestParam(defaultValue = "10") Integer size) {
     return Result.success(
         "Get suggestions success", searchFacadeService.getSearchSuggestions(keyword, size));
   }
 
-  @Operation(summary = "Hot keywords", description = "Get hot keywords")
+  @Operation(summary = "热门关键词", description = "获取热门关键词")
   @GetMapping("/products/keywords/hot")
   public Result<List<String>> getHotSearchKeywords(
-      @Parameter(description = "Result size") @RequestParam(defaultValue = "10") Integer size) {
+      @Parameter(description = "结果数量") @RequestParam(defaultValue = "10") Integer size) {
     return Result.success(
         "Get hot keywords success", searchFacadeService.getHotSearchKeywords(size));
   }
 
   @Operation(
-      summary = "Keyword recommendations",
-      description = "Get recommended keywords for search bar")
+      summary = "关键词推荐",
+      description = "获取搜索框推荐关键词")
   @GetMapping("/products/keywords/recommendations")
   public Result<List<String>> getKeywordRecommendations(
-      @Parameter(description = "Keyword prefix") @RequestParam(required = false) String keyword,
-      @Parameter(description = "Result size") @RequestParam(defaultValue = "10") Integer size) {
+      @Parameter(description = "关键词前缀") @RequestParam(required = false) String keyword,
+      @Parameter(description = "结果数量") @RequestParam(defaultValue = "10") Integer size) {
     return Result.success(
         "Get keyword recommendations success",
         searchFacadeService.getKeywordRecommendations(keyword, size));
   }
 
-  @Operation(summary = "Basic search", description = "Search products by keyword and pagination")
+  @Operation(summary = "基础搜索", description = "按关键词分页搜索商品")
   @GetMapping("/products")
   public Result<SearchResultDTO<ProductDocument>> searchProducts(
-      @Parameter(description = "Keyword") @RequestParam(required = false) String keyword,
-      @Parameter(description = "Page number, starts from 0") @RequestParam(defaultValue = "0")
+      @Parameter(description = "关键词") @RequestParam(required = false) String keyword,
+      @Parameter(description = "页码，从 0 开始") @RequestParam(defaultValue = "0")
           int page,
-      @Parameter(description = "Page size") @RequestParam(defaultValue = "20") int size,
-      @Parameter(description = "Sort field") @RequestParam(defaultValue = "hotScore") String sortBy,
-      @Parameter(description = "Sort direction") @RequestParam(defaultValue = "desc")
+      @Parameter(description = "每页数量") @RequestParam(defaultValue = "20") int size,
+      @Parameter(description = "排序字段") @RequestParam(defaultValue = "hotScore") String sortBy,
+      @Parameter(description = "排序方向") @RequestParam(defaultValue = "desc")
           String sortDir,
-      @Parameter(description = "search_after values, json array or comma separated")
+      @Parameter(description = "search_after 游标值，支持 JSON 数组或逗号分隔")
           @RequestParam(required = false)
           String searchAfter) {
     return Result.success(
@@ -116,15 +115,15 @@ public class ProductSearchController {
   }
 
   @Operation(
-      summary = "Search by category",
-      description = "Search products by category and optional keyword")
+      summary = "按分类搜索",
+      description = "按分类和可选关键词搜索商品")
   @GetMapping("/categories/{categoryId}/products")
   public Result<SearchResultDTO<ProductDocument>> searchByCategory(
-      @Parameter(description = "Category id") @PathVariable Long categoryId,
-      @Parameter(description = "Keyword") @RequestParam(required = false) String keyword,
-      @Parameter(description = "Page number") @RequestParam(defaultValue = "0") int page,
-      @Parameter(description = "Page size") @RequestParam(defaultValue = "20") int size,
-      @Parameter(description = "search_after values, json array or comma separated")
+      @Parameter(description = "分类 ID") @PathVariable Long categoryId,
+      @Parameter(description = "关键词") @RequestParam(required = false) String keyword,
+      @Parameter(description = "页码") @RequestParam(defaultValue = "0") int page,
+      @Parameter(description = "每页数量") @RequestParam(defaultValue = "20") int size,
+      @Parameter(description = "search_after 游标值，支持 JSON 数组或逗号分隔")
           @RequestParam(required = false)
           String searchAfter) {
     return Result.success(
@@ -133,15 +132,15 @@ public class ProductSearchController {
   }
 
   @Operation(
-      summary = "Search by shop",
-      description = "Search products by shop and optional keyword")
+      summary = "按店铺搜索",
+      description = "按店铺和可选关键词搜索商品")
   @GetMapping("/shops/{shopId}/products")
   public Result<SearchResultDTO<ProductDocument>> searchByShop(
-      @Parameter(description = "Shop id") @PathVariable Long shopId,
-      @Parameter(description = "Keyword") @RequestParam(required = false) String keyword,
-      @Parameter(description = "Page number") @RequestParam(defaultValue = "0") int page,
-      @Parameter(description = "Page size") @RequestParam(defaultValue = "20") int size,
-      @Parameter(description = "search_after values, json array or comma separated")
+      @Parameter(description = "店铺 ID") @PathVariable Long shopId,
+      @Parameter(description = "关键词") @RequestParam(required = false) String keyword,
+      @Parameter(description = "页码") @RequestParam(defaultValue = "0") int page,
+      @Parameter(description = "每页数量") @RequestParam(defaultValue = "20") int size,
+      @Parameter(description = "search_after 游标值，支持 JSON 数组或逗号分隔")
           @RequestParam(required = false)
           String searchAfter) {
     return Result.success(
@@ -149,12 +148,12 @@ public class ProductSearchController {
         searchFacadeService.searchByShop(shopId, keyword, page, size, searchAfter));
   }
 
-  @Operation(summary = "Recommended products", description = "Get recommended products")
+  @Operation(summary = "推荐商品", description = "获取推荐商品")
   @GetMapping("/products/recommendations")
   public Result<SearchResultDTO<ProductDocument>> getRecommendedProducts(
-      @Parameter(description = "Page number") @RequestParam(defaultValue = "0") int page,
-      @Parameter(description = "Page size") @RequestParam(defaultValue = "20") int size,
-      @Parameter(description = "search_after values, json array or comma separated")
+      @Parameter(description = "页码") @RequestParam(defaultValue = "0") int page,
+      @Parameter(description = "每页数量") @RequestParam(defaultValue = "20") int size,
+      @Parameter(description = "search_after 游标值，支持 JSON 数组或逗号分隔")
           @RequestParam(required = false)
           String searchAfter) {
     return Result.success(
@@ -162,24 +161,24 @@ public class ProductSearchController {
         searchFacadeService.getRecommendedProducts(page, size, searchAfter));
   }
 
-  @Operation(summary = "New products", description = "Get new products")
+  @Operation(summary = "新品商品", description = "获取新品商品")
   @GetMapping("/products/latest")
   public Result<SearchResultDTO<ProductDocument>> getNewProducts(
-      @Parameter(description = "Page number") @RequestParam(defaultValue = "0") int page,
-      @Parameter(description = "Page size") @RequestParam(defaultValue = "20") int size,
-      @Parameter(description = "search_after values, json array or comma separated")
+      @Parameter(description = "页码") @RequestParam(defaultValue = "0") int page,
+      @Parameter(description = "每页数量") @RequestParam(defaultValue = "20") int size,
+      @Parameter(description = "search_after 游标值，支持 JSON 数组或逗号分隔")
           @RequestParam(required = false)
           String searchAfter) {
     return Result.success(
         "Query new products success", searchFacadeService.getNewProducts(page, size, searchAfter));
   }
 
-  @Operation(summary = "Flagged hot products", description = "Get products marked as hot")
+  @Operation(summary = "标记热门商品", description = "获取标记为热门的商品")
   @GetMapping("/products/popular")
   public Result<SearchResultDTO<ProductDocument>> getHotProducts(
-      @Parameter(description = "Page number") @RequestParam(defaultValue = "0") int page,
-      @Parameter(description = "Page size") @RequestParam(defaultValue = "20") int size,
-      @Parameter(description = "search_after values, json array or comma separated")
+      @Parameter(description = "页码") @RequestParam(defaultValue = "0") int page,
+      @Parameter(description = "每页数量") @RequestParam(defaultValue = "20") int size,
+      @Parameter(description = "search_after 游标值，支持 JSON 数组或逗号分隔")
           @RequestParam(required = false)
           String searchAfter) {
     return Result.success(
@@ -187,28 +186,14 @@ public class ProductSearchController {
   }
 
   @Operation(
-      summary = "Today hot selling products",
-      description = "Get products ranked by today's completed sales")
+      summary = "今日热销商品",
+      description = "获取按今日已完成销量排序的商品")
   @GetMapping("/products/popular/today")
   public Result<SearchResultDTO<ProductDocument>> getTodayHotSellingProducts(
-      @Parameter(description = "Page number") @RequestParam(defaultValue = "0") int page,
-      @Parameter(description = "Page size") @RequestParam(defaultValue = "20") int size) {
+      @Parameter(description = "页码") @RequestParam(defaultValue = "0") int page,
+      @Parameter(description = "每页数量") @RequestParam(defaultValue = "20") int size) {
     return Result.success(
         "Query today hot selling products success",
         searchFacadeService.getTodayHotSellingProducts(page, size));
-  }
-
-  private void normalizePublicStatus(ProductSearchRequest request) {
-    if (request == null) {
-      return;
-    }
-    Integer status = request.getStatus();
-    if (status == null) {
-      request.setStatus(1);
-      return;
-    }
-    if (!Integer.valueOf(1).equals(status)) {
-      throw new BizException(ResultCode.BAD_REQUEST, "public search only supports active status");
-    }
   }
 }

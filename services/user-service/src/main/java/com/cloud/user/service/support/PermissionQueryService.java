@@ -30,7 +30,7 @@ public class PermissionQueryService {
 
   @Transactional(readOnly = true)
   public Map<String, List<String>> getPermissionsByRoles(Collection<String> roles) {
-    Set<String> normalizedRoleCodes = normalizeRoleCodes(roles);
+    Set<String> normalizedRoleCodes = RoleCodeSupport.normalizeRoleCodes(roles);
     if (normalizedRoleCodes.isEmpty()) {
       return Map.of();
     }
@@ -84,7 +84,8 @@ public class PermissionQueryService {
         continue;
       }
       permissionsByRole
-          .computeIfAbsent(stripRolePrefix(roleCode), ignored -> new LinkedHashSet<>())
+          .computeIfAbsent(
+              RoleCodeSupport.stripRolePrefix(roleCode), ignored -> new LinkedHashSet<>())
           .add(permissionCode);
     }
 
@@ -140,25 +141,5 @@ public class PermissionQueryService {
         });
 
     return result;
-  }
-
-  private Set<String> normalizeRoleCodes(Collection<String> roles) {
-    if (roles == null || roles.isEmpty()) {
-      return Set.of();
-    }
-    return roles.stream()
-        .filter(Objects::nonNull)
-        .map(String::trim)
-        .filter(role -> !role.isEmpty())
-        .map(String::toUpperCase)
-        .map(role -> role.startsWith("ROLE_") ? role : "ROLE_" + role)
-        .collect(Collectors.toCollection(LinkedHashSet::new));
-  }
-
-  private String stripRolePrefix(String roleCode) {
-    if (roleCode == null || roleCode.isBlank()) {
-      return roleCode;
-    }
-    return roleCode.startsWith("ROLE_") ? roleCode.substring("ROLE_".length()) : roleCode;
   }
 }

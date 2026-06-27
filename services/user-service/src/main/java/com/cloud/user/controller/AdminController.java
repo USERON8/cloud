@@ -34,20 +34,20 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/admins")
 @RequiredArgsConstructor
-@Tag(name = "Admin Management", description = "Admin resource REST APIs")
+@Tag(name = "管理员管理", description = "管理员资源 REST 接口")
 public class AdminController {
 
   private final AdminService adminService;
 
   @GetMapping
   @PreAuthorize("hasAuthority('admin:all')")
-  @Operation(summary = "Get admins with pagination", description = "Get paged admin list")
+  @Operation(summary = "分页查询管理员", description = "获取管理员分页列表")
   public Result<PageResult<AdminDTO>> getAdmins(
-      @Parameter(description = "Page number")
+      @Parameter(description = "页码")
           @RequestParam(defaultValue = "1")
           @Min(value = 1, message = "page must be greater than 0")
           Integer page,
-      @Parameter(description = "Page size")
+      @Parameter(description = "每页数量")
           @RequestParam(defaultValue = "10")
           @Min(value = 1, message = "size must be greater than 0")
           @Max(value = 100, message = "size must be less than or equal to 100")
@@ -65,9 +65,9 @@ public class AdminController {
 
   @GetMapping("/{id}")
   @PreAuthorize("hasAuthority('admin:all')")
-  @Operation(summary = "Get admin details", description = "Get admin details by ID")
+  @Operation(summary = "查询管理员详情", description = "按 ID 查询管理员详情")
   public Result<AdminDTO> getAdminById(
-      @Parameter(description = "Admin ID")
+      @Parameter(description = "管理员 ID")
           @PathVariable
           @NotNull(message = "admin id cannot be null")
           @Positive(message = "admin id must be positive")
@@ -82,9 +82,9 @@ public class AdminController {
 
   @PostMapping
   @PreAuthorize("hasAuthority('admin:all')")
-  @Operation(summary = "Create admin", description = "Create a new admin")
+  @Operation(summary = "创建管理员", description = "创建一个管理员")
   public Result<AdminDTO> createAdmin(
-      @Parameter(description = "Admin payload")
+      @Parameter(description = "管理员请求体")
           @RequestBody
           @Valid
           @NotNull(message = "admin payload cannot be null")
@@ -95,10 +95,10 @@ public class AdminController {
 
   @PutMapping("/{id}")
   @PreAuthorize("hasAuthority('admin:all')")
-  @Operation(summary = "Update admin", description = "Update admin details")
+  @Operation(summary = "更新管理员", description = "更新管理员详情")
   public Result<Boolean> updateAdmin(
-      @Parameter(description = "Admin ID") @PathVariable Long id,
-      @Parameter(description = "Admin payload")
+      @Parameter(description = "管理员 ID") @PathVariable Long id,
+      @Parameter(description = "管理员请求体")
           @RequestBody
           @Valid
           @NotNull(message = "admin payload cannot be null")
@@ -110,9 +110,9 @@ public class AdminController {
 
   @DeleteMapping("/{id}")
   @PreAuthorize("hasAuthority('admin:all')")
-  @Operation(summary = "Delete admin", description = "Delete admin by ID")
+  @Operation(summary = "删除管理员", description = "按 ID 删除管理员")
   public Result<Boolean> deleteAdmin(
-      @Parameter(description = "Admin ID")
+      @Parameter(description = "管理员 ID")
           @PathVariable
           @NotNull(message = "admin id cannot be null")
           Long id) {
@@ -122,18 +122,18 @@ public class AdminController {
 
   @PatchMapping("/{id}/status")
   @PreAuthorize("hasAuthority('admin:all')")
-  @Operation(summary = "Update admin status", description = "Enable or disable admin")
+  @Operation(summary = "更新管理员状态", description = "启用或禁用管理员")
   public Result<Boolean> updateAdminStatus(
-      @Parameter(description = "Admin ID") @PathVariable Long id,
-      @Parameter(description = "Admin status") @RequestParam Integer status) {
+      @Parameter(description = "管理员 ID") @PathVariable Long id,
+      @Parameter(description = "管理员状态") @RequestParam Integer status) {
     boolean result = adminService.updateAdminStatus(id, status);
     return Result.success("Status updated", result);
   }
 
   @PostMapping("/{id}/password-resets")
   @PreAuthorize("hasAuthority('admin:all')")
-  @Operation(summary = "Reset admin password", description = "Reset admin password to default")
-  public Result<String> resetPassword(@Parameter(description = "Admin ID") @PathVariable Long id) {
+  @Operation(summary = "重置管理员密码", description = "重置管理员默认密码")
+  public Result<String> resetPassword(@Parameter(description = "管理员 ID") @PathVariable Long id) {
     String temporaryPassword =
         "Tmp#" + UUID.randomUUID().toString().replace("-", "").substring(0, 12);
     adminService.resetPassword(id, temporaryPassword);

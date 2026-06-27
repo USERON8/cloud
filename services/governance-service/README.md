@@ -12,7 +12,7 @@ Admin aggregation and governance service for operational routes that should not 
 - Exposes admin-facing governance routes through `gateway`.
 - Aggregates token governance, MQ governance, Outbox governance, and observability redirects.
 - Owns admin statistics, thread-pool reads, notification operations, and the public stock ledger entry.
-- Provides the internal namespace `/internal/governance/**` for compatibility and operational routing.
+- Uses `common-api` Dubbo contracts for service-to-service governance data.
 
 ## Public Surface Through Gateway
 
@@ -29,8 +29,10 @@ Admin aggregation and governance service for operational routes that should not 
   - `/api/admin/observability/**`
   - `/api/admin/notifications/**`
   - `/api/admin/stocks/ledger/**`
-- Compatibility proxy:
-  - `/api/admin/governance/**` -> `/internal/governance/**`
+- Removed compatibility proxy:
+  - `/api/admin/governance/**` is no longer routed through gateway. Use the explicit `/api/admin/**` routes above.
+- Removed internal HTTP namespace:
+  - `/internal/governance/**` is no longer routed or exposed. Use explicit admin routes for HTTP traffic and Dubbo contracts for service-to-service aggregation.
 
 ## Runtime Notes
 

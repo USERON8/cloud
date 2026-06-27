@@ -1,10 +1,8 @@
 package com.cloud.user.controller.user;
 
 import com.cloud.common.domain.vo.user.UserStatisticsVO;
-import com.cloud.common.enums.ResultCode;
-import com.cloud.common.exception.BizException;
 import com.cloud.common.result.Result;
-import com.cloud.user.service.UserStatisticsService;
+import com.cloud.user.controller.support.UserStatisticsResponseSupport;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -13,7 +11,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import java.time.LocalDate;
-import java.time.temporal.ChronoUnit;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import lombok.RequiredArgsConstructor;
@@ -30,145 +27,124 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/admin/statistics")
 @RequiredArgsConstructor
-@Tag(name = "User Statistics", description = "User statistics APIs")
+@Tag(name = "用户统计", description = "用户统计接口")
 @Validated
 @ApiResponses({
-  @ApiResponse(responseCode = "400", description = "Invalid statistics query parameters"),
-  @ApiResponse(responseCode = "401", description = "Authentication required"),
-  @ApiResponse(responseCode = "403", description = "Insufficient permissions"),
-  @ApiResponse(responseCode = "500", description = "Internal statistics service error")
+  @ApiResponse(responseCode = "400", description = "统计查询参数无效"),
+  @ApiResponse(responseCode = "401", description = "需要认证"),
+  @ApiResponse(responseCode = "403", description = "权限不足"),
+  @ApiResponse(responseCode = "500", description = "统计服务内部错误")
 })
 public class UserStatisticsController {
 
-  private final UserStatisticsService userStatisticsService;
+  private final UserStatisticsResponseSupport userStatisticsResponseSupport;
 
   @GetMapping("/overview")
-  @Operation(summary = "Get overview", description = "Get user statistics overview")
+  @Operation(summary = "获取统计总览", description = "获取用户统计总览")
   @PreAuthorize("hasAuthority('admin:all')")
   public Result<UserStatisticsVO> getStatisticsOverview() {
-    UserStatisticsVO statistics = userStatisticsService.getUserStatisticsOverview();
-    return Result.success("query successful", statistics);
+    return userStatisticsResponseSupport.getStatisticsOverview();
   }
 
   @GetMapping("/overview/async")
   @Operation(
-      summary = "Get overview async",
-      description = "Get user statistics overview asynchronously")
+      summary = "异步获取统计总览",
+      description = "异步获取用户统计总览")
   @PreAuthorize("hasAuthority('admin:all')")
   public CompletableFuture<Result<UserStatisticsVO>> getStatisticsOverviewAsync() {
-    return userStatisticsService
-        .getUserStatisticsOverviewAsync()
-        .thenApply(statistics -> Result.success("query successful", statistics));
+    return userStatisticsResponseSupport.getStatisticsOverviewAsync();
   }
 
   @GetMapping("/registration-trend")
   @Operation(
-      summary = "Get registration trend",
-      description = "Get user registration trend by date range")
+      summary = "获取注册趋势",
+      description = "按日期范围获取用户注册趋势")
   @PreAuthorize("hasAuthority('admin:all')")
   public Result<Map<LocalDate, Long>> getRegistrationTrend(
-      @RequestParam @Parameter(description = "Start date") @DateTimeFormat(iso = ISO.DATE)
+      @RequestParam @Parameter(description = "开始日期") @DateTimeFormat(iso = ISO.DATE)
           LocalDate startDate,
-      @RequestParam @Parameter(description = "End date") @DateTimeFormat(iso = ISO.DATE)
+      @RequestParam @Parameter(description = "结束日期") @DateTimeFormat(iso = ISO.DATE)
           LocalDate endDate) {
-    if (endDate.isBefore(startDate)) {
-      throw new BizException(
-          ResultCode.BAD_REQUEST, "endDate must be greater than or equal to startDate");
-    }
-    if (ChronoUnit.DAYS.between(startDate, endDate) > 365) {
-      throw new BizException(ResultCode.BAD_REQUEST, "date range cannot exceed 365 days");
-    }
-    Map<LocalDate, Long> trend = userStatisticsService.getUserRegistrationTrend(startDate, endDate);
-    return Result.success("query successful", trend);
+    return userStatisticsResponseSupport.getRegistrationTrend(startDate, endDate);
   }
 
   @GetMapping("/registration-trend/async")
   @Operation(
-      summary = "Get registration trend async",
-      description = "Get user registration trend asynchronously")
+      summary = "异步获取注册趋势",
+      description = "异步获取用户注册趋势")
   @PreAuthorize("hasAuthority('admin:all')")
   public CompletableFuture<Result<Map<LocalDate, Long>>> getRegistrationTrendAsync(
       @RequestParam(defaultValue = "30")
-          @Parameter(description = "Recent days")
+          @Parameter(description = "最近天数")
           @Min(value = 1, message = "days must be greater than 0")
           @Max(value = 365, message = "days must be less than or equal to 365")
           Integer days) {
-    return userStatisticsService
-        .getUserRegistrationTrendAsync(days)
-        .thenApply(trend -> Result.success("query successful", trend));
+    return userStatisticsResponseSupport.getRegistrationTrendAsync(days);
   }
 
   @GetMapping("/role-distribution")
-  @Operation(summary = "Get role distribution", description = "Get user role distribution")
+  @Operation(summary = "获取角色分布", description = "获取用户角色分布")
   @PreAuthorize("hasAuthority('admin:all')")
   public Result<Map<String, Long>> getRoleDistribution() {
-    Map<String, Long> distribution = userStatisticsService.getRoleDistribution();
-    return Result.success("query successful", distribution);
+    return userStatisticsResponseSupport.getRoleDistribution();
   }
 
   @GetMapping("/status-distribution")
-  @Operation(summary = "Get status distribution", description = "Get user status distribution")
+  @Operation(summary = "获取状态分布", description = "获取用户状态分布")
   @PreAuthorize("hasAuthority('admin:all')")
   public Result<Map<String, Long>> getStatusDistribution() {
-    Map<String, Long> distribution = userStatisticsService.getUserStatusDistribution();
-    return Result.success("query successful", distribution);
+    return userStatisticsResponseSupport.getStatusDistribution();
   }
 
   @GetMapping("/active-users")
-  @Operation(summary = "Count active users", description = "Count active users in recent days")
+  @Operation(summary = "统计活跃用户", description = "统计最近天数内的活跃用户")
   @PreAuthorize("hasAuthority('admin:all')")
   public Result<Long> countActiveUsers(
       @RequestParam(defaultValue = "7")
-          @Parameter(description = "Recent days")
+          @Parameter(description = "最近天数")
           @Min(value = 1, message = "days must be greater than 0")
           @Max(value = 365, message = "days must be less than or equal to 365")
           Integer days) {
-    Long count = userStatisticsService.countActiveUsers(days);
-    return Result.success("query successful", count);
+    return userStatisticsResponseSupport.countActiveUsers(days);
   }
 
   @GetMapping("/growth-rate")
   @Operation(
-      summary = "Calculate growth rate",
-      description = "Calculate user growth rate for recent days")
+      summary = "计算增长率",
+      description = "计算最近天数内的用户增长率")
   @PreAuthorize("hasAuthority('admin:all')")
   public Result<Double> calculateGrowthRate(
       @RequestParam(defaultValue = "7")
-          @Parameter(description = "Recent days")
+          @Parameter(description = "最近天数")
           @Min(value = 1, message = "days must be greater than 0")
           @Max(value = 365, message = "days must be less than or equal to 365")
           Integer days) {
-    Double growthRate = userStatisticsService.calculateUserGrowthRate(days);
-    return Result.success("query successful", growthRate);
+    return userStatisticsResponseSupport.calculateGrowthRate(days);
   }
 
   @GetMapping("/activity-ranking")
-  @Operation(summary = "Get activity ranking", description = "Get top active users ranking")
+  @Operation(summary = "获取活跃度排行", description = "获取活跃用户排行")
   @PreAuthorize("hasAuthority('admin:all')")
   public CompletableFuture<Result<Map<Long, Long>>> getActivityRanking(
       @RequestParam(defaultValue = "10")
-          @Parameter(description = "Ranking size")
+          @Parameter(description = "排行数量")
           @Min(value = 1, message = "limit must be greater than 0")
           @Max(value = 100, message = "limit must be less than or equal to 100")
           Integer limit,
       @RequestParam(defaultValue = "30")
-          @Parameter(description = "Recent days")
+          @Parameter(description = "最近天数")
           @Min(value = 1, message = "days must be greater than 0")
           @Max(value = 365, message = "days must be less than or equal to 365")
           Integer days) {
-    return userStatisticsService
-        .getUserActivityRankingAsync(limit, days)
-        .thenApply(ranking -> Result.success("query successful", ranking));
+    return userStatisticsResponseSupport.getActivityRanking(limit, days);
   }
 
   @PostMapping("/cache-refreshes")
   @Operation(
-      summary = "Refresh statistics cache",
-      description = "Refresh statistics cache asynchronously")
+      summary = "刷新统计缓存",
+      description = "异步刷新统计缓存")
   @PreAuthorize("hasAuthority('admin:all')")
   public CompletableFuture<Result<Boolean>> refreshStatisticsCache() {
-    return userStatisticsService
-        .refreshStatisticsCacheAsync()
-        .thenApply(result -> Result.success("cache refresh completed", result));
+    return userStatisticsResponseSupport.refreshStatisticsCache();
   }
 }

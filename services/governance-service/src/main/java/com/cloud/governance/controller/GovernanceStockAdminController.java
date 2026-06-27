@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/admin/stocks")
 @RequiredArgsConstructor
-@Tag(name = "Governance Stock Admin API", description = "Governance-owned stock admin APIs")
+@Tag(name = "治理库存管理接口", description = "治理服务承载的库存管理接口")
 public class GovernanceStockAdminController {
 
   @DubboReference(check = false, timeout = 5000, retries = 0)
@@ -27,7 +27,7 @@ public class GovernanceStockAdminController {
 
   @GetMapping("/ledger/{skuId}")
   @PreAuthorize("hasAuthority('admin:all')")
-  @Operation(summary = "Get stock ledger by sku through governance-service")
+  @Operation(summary = "通过治理服务按 SKU 查询库存台账")
   public Result<StockLedgerVO> getLedger(@PathVariable Long skuId) {
     return Result.success(
         remoteCallSupport.query(

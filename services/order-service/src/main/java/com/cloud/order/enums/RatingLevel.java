@@ -6,11 +6,11 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public enum RatingLevel {
-  BAD(1, "宸瘎", 1, 2),
+  BAD(1, "差评", 1, 2),
 
-  MEDIUM(2, "涓瘎", 3, 3),
+  MEDIUM(2, "中评", 3, 3),
 
-  GOOD(3, "濂借瘎", 4, 5);
+  GOOD(3, "好评", 4, 5);
 
   private final Integer code;
 
@@ -29,7 +29,7 @@ public enum RatingLevel {
         return level;
       }
     }
-    throw new IllegalArgumentException("鏃犳晥鐨勮瘎鍒? " + rating);
+    throw new IllegalArgumentException("无效的评分: " + rating);
   }
 
   public static boolean isGoodReview(Integer rating) {

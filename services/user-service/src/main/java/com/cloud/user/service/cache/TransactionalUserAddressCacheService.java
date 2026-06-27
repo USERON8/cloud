@@ -2,7 +2,6 @@ package com.cloud.user.service.cache;
 
 import cn.hutool.core.util.StrUtil;
 import com.cloud.user.module.entity.UserAddress;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -18,7 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class TransactionalUserAddressCacheService {
+public class TransactionalUserAddressCacheService extends AbstractTransactionalHashCacheSupport {
 
   private static final String KEY_ID_PREFIX = "user:address:";
   private static final String KEY_USER_PREFIX = "user:address:user:";
@@ -57,7 +56,7 @@ public class TransactionalUserAddressCacheService {
       if (entries == null || entries.isEmpty()) {
         return List.of();
       }
-      redisTemplate.expire(userKey(userId), ttl());
+      redisTemplate.expire(userKey(userId), ttl(ttlSeconds));
       String ids = parseString(entries.get(FIELD_IDS));
       if (StrUtil.isBlank(ids)) {
         return List.of();
@@ -101,7 +100,7 @@ public class TransactionalUserAddressCacheService {
     try {
       HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
       hashOperations.putAll(idKey(address.getId()), fields);
-      redisTemplate.expire(idKey(address.getId()), ttl());
+      redisTemplate.expire(idKey(address.getId()), ttl(ttlSeconds));
     } catch (Exception ex) {
       log.warn("Write user address cache failed: addressId={}", address.getId(), ex);
     }
@@ -134,7 +133,7 @@ public class TransactionalUserAddressCacheService {
         return;
       }
       redisTemplate.opsForHash().putAll(userKey(userId), payload);
-      redisTemplate.expire(userKey(userId), ttl());
+      redisTemplate.expire(userKey(userId), ttl(ttlSeconds));
     } catch (Exception ex) {
       log.warn("Write user address list cache failed: userId={}", userId, ex);
     }
@@ -172,7 +171,7 @@ public class TransactionalUserAddressCacheService {
       if (entries == null || entries.isEmpty()) {
         return null;
       }
-      redisTemplate.expire(key, ttl());
+      redisTemplate.expire(key, ttl(ttlSeconds));
       return fromMap(entries);
     } catch (Exception ex) {
       log.warn("Read user address cache failed: key={}", key, ex);
@@ -201,12 +200,6 @@ public class TransactionalUserAddressCacheService {
     return fields;
   }
 
-  private void putIfNotBlank(Map<String, String> fields, String key, String value) {
-    if (StrUtil.isNotBlank(value)) {
-      fields.put(key, value);
-    }
-  }
-
   private UserAddressCache fromMap(Map<Object, Object> map) {
     Long id = parseLong(map.get(FIELD_ID));
     Long userId = parseLong(map.get(FIELD_USER_ID));
@@ -226,42 +219,12 @@ public class TransactionalUserAddressCacheService {
         parseInteger(map.get(FIELD_IS_DEFAULT)));
   }
 
-  private Long parseLong(Object value) {
-    if (value == null) {
-      return null;
-    }
-    try {
-      return Long.parseLong(value.toString());
-    } catch (NumberFormatException ex) {
-      return null;
-    }
-  }
-
-  private Integer parseInteger(Object value) {
-    if (value == null) {
-      return null;
-    }
-    try {
-      return Integer.parseInt(value.toString());
-    } catch (NumberFormatException ex) {
-      return null;
-    }
-  }
-
-  private String parseString(Object value) {
-    return value == null ? null : value.toString();
-  }
-
   private String idKey(Long id) {
     return KEY_ID_PREFIX + id;
   }
 
   private String userKey(Long userId) {
     return KEY_USER_PREFIX + userId;
-  }
-
-  private Duration ttl() {
-    return Duration.ofSeconds(Math.max(60L, ttlSeconds));
   }
 
   public record UserAddressCache(

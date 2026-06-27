@@ -16,17 +16,15 @@ import com.cloud.payment.converter.PaymentOrderConverter;
 import com.cloud.payment.mapper.PaymentCallbackLogMapper;
 import com.cloud.payment.mapper.PaymentOrderMapper;
 import com.cloud.payment.mapper.PaymentRefundMapper;
-import com.cloud.payment.messaging.PaymentMessageProducer;
 import com.cloud.payment.module.entity.PaymentOrderEntity;
 import com.cloud.payment.service.PaymentCompensationService;
-import com.cloud.payment.service.provider.PaymentProviderGateway;
 import com.cloud.payment.service.support.OrderStatusRemoteService;
 import com.cloud.payment.service.support.PaymentCallbackVerifier;
+import com.cloud.payment.service.support.PaymentFlowSupport;
 import com.cloud.payment.service.support.PaymentOrderStateSupport;
 import com.cloud.payment.service.support.PaymentSecurityCacheService;
 import com.cloud.payment.service.support.PaymentStateMachine;
 import java.math.BigDecimal;
-import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -42,9 +40,9 @@ class PaymentOrderServiceImplTest {
   @Mock private PaymentOrderConverter paymentOrderConverter;
   @Mock private PaymentCompensationService paymentCompensationService;
   @Mock private AlipayConfig alipayConfig;
-  @Mock private PaymentMessageProducer paymentMessageProducer;
   @Mock private OrderStatusRemoteService orderStatusRemoteService;
   @Mock private PaymentCallbackVerifier paymentCallbackVerifier;
+  @Mock private PaymentFlowSupport paymentFlowSupport;
   @Mock private PaymentStateMachine paymentStateMachine;
   @Mock private PaymentOrderStateSupport paymentOrderStateSupport;
   @Mock private PaymentSecurityCacheService paymentSecurityCacheService;
@@ -62,13 +60,12 @@ class PaymentOrderServiceImplTest {
             paymentOrderConverter,
             paymentCompensationService,
             alipayConfig,
-            paymentMessageProducer,
             orderStatusRemoteService,
             paymentCallbackVerifier,
+            paymentFlowSupport,
             paymentStateMachine,
             paymentOrderStateSupport,
             paymentSecurityCacheService,
-            List.<PaymentProviderGateway>of(),
             tradeMetrics);
   }
 

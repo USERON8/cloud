@@ -35,25 +35,25 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/categories")
 @RequiredArgsConstructor
 @Validated
-@Tag(name = "Category API", description = "Category management APIs")
+@Tag(name = "分类接口", description = "商品分类管理接口")
 public class CategoryController {
 
   private final CategoryService categoryService;
 
   @GetMapping
-  @Operation(summary = "Get categories", description = "Get category page")
+  @Operation(summary = "分页查询分类", description = "获取分类分页数据")
   public Result<PageResult<CategoryDTO>> getCategories(
-      @Parameter(description = "Page index")
+      @Parameter(description = "页码")
           @RequestParam(defaultValue = "1")
           @Min(value = 1, message = "Page index must be >= 1")
           Integer page,
-      @Parameter(description = "Page size")
+      @Parameter(description = "每页数量")
           @RequestParam(defaultValue = "10")
           @Min(value = 1, message = "Page size must be >= 1")
           @Max(value = 100, message = "Page size must be <= 100")
           Integer size,
-      @Parameter(description = "Parent id") @RequestParam(required = false) Long parentId,
-      @Parameter(description = "Category level") @RequestParam(required = false) Integer level) {
+      @Parameter(description = "父分类 ID") @RequestParam(required = false) Long parentId,
+      @Parameter(description = "分类层级") @RequestParam(required = false) Integer level) {
 
     Page<CategoryDTO> pageResult = categoryService.getCategoriesPage(page, size, parentId, level);
     PageResult<CategoryDTO> result =
@@ -66,9 +66,9 @@ public class CategoryController {
   }
 
   @GetMapping("/{id}")
-  @Operation(summary = "Get category", description = "Get category by id")
+  @Operation(summary = "查询分类详情", description = "按 ID 查询分类")
   public Result<CategoryDTO> getCategoryById(
-      @Parameter(description = "Category id")
+      @Parameter(description = "分类 ID")
           @PathVariable
           @NotNull(message = "Category id cannot be null")
           @Positive(message = "Category id must be positive")
@@ -82,9 +82,9 @@ public class CategoryController {
   }
 
   @GetMapping("/tree")
-  @Operation(summary = "Get category tree", description = "Get category tree data")
+  @Operation(summary = "查询分类树", description = "获取分类树数据")
   public Result<List<CategoryDTO>> getCategoryTree(
-      @Parameter(description = "Only enabled") @RequestParam(defaultValue = "false")
+      @Parameter(description = "仅启用") @RequestParam(defaultValue = "false")
           Boolean enabledOnly) {
 
     List<CategoryDTO> tree = categoryService.getCategoryTree(enabledOnly);
@@ -92,10 +92,10 @@ public class CategoryController {
   }
 
   @GetMapping("/{id}/children")
-  @Operation(summary = "Get children", description = "Get child categories")
+  @Operation(summary = "查询子分类", description = "获取子分类")
   public Result<List<CategoryDTO>> getChildrenCategories(
-      @Parameter(description = "Parent id") @PathVariable Long id,
-      @Parameter(description = "Only enabled") @RequestParam(defaultValue = "false")
+      @Parameter(description = "父分类 ID") @PathVariable Long id,
+      @Parameter(description = "仅启用") @RequestParam(defaultValue = "false")
           Boolean enabledOnly) {
 
     List<CategoryDTO> children = categoryService.getChildrenCategories(id, enabledOnly);
@@ -104,9 +104,9 @@ public class CategoryController {
 
   @PostMapping
   @PreAuthorize("hasAuthority('product:create')")
-  @Operation(summary = "Create category", description = "Create a category")
+  @Operation(summary = "创建分类", description = "创建一个分类")
   public Result<CategoryDTO> createCategory(
-      @Parameter(description = "Category payload")
+      @Parameter(description = "分类请求体")
           @RequestBody
           @Valid
           @NotNull(message = "Category payload cannot be null")
@@ -118,10 +118,10 @@ public class CategoryController {
 
   @PutMapping("/{id}")
   @PreAuthorize("hasAuthority('product:edit')")
-  @Operation(summary = "Update category", description = "Update category by id")
+  @Operation(summary = "更新分类", description = "按 ID 更新分类")
   public Result<Boolean> updateCategory(
-      @Parameter(description = "Category id") @PathVariable Long id,
-      @Parameter(description = "Category payload")
+      @Parameter(description = "分类 ID") @PathVariable Long id,
+      @Parameter(description = "分类请求体")
           @RequestBody
           @Valid
           @NotNull(message = "Category payload cannot be null")
@@ -134,13 +134,13 @@ public class CategoryController {
 
   @DeleteMapping("/{id}")
   @PreAuthorize("hasAuthority('product:delete')")
-  @Operation(summary = "Delete category", description = "Delete category by id")
+  @Operation(summary = "删除分类", description = "按 ID 删除分类")
   public Result<Boolean> deleteCategory(
-      @Parameter(description = "Category id")
+      @Parameter(description = "分类 ID")
           @PathVariable
           @NotNull(message = "Category id cannot be null")
           Long id,
-      @Parameter(description = "Cascade delete") @RequestParam(defaultValue = "false")
+      @Parameter(description = "级联删除") @RequestParam(defaultValue = "false")
           Boolean cascade) {
 
     boolean deleted = Boolean.TRUE.equals(categoryService.deleteCategory(id, cascade));
@@ -149,10 +149,10 @@ public class CategoryController {
 
   @PatchMapping("/{id}/status")
   @PreAuthorize("hasAuthority('product:edit')")
-  @Operation(summary = "Update status", description = "Update category status")
+  @Operation(summary = "更新状态", description = "更新分类状态")
   public Result<Boolean> updateCategoryStatus(
-      @Parameter(description = "Category id") @PathVariable Long id,
-      @Parameter(description = "Status") @RequestParam Integer status) {
+      @Parameter(description = "分类 ID") @PathVariable Long id,
+      @Parameter(description = "状态") @RequestParam Integer status) {
 
     boolean updated = Boolean.TRUE.equals(categoryService.updateCategoryStatus(id, status));
     return Result.success("Update status success", updated);
@@ -160,10 +160,10 @@ public class CategoryController {
 
   @PatchMapping("/{id}/sort")
   @PreAuthorize("hasAuthority('product:edit')")
-  @Operation(summary = "Update sort", description = "Update category sort order")
+  @Operation(summary = "更新排序", description = "更新分类排序")
   public Result<Boolean> updateCategorySort(
-      @Parameter(description = "Category id") @PathVariable Long id,
-      @Parameter(description = "Sort order") @RequestParam Integer sort) {
+      @Parameter(description = "分类 ID") @PathVariable Long id,
+      @Parameter(description = "排序值") @RequestParam Integer sort) {
 
     boolean updated = Boolean.TRUE.equals(categoryService.updateCategorySort(id, sort));
     return Result.success("Update sort success", updated);
@@ -171,10 +171,10 @@ public class CategoryController {
 
   @PatchMapping("/{id}/move")
   @PreAuthorize("hasAuthority('product:edit')")
-  @Operation(summary = "Move category", description = "Move category to new parent")
+  @Operation(summary = "移动分类", description = "移动分类到新的父级")
   public Result<Boolean> moveCategory(
-      @Parameter(description = "Category id") @PathVariable Long id,
-      @Parameter(description = "New parent id") @RequestParam Long newParentId) {
+      @Parameter(description = "分类 ID") @PathVariable Long id,
+      @Parameter(description = "新父分类 ID") @RequestParam Long newParentId) {
 
     boolean moved = Boolean.TRUE.equals(categoryService.moveCategory(id, newParentId));
     return Result.success("Move success", moved);
@@ -182,9 +182,9 @@ public class CategoryController {
 
   @DeleteMapping("/batch")
   @PreAuthorize("hasAuthority('product:delete')")
-  @Operation(summary = "Batch delete", description = "Delete categories by ids")
+  @Operation(summary = "批量删除", description = "按 ID 批量删除分类")
   public Result<Boolean> deleteCategoriesBatch(
-      @Parameter(description = "Category ids")
+      @Parameter(description = "分类 ID 列表")
           @RequestBody
           @NotNull(message = "Category ids cannot be null")
           @NotEmpty(message = "Category ids cannot be empty")
@@ -196,13 +196,13 @@ public class CategoryController {
 
   @PatchMapping("/batch/status")
   @PreAuthorize("hasAuthority('product:edit')")
-  @Operation(summary = "Batch update status", description = "Update status for categories")
+  @Operation(summary = "批量更新状态", description = "批量更新分类状态")
   public Result<Integer> updateCategoryStatusBatch(
-      @Parameter(description = "Category ids")
+      @Parameter(description = "分类 ID 列表")
           @RequestParam
           @NotNull(message = "Category ids cannot be null")
           List<Long> ids,
-      @Parameter(description = "Status") @RequestParam @NotNull(message = "Status cannot be null")
+      @Parameter(description = "状态") @RequestParam @NotNull(message = "Status cannot be null")
           Integer status) {
 
     if (ids.isEmpty()) {
@@ -219,9 +219,9 @@ public class CategoryController {
 
   @PostMapping("/batch")
   @PreAuthorize("hasAuthority('product:create')")
-  @Operation(summary = "Batch create", description = "Create categories in batch")
+  @Operation(summary = "批量创建", description = "批量创建分类")
   public Result<Integer> createCategoriesBatch(
-      @Parameter(description = "Category payload list")
+      @Parameter(description = "分类请求体列表")
           @RequestBody
           @Valid
           @NotEmpty(message = "Category payload list cannot be empty")

@@ -15,14 +15,19 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/admin/stocks")
 @RequiredArgsConstructor
-@Tag(name = "Stock API", description = "Stock reservation and ledger APIs")
+@Tag(name = "库存接口", description = "库存预占和台账接口")
+/**
+ * 库存后台查询入口。
+ *
+ * <p>面向管理员的稳定库存台账 API。跨服务治理聚合优先走 StockDubboApi 或 governance-service，不新增 controller 互调。
+ */
 public class StockLedgerController {
 
   private final StockLedgerService stockLedgerService;
 
   @GetMapping("/ledger/{skuId}")
   @PreAuthorize("hasRole('ADMIN')")
-  @Operation(summary = "Get stock ledger by sku")
+  @Operation(summary = "按 SKU 查询库存台账")
   public Result<StockLedgerVO> getLedger(@PathVariable Long skuId) {
     return Result.success(stockLedgerService.getLedgerBySkuId(skuId));
   }

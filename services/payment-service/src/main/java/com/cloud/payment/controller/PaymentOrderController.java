@@ -34,14 +34,14 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api")
 @RequiredArgsConstructor
 @Validated
-@Tag(name = "Payment API", description = "Payment order and refund APIs")
+@Tag(name = "支付接口", description = "支付单和退款接口")
 @ApiResponses({
-  @ApiResponse(responseCode = "400", description = "Invalid request or payment state"),
-  @ApiResponse(responseCode = "401", description = "Authentication required"),
-  @ApiResponse(responseCode = "403", description = "Insufficient permissions"),
-  @ApiResponse(responseCode = "404", description = "Payment order or refund not found"),
-  @ApiResponse(responseCode = "409", description = "Payment state conflict"),
-  @ApiResponse(responseCode = "500", description = "Internal payment error")
+  @ApiResponse(responseCode = "400", description = "请求参数或支付状态无效"),
+  @ApiResponse(responseCode = "401", description = "需要认证"),
+  @ApiResponse(responseCode = "403", description = "权限不足"),
+  @ApiResponse(responseCode = "404", description = "支付单或退款单不存在"),
+  @ApiResponse(responseCode = "409", description = "支付状态冲突"),
+  @ApiResponse(responseCode = "500", description = "支付服务内部错误")
 })
 public class PaymentOrderController {
 
@@ -50,7 +50,7 @@ public class PaymentOrderController {
 
   @PostMapping("/payment-orders")
   @PreAuthorize("isAuthenticated() and (hasAuthority('admin:all') or hasAuthority('order:create'))")
-  @Operation(summary = "Create payment order")
+  @Operation(summary = "创建支付单")
   public Result<Long> createPaymentOrder(
       @Valid @RequestBody PaymentOrderCommandDTO command, Authentication authentication) {
     Long currentUserId = requireCurrentUserId(authentication);
@@ -70,7 +70,7 @@ public class PaymentOrderController {
 
   @GetMapping("/payment-orders/{paymentNo}")
   @PreAuthorize("isAuthenticated()")
-  @Operation(summary = "Get payment order by number")
+  @Operation(summary = "按支付单号查询支付单")
   public Result<PaymentOrderVO> getPaymentOrderByNo(
       @PathVariable String paymentNo, Authentication authentication) {
     PaymentOrderVO order = paymentOrderService.getPaymentOrderByNo(paymentNo);
@@ -85,7 +85,7 @@ public class PaymentOrderController {
 
   @GetMapping("/payment-orders")
   @PreAuthorize("isAuthenticated()")
-  @Operation(summary = "Get payment order by order numbers")
+  @Operation(summary = "按订单号查询支付单")
   public Result<PaymentOrderVO> getPaymentOrderByOrderNo(
       @RequestParam String mainOrderNo,
       @RequestParam String subOrderNo,
@@ -102,7 +102,7 @@ public class PaymentOrderController {
 
   @PostMapping("/payment-orders/{paymentNo}/checkout-sessions")
   @PreAuthorize("isAuthenticated()")
-  @Operation(summary = "Create checkout session for payment order")
+  @Operation(summary = "为支付单创建收银台会话")
   public Result<PaymentCheckoutSessionVO> createCheckoutSession(
       @PathVariable String paymentNo, Authentication authentication) {
     PaymentOrderVO order = paymentOrderService.getPaymentOrderByNo(paymentNo);
@@ -118,7 +118,7 @@ public class PaymentOrderController {
 
   @GetMapping("/payment-orders/{paymentNo}/status")
   @PreAuthorize("isAuthenticated()")
-  @Operation(summary = "Get payment order status")
+  @Operation(summary = "查询支付单状态")
   public Result<Map<String, Object>> getPaymentStatus(
       @PathVariable String paymentNo, Authentication authentication) {
     PaymentSecurityCacheService.CachedStatus cached =
@@ -152,14 +152,14 @@ public class PaymentOrderController {
 
   @PostMapping("/payment-refunds")
   @PreAuthorize("isAuthenticated() and (hasAuthority('admin:all') or hasAuthority('order:refund'))")
-  @Operation(summary = "Create payment refund")
+  @Operation(summary = "创建退款单")
   public Result<Long> createRefund(@Valid @RequestBody PaymentRefundCommandDTO command) {
     return Result.success(paymentOrderService.createRefund(command));
   }
 
   @GetMapping("/payment-refunds/{refundNo}")
   @PreAuthorize("isAuthenticated()")
-  @Operation(summary = "Get refund by number")
+  @Operation(summary = "按退款单号查询退款单")
   public Result<PaymentRefundVO> getRefundByNo(
       @PathVariable String refundNo, Authentication authentication) {
     PaymentRefundVO refund = paymentOrderService.getRefundByNo(refundNo);

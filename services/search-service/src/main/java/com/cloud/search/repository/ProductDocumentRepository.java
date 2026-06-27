@@ -44,7 +44,7 @@ public interface ProductDocumentRepository
                   {
                     "multi_match": {
                       "query": "?0",
-                      "fields": ["productName^3", "description^1", "tags^2"],
+                      "fields": ["productName^4", "shopName^3", "description^1", "tags^2"],
                       "type": "best_fields",
                       "fuzziness": "AUTO"
                     }
@@ -75,7 +75,7 @@ public interface ProductDocumentRepository
                   {
                     "multi_match": {
                       "query": "?0",
-                      "fields": ["productName^3", "description^1", "tags^2"],
+                      "fields": ["productName^4", "shopName^3", "description^1", "tags^2"],
                       "type": "best_fields"
                     }
                   }
@@ -106,7 +106,7 @@ public interface ProductDocumentRepository
                   {
                     "multi_match": {
                       "query": "?0",
-                      "fields": ["productName^3", "description^1", "tags^2"],
+                      "fields": ["productName^4", "shopName^3", "description^1", "tags^2"],
                       "type": "best_fields"
                     }
                   }
@@ -136,7 +136,7 @@ public interface ProductDocumentRepository
                   {
                     "multi_match": {
                       "query": "?0",
-                      "fields": ["productName^3", "description^1", "tags^2"],
+                      "fields": ["productName^4", "shopName^3", "description^1", "tags^2"],
                       "type": "best_fields"
                     }
                   }
@@ -205,7 +205,7 @@ public interface ProductDocumentRepository
             {
               "bool": {
                 "must": [
-                  #{#keyword != null && !#keyword.isEmpty() ? '{"multi_match": {"query": "' + #keyword + '", "fields": ["productName^3", "description^1", "tags^2"], "type": "best_fields"}}' : '{"match_all": {}}'}
+                  #{#keyword != null && !#keyword.isEmpty() ? '{"multi_match": {"query": "' + #keyword + '", "fields": ["productName^4", "shopName^3", "description^1", "tags^2"], "type": "best_fields"}}' : '{"match_all": {}}'}
                 ],
                 "filter": [
                   {"term": {"status": "?7"}},
@@ -235,7 +235,7 @@ public interface ProductDocumentRepository
             {
               "bool": {
                 "must": [
-                  #{#keyword != null && !#keyword.isEmpty() ? '{"multi_match": {"query": "' + #keyword + '", "fields": ["productName^3", "description^1", "tags^2"], "type": "best_fields", "fuzziness": "AUTO"}}' : '{"match_all": {}}'}
+                  #{#keyword != null && !#keyword.isEmpty() ? '{"multi_match": {"query": "' + #keyword + '", "fields": ["productName^4", "shopName^3", "description^1", "tags^2"], "type": "best_fields", "fuzziness": "AUTO"}}' : '{"match_all": {}}'}
                 ],
                 "filter": [
                   {"term": {"status": "?6"}},

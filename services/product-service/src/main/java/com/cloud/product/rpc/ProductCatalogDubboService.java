@@ -40,6 +40,11 @@ public class ProductCatalogDubboService implements ProductDubboApi {
   }
 
   @Override
+  public List<SpuDetailVO> listSpuByMerchantId(Long merchantId, Integer status) {
+    return productCatalogService.listSpuByMerchantId(merchantId, status);
+  }
+
+  @Override
   public List<SpuDetailVO> listSpuByPage(Integer page, Integer size, Integer status) {
     return productCatalogService.listSpuByPage(page, size, status);
   }

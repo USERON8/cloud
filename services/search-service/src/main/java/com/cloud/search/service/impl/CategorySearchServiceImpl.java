@@ -1,14 +1,11 @@
 package com.cloud.search.service.impl;
 
-import cn.hutool.core.util.StrUtil;
 import com.cloud.search.document.CategoryDocument;
 import com.cloud.search.repository.CategoryDocumentRepository;
 import com.cloud.search.service.CategorySearchService;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
+import com.cloud.search.service.support.SearchProcessedEventSupport;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
@@ -22,9 +19,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class CategorySearchServiceImpl implements CategorySearchService {
 
   private static final String PROCESSED_EVENT_BUCKET_PREFIX = "search:category:processed:bucket:";
-  private static final long PROCESSED_EVENT_TTL_SECONDS = 24 * 60 * 60;
-  private static final int PROCESSED_LOOKBACK_DAYS = 1;
-  private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.BASIC_ISO_DATE;
 
   private final CategoryDocumentRepository categoryDocumentRepository;
   private final ElasticsearchOperations elasticsearchOperations;
@@ -79,41 +73,14 @@ public class CategorySearchServiceImpl implements CategorySearchService {
 
   @Override
   public boolean isEventProcessed(String traceId) {
-    if (StrUtil.isBlank(traceId)) {
-      return false;
-    }
-    try {
-      for (int i = 0; i <= PROCESSED_LOOKBACK_DAYS; i++) {
-        String bucketKey = buildProcessedBucketKey(i);
-        Boolean exists = redisTemplate.opsForHash().hasKey(bucketKey, traceId);
-        if (Boolean.TRUE.equals(exists)) {
-          return true;
-        }
-      }
-      return false;
-    } catch (Exception e) {
-      log.warn("Check category processed event failed: traceId={}", traceId, e);
-      return false;
-    }
+    return SearchProcessedEventSupport.isProcessed(
+        redisTemplate, PROCESSED_EVENT_BUCKET_PREFIX, traceId, log);
   }
 
   @Override
   public void markEventProcessed(String traceId) {
-    if (StrUtil.isBlank(traceId)) {
-      return;
-    }
-    try {
-      String bucketKey = buildProcessedBucketKey(0);
-      redisTemplate.opsForHash().put(bucketKey, traceId, "1");
-      redisTemplate.expire(bucketKey, PROCESSED_EVENT_TTL_SECONDS, TimeUnit.SECONDS);
-    } catch (Exception e) {
-      log.warn("Mark category event processed failed: traceId={}", traceId, e);
-    }
-  }
-
-  private String buildProcessedBucketKey(int offsetDays) {
-    LocalDate date = LocalDate.now().minusDays(offsetDays);
-    return PROCESSED_EVENT_BUCKET_PREFIX + date.format(DATE_FORMATTER);
+    SearchProcessedEventSupport.markProcessed(
+        redisTemplate, PROCESSED_EVENT_BUCKET_PREFIX, traceId, log);
   }
 
   @Override

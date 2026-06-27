@@ -2,7 +2,6 @@ package com.cloud.user.service.cache;
 
 import cn.hutool.core.util.StrUtil;
 import com.cloud.user.module.entity.Merchant;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -18,7 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class TransactionalMerchantCacheService {
+public class TransactionalMerchantCacheService extends AbstractTransactionalHashCacheSupport {
 
   private static final String KEY_ID_PREFIX = "merchant:info:";
   private static final String KEY_NAME_PREFIX = "merchant:info:name:";
@@ -76,15 +75,15 @@ public class TransactionalMerchantCacheService {
     try {
       HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
       hashOperations.putAll(idKey(merchant.getId()), fields);
-      redisTemplate.expire(idKey(merchant.getId()), ttl());
+      redisTemplate.expire(idKey(merchant.getId()), ttl(ttlSeconds));
 
       if (StrUtil.isNotBlank(merchant.getUsername())) {
         hashOperations.putAll(nameKey(merchant.getUsername()), fields);
-        redisTemplate.expire(nameKey(merchant.getUsername()), ttl());
+        redisTemplate.expire(nameKey(merchant.getUsername()), ttl(ttlSeconds));
       }
       if (StrUtil.isNotBlank(merchant.getMerchantName())) {
         hashOperations.putAll(merchantNameKey(merchant.getMerchantName()), fields);
-        redisTemplate.expire(merchantNameKey(merchant.getMerchantName()), ttl());
+        redisTemplate.expire(merchantNameKey(merchant.getMerchantName()), ttl(ttlSeconds));
       }
     } catch (Exception ex) {
       log.warn("Write merchant cache failed: merchantId={}", merchant.getId(), ex);
@@ -117,20 +116,9 @@ public class TransactionalMerchantCacheService {
   }
 
   public void clearAll() {
-    deleteByPattern(KEY_ID_PREFIX + "*");
-    deleteByPattern(KEY_NAME_PREFIX + "*");
-    deleteByPattern(KEY_MERCHANT_NAME_PREFIX + "*");
-  }
-
-  private void deleteByPattern(String pattern) {
-    try {
-      java.util.Set<String> keys = redisTemplate.keys(pattern);
-      if (keys != null && !keys.isEmpty()) {
-        redisTemplate.delete(keys);
-      }
-    } catch (Exception ex) {
-      log.warn("Clear merchant cache by pattern failed: pattern={}", pattern, ex);
-    }
+    deleteByPattern(redisTemplate, KEY_ID_PREFIX + "*", log, "merchant");
+    deleteByPattern(redisTemplate, KEY_NAME_PREFIX + "*", log, "merchant");
+    deleteByPattern(redisTemplate, KEY_MERCHANT_NAME_PREFIX + "*", log, "merchant");
   }
 
   private MerchantCache getFromRedis(String key) {
@@ -139,7 +127,7 @@ public class TransactionalMerchantCacheService {
       if (entries == null || entries.isEmpty()) {
         return null;
       }
-      redisTemplate.expire(key, ttl());
+      redisTemplate.expire(key, ttl(ttlSeconds));
       return fromMap(entries);
     } catch (Exception ex) {
       log.warn("Read merchant cache failed: key={}", key, ex);
@@ -165,12 +153,6 @@ public class TransactionalMerchantCacheService {
     return fields;
   }
 
-  private void putIfNotBlank(Map<String, String> map, String key, String value) {
-    if (StrUtil.isNotBlank(value)) {
-      map.put(key, value);
-    }
-  }
-
   private MerchantCache fromMap(Map<Object, Object> map) {
     Long id = parseLong(map.get(FIELD_ID));
     if (id == null) {
@@ -186,32 +168,6 @@ public class TransactionalMerchantCacheService {
         parseInteger(map.get(FIELD_AUDIT_STATUS)));
   }
 
-  private Long parseLong(Object value) {
-    if (value == null) {
-      return null;
-    }
-    try {
-      return Long.parseLong(value.toString());
-    } catch (NumberFormatException ex) {
-      return null;
-    }
-  }
-
-  private Integer parseInteger(Object value) {
-    if (value == null) {
-      return null;
-    }
-    try {
-      return Integer.parseInt(value.toString());
-    } catch (NumberFormatException ex) {
-      return null;
-    }
-  }
-
-  private String parseString(Object value) {
-    return value == null ? null : value.toString();
-  }
-
   private String idKey(Long id) {
     return KEY_ID_PREFIX + id;
   }
@@ -222,10 +178,6 @@ public class TransactionalMerchantCacheService {
 
   private String merchantNameKey(String merchantName) {
     return KEY_MERCHANT_NAME_PREFIX + merchantName;
-  }
-
-  private Duration ttl() {
-    return Duration.ofSeconds(Math.max(60L, ttlSeconds));
   }
 
   public record MerchantCache(

@@ -19,6 +19,7 @@ import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.Highlight;
 import co.elastic.clients.elasticsearch.core.search.HighlightField;
 import co.elastic.clients.elasticsearch.core.search.Hit;
+import com.cloud.common.util.SearchInputNormalizer;
 import com.cloud.search.dto.ProductSearchRequest;
 import com.cloud.search.service.support.HotKeywordKeys;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -142,7 +143,7 @@ public class ElasticsearchOptimizedService {
       recordTimer(sample, "smart-search", "deep-page-blocked");
       return SearchResultDTO.empty(safeFrom, safeSize);
     }
-    String safeKeyword = normalizeKeyword(keyword);
+    String safeKeyword = SearchInputNormalizer.normalizeKeyword(keyword);
     SmartSearchCacheKey cacheKey =
         new SmartSearchCacheKey(
             safeKeyword, categoryId, minPrice, maxPrice, sortField, sortOrder, safeFrom, safeSize);
@@ -187,7 +188,7 @@ public class ElasticsearchOptimizedService {
       int size) {
     Timer.Sample sample = Timer.start(meterRegistry);
     int safeSize = size <= 0 ? defaultSearchSize() : Math.min(size, maxSearchSize());
-    String safeKeyword = normalizeKeyword(keyword);
+    String safeKeyword = SearchInputNormalizer.normalizeKeyword(keyword);
     SmartSearchCacheKey cacheKey =
         new SmartSearchCacheKey(
             safeKeyword, categoryId, minPrice, maxPrice, sortField, sortOrder, 0, safeSize);
@@ -317,7 +318,7 @@ public class ElasticsearchOptimizedService {
   @Transactional(readOnly = true)
   public List<String> getSearchSuggestions(String keyword, int limit) {
     Timer.Sample sample = Timer.start(meterRegistry);
-    String safeKeyword = normalizeKeyword(keyword);
+    String safeKeyword = SearchInputNormalizer.normalizeKeyword(keyword);
     if (StrUtil.isBlank(safeKeyword)) {
       recordTimer(sample, "suggestions", "empty");
       return List.of();
@@ -379,7 +380,7 @@ public class ElasticsearchOptimizedService {
   @Transactional(readOnly = true)
   public List<String> getKeywordRecommendations(String keyword, int limit) {
     Timer.Sample sample = Timer.start(meterRegistry);
-    String safeKeyword = normalizeKeyword(keyword);
+    String safeKeyword = SearchInputNormalizer.normalizeKeyword(keyword);
     int safeLimit = normalizeKeywordLimit(limit);
     KeywordLimitCacheKey cacheKey = new KeywordLimitCacheKey(safeKeyword.toLowerCase(), safeLimit);
 
@@ -476,6 +477,7 @@ public class ElasticsearchOptimizedService {
                             .fields(
                                 "productName^3",
                                 "productName.pinyin^2",
+                                "shopName^2",
                                 "categoryName",
                                 "brandName")
                             .type(TextQueryType.BoolPrefix)
@@ -565,6 +567,7 @@ public class ElasticsearchOptimizedService {
                               .fields(
                                   "productName^3",
                                   "productName.pinyin^2",
+                                  "shopName^2",
                                   "description",
                                   "categoryName",
                                   "brandName")
@@ -609,7 +612,7 @@ public class ElasticsearchOptimizedService {
   private Query buildProductSearchQuery(ProductSearchRequest request) {
     ProductSearchRequest safeRequest = request == null ? new ProductSearchRequest() : request;
     BoolQuery.Builder boolQuery = new BoolQuery.Builder();
-    String keyword = normalizeKeyword(safeRequest.getKeyword());
+    String keyword = SearchInputNormalizer.normalizeKeyword(safeRequest.getKeyword());
 
     if (StrUtil.isNotBlank(keyword)) {
       Query keywordQuery =
@@ -621,6 +624,7 @@ public class ElasticsearchOptimizedService {
                               .fields(
                                   "productName^3",
                                   "productName.pinyin^2",
+                                  "shopName^2",
                                   "description",
                                   "categoryName",
                                   "brandName")
@@ -819,6 +823,14 @@ public class ElasticsearchOptimizedService {
                                 .fragmentSize(100)
                                 .numberOfFragments(1)))
                 .fields(
+                    "shopName",
+                    HighlightField.of(
+                        hf ->
+                            hf.preTags("<em class='highlight'>")
+                                .postTags("</em>")
+                                .fragmentSize(100)
+                                .numberOfFragments(1)))
+                .fields(
                     "description",
                     HighlightField.of(
                         hf ->
@@ -970,13 +982,6 @@ public class ElasticsearchOptimizedService {
 
   private Double toDouble(BigDecimal value) {
     return value == null ? null : value.doubleValue();
-  }
-
-  private String normalizeKeyword(String keyword) {
-    if (StrUtil.isBlank(keyword)) {
-      return "";
-    }
-    return keyword.trim();
   }
 
   private int normalizeKeywordLimit(int limit) {

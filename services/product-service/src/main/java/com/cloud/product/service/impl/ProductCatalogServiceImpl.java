@@ -7,7 +7,8 @@ import com.cloud.common.domain.dto.product.SpuCreateRequestDTO;
 import com.cloud.common.domain.dto.product.SpuDTO;
 import com.cloud.common.domain.vo.product.SkuDetailVO;
 import com.cloud.common.domain.vo.product.SpuDetailVO;
-import com.cloud.common.exception.BusinessException;
+import com.cloud.common.enums.ResultCode;
+import com.cloud.common.exception.BizException;
 import com.cloud.product.converter.ProductDetailConverter;
 import com.cloud.product.mapper.BrandMapper;
 import com.cloud.product.mapper.CategoryMapper;
@@ -15,7 +16,6 @@ import com.cloud.product.mapper.ProductReviewMapper;
 import com.cloud.product.mapper.ShopMapper;
 import com.cloud.product.mapper.SkuMapper;
 import com.cloud.product.mapper.SpuMapper;
-import com.cloud.product.messaging.ProductSyncMessageProducer;
 import com.cloud.product.module.entity.Brand;
 import com.cloud.product.module.entity.Category;
 import com.cloud.product.module.entity.ProductReview;
@@ -52,7 +52,6 @@ public class ProductCatalogServiceImpl implements ProductCatalogService {
   private final ShopMapper shopMapper;
   private final ProductReviewMapper productReviewMapper;
   private final ProductDetailCacheService productDetailCacheService;
-  private final ProductSyncMessageProducer productSyncMessageProducer;
 
   @Value("${product.config.page.max-size:100}")
   private Integer maxListSize;
@@ -65,14 +64,13 @@ public class ProductCatalogServiceImpl implements ProductCatalogService {
     try {
       spuMapper.insert(spu);
     } catch (DuplicateKeyException ex) {
-      throw new BusinessException("spu already exists");
+      throw new BizException(ResultCode.PRODUCT_ALREADY_EXISTS, "spu already exists");
     }
 
     for (SkuDTO skuDTO : request.getSkus()) {
       Sku sku = toSkuEntity(spu.getId(), skuDTO);
       skuMapper.insert(sku);
     }
-    productSyncMessageProducer.sendUpsert(spu.getId());
     return spu.getId();
   }
 
@@ -81,7 +79,7 @@ public class ProductCatalogServiceImpl implements ProductCatalogService {
   public Boolean updateSpu(Long spuId, SpuCreateRequestDTO request) {
     Spu existing = spuMapper.selectById(spuId);
     if (existing == null || existing.getDeleted() == 1) {
-      throw new BusinessException("spu not found");
+      throw new BizException(ResultCode.PRODUCT_NOT_FOUND, "spu not found");
     }
 
     SpuDTO spuDTO = request.getSpu();
@@ -152,7 +150,6 @@ public class ProductCatalogServiceImpl implements ProductCatalogService {
       skuMapper.updateById(oldSku);
     }
     productDetailCacheService.evictAfterCommit(spuId);
-    productSyncMessageProducer.sendUpsert(spuId);
     return true;
   }
 
@@ -166,6 +163,19 @@ public class ProductCatalogServiceImpl implements ProductCatalogService {
     int effectiveMax = (maxListSize == null || maxListSize <= 0) ? 100 : maxListSize;
     LambdaQueryWrapper<Spu> wrapper =
         new LambdaQueryWrapper<Spu>().eq(Spu::getCategoryId, categoryId).eq(Spu::getDeleted, 0);
+    if (status != null) {
+      wrapper.eq(Spu::getStatus, status);
+    }
+    wrapper.last("LIMIT " + effectiveMax);
+    List<Spu> spus = spuMapper.selectList(wrapper);
+    return buildSpuDetails(spus);
+  }
+
+  @Override
+  public List<SpuDetailVO> listSpuByMerchantId(Long merchantId, Integer status) {
+    int effectiveMax = (maxListSize == null || maxListSize <= 0) ? 100 : maxListSize;
+    LambdaQueryWrapper<Spu> wrapper =
+        new LambdaQueryWrapper<Spu>().eq(Spu::getMerchantId, merchantId).eq(Spu::getDeleted, 0);
     if (status != null) {
       wrapper.eq(Spu::getStatus, status);
     }
@@ -238,13 +248,12 @@ public class ProductCatalogServiceImpl implements ProductCatalogService {
   public Boolean updateSpuStatus(Long spuId, Integer status) {
     Spu spu = spuMapper.selectById(spuId);
     if (spu == null || spu.getDeleted() == 1) {
-      throw new BusinessException("spu not found");
+      throw new BizException(ResultCode.PRODUCT_NOT_FOUND, "spu not found");
     }
     spu.setStatus(status);
     boolean updated = spuMapper.updateById(spu) > 0;
     if (updated) {
       productDetailCacheService.evictAfterCommit(spuId);
-      productSyncMessageProducer.sendUpsert(spuId);
     }
     return updated;
   }
@@ -338,7 +347,7 @@ public class ProductCatalogServiceImpl implements ProductCatalogService {
       return Collections.emptyMap();
     }
     Map<Long, Category> categoryById = new HashMap<>(categoryIds.size());
-    List<Category> categories = categoryMapper.selectBatchIds(categoryIds);
+    List<Category> categories = categoryMapper.selectByIds(categoryIds);
     if (categories == null || categories.isEmpty()) {
       return categoryById;
     }
@@ -357,7 +366,7 @@ public class ProductCatalogServiceImpl implements ProductCatalogService {
       return Collections.emptyMap();
     }
     Map<Long, Brand> brandById = new HashMap<>(brandIds.size());
-    List<Brand> brands = brandMapper.selectBatchIds(brandIds);
+    List<Brand> brands = brandMapper.selectByIds(brandIds);
     if (brands == null || brands.isEmpty()) {
       return brandById;
     }

@@ -1,10 +1,7 @@
 package com.cloud.auth.config;
 
 import com.cloud.auth.service.TokenBlacklistService;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
+import com.cloud.common.security.LocalJwtBlacklistCache;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -23,11 +20,9 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class BlacklistAwareJwtDecoder implements JwtDecoder {
 
-  private static final Duration LOCAL_BLACKLIST_GRACE_PERIOD = Duration.ofMinutes(10);
-
   private final JwtDecoder delegate;
   private final TokenBlacklistService tokenBlacklistService;
-  private final ConcurrentMap<String, Instant> localBlacklistCache = new ConcurrentHashMap<>();
+  private final LocalJwtBlacklistCache localBlacklistCache = new LocalJwtBlacklistCache();
 
   @Value("${app.security.jwt.blacklist-fail-closed:true}")
   private boolean blacklistFailClosed = true;
@@ -38,20 +33,20 @@ public class BlacklistAwareJwtDecoder implements JwtDecoder {
     Jwt jwt = delegate.decode(token);
 
     String tokenValue = jwt.getTokenValue();
-    evictExpiredLocalEntry(tokenValue);
+    localBlacklistCache.evictExpired(tokenValue);
 
     try {
       if (tokenBlacklistService.isBlacklisted(jwt)) {
-        rememberBlacklistedToken(tokenValue, jwt);
+        localBlacklistCache.remember(tokenValue, jwt);
         log.warn("JWT token blacklisted: subject={}, jti={}", jwt.getSubject(), jwt.getId());
         throw blacklistedException();
       }
-      localBlacklistCache.remove(tokenValue);
+      localBlacklistCache.clear(tokenValue);
       return jwt;
     } catch (JwtException ex) {
       throw ex;
     } catch (RuntimeException ex) {
-      if (isLocallyBlacklisted(tokenValue)) {
+      if (localBlacklistCache.contains(tokenValue)) {
         log.warn(
             "JWT blacklist validation fell back to local cache: subject={}, jti={}",
             jwt.getSubject(),
@@ -94,32 +89,5 @@ public class BlacklistAwareJwtDecoder implements JwtDecoder {
                     "Token blacklist validation is temporarily unavailable",
                     null))
             .getErrors());
-  }
-
-  private void rememberBlacklistedToken(String tokenValue, Jwt jwt) {
-    Instant expiresAt = jwt.getExpiresAt();
-    if (expiresAt == null || expiresAt.isBefore(Instant.now())) {
-      expiresAt = Instant.now().plus(LOCAL_BLACKLIST_GRACE_PERIOD);
-    }
-    localBlacklistCache.put(tokenValue, expiresAt);
-  }
-
-  private boolean isLocallyBlacklisted(String tokenValue) {
-    Instant expiresAt = localBlacklistCache.get(tokenValue);
-    if (expiresAt == null) {
-      return false;
-    }
-    if (expiresAt.isBefore(Instant.now())) {
-      localBlacklistCache.remove(tokenValue, expiresAt);
-      return false;
-    }
-    return true;
-  }
-
-  private void evictExpiredLocalEntry(String tokenValue) {
-    Instant expiresAt = localBlacklistCache.get(tokenValue);
-    if (expiresAt != null && expiresAt.isBefore(Instant.now())) {
-      localBlacklistCache.remove(tokenValue, expiresAt);
-    }
   }
 }
