@@ -6,6 +6,7 @@ import com.cloud.common.messaging.event.StockReleaseRequestEvent;
 import com.cloud.common.messaging.event.StockReserveRequestEvent;
 import com.cloud.common.messaging.event.StockRestoreEvent;
 import com.cloud.common.messaging.outbox.OutboxEventService;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.HashMap;
 import java.util.Map;
@@ -22,6 +23,8 @@ public class OrderMessageProducer {
   private final OutboxEventService outboxEventService;
   private final ObjectMapper objectMapper;
   private final OrderOutboxDispatcher orderOutboxDispatcher;
+  private static final TypeReference<Map<String, Object>> STRING_OBJECT_MAP =
+      new TypeReference<>() {};
 
   public boolean sendOrderCreatedEvent(OrderCreatedEvent event) {
     try {
@@ -161,7 +164,7 @@ public class OrderMessageProducer {
     if (event == null) {
       throw new IllegalArgumentException("event is required");
     }
-    Map<String, Object> payload = objectMapper.convertValue(event, Map.class);
+    Map<String, Object> payload = objectMapper.convertValue(event, STRING_OBJECT_MAP);
     payload.putIfAbsent("eventId", UUID.randomUUID().toString());
     payload.putIfAbsent("eventType", eventType);
     payload.putIfAbsent("timestamp", System.currentTimeMillis());

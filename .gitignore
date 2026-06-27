@@ -32,6 +32,10 @@ bin/
 
 # VSCode
 .vscode/
+.vs/
+
+# Playwright MCP local state
+.playwright-mcp/
 
 # AI Assistant
 .codex
