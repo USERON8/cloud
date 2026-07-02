@@ -119,6 +119,7 @@ Notes:
 | `docs/backend-api.md` | Backend route ownership, trust boundary, API surface, and service-chain ownership |
 | `docs/frontend-api.md` | Current UniApp API modules and frontend request rules |
 | `docs/backend-runtime.md` | Backend runtime, consistency, cache, exception, and style rules |
+| `docs/system-maintenance-scope.md` | Maintenance scope, state machines, failure handling, and governance boundary |
 | `docs/dev-startup.md` | Local startup scripts, flags, and linked-host workflows |
 | `docs/observability-stack.md` | SkyWalking, Prometheus, and Grafana setup |
 | `docs/TEST_SCRIPT_INDEX.md` | Contract, smoke, and performance script entrypoints |

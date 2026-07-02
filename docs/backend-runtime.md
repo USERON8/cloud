@@ -147,6 +147,7 @@ Recommended local checks:
 
 - `docs/backend-api.md`
 - `docs/frontend-api.md`
+- `docs/system-maintenance-scope.md`
 - `docs/dev-startup.md`
 - `docs/observability-stack.md`
 - `docs/TEST_SCRIPT_INDEX.md`
