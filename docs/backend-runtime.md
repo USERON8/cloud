@@ -22,6 +22,28 @@ This document is the compact runtime guide for backend boundaries, consistency, 
 | Merchant and merchant-auth admin surfaces | `user-service` | still intentionally left in the business domain |
 | Internal identity trust | `gateway` + shared security layer | `gateway` signs `X-Internal-*`, downstream services verify HMAC |
 
+## Shared Module Boundaries
+
+Shared modules should stay boring and dependency-light. If code needs business data access,
+service orchestration, or a product-specific rule, keep it inside the owning service instead
+of moving it to `common-*`.
+
+| Module | Owns | Must not own |
+| --- | --- | --- |
+| `common-api` | Dubbo contracts and RPC-facing request/response types | HTTP controllers, service implementations, persistence logic |
+| `common-domain` | Shared DTO/VO/entity base types used across service boundaries | Business workflows, repository code, cache or MQ integration |
+| `common-core` | Result wrappers, exceptions, small stateless utilities, context helpers | Spring web filters, database access, service-specific validation |
+| `common-web` | Web exception handling, web helpers, transaction commit support | Domain rules, direct RPC clients, service orchestration |
+| `common-db` | Database, Redis, ID, MyBatis, and cache infrastructure helpers | Domain-specific SQL, service tables, controller behavior |
+| `common-security` | Authentication helpers, internal request verification, permission handling | Public route ownership, auth-service token issuance logic |
+| `common-messaging` | Outbox, MQ consumer base classes, idempotency helpers | Message payload business decisions or service-specific compensation |
+| `common-async` | Generic async execution infrastructure | Business retries, domain scheduling rules |
+| `common-minio` | Object storage client wiring and reusable file helpers | Merchant/user/product upload policies |
+| `common-log` | Logging integration only | Audit business semantics |
+
+Before adding a new shared helper, check whether at least two services need the same behavior
+now. Do not promote code into `common-*` only because it might be reused later.
+
 ## Request And Trust Model
 
 - Public clients send bearer tokens only.
@@ -104,6 +126,15 @@ Boundary rules:
 - Service-to-service synchronous calls prefer `common-api` Dubbo contracts.
 - Do not keep two HTTP routes for the same capability unless the comment and docs state the compatibility reason and removal condition.
 - Service README files should stay short: responsibility, public surface, runtime notes, local run command.
+
+## Test Priorities
+
+When tightening this repository, add tests in this order:
+
+1. Shared behavior in `common-core`, `common-security`, `common-db`, and `common-messaging`.
+2. Cross-service contracts in `common-api` and event payload handling.
+3. High-change business services with low coverage: `user-service`, `product-service`, `search-service`, `stock-service`, and `auth-service`.
+4. Gateway route and trust-boundary behavior whenever public routing or identity propagation changes.
 
 Recommended local checks:
 

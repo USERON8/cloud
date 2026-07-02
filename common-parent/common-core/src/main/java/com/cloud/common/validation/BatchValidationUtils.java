@@ -16,14 +16,16 @@ public class BatchValidationUtils {
   public static void validateBatchSize(Collection<?> collection, String operationName, int limit) {
     if (collection == null || collection.isEmpty()) {
       throw new ValidationException(
-          "batchData", collection, String.format("%s鏁版嵁鍒楄〃涓嶈兘涓虹┖", operationName));
+          "batchData", collection, String.format("%s batch data must not be empty", operationName));
     }
 
     if (collection.size() > limit) {
       throw new ValidationException(
           "batchSize",
           collection.size(),
-          String.format("%s鏁伴噺涓嶈兘瓒呰繃%d涓紝褰撳墠鏁伴噺: %d", operationName, limit, collection.size()));
+          String.format(
+              "%s batch size must not exceed %d, actual size: %d",
+              operationName, limit, collection.size()));
     }
   }
 
@@ -35,12 +37,14 @@ public class BatchValidationUtils {
   public static Result<String> validateBatchSizeWithError(
       Collection<?> collection, String operationName, int limit) {
     if (collection == null || collection.isEmpty()) {
-      return Result.badRequest(String.format("%s鏁版嵁鍒楄〃涓嶈兘涓虹┖", operationName));
+      return Result.badRequest(String.format("%s batch data must not be empty", operationName));
     }
 
     if (collection.size() > limit) {
       return Result.error(
-          String.format("%s鏁伴噺涓嶈兘瓒呰繃%d涓紝褰撳墠鏁伴噺: %d", operationName, limit, collection.size()));
+          String.format(
+              "%s batch size must not exceed %d, actual size: %d",
+              operationName, limit, collection.size()));
     }
 
     return null;
@@ -53,14 +57,16 @@ public class BatchValidationUtils {
   public static void validateBatchSize(Object[] array, String operationName, int limit) {
     if (array == null || array.length == 0) {
       throw new ValidationException(
-          "batchArray", array, String.format("%s鏁扮粍涓嶈兘涓虹┖", operationName));
+          "batchArray", array, String.format("%s batch array must not be empty", operationName));
     }
 
     if (array.length > limit) {
       throw new ValidationException(
           "batchSize",
           array.length,
-          String.format("%s鏁伴噺涓嶈兘瓒呰繃%d涓紝褰撳墠鏁伴噺: %d", operationName, limit, array.length));
+          String.format(
+              "%s batch size must not exceed %d, actual size: %d",
+              operationName, limit, array.length));
     }
   }
 
@@ -70,7 +76,7 @@ public class BatchValidationUtils {
     for (Long id : ids) {
       if (id == null || id <= 0) {
         throw new ValidationException(
-            "id", id, String.format("%s鍖呭惈鏃犳晥鐨処D: %s", operationName, id));
+            "id", id, String.format("%s contains invalid id: %s", operationName, id));
       }
     }
   }
@@ -81,7 +87,7 @@ public class BatchValidationUtils {
     for (Long id : ids) {
       if (id == null || id <= 0) {
         throw new ValidationException(
-            "id", id, String.format("%s鍖呭惈鏃犳晥鐨処D: %s", operationName, id));
+            "id", id, String.format("%s contains invalid id: %s", operationName, id));
       }
     }
   }

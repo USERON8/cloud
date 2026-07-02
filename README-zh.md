@@ -1,17 +1,17 @@
-# Cloud Shop Microservices
-Version: 1.1.0
+# Cloud Shop 微服务
+版本：1.1.0
 
 [English](./README.md)
 
-Cloud Shop 是一个基于 Spring Boot、Spring Cloud Alibaba、Dubbo、RocketMQ、MySQL、Redis、Elasticsearch 和 UniApp 的电商微服务项目。
+Cloud Shop 是一个基于 Spring Boot、Spring Cloud Alibaba、Dubbo、RocketMQ、MySQL、Redis、Elasticsearch 和 UniApp 前端的电商微服务项目。
 
 ## 当前系统模型
 
-- 公网入口：`gateway` 是唯一公网后端入口；本地 Docker 默认通过 Nginx 暴露为 `http://127.0.0.1:18080`。
-- 认证与信任：`gateway` 负责校验公网 JWT，并向下游注入带 HMAC 签名的 `X-Internal-*` 身份头。
-- 一致性：跨服务写链路统一采用本地事务、`outbox_event`、RocketMQ 和消费端幂等。
-- 缓存：业务读路径遵循 Cache-Aside + 延迟双删；`payment-service` 的缓存只用于幂等、防重、短时状态辅助和限流。
-- 搜索：`search-service` 基于 Elasticsearch 提供商品和店铺搜索，并配合 Redis 热点数据缓存。
+- 公网入口：`gateway` 是唯一公网后端入口。本地 Docker 环境默认通过 Nginx 暴露在 `http://127.0.0.1:18080`。
+- 认证与信任：`gateway` 校验公网 JWT，注入带签名的 `X-Internal-*` 请求头，下游服务校验 HMAC，或在明确场景下接受直接 bearer-token 流量。
+- 一致性：跨服务写链路统一使用本地事务、`outbox_event`、RocketMQ 投递和幂等消费者。
+- 缓存：业务读路径遵循 Cache-Aside 和提交后延迟双删。`payment-service` 的缓存仅用于幂等、收银台票据、短时状态辅助和限流。
+- 搜索：`search-service` 基于 Elasticsearch 提供商品和店铺发现能力，并配合 Redis 热点数据缓存。
 
 ## 模块概览
 
@@ -23,24 +23,24 @@ Cloud Shop 是一个基于 Spring Boot、Spring Cloud Alibaba、Dubbo、RocketMQ
 | `order-service` | `8083` | 购物车、订单生命周期、售后、超时处理 |
 | `product-service` | `8084` | 商品、SKU、SPU、分类管理 |
 | `stock-service` | `8085` | 库存预占、释放、确认、台账查询 |
-| `payment-service` | `8086` | 支付单、收银台会话、退款、支付回调 |
+| `payment-service` | `8086` | 支付单、收银台会话、退款、支付回调处理 |
 | `search-service` | `8087` | 商品搜索、店铺搜索、联想词、推荐 |
-| `governance-service` | `8088` | 管理后台聚合、MQ/Outbox 治理、可观测性入口 |
-| `my-shop-uniapp` | `5173`（dev） | UniApp 前端（H5 / App） |
+| `governance-service` | `8088` | 管理后台聚合、MQ/Outbox 治理、可观测性跳转 |
+| `my-shop-uniapp` | `5173`（开发） | UniApp 前端，支持 H5 和 App 构建 |
 
 ## 目录说明
 
-- `common-parent/`：共享基础模块，如 `common-api`、`common-db`、`common-security`、`common-messaging`
+- `common-parent/`：共享基础模块，例如 `common-api`、`common-db`、`common-security`、`common-messaging`
 - `services/`：后端服务和服务级 README
 - `my-shop-uniapp/`：UniApp 前端
 - `db/`：初始化和测试 SQL
 - `scripts/dev/`：本地启动脚本
 - `docker/`：基础设施、监控和本地容器编排
-- `docs/`：API、启动、事务、缓存、可观测性文档
+- `docs/`：API、启动、一致性、缓存和可观测性文档
 
 ## 快速启动
 
-1. 准备环境文件。
+1. 准备本地环境文件。
 
 ```bash
 cp .env.example .env
@@ -70,7 +70,7 @@ powershell -File scripts/dev/start-containers.ps1 --with-monitoring
 powershell -File scripts/dev/start-platform.ps1 --with-monitoring
 ```
 
-3. 构建后端。
+3. 构建后端模块。
 
 ```bash
 mvn -T 1C clean package -DskipTests
@@ -116,9 +116,9 @@ pnpm --dir my-shop-uniapp build:h5
 
 | 文档 | 说明 |
 | --- | --- |
-| `docs/backend-api.md` | 当前后端路由归属、信任边界、接口面和服务链路归属 |
+| `docs/backend-api.md` | 后端路由归属、信任边界、接口面和服务链路归属 |
 | `docs/frontend-api.md` | 当前 UniApp API 模块和前端请求规则 |
-| `docs/backend-runtime.md` | 后端运行边界、事务一致性、缓存、异常和统一风格规则 |
+| `docs/backend-runtime.md` | 后端运行边界、一致性、缓存、异常和统一风格规则 |
 | `docs/dev-startup.md` | 本地启动脚本、参数和联调流程 |
 | `docs/observability-stack.md` | SkyWalking、Prometheus、Grafana 说明 |
 | `docs/TEST_SCRIPT_INDEX.md` | 契约、冒烟和性能脚本入口 |
