@@ -53,15 +53,15 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-@RestController
-@RequiredArgsConstructor
-@Validated
-@Tag(name = "治理管理员接口", description = "治理服务承载的管理员接口")
 /**
  * 后台治理公开聚合入口。
  *
  * <p>这里承载后台页面直接调用的 /api/admin/** 路由。后续新增治理页面应优先放在这里，并通过 Dubbo 或受控内部客户端访问业务服务。
  */
+@RestController
+@RequiredArgsConstructor
+@Validated
+@Tag(name = "治理管理员接口", description = "治理服务承载的管理员接口")
 public class GovernanceAdminController {
 
   @DubboReference(check = false, timeout = 5000, retries = 0)

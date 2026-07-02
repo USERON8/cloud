@@ -35,7 +35,8 @@ Raw-response exceptions:
 | Route group | Target service | Notes |
 | --- | --- | --- |
 | `/auth/**`, `/oauth2/**`, `/.well-known/**` | `auth-service` | Public auth and OAuth2 server routes |
-| `/api/users/**`, `/api/addresses/**`, `/api/merchants/**`, `/api/merchant-authentications/**`, `/api/admins/**` | `user-service` | User, merchant, and admin domain routes |
+| `/api/users/**`, `/api/addresses/**`, `/api/merchants/**`, `/api/merchant-authentications/**` | `user-service` | User and merchant domain routes |
+| `/api/admins/**` | `user-service` | Admin account domain routes |
 | `/api/products/**`, `/api/categories/**`, `/api/spus/**`, `/api/skus/**` | `product-service` | Product and catalog routes |
 | `/api/orders/**`, `/api/users/me/cart`, `/api/users/me/cart/**`, `/api/after-sales/**` | `order-service` | Cart, orders, and after-sale |
 | `/api/payment-orders/**`, `/api/payment-refunds/**`, `/api/payment-checkouts/**`, `/api/v1/payment/alipay/**` | `payment-service` | Payment, refund, checkout, callback |

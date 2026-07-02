@@ -107,6 +107,23 @@ class GatewayRouteDefinitionTest {
   }
 
   @Test
+  void adminAccountRoutesBelongToUserServiceNotGovernanceService() throws Exception {
+    Map<String, Object> userAdminRoute = routeById("user-service-admin");
+    Map<String, Object> governanceRoute = routeById("governance-service-admin");
+
+    assertThat(userAdminRoute.get("uri").toString()).contains("user-service");
+    assertThat(asStringList(userAdminRoute.get("predicates"))).contains("Path=/api/admins/**");
+    assertThat(asStringList(governanceRoute.get("predicates")))
+        .noneMatch(predicate -> predicate.contains("/api/admins/**"));
+  }
+
+  @Test
+  void userGovernanceInternalRoutesAreNotGatewayRoutes() throws Exception {
+    assertThat(routes().stream().flatMap(route -> asStringList(route.get("predicates")).stream()))
+        .noneMatch(predicate -> predicate.contains("/internal/user-governance/**"));
+  }
+
+  @Test
   void paymentAppRouteUsesPaymentFallback() throws Exception {
     Map<String, Object> paymentRoute = routeById("payment-service-app");
 

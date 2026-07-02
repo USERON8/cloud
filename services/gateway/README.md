@@ -18,7 +18,8 @@ Unified public entry for routing, JWT validation, internal identity forwarding, 
 ## Current Route Map
 
 - `/auth/**`, `/oauth2/**`, `/.well-known/**` -> `auth-service`
-- `/api/users/**`, `/api/addresses/**`, `/api/merchants/**`, `/api/merchant-authentications/**`, `/api/admins/**` -> `user-service`
+- `/api/users/**`, `/api/addresses/**`, `/api/merchants/**`, `/api/merchant-authentications/**` -> `user-service`
+- `/api/admins/**` -> `user-service`
 - `/api/products/**`, `/api/categories/**`, `/api/spus/**`, `/api/skus/**` -> `product-service`
 - `/api/orders/**`, `/api/users/me/cart`, `/api/users/me/cart/**`, `/api/after-sales/**` -> `order-service`
 - `/api/payment-orders/**`, `/api/payment-refunds/**`, `/api/payment-checkouts/**`, `/api/v1/payment/alipay/**` -> `payment-service`
