@@ -23,13 +23,18 @@ the current stack. The current stack is enough:
 
 Source of truth: `order-service`.
 
+Current runtime state names are the string states used by `OrderServiceImpl`; older enum names in
+legacy helper classes are not the authority for new changes.
+
 | State | Meaning | Allowed next states | Terminal |
 | --- | --- | --- | --- |
-| `PENDING_PAYMENT` | Main order is created and waiting for payment | `PAID`, `CANCELLED` | No |
-| `PAID` | Payment is confirmed and stock can be finalized or order can be shipped | `SHIPPED` | No |
-| `SHIPPED` | Merchant has shipped the order | `COMPLETED` | No |
-| `COMPLETED` | User receipt/order completion is finished | None | Yes |
+| `CREATED` | Main/sub order is created and waiting for stock reservation or payment reconciliation | `STOCK_RESERVED`, `PAID`, `CANCELLED`, `CLOSED` | No |
+| `STOCK_RESERVED` | Stock has been frozen and the order is waiting for payment | `PAID`, `CANCELLED`, `CLOSED` | No |
+| `PAID` | Payment is confirmed and stock can be finalized or order can be shipped | `SHIPPED`, `CLOSED` | No |
+| `SHIPPED` | Merchant has shipped the order | `DONE`, `CLOSED` | No |
+| `DONE` | User receipt/order completion is finished | None | Yes |
 | `CANCELLED` | Order is cancelled before completion | None | Yes |
+| `CLOSED` | Order is force-closed or compensated after an abnormal path | None | Yes |
 
 Timeout cancellation must only target sub-orders that are still waiting for payment or stock
 reservation. Before cancelling, `order-service` must ask `payment-service` whether a payment is
@@ -68,15 +73,26 @@ Source of truth: `order-service` for after-sale state, `payment-service` for pro
 
 | State | Meaning | Allowed next states |
 | --- | --- | --- |
-| `PENDING_AUDIT` | User submitted after-sale request | `AUDIT_PASSED`, `AUDIT_REJECTED`, `CANCELLED` |
-| `AUDIT_PASSED` | Merchant approved after-sale | `RETURNING`, `REFUNDING`, `CANCELLED` |
-| `RETURNING` | User is returning goods | `GOODS_RECEIVED`, `CLOSED` |
-| `GOODS_RECEIVED` | Merchant confirmed returned goods | `REFUNDING` |
-| `REFUNDING` | Provider refund is in progress | `COMPLETED`, `CLOSED` |
-| `AUDIT_REJECTED`, `COMPLETED`, `CANCELLED`, `CLOSED` | Finished states | None |
+| `APPLIED` | User submitted after-sale request | `AUDITING`, `CANCELLED` |
+| `AUDITING` | Merchant/system is auditing the request | `APPROVED`, `REJECTED`, `CLOSED` |
+| `APPROVED` | Merchant approved after-sale | `WAIT_RETURN`, `REFUNDING`, `CLOSED` |
+| `WAIT_RETURN` | User is returning goods | `RETURNED`, `CANCELLED`, `CLOSED` |
+| `RETURNED` | User has submitted return shipment | `RECEIVED`, `CLOSED` |
+| `RECEIVED` | Merchant confirmed returned goods | `REFUNDING`, `CLOSED` |
+| `REFUNDING` | Provider refund is in progress | `REFUNDED`, `CLOSED` |
+| `REJECTED`, `REFUNDED`, `CANCELLED`, `CLOSED` | Finished states | None |
 
-Refund provider callbacks and order after-sale updates must be reconciled through compensation when
-one side succeeds and the other side fails.
+The intentionally simple after-sale refund flow is:
+
+1. `PROCESS` starts a payment refund through `payment-service` and moves after-sale/sub-order status
+   to `REFUNDING`.
+2. The refund request uses a deterministic refund number and idempotency key based on `afterSaleNo`.
+3. `REFUND_COMPLETED` from `payment-service` advances order after-sale state to `REFUNDED`; return
+   refunds restore stock at that point.
+
+If creating the remote refund fails, the local order transaction rolls back and merchant processing
+can be retried. Refund provider callbacks and order after-sale updates must still be reconciled
+through governance compensation when one side succeeds and the other side fails.
 
 ## Failure Handling Table
 
@@ -86,7 +102,8 @@ one side succeeds and the other side fails.
 | order creation -> stock reserve | reserved event cannot be queued | rollback local stock transaction and retry through MQ/outbox | `stock-service` |
 | stock reserved -> order update | order consumer fails remotely | retry remote/system failures; business-invalid events are ACKed and recorded | `order-service` |
 | payment success -> order paid | order update fails after provider confirms payment | retry through outbox; expose compensation entry in governance | `payment-service` + `order-service` |
-| payment success -> stock confirm | stock confirm fails | retry stock command; do not mark inventory final from cache | `stock-service` |
+| payment success -> stock confirm | stock confirm hits a transient DB failure | retry the confirm command a bounded number of times; do not mark inventory final from cache | `stock-service` |
+| order cancellation/refund -> stock release | stock release hits a transient DB failure | retry the release command a bounded number of times; keep business errors explicit | `stock-service` |
 | timeout cancellation | payment already confirmed remotely | skip cancellation and keep order for payment-success reconciliation | `order-service` |
 | timeout cancellation | payment lookup unavailable | retry later; do not cancel blindly | `order-service` |
 | refund success -> after-sale completed | order update fails | retry through outbox and expose compensation entry | `payment-service` + `order-service` |

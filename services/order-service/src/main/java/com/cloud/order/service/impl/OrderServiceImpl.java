@@ -39,7 +39,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -83,7 +82,7 @@ public class OrderServiceImpl implements OrderService {
   private final OrderSubMapper orderSubMapper;
   private final OrderItemMapper orderItemMapper;
   private final AfterSaleMapper afterSaleMapper;
-  private final ObjectProvider<OrderRefundSagaCoordinator> orderRefundSagaCoordinatorProvider;
+  private final OrderRefundSagaCoordinator orderRefundSagaCoordinator;
   private final TradeMetrics tradeMetrics;
   private final OrderAggregateCacheService orderAggregateCacheService;
   private final OrderShippedMessageProducer orderShippedMessageProducer;
@@ -577,13 +576,8 @@ public class OrderServiceImpl implements OrderService {
     String targetStatus = AfterSaleAction.PROCESS.targetStatus();
     validateAfterSaleTransition(afterSale.getStatus(), targetStatus);
 
-    OrderRefundSagaCoordinator coordinator = orderRefundSagaCoordinatorProvider.getIfAvailable();
-    if (coordinator == null) {
-      throw new BizException("refund saga is disabled");
-    }
-
     try {
-      coordinator.startRefundSaga(afterSale, remark);
+      orderRefundSagaCoordinator.startRefundSaga(afterSale, remark);
       AfterSale latest = afterSaleMapper.selectById(afterSaleId);
       return latest == null ? afterSale : latest;
     } catch (Exception ex) {

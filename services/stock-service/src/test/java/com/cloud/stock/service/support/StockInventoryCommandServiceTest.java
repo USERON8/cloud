@@ -15,6 +15,7 @@ import com.cloud.stock.service.StockLedgerService;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.dao.CannotAcquireLockException;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -94,6 +95,19 @@ class StockInventoryCommandServiceTest {
     verify(stockLedgerService).confirm(second);
     verify(stockLedgerService).release(first);
     verify(stockLedgerService).release(second);
+  }
+
+  @Test
+  void confirmRequestRetriesTransientDataAccessFailure() {
+    StockOperateCommandDTO command = stockCommand(10001L, 2);
+    when(stockLedgerService.confirm(command))
+        .thenThrow(new CannotAcquireLockException("deadlock"))
+        .thenReturn(true);
+
+    service.handleConfirmRequest(
+        StockConfirmRequestEvent.builder().orderNo("ORD-5").items(List.of(command)).build());
+
+    verify(stockLedgerService, org.mockito.Mockito.times(2)).confirm(command);
   }
 
   private StockOperateCommandDTO stockCommand(Long skuId, int quantity) {

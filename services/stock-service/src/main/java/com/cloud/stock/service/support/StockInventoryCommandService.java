@@ -7,12 +7,15 @@ import com.cloud.common.messaging.event.StockReserveRequestEvent;
 import com.cloud.stock.messaging.StockMessageProducer;
 import com.cloud.stock.service.StockLedgerService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.TransientDataAccessException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
 public class StockInventoryCommandService {
+
+  private static final int TRANSIENT_RETRY_ATTEMPTS = 3;
 
   private final StockLedgerService stockLedgerService;
   private final StockMessageProducer stockMessageProducer;
@@ -36,23 +39,41 @@ public class StockInventoryCommandService {
     }
   }
 
-  @Transactional(rollbackFor = Exception.class)
   public void handleConfirmRequest(StockConfirmRequestEvent event) {
     if (event == null || event.getItems() == null || event.getItems().isEmpty()) {
       return;
     }
     for (StockOperateCommandDTO command : event.getItems()) {
-      stockLedgerService.confirm(command);
+      retryTransient(() -> stockLedgerService.confirm(command));
     }
   }
 
-  @Transactional(rollbackFor = Exception.class)
   public void handleReleaseRequest(StockReleaseRequestEvent event) {
     if (event == null || event.getItems() == null || event.getItems().isEmpty()) {
       return;
     }
     for (StockOperateCommandDTO command : event.getItems()) {
-      stockLedgerService.release(command);
+      retryTransient(() -> stockLedgerService.release(command));
     }
+  }
+
+  private void retryTransient(StockOperation operation) {
+    int attempt = 0;
+    while (true) {
+      try {
+        operation.run();
+        return;
+      } catch (TransientDataAccessException ex) {
+        attempt++;
+        if (attempt >= TRANSIENT_RETRY_ATTEMPTS) {
+          throw ex;
+        }
+      }
+    }
+  }
+
+  @FunctionalInterface
+  private interface StockOperation {
+    void run();
   }
 }
