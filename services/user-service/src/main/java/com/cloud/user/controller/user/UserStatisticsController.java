@@ -25,7 +25,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/admin/statistics")
+@RequestMapping("/internal/user-governance/statistics")
 @RequiredArgsConstructor
 @Tag(name = "用户统计", description = "用户统计接口")
 @Validated

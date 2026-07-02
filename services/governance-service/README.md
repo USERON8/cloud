@@ -38,7 +38,11 @@ Admin aggregation and governance service for operational routes that should not 
 
 - This service is the preferred public admin entry for governance-style operations.
 - Some underlying data still originates from domain services, but the route boundary is centralized here.
+- This service must not become the owner of product, order, payment, stock, user, or merchant business truth.
+- Admin account CRUD (`/api/admins/**`) remains owned and exposed by `user-service`, not by `governance-service`.
+- Compensation and requeue actions should trigger the owning service workflow instead of rewriting domain state locally.
 - Direct access to port `8088` is mainly useful for isolated debugging; normal traffic should enter through `gateway`.
+- The long-term boundary is recorded in `docs/system-maintenance-scope.md`.
 
 ## Local Run
 

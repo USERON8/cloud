@@ -111,12 +111,15 @@ Raw-response exceptions:
 The previous internal HTTP surfaces have been removed from the gateway route map:
 
 - `/internal/governance/**`
+- `/internal/user-governance/**`
 - `/api/admin/stocks/internal/**`
 - `/api/admin/thread-pool/internal/**`
 - `/api/admin/statistics/internal/**`
 
 Use explicit governance admin routes for HTTP traffic. Service-to-service aggregation should use
 `common-api` Dubbo contracts such as `UserGovernanceDubboApi` and `StockDubboApi`.
+`user-service` may keep `/internal/user-governance/**` controllers for direct debugging or
+backward-compatible service-local access, but these paths are not gateway route owners.
 
 ## Service Chain Ownership
 
@@ -128,6 +131,7 @@ Use explicit governance admin routes for HTTP traffic. Service-to-service aggreg
 - Inventory quantity and ledger truth belong to `stock-service`.
 - Payment orders, refunds, and provider callback verification belong to `payment-service`.
 - Admin governance views belong to `governance-service`; it aggregates through `common-api` Dubbo contracts or explicit governance support endpoints.
+- Admin account CRUD belongs to `user-service` at `/api/admins/**`; `governance-service` must not expose a parallel `/api/admins/**` proxy.
 
 Cross-service rule: add or extend a `common-api` contract first. Do not add controller-to-controller REST calls for normal business integration.
 

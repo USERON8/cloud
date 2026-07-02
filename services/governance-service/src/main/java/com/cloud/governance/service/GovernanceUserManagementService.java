@@ -1,13 +1,9 @@
 package com.cloud.governance.service;
 
-import com.cloud.api.user.AdminGovernanceDubboApi;
 import com.cloud.api.user.UserAdminGovernanceDubboApi;
-import com.cloud.common.domain.dto.user.AdminDTO;
-import com.cloud.common.domain.dto.user.AdminUpsertRequestDTO;
 import com.cloud.common.domain.dto.user.UserDTO;
 import com.cloud.common.domain.dto.user.UserPageDTO;
 import com.cloud.common.domain.dto.user.UserUpsertRequestDTO;
-import com.cloud.common.domain.vo.user.AdminPageVO;
 import com.cloud.common.domain.vo.user.UserPageVO;
 import com.cloud.common.remote.RemoteCallSupport;
 import java.util.List;
@@ -22,55 +18,7 @@ public class GovernanceUserManagementService {
   private final RemoteCallSupport remoteCallSupport;
 
   @DubboReference(check = false, timeout = 5000, retries = 0)
-  private AdminGovernanceDubboApi adminGovernanceDubboApi;
-
-  @DubboReference(check = false, timeout = 5000, retries = 0)
   private UserAdminGovernanceDubboApi userAdminGovernanceDubboApi;
-
-  public AdminPageVO getAdmins(Integer page, Integer size) {
-    return remoteCallSupport.query(
-        "user-service.governance.getAdminsPage",
-        () -> adminGovernanceDubboApi.getAdminsPage(page, size));
-  }
-
-  public AdminDTO getAdminById(Long id) {
-    return remoteCallSupport.query(
-        "user-service.governance.getAdminById", () -> adminGovernanceDubboApi.getAdminById(id));
-  }
-
-  public AdminDTO createAdmin(AdminUpsertRequestDTO requestDTO) {
-    return remoteCallSupport.command(
-        "user-service.governance.createAdmin",
-        () -> adminGovernanceDubboApi.createAdmin(requestDTO));
-  }
-
-  public boolean updateAdmin(Long id, AdminUpsertRequestDTO requestDTO) {
-    Boolean updated =
-        remoteCallSupport.command(
-            "user-service.governance.updateAdmin",
-            () -> adminGovernanceDubboApi.updateAdmin(id, requestDTO));
-    return Boolean.TRUE.equals(updated);
-  }
-
-  public boolean deleteAdmin(Long id) {
-    Boolean deleted =
-        remoteCallSupport.command(
-            "user-service.governance.deleteAdmin", () -> adminGovernanceDubboApi.deleteAdmin(id));
-    return Boolean.TRUE.equals(deleted);
-  }
-
-  public boolean updateAdminStatus(Long id, Integer status) {
-    Boolean updated =
-        remoteCallSupport.command(
-            "user-service.governance.updateAdminStatus",
-            () -> adminGovernanceDubboApi.updateAdminStatus(id, status));
-    return Boolean.TRUE.equals(updated);
-  }
-
-  public String resetPassword(Long id) {
-    return remoteCallSupport.command(
-        "user-service.governance.resetPassword", () -> adminGovernanceDubboApi.resetPassword(id));
-  }
 
   public UserDTO findUserByUsername(String username) {
     return remoteCallSupport.query(

@@ -7,7 +7,6 @@ import com.cloud.api.order.OrderDubboApi;
 import com.cloud.api.payment.PaymentDubboApi;
 import com.cloud.api.product.ProductDubboApi;
 import com.cloud.api.stock.StockDubboApi;
-import com.cloud.api.user.AdminGovernanceDubboApi;
 import com.cloud.api.user.UserAdminGovernanceDubboApi;
 import com.cloud.api.user.UserGovernanceDubboApi;
 import java.io.Serializable;
@@ -35,7 +34,6 @@ class RpcReturnSerializableContractTest {
           PaymentDubboApi.class,
           ProductDubboApi.class,
           StockDubboApi.class,
-          AdminGovernanceDubboApi.class,
           UserAdminGovernanceDubboApi.class,
           UserGovernanceDubboApi.class);
 

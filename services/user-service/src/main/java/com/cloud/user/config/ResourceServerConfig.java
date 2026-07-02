@@ -19,14 +19,8 @@ public class ResourceServerConfig {
           AuthorizeHttpRequestsConfigurer<HttpSecurity>.AuthorizationManagerRequestMatcherRegistry
               authz) {
         authz
-            .requestMatchers(
-                "/api/admins/**",
-                "/api/admin/users/**",
-                "/api/admin/statistics/**",
-                "/api/admin/thread-pools/**")
+            .requestMatchers("/api/admins/**", "/internal/user-governance/**")
             .hasRole("ADMIN")
-            .requestMatchers("/api/admin/notifications/**")
-            .hasAuthority("admin:all")
             .requestMatchers(
                 "/api/users/**",
                 "/api/addresses/**",

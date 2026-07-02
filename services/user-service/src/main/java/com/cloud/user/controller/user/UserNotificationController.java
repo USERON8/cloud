@@ -22,7 +22,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/admin/notifications")
+@RequestMapping("/internal/user-governance/notifications")
 @RequiredArgsConstructor
 @Tag(name = "用户通知", description = "用户通知管理接口")
 public class UserNotificationController {

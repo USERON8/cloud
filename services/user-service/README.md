@@ -22,11 +22,13 @@ User domain service for consumers, merchants, merchant verification, administrat
 - Merchant: `/api/merchants/**`
 - Merchant authentication: `/api/merchants/{merchantId}/authentication/**`, `/api/merchant-authentications/**`
 - Admin accounts: `/api/admins/**`
-- Admin support controllers also exist for `/api/admin/users/**`, `/api/admin/statistics/**`, `/api/admin/thread-pools/**`, and `/api/admin/notifications/**`
+- Internal governance support: `/internal/user-governance/**`
 
 ## Runtime Notes
 
 - When traffic enters through `gateway`, the preferred public admin routes for statistics, thread pools, notifications, and admin-user governance are owned by `governance-service`.
+- `user-service` does not expose `/api/admin/users/**`, `/api/admin/statistics/**`, `/api/admin/thread-pools/**`, or `/api/admin/notifications/**` as public route owners.
+- Admin account management remains a user-domain API at `/api/admins/**`; it is not proxied by `governance-service`.
 - Business cache paths use explicit Redis single-level services for user, address, merchant, merchant-auth, and statistics reads.
 - Avatar upload and related file handling depend on MinIO integration.
 - This service remains the source of truth for user-domain data even when the public admin surface is aggregated elsewhere.

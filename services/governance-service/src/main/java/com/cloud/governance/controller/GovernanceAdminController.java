@@ -3,15 +3,12 @@ package com.cloud.governance.controller;
 import com.cloud.api.user.UserGovernanceDubboApi;
 import com.cloud.api.user.UserNotificationGovernanceDubboApi;
 import com.cloud.common.domain.dto.governance.OutboxBatchRequeueRequestDTO;
-import com.cloud.common.domain.dto.user.AdminDTO;
-import com.cloud.common.domain.dto.user.AdminUpsertRequestDTO;
 import com.cloud.common.domain.dto.user.UserNotificationBatchRequestDTO;
 import com.cloud.common.domain.dto.user.UserNotificationStatusChangeRequestDTO;
 import com.cloud.common.domain.dto.user.UserSystemAnnouncementRequestDTO;
 import com.cloud.common.domain.dto.user.UserUpsertRequestDTO;
 import com.cloud.common.domain.vo.auth.TokenBlacklistStatsVO;
 import com.cloud.common.domain.vo.governance.ThreadPoolMetricsVO;
-import com.cloud.common.domain.vo.user.AdminPageVO;
 import com.cloud.common.domain.vo.user.UserPageVO;
 import com.cloud.common.domain.vo.user.UserStatisticsVO;
 import com.cloud.common.enums.ResultCode;
@@ -216,56 +213,6 @@ public class GovernanceAdminController {
       throw new BizException(ResultCode.NOT_FOUND, "Thread pool bean not found: " + name);
     }
     return Result.success(ThreadPoolResponseMapper.toResponse(metrics));
-  }
-
-  @GetMapping("/api/admins")
-  @PreAuthorize("hasAuthority('admin:all')")
-  public Result<AdminPageVO> getAdmins(
-      @RequestParam(defaultValue = "1") @Min(1) Integer page,
-      @RequestParam(defaultValue = "10") @Min(1) @Max(100) Integer size) {
-    return Result.success(governanceUserManagementService.getAdmins(page, size));
-  }
-
-  @GetMapping("/api/admins/{id}")
-  @PreAuthorize("hasAuthority('admin:all')")
-  public Result<AdminDTO> getAdminById(@PathVariable @NotNull @Positive Long id) {
-    return Result.success("Query successful", governanceUserManagementService.getAdminById(id));
-  }
-
-  @PostMapping("/api/admins")
-  @PreAuthorize("hasAuthority('admin:all')")
-  public Result<AdminDTO> createAdmin(@RequestBody @Validated AdminUpsertRequestDTO requestDTO) {
-    return Result.success("Admin created", governanceUserManagementService.createAdmin(requestDTO));
-  }
-
-  @PutMapping("/api/admins/{id}")
-  @PreAuthorize("hasAuthority('admin:all')")
-  public Result<Boolean> updateAdmin(
-      @PathVariable @NotNull @Positive Long id,
-      @RequestBody @Validated AdminUpsertRequestDTO requestDTO) {
-    return Result.success(
-        "Admin updated", governanceUserManagementService.updateAdmin(id, requestDTO));
-  }
-
-  @DeleteMapping("/api/admins/{id}")
-  @PreAuthorize("hasAuthority('admin:all')")
-  public Result<Boolean> deleteAdmin(@PathVariable @NotNull @Positive Long id) {
-    return Result.success("Deleted successfully", governanceUserManagementService.deleteAdmin(id));
-  }
-
-  @PatchMapping("/api/admins/{id}/status")
-  @PreAuthorize("hasAuthority('admin:all')")
-  public Result<Boolean> updateAdminStatus(
-      @PathVariable @NotNull @Positive Long id, @RequestParam Integer status) {
-    return Result.success(
-        "Status updated", governanceUserManagementService.updateAdminStatus(id, status));
-  }
-
-  @PostMapping("/api/admins/{id}/password-resets")
-  @PreAuthorize("hasAuthority('admin:all')")
-  public Result<String> resetPassword(@PathVariable @NotNull @Positive Long id) {
-    return Result.success(
-        "Password reset successful", governanceUserManagementService.resetPassword(id));
   }
 
   @GetMapping("/api/admin/users")

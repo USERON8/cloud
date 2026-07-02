@@ -26,7 +26,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/admin/users")
+@RequestMapping("/internal/user-governance/users")
 @RequiredArgsConstructor
 @Tag(name = "用户管理", description = "用户管理接口")
 public class UserManageController {

@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/admin/users")
+@RequestMapping("/internal/user-governance/users")
 @RequiredArgsConstructor
 @Validated
 @Tag(name = "用户查询", description = "用户查询接口")
