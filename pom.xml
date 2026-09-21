@@ -19,7 +19,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.5.3</version>
+        <version>3.5.16</version>
     </parent>
 
     <properties>
@@ -28,9 +28,9 @@
         <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.version>1.1.0</project.version>
-        <spring-boot.version>3.5.3</spring-boot.version>
-        <spring-cloud.version>2025.0.0</spring-cloud.version>
-        <spring-cloud-alibaba.version>2025.0.0.0-preview</spring-cloud-alibaba.version>
+        <spring-boot.version>3.5.16</spring-boot.version>
+        <spring-cloud.version>2025.0.3</spring-cloud.version>
+        <spring-cloud-alibaba.version>2025.0.0.0</spring-cloud-alibaba.version>
 
         <mybatisplus.version>3.5.13</mybatisplus.version>
         <mapstruct.version>1.6.3</mapstruct.version>
@@ -60,8 +60,8 @@
         <druid.version>1.2.27</druid.version>
         <skywalking.version>9.6.0</skywalking.version>
         <xxl-job.version>2.4.0</xxl-job.version>
-        <sentinel.version>1.8.8</sentinel.version>
-        <rocketmq-spring.version>2.2.3</rocketmq-spring.version>
+        <sentinel.version>1.8.9</sentinel.version>
+        <rocketmq-spring.version>2.3.6</rocketmq-spring.version>
 
         <junit.version>5.10.3</junit.version>
         <mockito.version>5.11.0</mockito.version>

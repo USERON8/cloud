@@ -25,19 +25,14 @@ xpack.security.enabled: false
 
 # CORS for local debugging
 http.cors.enabled: true
-http.cors.allow-origin: "*"
+http.cors.allow-origin: "/https?:\\/\\/(localhost|127\\.0\\.0\\.1)(:[0-9]+)?/"
 http.cors.allow-credentials: true
 
 # Query and index tuning for the search workload
 indices.query.bool.max_clause_count: 4096
-search.max_buckets: 200000
-indices.memory.index_buffer_size: 20%
+search.max_buckets: 20000
+indices.memory.index_buffer_size: 10%
 indices.queries.cache.size: 10%
-indices.fielddata.cache.size: 20%
-thread_pool.search.size: 4
-thread_pool.search.queue_size: 2000
-thread_pool.write.size: 2
-thread_pool.write.queue_size: 1000
 
 # Disk watermarks with looser tolerance for single-node development
 cluster.routing.allocation.disk.watermark.low: 92%

@@ -1,5 +1,23 @@
 {
-  "number_of_shards": 3,
-  "number_of_replicas": 1,
-  "max_result_window": 50000
+  "number_of_shards": 1,
+  "number_of_replicas": 0,
+  "max_result_window": 50000,
+  "analysis": {
+    "analyzer": {
+      "pinyin_analyzer": {
+        "tokenizer": "product_pinyin"
+      }
+    },
+    "tokenizer": {
+      "product_pinyin": {
+        "type": "pinyin",
+        "keep_first_letter": true,
+        "keep_full_pinyin": true,
+        "keep_original": true,
+        "limit_first_letter_length": 16,
+        "lowercase": true,
+        "remove_duplicated_term": true
+      }
+    }
+  }
 }

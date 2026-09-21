@@ -23,6 +23,11 @@
         "keyword": {
           "type": "keyword",
           "ignore_above": 256
+        },
+        "pinyin": {
+          "type": "text",
+          "analyzer": "pinyin_analyzer",
+          "search_analyzer": "standard"
         }
       }
     },
