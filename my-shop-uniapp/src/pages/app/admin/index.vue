@@ -902,15 +902,15 @@ onMounted(() => {
 .tab-strip {
     display: flex;
     gap: 12px;
-    overflow-x: auto;
+    flex-wrap: wrap;
     padding-bottom: 4px;
 }
 
 .tab-pill {
-    min-width: 160px;
-    padding: 16px 18px;
-    border-radius: 22px;
-    background: rgba(10, 22, 35, 0.84);
+    min-width: 148px;
+    padding: 14px 16px;
+    border-radius: 8px;
+    background: #ffffff;
     border: 1px solid var(--panel-border);
     display: flex;
     flex-direction: column;
@@ -922,11 +922,7 @@ onMounted(() => {
 }
 
 .tab-pill.active {
-    background: linear-gradient(
-        135deg,
-        rgba(95, 209, 194, 0.16),
-        rgba(240, 182, 90, 0.12)
-    );
+    background: #f5f7fa;
     border-color: var(--panel-border-strong);
 }
 
@@ -988,8 +984,8 @@ onMounted(() => {
     align-items: center;
     min-height: 30px;
     padding: 0 12px;
-    border-radius: 999px;
-    background: rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+    background: #fbfcfd;
     border: 1px solid var(--panel-border);
     font-size: 12px;
     color: var(--text-muted);
@@ -1008,8 +1004,8 @@ onMounted(() => {
     flex-direction: column;
     gap: 6px;
     padding: 12px 14px;
-    border-radius: 16px;
-    background: rgba(255, 255, 255, 0.03);
+    border-radius: 8px;
+    background: #fbfcfd;
     border: 1px solid var(--panel-border);
 }
 
@@ -1034,8 +1030,8 @@ onMounted(() => {
     white-space: pre-wrap;
     font-size: 12px;
     line-height: 1.7;
-    background: rgba(255, 255, 255, 0.03);
-    border-radius: 18px;
+    background: #fbfcfd;
+    border-radius: 8px;
     padding: 14px;
     border: 1px solid var(--panel-border);
 }
@@ -1076,6 +1072,11 @@ onMounted(() => {
 }
 
 @media (max-width: 760px) {
+    .tab-pill {
+        min-width: 0;
+        flex: 1 1 calc(50% - 6px);
+    }
+
     .review-card,
     .row-card {
         flex-direction: column;

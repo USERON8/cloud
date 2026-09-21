@@ -733,27 +733,28 @@ onMounted(() => {
 .status-badge {
     min-height: 34px;
     padding: 0 12px;
-    border-radius: 999px;
+    border-radius: 4px;
     font-size: 12px;
     display: inline-flex;
     align-items: center;
-    background: rgba(148, 163, 184, 0.14);
+    background: #fbfcfd;
     color: var(--text-muted);
+    border: 1px solid var(--panel-border);
 }
 
 .status-badge.success {
-    background: rgba(16, 185, 129, 0.12);
-    color: #7ee2b8;
+    background: rgba(27, 127, 84, 0.09);
+    color: #1b7f54;
 }
 
 .status-badge.warning {
-    background: rgba(245, 158, 11, 0.12);
-    color: #ffcf78;
+    background: rgba(177, 108, 11, 0.1);
+    color: #9a5f0b;
 }
 
 .status-badge.danger {
-    background: rgba(239, 68, 68, 0.12);
-    color: #ff9e9e;
+    background: rgba(255, 59, 48, 0.1);
+    color: #d92d20;
 }
 
 .metric-value,

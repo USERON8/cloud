@@ -12,7 +12,7 @@ import { useProductSearchFeed } from "../../composables/useProductSearchFeed";
 import { useLocale } from "../../i18n/locale";
 import { navigateTo } from "../../router/navigation";
 import { Routes } from "../../router/routes";
-import { addToCart } from "../../store/cart";
+import { addToCart, cartCount } from "../../store/cart";
 import type { ProductItem } from "../../types/domain";
 import { formatPrice } from "../../utils/format";
 import { resolveProductImageUrl } from "../../utils/image";
@@ -89,28 +89,44 @@ const {
 const copy = computed(() =>
     locale.value === "en-US"
         ? {
-              eyebrow: "Storefront",
-              title: "A calmer product browser for cloud commerce.",
-              subtitle:
-                  "Search hot items, move through curated discovery, and keep the shopping path readable from first glance to checkout.",
-              login: "Sign in now",
-              workspace: "Open console",
-              catalog: "Browse catalog",
-              viewMode: "View mode",
-              searchMode: "Search mode",
-              hotMode: "Hot picks",
-              recommendedCount: "Keyword signals",
-              searchTitle: "Search the storefront",
-              searchSubtitle:
-                  "Use keywords to jump to products, categories, and brands.",
-              searchPlaceholder: "Search by product, category, or brand",
+              brand: "ShopMall",
+              nav: ["Home", "Category", "New", "Hot", "Brands", "Deals"],
+              searchPlaceholder: "Search products, brands, or categories",
+              login: "Sign in",
+              profile: "Account",
+              favorite: "Wishlist",
+              cart: "Cart",
+              categoryAll: "All categories",
+              categories: [
+                  "Phones",
+                  "Computers",
+                  "Smart wearables",
+                  "Beauty",
+                  "Home appliances",
+                  "Food",
+                  "Sports",
+                  "Mother and baby",
+                  "Office",
+                  "More categories",
+              ],
+              heroTitle: "Light shopping, better sound",
+              heroSubtitle: "Popular digital products and daily goods are ready.",
+              heroAction: "Shop now",
+              service: [
+                  ["Authentic guarantee", "100% official quality"],
+                  ["Fast delivery", "Multi-warehouse express"],
+                  ["7-day return", "Worry-free after-sales"],
+                  ["Member perks", "More coupons and points"],
+              ],
+              hotTitle: "Hot recommendations",
+              viewAll: "View all",
               searchAction: "Search",
-              hotKeywords: "Trending now",
-              recommendedKeywords: "Suggested keywords",
+              trending: "Trending searches",
+              suggested: "Suggested",
               resultSearch: "Search results",
-              resultToday: "Today hot picks",
+              resultToday: "Hot products today",
               resultHintSearch: `Keyword: ${activeKeyword.value}`,
-              resultHintToday: "Sorted by today relevance and recent demand.",
+              resultHintToday: "Sorted by current demand and sales signals.",
               stockPrefix: "Stock",
               addToCart: "Add to cart",
               addToCartLogin: "Login to add",
@@ -126,27 +142,44 @@ const copy = computed(() =>
               loadFailed: "Failed to load products",
           }
         : {
-              eyebrow: "商城",
-              title: "更安静，也更聚焦的云端商品浏览界面。",
-              subtitle:
-                  "把热销商品、搜索入口和加购动作收进更清晰的结构里，让从发现到下单的路径更顺手。",
-              login: "立即登录",
-              workspace: "进入工作台",
-              catalog: "浏览商品",
-              viewMode: "当前视图",
-              searchMode: "搜索模式",
-              hotMode: "热销榜",
-              recommendedCount: "关键词信号",
-              searchTitle: "搜索商城",
-              searchSubtitle: "通过关键词快速定位商品、类目和品牌。",
-              searchPlaceholder: "搜索商品、类目或品牌",
+              brand: "ShopMall",
+              nav: ["首页", "分类", "新品", "热销", "品牌", "优惠"],
+              searchPlaceholder: "搜索商品、品牌或分类",
+              login: "登录",
+              profile: "个人中心",
+              favorite: "收藏",
+              cart: "购物车",
+              categoryAll: "全部分类",
+              categories: [
+                  "手机数码",
+                  "电脑办公",
+                  "智能穿戴",
+                  "美妆个护",
+                  "家用电器",
+                  "食品生鲜",
+                  "运动户外",
+                  "母婴用品",
+                  "办公文具",
+                  "更多分类",
+              ],
+              heroTitle: "轻盈随行 静享好音质",
+              heroSubtitle: "真实商品数据驱动首页推荐，从发现到加购更清晰。",
+              heroAction: "立即购买",
+              service: [
+                  ["正品保障", "100% 正品保障"],
+                  ["极速配送", "多仓直发 极速送达"],
+                  ["7天无理由退换", "购物无忧 放心买"],
+                  ["会员专享", "享受更多会员权益"],
+              ],
+              hotTitle: "热门推荐",
+              viewAll: "查看全部",
               searchAction: "搜索",
-              hotKeywords: "当前热搜",
-              recommendedKeywords: "推荐关键词",
+              trending: "当前热搜",
+              suggested: "推荐关键词",
               resultSearch: "搜索结果",
               resultToday: "今日热销",
               resultHintSearch: `关键词：${activeKeyword.value}`,
-              resultHintToday: "按今日热度与近时段成交关注度排序。",
+              resultHintToday: "按当前热度、销量和推荐信号排序。",
               stockPrefix: "库存",
               addToCart: "加入购物车",
               addToCartLogin: "登录后加入",
@@ -162,6 +195,12 @@ const copy = computed(() =>
           },
 );
 
+const featuredProducts = computed(() => rows.value.slice(0, 5));
+const heroProduct = computed(() => rows.value[0]);
+const trendKeywords = computed(() =>
+    [...hotKeywords.value, ...recommendations.value].slice(0, 8),
+);
+
 const resultsTitle = computed(() =>
     activeKeyword.value ? copy.value.resultSearch : copy.value.resultToday,
 );
@@ -170,11 +209,11 @@ const resultsHint = computed(() =>
     activeKeyword.value ? copy.value.resultHintSearch : copy.value.resultHintToday,
 );
 
-function productImageSrc(item: ProductItem): string {
+function productImageSrc(item?: ProductItem): string {
     return resolveProductImageUrl(
-        item.imageUrl,
-        item.name,
-        !!failedImageIds.value[String(item.id)],
+        item?.imageUrl,
+        item?.name,
+        item ? !!failedImageIds.value[String(item.id)] : false,
     );
 }
 
@@ -215,7 +254,19 @@ async function onAddToCart(item: ProductItem): Promise<void> {
 }
 
 function goLogin(): void {
-    navigateTo(Routes.login, { redirect: Routes.appHome });
+    navigateTo(Routes.login, { redirect: Routes.market });
+}
+
+function goProfile(): void {
+    navigateTo(Routes.appProfile, undefined, { requiresAuth: true });
+}
+
+function goCart(): void {
+    navigateTo(Routes.appCart, undefined, { requiresAuth: true });
+}
+
+function goCatalog(): void {
+    navigateTo(Routes.appCatalog);
 }
 
 watchDebounced(
@@ -232,151 +283,188 @@ onShow(() => {
 </script>
 
 <template>
-    <view class="page">
-        <view class="page-container market-layout">
-            <view class="market-topbar fade-in-up">
-                <view class="market-brand">
-                    <text class="market-brand-mark">MS</text>
-                    <text class="market-brand-name">My Shop Cloud</text>
+    <view class="mall-page">
+        <view class="mall-shell">
+            <view class="mall-header">
+                <view class="brand" @click="goCatalog">
+                    <text class="brand-name">{{ copy.brand }}</text>
                 </view>
-                <LocaleSwitch />
-            </view>
 
-            <view class="hero-panel display-panel fade-in-up">
-                <view class="hero-main">
-                    <text class="hero-eyebrow">{{ copy.eyebrow }}</text>
-                    <text class="hero-title">{{ copy.title }}</text>
-                    <text class="hero-subtitle">{{ copy.subtitle }}</text>
-
-                    <view class="hero-actions">
+                <scroll-view class="nav-scroll" scroll-x>
+                    <view class="nav-list">
                         <button
-                            v-if="!loggedIn"
-                            class="btn-primary"
-                            @click="goLogin"
+                            v-for="(item, index) in copy.nav"
+                            :key="item"
+                            class="nav-link"
+                            :class="{ active: index === 0 }"
+                            @click="index === 1 ? goCatalog() : undefined"
                         >
-                            {{ copy.login }}
-                        </button>
-                        <button
-                            v-else
-                            class="btn-outline"
-                            @click="
-                                navigateTo(Routes.appHome, undefined, {
-                                    requiresAuth: true,
-                                })
-                            "
-                        >
-                            {{ copy.workspace }}
-                        </button>
-                        <button
-                            class="btn-secondary"
-                            @click="navigateTo(Routes.appCatalog)"
-                        >
-                            {{ copy.catalog }}
+                            {{ item }}
                         </button>
                     </view>
-                </view>
+                </scroll-view>
 
-                <view class="hero-stats">
-                    <view class="info-card">
-                        <text class="info-label">{{ copy.viewMode }}</text>
-                        <text class="info-value">
-                            {{ activeKeyword ? copy.searchMode : copy.hotMode }}
-                        </text>
-                    </view>
-                    <view class="info-card">
-                        <text class="info-label">{{ copy.recommendedCount }}</text>
-                        <text class="info-value">
-                            {{ hotKeywords.length + recommendations.length }}
-                        </text>
-                    </view>
-                </view>
-            </view>
-
-            <view class="search-panel surface-card fade-in-up">
-                <view class="section-block compact-block">
-                    <text class="section-title">{{ copy.searchTitle }}</text>
-                    <text class="section-subtitle">{{ copy.searchSubtitle }}</text>
-                </view>
-
-                <view class="search-row">
+                <view class="search-mini">
                     <input
                         v-model="keyword"
-                        class="search-input"
+                        class="search-mini-input"
                         type="text"
                         name="market-search"
                         confirm-type="search"
                         :placeholder="copy.searchPlaceholder"
                         @confirm="onSearch"
                     />
-                    <button class="btn-primary" @click="onSearch">
+                    <button class="icon-button" aria-label="Search" @click="onSearch">
+                        ⌕
+                    </button>
+                </view>
+
+                <view class="header-actions">
+                    <button
+                        class="header-action"
+                        @click="loggedIn ? goProfile() : goLogin()"
+                    >
+                        <text class="action-icon">♙</text>
+                        <text>{{ loggedIn ? copy.profile : copy.login }}</text>
+                    </button>
+                    <button class="header-action">
+                        <text class="action-icon">♡</text>
+                        <text>{{ copy.favorite }}</text>
+                    </button>
+                    <button class="header-action cart-action" @click="goCart">
+                        <text class="action-icon">🛒</text>
+                        <text>{{ copy.cart }}</text>
+                        <text v-if="cartCount > 0" class="cart-badge">
+                            {{ cartCount }}
+                        </text>
+                    </button>
+                    <LocaleSwitch class="locale-compact" />
+                </view>
+            </view>
+
+            <view class="hero-grid">
+                <view class="category-panel">
+                    <view class="category-title">
+                        <text class="menu-icon">☰</text>
+                        <text>{{ copy.categoryAll }}</text>
+                    </view>
+                    <button
+                        v-for="item in copy.categories"
+                        :key="item"
+                        class="category-row"
+                        @click="onKeywordSelect(item)"
+                    >
+                        <text>{{ item }}</text>
+                        <text class="category-arrow">›</text>
+                    </button>
+                </view>
+
+                <view class="hero-card">
+                    <view class="hero-copy">
+                        <text class="hero-title">{{ copy.heroTitle }}</text>
+                        <text class="hero-subtitle">{{ copy.heroSubtitle }}</text>
+                        <button class="hero-button" @click="goCatalog">
+                            {{ copy.heroAction }}
+                        </button>
+                    </view>
+                    <view class="hero-visual">
+                        <view class="hero-product-ring">
+                            <image
+                                :src="productImageSrc(heroProduct)"
+                                :alt="heroProduct?.name || copy.heroTitle"
+                                class="hero-product-image"
+                                mode="aspectFit"
+                                @error="
+                                    heroProduct && markImageFailed(heroProduct.id)
+                                "
+                            />
+                        </view>
+                    </view>
+                </view>
+            </view>
+
+            <view class="service-row">
+                <view
+                    v-for="(item, index) in copy.service"
+                    :key="item[0]"
+                    class="service-item"
+                >
+                    <text class="service-icon">
+                        {{ ["✓", "▣", "↺", "◇"][index] }}
+                    </text>
+                    <view class="service-copy">
+                        <text class="service-title">{{ item[0] }}</text>
+                        <text class="service-desc">{{ item[1] }}</text>
+                    </view>
+                </view>
+            </view>
+
+            <view class="keyword-panel">
+                <view class="search-main">
+                    <input
+                        v-model="keyword"
+                        class="search-main-input"
+                        type="text"
+                        name="market-search-large"
+                        confirm-type="search"
+                        :placeholder="copy.searchPlaceholder"
+                        @confirm="onSearch"
+                    />
+                    <button class="search-main-button" @click="onSearch">
                         {{ copy.searchAction }}
                     </button>
                 </view>
 
-                <view class="keyword-grid">
-                    <view class="keyword-section" v-if="hotKeywords.length">
-                        <text class="keyword-title">{{ copy.hotKeywords }}</text>
-                        <view class="keyword-list">
-                            <text
-                                v-for="item in hotKeywords"
-                                :key="`hot-${item}`"
-                                class="keyword-chip"
-                                @click="onKeywordSelect(item)"
-                            >
-                                {{ item }}
-                            </text>
-                        </view>
-                    </view>
-
-                    <view class="keyword-section" v-if="recommendations.length">
-                        <text class="keyword-title">
-                            {{ copy.recommendedKeywords }}
-                        </text>
-                        <view class="keyword-list">
-                            <text
-                                v-for="item in recommendations"
-                                :key="`rec-${item}`"
-                                class="keyword-chip"
-                                @click="onKeywordSelect(item)"
-                            >
-                                {{ item }}
-                            </text>
-                        </view>
-                    </view>
+                <view v-if="trendKeywords.length" class="keyword-strip">
+                    <text class="keyword-label">
+                        {{ hotKeywords.length ? copy.trending : copy.suggested }}
+                    </text>
+                    <button
+                        v-for="item in trendKeywords"
+                        :key="item"
+                        class="keyword-chip"
+                        @click="onKeywordSelect(item)"
+                    >
+                        {{ item }}
+                    </button>
                 </view>
             </view>
 
-            <view class="section-head fade-in-up">
-                <text class="section-title">{{ resultsTitle }}</text>
-                <text class="section-subtitle">{{ resultsHint }}</text>
+            <view class="section-heading">
+                <view class="section-heading-main">
+                    <text class="section-title">
+                        {{ featuredProducts.length ? copy.hotTitle : resultsTitle }}
+                    </text>
+                    <text class="section-subtitle">{{ resultsHint }}</text>
+                </view>
+                <button class="view-all" @click="goCatalog">{{ copy.viewAll }} ›</button>
             </view>
 
-            <view v-if="rows.length" class="product-grid fade-in-up">
+            <view v-if="featuredProducts.length" class="featured-grid">
                 <view
-                    v-for="item in rows"
+                    v-for="item in featuredProducts"
                     :key="item.id"
-                    class="product-card surface-card"
+                    class="product-card"
                 >
-                    <image
-                        :src="productImageSrc(item)"
-                        :alt="item.name"
-                        class="product-image"
-                        mode="aspectFill"
-                        @error="markImageFailed(item.id)"
-                    />
+                    <view class="product-image-wrap">
+                        <image
+                            :src="productImageSrc(item)"
+                            :alt="item.name"
+                            class="product-image"
+                            mode="aspectFit"
+                            @error="markImageFailed(item.id)"
+                        />
+                    </view>
 
-                    <view class="product-main">
+                    <view class="product-info">
                         <text class="product-name">{{ item.name }}</text>
-                        <text class="product-price">{{ formatPrice(item.price) }}</text>
                         <text class="product-meta">
                             {{ copy.stockPrefix }} {{ item.stockQuantity ?? "--" }}
                         </text>
+                        <text class="product-price">{{ formatPrice(item.price) }}</text>
                     </view>
 
-                    <button
-                        class="btn-outline card-action"
-                        @click="onAddToCart(item)"
-                    >
+                    <button class="card-action" @click="onAddToCart(item)">
                         {{ loggedIn ? copy.addToCart : copy.addToCartLogin }}
                     </button>
                 </view>
@@ -387,271 +475,715 @@ onShow(() => {
             <view class="load-more">
                 <button
                     v-if="hasMore"
-                    class="btn-outline"
+                    class="load-more-button"
                     :loading="loading"
                     @click="onLoadMore"
                 >
                     {{ copy.loadMore }}
                 </button>
-                <text v-else class="text-muted">{{ copy.noMore }}</text>
+                <text v-else class="no-more">{{ copy.noMore }}</text>
             </view>
         </view>
     </view>
 </template>
 
 <style scoped>
-.page {
-    padding: 24px 0 40px;
+.mall-page {
+    min-height: 100vh;
+    padding: 24px 0 44px;
+    color: #15171a;
+    background:
+        linear-gradient(180deg, rgba(248, 249, 251, 0.96), #ffffff 44%),
+        #ffffff;
 }
 
-.market-layout {
+.mall-shell {
+    width: min(1280px, calc(100% - 32px));
+    margin: 0 auto;
     display: flex;
     flex-direction: column;
-    gap: 24px;
+    gap: 22px;
 }
 
-.market-topbar {
+.mall-header {
+    min-height: 64px;
+    display: grid;
+    grid-template-columns: 128px minmax(240px, 1fr) minmax(280px, 360px) auto;
+    align-items: center;
+    gap: 18px;
+    padding: 0 20px;
+    border: 1px solid #edf0f4;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.96);
+    box-shadow: 0 18px 60px rgba(20, 25, 35, 0.06);
+}
+
+.brand {
+    cursor: pointer;
+}
+
+.brand-name {
+    font-size: 20px;
+    font-weight: 800;
+    color: #111316;
+    letter-spacing: 0;
+}
+
+.nav-scroll {
+    min-width: 0;
+    white-space: nowrap;
+}
+
+.nav-list {
+    display: flex;
+    align-items: center;
+    gap: 22px;
+}
+
+.nav-link,
+.header-action,
+.icon-button,
+.category-row,
+.keyword-chip,
+.view-all,
+.card-action,
+.load-more-button,
+.hero-button,
+.search-main-button {
+    margin: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    line-height: 1;
+}
+
+.nav-link {
+    position: relative;
+    min-height: 44px;
+    padding: 0;
+    font-size: 13px;
+    color: #24272c;
+    font-weight: 600;
+}
+
+.nav-link.active::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    bottom: 8px;
+    width: 18px;
+    height: 2px;
+    border-radius: 999px;
+    background: #111316;
+    transform: translateX(-50%);
+}
+
+.search-mini {
+    height: 36px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 8px 0 14px;
+    border: 1px solid #e8ebef;
+    border-radius: 4px;
+    background: #fbfcfd;
+}
+
+.search-mini-input {
+    flex: 1;
+    min-width: 0;
+    height: 34px;
+    color: #16191d;
+    font-size: 12px;
+}
+
+.icon-button {
+    width: 28px;
+    height: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #4c535c;
+    font-size: 18px;
+}
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 14px;
+    white-space: nowrap;
+}
+
+.header-actions :deep(.locale-compact) {
+    gap: 0;
+}
+
+.header-actions :deep(.locale-compact .switch-copy) {
+    display: none;
+}
+
+.header-actions :deep(.locale-compact .switch-segment) {
+    gap: 2px;
+    padding: 2px;
+    border-color: #e8ebef;
+    border-radius: 4px;
+    background: #fbfcfd;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+}
+
+.header-actions :deep(.locale-compact .switch-option) {
+    min-width: 34px;
+    min-height: 28px;
+    padding: 0 8px;
+    border-radius: 3px;
+    color: #6f7781;
+    box-shadow: none;
+}
+
+.header-actions :deep(.locale-compact .switch-option.active) {
+    border-color: #111316;
+    background: #111316;
+    color: #ffffff;
+}
+
+.header-actions :deep(.locale-compact .switch-long) {
+    display: none;
+}
+
+.header-actions :deep(.locale-compact .switch-short) {
+    font-size: 11px;
+    letter-spacing: 0;
+}
+
+.header-action {
+    min-height: 36px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    color: #25282d;
+}
+
+.action-icon {
+    color: #1d2025;
+    font-size: 15px;
+}
+
+.cart-action {
+    position: relative;
+}
+
+.cart-badge {
+    position: absolute;
+    top: 1px;
+    right: -9px;
+    min-width: 14px;
+    height: 14px;
+    padding: 0 4px;
+    border-radius: 999px;
+    background: #ff3b30;
+    color: #ffffff;
+    font-size: 9px;
+    line-height: 14px;
+    text-align: center;
+}
+
+.hero-grid {
+    display: grid;
+    grid-template-columns: 220px minmax(0, 1fr);
+    gap: 18px;
+}
+
+.category-panel,
+.hero-card,
+.keyword-panel,
+.product-card,
+.empty-state {
+    border: 1px solid #edf0f4;
+    border-radius: 8px;
+    background: #ffffff;
+    box-shadow: 0 18px 58px rgba(18, 24, 35, 0.05);
+}
+
+.category-panel {
+    padding: 12px 0;
+}
+
+.category-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 18px 10px;
+    color: #171a1f;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.menu-icon {
+    font-size: 14px;
+    color: #393f46;
+}
+
+.category-row {
+    width: 100%;
+    min-height: 38px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 18px;
-    flex-wrap: wrap;
+    padding: 0 14px 0 18px;
+    color: #4a5058;
+    font-size: 13px;
 }
 
-.market-brand {
-    display: inline-flex;
+.category-arrow {
+    color: #a0a6ae;
+    font-size: 18px;
+}
+
+.hero-card {
+    position: relative;
+    min-height: 360px;
+    overflow: hidden;
+    display: grid;
+    grid-template-columns: minmax(280px, 0.82fr) minmax(300px, 1fr);
     align-items: center;
-    gap: 12px;
+    padding: 46px 58px;
+    background:
+        radial-gradient(circle at 84% 48%, rgba(213, 222, 236, 0.66), transparent 32%),
+        linear-gradient(135deg, #f7f9fd 0%, #eef3fa 48%, #f9fbfe 100%);
 }
 
-.market-brand-mark {
-    width: 42px;
+.hero-copy {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+    position: relative;
+    z-index: 2;
+}
+
+.hero-title {
+    max-width: 400px;
+    color: #101216;
+    font-size: 42px;
+    font-weight: 900;
+    line-height: 1.18;
+    letter-spacing: 0;
+}
+
+.hero-subtitle {
+    max-width: 420px;
+    color: #4f5965;
+    font-size: 16px;
+    line-height: 1.7;
+}
+
+.hero-button {
+    min-width: 112px;
     height: 42px;
-    border-radius: 14px;
+    margin-top: 8px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, var(--accent), var(--highlight));
-    color: #04111c;
+    border-radius: 3px;
+    background: #111316;
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.hero-visual {
+    min-height: 260px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.hero-product-ring {
+    width: min(390px, 88%);
+    aspect-ratio: 1 / 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    background:
+        radial-gradient(circle, rgba(255, 255, 255, 0.88) 0%, rgba(255, 255, 255, 0.2) 62%, transparent 63%),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.7), rgba(230, 237, 247, 0.32));
+}
+
+.hero-product-image {
+    width: 76%;
+    height: 76%;
+    filter: drop-shadow(0 28px 32px rgba(32, 38, 48, 0.16));
+}
+
+.service-row {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+    padding: 14px 8px 2px;
+}
+
+.service-item {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    min-width: 0;
+}
+
+.service-icon {
+    width: 28px;
+    height: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #d9dee6;
+    border-radius: 999px;
+    color: #20242a;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.service-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.service-title {
+    color: #16191d;
     font-size: 13px;
     font-weight: 800;
-    letter-spacing: 0.12em;
 }
 
-.market-brand-name {
-    font-size: 12px;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    color: var(--text-muted);
-    font-weight: 800;
+.service-desc {
+    color: #7b838d;
+    font-size: 11px;
 }
 
-.hero-panel {
-    padding: 36px;
+.keyword-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px;
+}
+
+.search-main {
     display: grid;
-    grid-template-columns: minmax(0, 1.45fr) 300px;
-    gap: 24px;
-    align-items: stretch;
-}
-
-.hero-main {
-    display: flex;
-    flex-direction: column;
-    gap: 18px;
-    justify-content: center;
-    min-height: 420px;
-}
-
-.hero-actions {
-    display: flex;
-    flex-wrap: wrap;
+    grid-template-columns: minmax(0, 1fr) 96px;
     gap: 10px;
-    padding-top: 8px;
 }
 
-.hero-stats {
+.search-main-input {
+    height: 42px;
+    padding: 0 14px;
+    border: 1px solid #e6e9ee;
+    border-radius: 4px;
+    color: #16191d;
+    font-size: 13px;
+    background: #fbfcfd;
+}
+
+.search-main-button {
+    height: 42px;
+    border-radius: 4px;
+    background: #111316;
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.keyword-strip {
     display: flex;
-    flex-direction: column;
-    gap: 14px;
-    justify-content: flex-end;
-}
-
-.search-panel {
-    padding: 24px;
-    display: flex;
-    flex-direction: column;
-    gap: 18px;
-}
-
-.compact-block {
-    gap: 6px;
-}
-
-.search-row {
-    display: flex;
-    gap: 10px;
     align-items: center;
-}
-
-.search-input {
-    flex: 1;
-    min-height: 48px;
-    background: rgba(255, 255, 255, 0.04);
-    border-radius: 999px;
-    padding: 12px 16px;
-    font-size: 14px;
-    border: 1px solid var(--panel-border);
-}
-
-.search-input:focus {
-    border-color: rgba(95, 209, 194, 0.4);
-    box-shadow: 0 0 0 3px rgba(95, 209, 194, 0.12);
-}
-
-.keyword-grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 18px;
-}
-
-.keyword-section {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-.keyword-title {
-    font-size: 12px;
-    color: var(--text-muted);
-    font-weight: 800;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-}
-
-.keyword-list {
-    display: flex;
-    flex-wrap: wrap;
     gap: 8px;
+    flex-wrap: wrap;
+}
+
+.keyword-label {
+    color: #848c96;
+    font-size: 12px;
+    margin-right: 2px;
 }
 
 .keyword-chip {
-    padding: 8px 14px;
-    border-radius: 999px;
-    background: rgba(255, 255, 255, 0.04);
+    min-height: 30px;
+    padding: 0 12px;
+    border: 1px solid #e7ebf0;
+    border-radius: 4px;
+    color: #4b535d;
     font-size: 12px;
-    border: 1px solid var(--panel-border);
-    color: var(--text-main);
-    transition:
-        transform 0.22s ease,
-        box-shadow 0.22s ease,
-        border-color 0.22s ease,
-        color 0.22s ease;
+    background: #ffffff;
 }
 
-.section-head {
+.section-heading {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+    padding-top: 2px;
+}
+
+.section-heading-main {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 5px;
 }
 
-.product-grid {
+.section-title {
+    color: #15181d;
+    font-size: 20px;
+    font-weight: 900;
+}
+
+.section-subtitle {
+    color: #7c848f;
+    font-size: 12px;
+}
+
+.view-all {
+    color: #7b838e;
+    font-size: 12px;
+}
+
+.featured-grid {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 18px;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 14px;
 }
 
 .product-card {
-    padding: 18px;
+    min-width: 0;
+    overflow: hidden;
     display: flex;
     flex-direction: column;
-    gap: 14px;
-    min-width: 0;
     transition:
-        transform 0.22s ease,
-        box-shadow 0.22s ease,
-        border-color 0.22s ease;
+        transform 0.2s ease,
+        box-shadow 0.2s ease,
+        border-color 0.2s ease;
+}
+
+.product-image-wrap {
+    height: 176px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 18px;
+    background: #f7f8fa;
 }
 
 .product-image {
     width: 100%;
-    aspect-ratio: 1.7 / 1;
-    border-radius: 18px;
-    background: linear-gradient(180deg, #0f2033, #0b1828);
-    border: 1px solid var(--panel-border);
+    height: 100%;
 }
 
-.product-main {
+.product-info {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 7px;
+    padding: 14px 14px 12px;
     min-width: 0;
 }
 
 .product-name {
-    font-size: 18px;
-    font-weight: 800;
-    line-height: 1.4;
-    letter-spacing: -0.03em;
+    min-height: 40px;
+    color: #23272d;
+    font-size: 13px;
+    line-height: 1.55;
     overflow-wrap: anywhere;
 }
 
-.product-price {
-    font-size: 22px;
-    font-weight: 800;
-    color: var(--text-main);
-    letter-spacing: -0.04em;
+.product-meta {
+    color: #8b939e;
+    font-size: 11px;
 }
 
-.product-meta {
-    font-size: 13px;
-    color: var(--text-muted);
+.product-price {
+    color: #ff3b30;
+    font-size: 17px;
+    font-weight: 900;
 }
 
 .card-action {
-    width: 100%;
+    height: 38px;
+    margin: auto 14px 14px;
+    border: 1px solid #16191d;
+    border-radius: 4px;
+    color: #16191d;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.empty-state {
+    padding: 28px 18px;
+    text-align: center;
+    color: #7d8590;
+    font-size: 13px;
 }
 
 .load-more {
     display: flex;
     justify-content: center;
-    padding: 4px 0 24px;
+    padding: 4px 0 18px;
+}
+
+.load-more-button {
+    min-width: 138px;
+    height: 40px;
+    border: 1px solid #d9dee6;
+    border-radius: 4px;
+    background: #ffffff;
+    color: #1d2025;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.no-more {
+    color: #9aa2ad;
+    font-size: 12px;
+}
+
+button::after {
+    border: none;
 }
 
 @media (hover: hover) {
-    .keyword-chip:hover {
-        transform: translateY(-1px);
-        border-color: rgba(95, 209, 194, 0.2);
-        box-shadow: 0 12px 22px rgba(1, 7, 14, 0.28);
-        color: var(--accent-strong);
+    .category-row:hover,
+    .keyword-chip:hover,
+    .nav-link:hover,
+    .header-action:hover,
+    .view-all:hover {
+        color: #ff3b30;
     }
 
     .product-card:hover {
         transform: translateY(-2px);
-        box-shadow: 0 18px 34px rgba(1, 7, 14, 0.34);
-        border-color: var(--panel-border-strong);
+        border-color: #e2e6ec;
+        box-shadow: 0 24px 70px rgba(18, 24, 35, 0.09);
+    }
+
+    .card-action:hover,
+    .load-more-button:hover {
+        background: #111316;
+        color: #ffffff;
     }
 }
 
-@media (max-width: 980px) {
-    .hero-panel,
-    .keyword-grid,
-    .product-grid {
-        grid-template-columns: minmax(0, 1fr);
+@media (max-width: 1100px) {
+    .mall-header {
+        grid-template-columns: 116px minmax(0, 1fr);
+    }
+
+    .search-mini,
+    .header-actions {
+        grid-column: span 1;
+    }
+
+    .hero-grid {
+        grid-template-columns: 190px minmax(0, 1fr);
+    }
+
+    .featured-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
     }
 }
 
-@media (max-width: 768px) {
-    .hero-panel {
-        padding: 24px;
+@media (max-width: 820px) {
+    .mall-page {
+        padding: 12px 0 32px;
     }
 
-    .hero-main {
-        min-height: auto;
+    .mall-shell {
+        width: min(100% - 20px, 720px);
+        gap: 16px;
     }
 
-    .search-row {
-        flex-direction: column;
+    .mall-header {
+        grid-template-columns: 1fr;
         align-items: stretch;
+        padding: 14px;
+        gap: 12px;
+    }
+
+    .nav-list {
+        gap: 18px;
+    }
+
+    .search-mini {
+        width: 100%;
+    }
+
+    .header-actions {
+        justify-content: flex-start;
+        flex-wrap: wrap;
+    }
+
+    .hero-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .category-panel {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        padding: 10px;
+    }
+
+    .category-title {
+        grid-column: 1 / -1;
+        padding: 0 6px 8px;
+    }
+
+    .category-row {
+        padding: 0 8px;
+    }
+
+    .hero-card {
+        min-height: auto;
+        grid-template-columns: 1fr;
+        padding: 30px 24px;
+    }
+
+    .hero-title {
+        font-size: 32px;
+    }
+
+    .hero-visual {
+        min-height: 220px;
+    }
+
+    .service-row {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 16px 10px;
+    }
+
+    .service-item {
+        justify-content: flex-start;
+    }
+
+    .featured-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 520px) {
+    .category-panel,
+    .featured-grid,
+    .service-row,
+    .search-main {
+        grid-template-columns: 1fr;
+    }
+
+    .section-heading {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .product-image-wrap {
+        height: 200px;
     }
 }
 </style>

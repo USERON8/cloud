@@ -316,7 +316,7 @@ onShow(() => {
                         :src="productImageSrc(item)"
                         :alt="item.name"
                         class="product-image"
-                        mode="aspectFill"
+                        mode="aspectFit"
                         @error="markImageFailed(item.id)"
                     />
                     <view class="product-main">
@@ -362,10 +362,34 @@ onShow(() => {
 .catalog-layout {
     display: flex;
     flex-direction: column;
-    gap: 24px;
+    gap: 22px;
+}
+
+.catalog-layout :deep(.dashboard-hero) {
+    padding: 46px 58px;
+}
+
+.catalog-layout :deep(.dashboard-hero-copy) {
+    min-height: 280px;
+}
+
+.catalog-layout :deep(.hero-title) {
+    max-width: 760px;
+    font-size: 42px;
+    line-height: 1.18;
+}
+
+.catalog-layout :deep(.hero-subtitle) {
+    max-width: 680px;
 }
 
 .compact-block {
+    gap: 6px;
+}
+
+.section-head {
+    display: flex;
+    flex-direction: column;
     gap: 6px;
 }
 
@@ -373,6 +397,11 @@ onShow(() => {
     display: flex;
     gap: 10px;
     align-items: center;
+}
+
+.search-row .btn-primary {
+    min-width: 96px;
+    white-space: nowrap;
 }
 
 .keyword-grid {
@@ -389,9 +418,9 @@ onShow(() => {
 
 .keyword-title {
     font-size: 12px;
-    color: var(--text-muted);
+    color: #848c96;
     font-weight: 800;
-    letter-spacing: 0.08em;
+    letter-spacing: 0;
     text-transform: uppercase;
 }
 
@@ -402,12 +431,13 @@ onShow(() => {
 }
 
 .keyword-chip {
-    padding: 8px 14px;
-    border-radius: 999px;
-    background: rgba(255, 255, 255, 0.04);
+    min-height: 30px;
+    padding: 0 12px;
+    border-radius: 4px;
+    background: #ffffff;
     font-size: 12px;
-    border: 1px solid var(--panel-border);
-    color: var(--text-main);
+    border: 1px solid #e7ebf0;
+    color: #4b535d;
     transition:
         transform 0.22s ease,
         box-shadow 0.22s ease,
@@ -417,15 +447,15 @@ onShow(() => {
 
 .product-grid {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 18px;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
 }
 
 .product-card {
-    padding: 18px;
+    overflow: hidden;
+    padding: 0;
     display: flex;
     flex-direction: column;
-    gap: 14px;
     min-width: 0;
     transition:
         transform 0.22s ease,
@@ -435,36 +465,45 @@ onShow(() => {
 
 .product-image {
     width: 100%;
-    aspect-ratio: 1.7 / 1;
-    border-radius: 18px;
-    background: linear-gradient(180deg, #0f2033, #0b1828);
-    border: 1px solid var(--panel-border);
+    height: 176px;
+    padding: 18px;
+    background: #f7f8fa;
+    border: 0;
+    border-radius: 0;
 }
 
 .product-main {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 7px;
+    padding: 14px 14px 12px;
     min-width: 0;
 }
 
 .product-name {
-    font-size: 18px;
-    font-weight: 800;
-    line-height: 1.4;
-    letter-spacing: -0.03em;
+    min-height: 40px;
+    color: #23272d;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.55;
+    letter-spacing: 0;
     overflow-wrap: anywhere;
 }
 
 .product-price {
-    font-size: 22px;
-    font-weight: 800;
-    color: var(--text-main);
-    letter-spacing: -0.04em;
+    font-size: 17px;
+    font-weight: 900;
+    color: #ff3b30;
+    letter-spacing: 0;
 }
 
 .action-button {
-    width: 100%;
+    height: 38px;
+    width: auto;
+    margin: auto 14px 14px;
+    font-size: 12px;
+    font-weight: 700;
+    white-space: nowrap;
 }
 
 .load-more {
@@ -476,27 +515,44 @@ onShow(() => {
 @media (hover: hover) {
     .keyword-chip:hover {
         transform: translateY(-1px);
-        border-color: rgba(95, 209, 194, 0.2);
-        box-shadow: 0 12px 22px rgba(1, 7, 14, 0.28);
-        color: var(--accent-strong);
+        border-color: #dfe5ec;
+        box-shadow: 0 12px 24px rgba(18, 24, 35, 0.06);
+        color: #ff3b30;
     }
 
     .product-card:hover {
         transform: translateY(-2px);
-        box-shadow: 0 18px 34px rgba(1, 7, 14, 0.34);
-        border-color: var(--panel-border-strong);
+        box-shadow: 0 24px 70px rgba(18, 24, 35, 0.09);
+        border-color: #e2e6ec;
+    }
+}
+
+@media (max-width: 1180px) {
+    .product-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
     }
 }
 
 @media (max-width: 900px) {
     .keyword-grid,
     .product-grid {
-        grid-template-columns: minmax(0, 1fr);
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
     .search-row {
         flex-direction: column;
         align-items: stretch;
+    }
+}
+
+@media (max-width: 520px) {
+    .keyword-grid,
+    .product-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .product-image {
+        height: 200px;
     }
 }
 </style>

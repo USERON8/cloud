@@ -75,30 +75,53 @@ onLoad((query) => {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 16px;
+  padding: 24px 16px;
+  color: #15171a;
+  background:
+    linear-gradient(180deg, rgba(248, 249, 251, 0.96), #ffffff 44%),
+    #ffffff;
 }
 
 .card {
   width: min(420px, 100%);
-  padding: 24px;
+  padding: 28px;
   display: flex;
   flex-direction: column;
   gap: 12px;
+  border: 1px solid #edf0f4;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 18px 58px rgba(18, 24, 35, 0.05);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 .eyebrow {
   font-size: 12px;
-  color: var(--accent);
-  font-weight: 600;
+  color: #69727d;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .title {
-  font-size: 20px;
-  font-weight: 600;
+  color: #101216;
+  font-size: 30px;
+  line-height: 1.12;
+  font-weight: 900;
 }
 
 .muted {
-  color: var(--text-muted);
-  font-size: 12px;
+  color: #69727d;
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.card :deep(.btn-primary) {
+  border-radius: 4px;
+  background: #111316;
+  border: 1px solid #111316;
+  color: #ffffff;
+  box-shadow: none;
 }
 </style>

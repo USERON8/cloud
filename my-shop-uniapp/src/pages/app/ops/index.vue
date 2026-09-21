@@ -1701,8 +1701,8 @@ async function refreshStatsCache(): Promise<void> {
   gap: 8px;
   flex-wrap: wrap;
   padding: 10px 12px;
-  background: rgba(10, 22, 35, 0.86);
-  border-radius: 20px;
+  background: #ffffff;
+  border-radius: 8px;
   border: 1px solid var(--panel-border);
   margin-bottom: 12px;
   box-shadow: var(--shadow-card);
@@ -1710,8 +1710,8 @@ async function refreshStatsCache(): Promise<void> {
 
 .tab {
   padding: 8px 14px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+  background: #fbfcfd;
   font-size: 12px;
   font-weight: 600;
   color: var(--text-main);
@@ -1720,10 +1720,10 @@ async function refreshStatsCache(): Promise<void> {
 }
 
 .tab.active {
-  background: linear-gradient(135deg, rgba(95, 209, 194, 0.18), rgba(240, 182, 90, 0.12));
+  background: #111316;
   border-color: var(--panel-border-strong);
-  box-shadow: 0 12px 24px rgba(3, 10, 18, 0.28);
-  color: var(--accent-strong);
+  box-shadow: none;
+  color: #ffffff;
 }
 
 .panel {
@@ -1757,8 +1757,8 @@ async function refreshStatsCache(): Promise<void> {
 }
 
 .input {
-  background: rgba(255, 255, 255, 0.04);
-  border-radius: 14px;
+  background: #fbfcfd;
+  border-radius: 4px;
   padding: 12px 14px;
   font-size: 12px;
   color: var(--text-main);
@@ -1766,8 +1766,8 @@ async function refreshStatsCache(): Promise<void> {
 }
 
 .textarea {
-  background: rgba(255, 255, 255, 0.04);
-  border-radius: 14px;
+  background: #fbfcfd;
+  border-radius: 4px;
   padding: 12px 14px;
   font-size: 12px;
   color: var(--text-main);
@@ -1779,8 +1779,8 @@ async function refreshStatsCache(): Promise<void> {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
   font-size: 11px;
   white-space: pre-wrap;
-  background: rgba(255, 255, 255, 0.03);
-  border-radius: 12px;
+  background: #fbfcfd;
+  border-radius: 8px;
   padding: 12px;
   border: 1px solid var(--panel-border);
   max-height: 240px;
@@ -1790,19 +1790,18 @@ async function refreshStatsCache(): Promise<void> {
 
 .input:focus,
 .textarea:focus {
-  border-color: rgba(95, 209, 194, 0.4);
-  box-shadow: 0 0 0 3px rgba(95, 209, 194, 0.12);
+  border-color: #111316;
+  box-shadow: 0 0 0 3px rgba(17, 19, 22, 0.08);
 }
 
 @media (hover: hover) {
   .tab:hover {
     transform: translateY(-1px);
-    box-shadow: 0 12px 24px rgba(3, 10, 18, 0.22);
     border-color: var(--panel-border-strong);
   }
   .panel:hover {
     transform: translateY(-2px);
-    box-shadow: 0 18px 34px rgba(1, 7, 14, 0.34);
+    box-shadow: var(--shadow-float);
     border-color: var(--panel-border-strong);
   }
 }

@@ -20,9 +20,6 @@ const props = defineProps<{
     requiresAuth?: boolean;
     roles?: UserRole[];
 }>();
-const GUEST_ROLE_LABEL = "Guest";
-const GUEST_DISPLAY_NAME = "Guest visitor";
-const GUEST_ACTION_LABEL = "Sign in";
 
 interface NavItem {
     key: string;
@@ -94,11 +91,12 @@ const navItems: NavItem[] = [
 const copy = computed(() => {
     if (locale.value === "en-US") {
         return {
-            brand: "My Shop Cloud",
+            brand: "ShopMall",
             defaultTitle: "Control Center",
-            subtitle:
-                "A sharper cloud console for inventory, orders, payment flow, and storefront operations.",
             currentUser: "Current user",
+            guestRole: "Guest",
+            guestName: "Guest visitor",
+            guestAction: "Sign in",
             logout: "Sign out",
             logoutSuccess: "Signed out",
             nav: {
@@ -121,11 +119,12 @@ const copy = computed(() => {
     }
 
     return {
-        brand: "云端商城工作台",
+        brand: "ShopMall",
         defaultTitle: "控制中心",
-        subtitle:
-            "围绕商品、订单、支付与经营动作重组界面层次，让日常操作更聚焦、更稳定。",
         currentUser: "当前用户",
+        guestRole: "访客",
+        guestName: "未登录用户",
+        guestAction: "登录",
         logout: "退出登录",
         logoutSuccess: "已退出登录",
         nav: {
@@ -177,17 +176,16 @@ const visibleNavItems = computed(() =>
 
 const displayName = computed(
     () =>
-        (!isAuthenticated() && GUEST_DISPLAY_NAME) ||
+        (!isAuthenticated() && copy.value.guestName) ||
         sessionState.user?.nickname ||
         sessionState.user?.username ||
         copy.value.currentUser,
 );
 
-const roleLabel = computed(
-    () =>
-        !isAuthenticated()
-            ? GUEST_ROLE_LABEL
-            : roleTextMap[role.value]?.[locale.value] ?? role.value,
+const roleLabel = computed(() =>
+    !isAuthenticated()
+        ? copy.value.guestRole
+        : roleTextMap[role.value]?.[locale.value] ?? role.value,
 );
 
 const publicPaths = new Set(
@@ -213,8 +211,7 @@ function ensureCurrentRouteAccess(): void {
     const requiresAuth =
         props.requiresAuth ??
         routeGuard?.requiresAuth ??
-        (!matchedItem?.public &&
-            !publicPaths.has(currentPath as RoutePath));
+        (!matchedItem?.public && !publicPaths.has(currentPath as RoutePath));
     const requiredRoles = props.roles?.length
         ? props.roles
         : routeGuard?.roles?.length
@@ -252,7 +249,7 @@ async function handleLogout(): Promise<void> {
     try {
         await logout();
     } catch {
-        // ignore
+        // keep local logout available even if the remote session has expired
     } finally {
         clearSession();
         uni.showToast({ title: copy.value.logoutSuccess, icon: "success" });
@@ -268,14 +265,12 @@ onBeforeMount(() => {
 <template>
     <view class="app-shell">
         <view class="page-container shell-inner">
-            <view class="masthead glass-card fade-in-up">
+            <view class="masthead">
                 <view class="masthead-main">
                     <view class="brand-line">
-                        <text class="brand-mark">MS</text>
                         <text class="brand-name">{{ copy.brand }}</text>
                     </view>
                     <text class="title">{{ props.title || copy.defaultTitle }}</text>
-                    <text class="subtitle">{{ copy.subtitle }}</text>
                 </view>
 
                 <view class="masthead-side">
@@ -297,13 +292,13 @@ onBeforeMount(() => {
                             class="btn-secondary logout-btn"
                             @click="handleLogin"
                         >
-                            {{ GUEST_ACTION_LABEL }}
+                            {{ copy.guestAction }}
                         </button>
                     </view>
                 </view>
             </view>
 
-            <scroll-view class="nav-row fade-in-up" scroll-x>
+            <scroll-view class="nav-row" scroll-x>
                 <view class="nav-items">
                     <button
                         v-for="item in visibleNavItems"
@@ -331,177 +326,230 @@ onBeforeMount(() => {
 <style scoped>
 .app-shell {
     min-height: 100vh;
-    padding: 20px 0 36px;
+    padding: 24px 0 44px;
+    color: #15171a;
+    background:
+        linear-gradient(180deg, rgba(248, 249, 251, 0.96), #ffffff 44%),
+        #ffffff;
+    --bg-elevated: #ffffff;
+    --panel-bg: #ffffff;
+    --panel-solid: #ffffff;
+    --panel-muted: #f8fafc;
+    --panel-border: #edf0f4;
+    --panel-border-strong: #dfe5ec;
+    --text-main: #15181d;
+    --text-muted: #69727d;
+    --text-soft: #9aa2ad;
+    --accent: #111316;
+    --accent-strong: #111316;
+    --accent-soft: #f5f7fa;
+    --highlight: #ff3b30;
+    --highlight-soft: rgba(255, 59, 48, 0.08);
+    --success-soft: rgba(27, 127, 84, 0.1);
+    --warning-soft: rgba(177, 108, 11, 0.11);
+    --danger-soft: rgba(255, 59, 48, 0.1);
+    --shadow-soft: 0 18px 60px rgba(20, 25, 35, 0.06);
+    --shadow-card: 0 18px 58px rgba(18, 24, 35, 0.05);
+    --shadow-float: 0 24px 70px rgba(18, 24, 35, 0.08);
+    --radius-xl: 8px;
+    --radius-lg: 8px;
+    --radius-md: 6px;
+    --radius-sm: 4px;
 }
 
 .shell-inner {
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: 18px;
 }
 
 .masthead {
-    padding: 24px 28px;
+    min-height: 64px;
+    padding: 0 20px;
     display: grid;
-    grid-template-columns: minmax(0, 1.25fr) minmax(320px, 420px);
-    gap: 24px;
-    align-items: stretch;
+    grid-template-columns: minmax(220px, 1fr) auto;
+    gap: 18px;
+    align-items: center;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.96);
+    border: 1px solid #edf0f4;
+    box-shadow: 0 18px 60px rgba(20, 25, 35, 0.06);
 }
 
 .masthead-main {
     display: flex;
-    flex-direction: column;
-    gap: 16px;
-    justify-content: center;
-}
-
-.brand-line {
-    display: inline-flex;
+    flex-direction: row;
     align-items: center;
-    gap: 12px;
-}
-
-.brand-mark {
-    width: 40px;
-    height: 40px;
-    border-radius: 14px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 13px;
-    font-weight: 800;
-    letter-spacing: 0.12em;
-    color: #04111c;
-    background: linear-gradient(135deg, var(--accent), var(--highlight));
-    box-shadow: 0 12px 28px rgba(95, 209, 194, 0.2);
+    gap: 18px;
+    min-width: 0;
 }
 
 .brand-name {
-    font-size: 12px;
+    font-size: 20px;
     font-weight: 800;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    color: var(--text-muted);
+    letter-spacing: 0;
+    color: #111316;
+    white-space: nowrap;
 }
 
 .title {
-    display: block;
-    font-size: clamp(32px, 4vw, 50px);
+    min-width: 0;
+    color: #15181d;
+    font-size: 16px;
     font-weight: 800;
-    letter-spacing: -0.05em;
-    line-height: 1;
-}
-
-.subtitle {
-    color: var(--text-muted);
-    font-size: 15px;
-    line-height: 1.75;
-    max-width: 620px;
+    line-height: 1.2;
+    overflow-wrap: anywhere;
 }
 
 .masthead-side {
     display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    gap: 18px;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 14px;
+}
+
+.masthead-side :deep(.locale-switch) {
+    gap: 0;
+}
+
+.masthead-side :deep(.switch-copy) {
+    display: none;
+}
+
+.masthead-side :deep(.switch-segment) {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    padding: 2px;
+    border-color: #e8ebef;
+    border-radius: 4px;
+    background: #fbfcfd;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+}
+
+.masthead-side :deep(.switch-option) {
+    min-width: 34px;
+    min-height: 28px;
+    padding: 0 8px;
+    border-radius: 3px;
+    color: #6f7781;
+    box-shadow: none;
+}
+
+.masthead-side :deep(.switch-option.active) {
+    border-color: #111316;
+    background: #111316;
+    color: #ffffff;
+}
+
+.masthead-side :deep(.switch-long) {
+    display: none;
+}
+
+.masthead-side :deep(.switch-short) {
+    font-size: 11px;
+    letter-spacing: 0;
 }
 
 .profile-panel {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 14px;
-    padding: 18px;
-    border-radius: 24px;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid var(--panel-border);
+    justify-content: flex-end;
+    gap: 12px;
+    padding: 0;
 }
 
 .profile-meta {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
+    align-items: center;
     gap: 8px;
 }
 
 .role-chip {
-    align-self: flex-start;
-    font-size: 12px;
-    border: 1px solid rgba(95, 209, 194, 0.24);
-    border-radius: 999px;
-    color: var(--text-main);
-    padding: 7px 12px;
-    background: var(--accent-soft);
+    min-height: 26px;
+    display: inline-flex;
+    align-items: center;
+    font-size: 11px;
+    border: 1px solid #e7ebf0;
+    border-radius: 4px;
+    color: #69727d;
+    padding: 0 8px;
+    background: #fbfcfd;
     font-weight: 700;
 }
 
 .user-name {
-    color: var(--text-main);
-    font-size: 15px;
+    color: #25282d;
+    font-size: 12px;
     font-weight: 700;
-    letter-spacing: -0.02em;
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .logout-btn {
-    min-width: 112px;
+    min-width: 76px;
+    min-height: 32px;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 12px;
 }
 
 .nav-row {
-    padding: 8px;
-    border-radius: 999px;
-    background: rgba(5, 14, 23, 0.82);
-    border: 1px solid var(--panel-border);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
+    padding: 0;
+    border-radius: 8px;
+    background: #ffffff;
+    border: 1px solid #edf0f4;
+    box-shadow: 0 18px 58px rgba(18, 24, 35, 0.04);
 }
 
 .nav-items {
     display: flex;
-    gap: 10px;
-    padding: 4px 0;
+    gap: 0;
+    padding: 0 10px;
 }
 
 .nav-item {
     appearance: none;
-    padding: 11px 16px;
-    border-radius: 999px;
-    background: rgba(255, 255, 255, 0.03);
+    position: relative;
+    padding: 0 16px;
+    border-radius: 0;
+    background: transparent;
     font-size: 13px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
-    min-height: 42px;
-    border: 1px solid transparent;
-    color: var(--text-muted);
+    min-height: 48px;
+    border: 0;
+    color: #4c535d;
     font-weight: 700;
     white-space: nowrap;
     flex-shrink: 0;
-    transition:
-        background-color 0.22s ease,
-        border-color 0.22s ease,
-        box-shadow 0.22s ease,
-        transform 0.22s ease,
-        color 0.22s ease;
 }
 
 .nav-item.active {
-    background: linear-gradient(
-        135deg,
-        rgba(95, 209, 194, 0.18),
-        rgba(240, 182, 90, 0.16)
-    );
-    border-color: rgba(95, 209, 194, 0.24);
-    box-shadow: 0 14px 28px rgba(1, 7, 14, 0.34);
-    color: var(--text-main);
+    color: #111316;
 }
 
-.nav-label {
-    white-space: nowrap;
+.nav-item.active::after {
+    content: "";
+    position: absolute;
+    left: 16px;
+    right: 16px;
+    bottom: 8px;
+    height: 2px;
+    border-radius: 999px;
+    background: #111316;
 }
 
 .badge {
-    background: linear-gradient(135deg, var(--highlight), #ffd480);
-    color: #101923;
+    background: #ff3b30;
+    color: #ffffff;
     font-size: 10px;
     font-weight: 800;
     padding: 3px 7px;
@@ -512,13 +560,109 @@ onBeforeMount(() => {
     padding-bottom: 20px;
 }
 
-@media (hover: hover) {
-    .nav-item:hover {
-        transform: translateY(-1px);
-        color: var(--text-main);
-        border-color: var(--panel-border);
-        box-shadow: 0 12px 24px rgba(2, 8, 16, 0.24);
-    }
+.app-shell :deep(.glass-card),
+.app-shell :deep(.surface-card),
+.app-shell :deep(.surface-muted),
+.app-shell :deep(.display-panel),
+.app-shell :deep(.metric-card),
+.app-shell :deep(.info-card),
+.app-shell :deep(.summary-item),
+.app-shell :deep(.detail-item),
+.app-shell :deep(.readiness-card) {
+    background: #ffffff;
+    border-color: #edf0f4;
+    border-radius: 8px;
+    color: #15181d;
+    box-shadow: 0 18px 58px rgba(18, 24, 35, 0.05);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+}
+
+.app-shell :deep(.display-panel) {
+    background:
+        radial-gradient(
+            circle at 84% 48%,
+            rgba(213, 222, 236, 0.52),
+            transparent 32%
+        ),
+        linear-gradient(135deg, #f7f9fd 0%, #eef3fa 48%, #f9fbfe 100%);
+}
+
+.app-shell :deep(.hero-eyebrow) {
+    color: #69727d;
+    letter-spacing: 0.08em;
+}
+
+.app-shell :deep(.hero-title) {
+    color: #101216;
+    letter-spacing: 0;
+}
+
+.app-shell :deep(.hero-subtitle),
+.app-shell :deep(.section-subtitle),
+.app-shell :deep(.text-muted),
+.app-shell :deep(.summary-subvalue),
+.app-shell :deep(.meta-chip),
+.app-shell :deep(.metric-label),
+.app-shell :deep(.info-label) {
+    color: #69727d;
+}
+
+.app-shell :deep(.section-title),
+.app-shell :deep(.info-value),
+.app-shell :deep(.metric-value),
+.app-shell :deep(.summary-value),
+.app-shell :deep(.readiness-value) {
+    color: #15181d;
+}
+
+.app-shell :deep(.field-control),
+.app-shell :deep(input),
+.app-shell :deep(textarea) {
+    background: #fbfcfd;
+    border-color: #e6e9ee;
+    color: #16191d;
+}
+
+.app-shell :deep(.btn-primary) {
+    border-radius: 4px;
+    background: #111316;
+    color: #ffffff;
+    border: 1px solid #111316;
+    box-shadow: none;
+}
+
+.app-shell :deep(.btn-outline),
+.app-shell :deep(.btn-secondary) {
+    border-radius: 4px;
+    background: #ffffff;
+    border: 1px solid #d9dee6;
+    color: #1d2025;
+    box-shadow: none;
+}
+
+.app-shell :deep(.meta-chip.status-success) {
+    background: rgba(27, 127, 84, 0.09);
+    border-color: rgba(27, 127, 84, 0.18);
+    color: #1b7f54;
+}
+
+.app-shell :deep(.meta-chip.status-warning) {
+    background: rgba(177, 108, 11, 0.1);
+    border-color: rgba(177, 108, 11, 0.18);
+    color: #9a5f0b;
+}
+
+.app-shell :deep(.meta-chip.status-danger) {
+    background: rgba(255, 59, 48, 0.1);
+    border-color: rgba(255, 59, 48, 0.18);
+    color: #d92d20;
+}
+
+.app-shell :deep(.meta-chip.status-accent) {
+    background: #f5f7fa;
+    border-color: #e7ebf0;
+    color: #15181d;
 }
 
 button {
@@ -530,9 +674,22 @@ button::after {
     border: none;
 }
 
+@media (hover: hover) {
+    .nav-item:hover {
+        color: #ff3b30;
+    }
+}
+
 @media (max-width: 960px) {
     .masthead {
         grid-template-columns: 1fr;
+        padding: 14px;
+        align-items: stretch;
+    }
+
+    .masthead-side {
+        justify-content: flex-start;
+        flex-wrap: wrap;
     }
 }
 
@@ -542,32 +699,39 @@ button::after {
     }
 
     .masthead {
-        padding: 18px;
-        gap: 18px;
+        gap: 12px;
     }
 
     .title {
-        font-size: 30px;
-    }
-
-    .subtitle {
-        font-size: 13px;
-        line-height: 1.7;
+        font-size: 14px;
     }
 
     .profile-panel {
-        flex-direction: column;
-        align-items: flex-start;
-        padding: 14px;
+        align-items: center;
+        flex-wrap: wrap;
     }
 
     .nav-row {
+        overflow: visible;
+    }
+
+    .nav-items {
+        flex-wrap: wrap;
         padding: 6px;
     }
 
     .nav-item {
-        padding: 10px 14px;
+        min-height: 38px;
+        padding: 0 10px;
+        flex: 1 1 calc(25% - 1px);
         font-size: 12px;
+        white-space: normal;
+    }
+
+    .nav-item.active::after {
+        left: 10px;
+        right: 10px;
+        bottom: 4px;
     }
 
     .logout-btn {

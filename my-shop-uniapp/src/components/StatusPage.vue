@@ -38,6 +38,10 @@ withDefaults(
     align-items: center;
     justify-content: center;
     padding: 24px 16px;
+    color: #15171a;
+    background:
+        linear-gradient(180deg, rgba(248, 249, 251, 0.96), #ffffff 44%),
+        #ffffff;
 }
 
 .error-card {
@@ -47,18 +51,24 @@ withDefaults(
     flex-direction: column;
     align-items: flex-start;
     gap: 14px;
+    border: 1px solid #edf0f4;
+    border-radius: 8px;
+    background: #ffffff;
+    box-shadow: 0 18px 58px rgba(18, 24, 35, 0.05);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
 }
 
 .status-mark {
     width: 64px;
     height: 64px;
-    border-radius: 22px;
+    border-radius: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, var(--highlight), var(--accent));
-    color: #07131f;
-    box-shadow: 0 18px 34px rgba(1, 7, 14, 0.28);
+    background: #111316;
+    color: #ffffff;
+    box-shadow: none;
 }
 
 .status-code {
@@ -69,23 +79,23 @@ withDefaults(
 .title {
     font-size: 30px;
     line-height: 1.12;
-    font-weight: 800;
-    color: var(--text-main);
+    font-weight: 900;
+    color: #101216;
 }
 
 .description,
 .detail {
     font-size: 14px;
     line-height: 1.7;
-    color: var(--text-muted);
+    color: #69727d;
 }
 
 .detail {
     width: 100%;
     padding: 12px 14px;
-    border-radius: 16px;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid var(--panel-border);
+    border-radius: 8px;
+    background: #fbfcfd;
+    border: 1px solid #edf0f4;
     overflow-wrap: anywhere;
 }
 
@@ -100,6 +110,26 @@ withDefaults(
 .actions :deep(button) {
     flex: 1;
     min-width: 150px;
+    border-radius: 4px;
+}
+
+.actions :deep(.btn-primary) {
+    background: #111316;
+    border: 1px solid #111316;
+    color: #ffffff;
+    box-shadow: none;
+}
+
+.actions :deep(.btn-outline),
+.actions :deep(.btn-secondary) {
+    background: #ffffff;
+    border: 1px solid #d9dee6;
+    color: #1d2025;
+    box-shadow: none;
+}
+
+.hero-eyebrow {
+    color: #69727d;
 }
 
 @media (max-width: 520px) {

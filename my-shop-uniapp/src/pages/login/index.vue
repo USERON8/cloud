@@ -16,53 +16,45 @@ const { locale } = useLocale();
 
 const entryLabel = computed(() => {
     if (locale.value === "en-US") {
-        if (entryType.value === "admin") {
-            return "Admin entry";
-        }
-        if (entryType.value === "merchant") {
-            return "Merchant entry";
-        }
+        if (entryType.value === "admin") return "Admin entry";
+        if (entryType.value === "merchant") return "Merchant entry";
         return "User entry";
     }
 
-    if (entryType.value === "admin") {
-        return "管理入口";
-    }
-    if (entryType.value === "merchant") {
-        return "商家入口";
-    }
+    if (entryType.value === "admin") return "管理入口";
+    if (entryType.value === "merchant") return "商家入口";
     return "用户入口";
 });
 
 const copy = computed(() =>
     locale.value === "en-US"
         ? {
-              brand: "My Shop Cloud",
-              title: "Sign in to My Shop Cloud",
-              subtitle: "Continue with your platform account.",
+              brand: "ShopMall",
+              title: "Welcome to ShopMall",
+              subtitle: "Sign in to continue shopping, checkout, and manage your account.",
               accessMode: "Access mode",
               targetRoute: "Return path",
-              auth: "OAuth 2.1",
+              auth: "Account",
               heading: "Sign in",
               body: "Authorization is handled by the cloud identity service.",
-              recommended: "Account entry",
-              recommendedBody: "Your role is resolved after sign-in.",
+              recommended: "Unified account",
+              recommendedBody: "Your role and permissions are resolved after sign-in.",
               action: "Continue with account",
-              storefront: "Storefront access",
+              storefront: "Storefront",
               back: "Back to market",
               error: "Failed to start sign-in",
           }
         : {
-              brand: "云端商城工作台",
-              title: "登录 My Shop Cloud",
-              subtitle: "使用平台账号继续访问。",
+              brand: "ShopMall",
+              title: "欢迎来到 ShopMall",
+              subtitle: "登录后继续购物、结算订单，并管理你的账号信息。",
               accessMode: "访问模式",
               targetRoute: "返回路径",
-              auth: "OAuth 2.1",
+              auth: "账号登录",
               heading: "登录",
-              body: "授权由云端身份服务完成。",
-              recommended: "账号入口",
-              recommendedBody: "登录成功后自动识别当前角色。",
+              body: "授权由云端身份服务完成，登录后会自动识别当前角色。",
+              recommended: "统一账号入口",
+              recommendedBody: "用户、商家和管理员权限会在登录后自动解析。",
               action: "使用账号继续登录",
               storefront: "商城访问",
               back: "返回商城",
@@ -99,66 +91,86 @@ function backToMarket(): void {
 </script>
 
 <template>
-    <view class="page">
-        <view class="page-container auth-shell">
-            <view class="auth-panel display-panel fade-in-up">
-                <view class="auth-topbar">
-                    <view class="brand-line">
-                        <text class="brand-mark">MS</text>
-                        <text class="brand-name">{{ copy.brand }}</text>
+    <view class="login-page">
+        <view class="login-shell">
+            <view class="login-header">
+                <text class="brand-name">{{ copy.brand }}</text>
+                <view class="header-right">
+                    <LocaleSwitch class="locale-compact" />
+                    <button class="back-link" @click="backToMarket">
+                        {{ copy.back }}
+                    </button>
+                </view>
+            </view>
+
+            <view class="login-card">
+                <view class="welcome-panel">
+                    <view class="welcome-copy">
+                        <text class="eyebrow">{{ copy.auth }}</text>
+                        <text class="welcome-title">{{ copy.title }}</text>
+                        <text class="welcome-subtitle">{{ copy.subtitle }}</text>
                     </view>
-                    <LocaleSwitch />
+                    <view class="shopping-visual">
+                        <view class="bag bag-main" />
+                        <view class="bag bag-side" />
+                        <view class="box box-one" />
+                        <view class="box box-two" />
+                    </view>
+                    <view class="service-mini">
+                        <view class="service-mini-item">
+                            <text class="service-dot">✓</text>
+                            <text>正品保障</text>
+                        </view>
+                        <view class="service-mini-item">
+                            <text class="service-dot">▣</text>
+                            <text>极速配送</text>
+                        </view>
+                        <view class="service-mini-item">
+                            <text class="service-dot">♡</text>
+                            <text>无忧售后</text>
+                        </view>
+                    </view>
                 </view>
 
-                <view class="auth-main">
-                    <view class="auth-copy">
-                        <text class="hero-eyebrow">{{ copy.auth }}</text>
-                        <text class="hero-title auth-title">{{ copy.title }}</text>
-                        <text class="hero-subtitle auth-subtitle">
-                            {{ copy.subtitle }}
-                        </text>
+                <view class="signin-panel">
+                    <view class="signin-head">
+                        <text class="signin-title">{{ copy.heading }}</text>
+                        <text class="signin-copy">{{ copy.body }}</text>
+                    </view>
 
-                        <view class="context-grid">
-                            <view class="context-item">
-                                <text class="context-label">{{ copy.accessMode }}</text>
-                                <text class="context-value">{{ entryLabel }}</text>
-                            </view>
-                            <view class="context-item">
-                                <text class="context-label">{{ copy.targetRoute }}</text>
-                                <text class="context-value">{{ redirectPath }}</text>
-                            </view>
+                    <view class="context-grid">
+                        <view class="context-item">
+                            <text class="context-label">{{ copy.accessMode }}</text>
+                            <text class="context-value">{{ entryLabel }}</text>
+                        </view>
+                        <view class="context-item">
+                            <text class="context-label">{{ copy.targetRoute }}</text>
+                            <text class="context-value">{{ redirectPath }}</text>
                         </view>
                     </view>
 
-                    <view class="signin-panel">
-                        <view class="signin-header">
-                            <text class="signin-title">{{ copy.heading }}</text>
-                            <text class="signin-copy">{{ copy.body }}</text>
-                        </view>
-
-                        <view class="signin-hint">
-                            <text class="hint-title">{{ copy.recommended }}</text>
-                            <text class="hint-copy">{{ copy.recommendedBody }}</text>
-                        </view>
-
-                        <button
-                            class="btn-primary action-button"
-                            :loading="startingProvider === 'password'"
-                            @click="handleAuthorizationStart('password')"
-                        >
-                            {{ copy.action }}
-                        </button>
-
-                        <view class="divider">
-                            <view class="divider-line" />
-                            <text class="divider-text">{{ copy.storefront }}</text>
-                            <view class="divider-line" />
-                        </view>
-
-                        <button class="btn-outline action-button" @click="backToMarket">
-                            {{ copy.back }}
-                        </button>
+                    <view class="signin-hint">
+                        <text class="hint-title">{{ copy.recommended }}</text>
+                        <text class="hint-copy">{{ copy.recommendedBody }}</text>
                     </view>
+
+                    <button
+                        class="primary-action"
+                        :loading="startingProvider === 'password'"
+                        @click="handleAuthorizationStart('password')"
+                    >
+                        {{ copy.action }}
+                    </button>
+
+                    <view class="divider">
+                        <view class="divider-line" />
+                        <text class="divider-text">{{ copy.storefront }}</text>
+                        <view class="divider-line" />
+                    </view>
+
+                    <button class="secondary-action" @click="backToMarket">
+                        {{ copy.back }}
+                    </button>
                 </view>
             </view>
         </view>
@@ -166,178 +178,343 @@ function backToMarket(): void {
 </template>
 
 <style scoped>
-.page {
+.login-page {
     min-height: 100vh;
-    display: flex;
-    align-items: center;
-    padding: 24px 0;
+    padding: 24px 0 44px;
+    color: #15171a;
+    background:
+        linear-gradient(180deg, rgba(248, 249, 251, 0.96), #ffffff 44%),
+        #ffffff;
 }
 
-.auth-shell {
-    display: flex;
-    align-items: center;
-    min-height: calc(100vh - 48px);
-}
-
-.auth-panel {
-    width: 100%;
-    padding: 28px;
-    border-radius: var(--radius-xl);
+.login-shell {
+    width: min(1280px, calc(100% - 32px));
+    margin: 0 auto;
     display: flex;
     flex-direction: column;
-    gap: 30px;
+    gap: 22px;
 }
 
-.auth-topbar {
+.login-header {
+    min-height: 64px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 16px;
-    flex-wrap: wrap;
-}
-
-.brand-line {
-    display: inline-flex;
-    align-items: center;
-    gap: 12px;
-}
-
-.brand-mark {
-    width: 42px;
-    height: 42px;
-    border-radius: 14px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    background: linear-gradient(135deg, var(--accent), var(--highlight));
-    color: #04111c;
-    font-size: 12px;
-    font-weight: 800;
-    letter-spacing: 0.12em;
+    gap: 18px;
+    padding: 0 20px;
+    border: 1px solid #edf0f4;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.96);
+    box-shadow: 0 18px 60px rgba(20, 25, 35, 0.06);
 }
 
 .brand-name {
-    font-size: 12px;
-    color: var(--text-muted);
+    font-size: 20px;
     font-weight: 800;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
+    color: #111316;
 }
 
-.auth-main {
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.login-header :deep(.locale-compact) {
+    gap: 0;
+}
+
+.login-header :deep(.switch-copy),
+.login-header :deep(.switch-long) {
+    display: none;
+}
+
+.login-header :deep(.switch-segment) {
+    gap: 2px;
+    padding: 2px;
+    border-color: #e8ebef;
+    border-radius: 4px;
+    background: #fbfcfd;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+}
+
+.login-header :deep(.switch-option) {
+    min-width: 34px;
+    min-height: 28px;
+    padding: 0 8px;
+    border-radius: 3px;
+    color: #6f7781;
+    box-shadow: none;
+}
+
+.login-header :deep(.switch-option.active) {
+    border-color: #111316;
+    background: #111316;
+    color: #ffffff;
+}
+
+.login-header :deep(.switch-short) {
+    font-size: 11px;
+    letter-spacing: 0;
+}
+
+.back-link,
+.primary-action,
+.secondary-action {
+    margin: 0;
+    border-radius: 4px;
+    font-weight: 700;
+}
+
+.back-link {
+    min-height: 32px;
+    padding: 8px 12px;
+    border: 1px solid #d9dee6;
+    background: #ffffff;
+    color: #1d2025;
+    font-size: 12px;
+}
+
+.login-card {
+    min-height: 620px;
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(340px, 420px);
-    gap: 28px;
-    align-items: stretch;
+    grid-template-columns: minmax(0, 1fr) 460px;
+    gap: 18px;
 }
 
-.auth-copy {
+.welcome-panel,
+.signin-panel {
+    border: 1px solid #edf0f4;
+    border-radius: 8px;
+    background: #ffffff;
+    box-shadow: 0 18px 58px rgba(18, 24, 35, 0.05);
+}
+
+.welcome-panel {
+    position: relative;
+    overflow: hidden;
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    gap: 18px;
-    min-height: 430px;
+    justify-content: space-between;
+    padding: 46px 58px;
+    background:
+        radial-gradient(circle at 70% 52%, rgba(213, 222, 236, 0.62), transparent 34%),
+        linear-gradient(135deg, #f7f9fd 0%, #eef3fa 48%, #f9fbfe 100%);
 }
 
-.auth-title {
-    max-width: 640px;
+.welcome-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    position: relative;
+    z-index: 2;
 }
 
-.auth-subtitle {
-    max-width: 520px;
-}
-
-.context-grid {
-    width: min(560px, 100%);
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 12px;
-    padding-top: 8px;
-}
-
-.context-item {
-    min-width: 0;
-    padding: 16px;
-    border-radius: 18px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid var(--panel-border);
-}
-
-.context-label {
+.eyebrow {
+    color: #69727d;
     font-size: 12px;
-    color: var(--text-soft);
+    font-weight: 800;
     letter-spacing: 0.08em;
     text-transform: uppercase;
 }
 
-.context-value {
-    margin-top: 10px;
-    display: block;
-    font-size: 14px;
-    font-weight: 700;
-    color: var(--text-main);
-    line-height: 1.55;
-    overflow-wrap: anywhere;
+.welcome-title {
+    max-width: 620px;
+    color: #101216;
+    font-size: 42px;
+    font-weight: 900;
+    line-height: 1.18;
+}
+
+.welcome-subtitle {
+    max-width: 560px;
+    color: #5f6874;
+    font-size: 15px;
+    line-height: 1.75;
+}
+
+.shopping-visual {
+    position: absolute;
+    right: 72px;
+    bottom: 122px;
+    width: 330px;
+    height: 260px;
+}
+
+.bag {
+    position: absolute;
+    border: 1px solid #eef1f5;
+    background: #ffffff;
+    box-shadow: 0 28px 60px rgba(31, 38, 49, 0.1);
+}
+
+.bag::before {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: -34px;
+    width: 74px;
+    height: 54px;
+    border: 8px solid #dfe7f1;
+    border-bottom: 0;
+    border-radius: 999px 999px 0 0;
+    transform: translateX(-50%);
+}
+
+.bag-main {
+    right: 54px;
+    bottom: 30px;
+    width: 170px;
+    height: 150px;
+    border-radius: 6px;
+}
+
+.bag-side {
+    right: 190px;
+    bottom: 18px;
+    width: 92px;
+    height: 92px;
+    border-radius: 5px;
+    opacity: 0.9;
+}
+
+.box {
+    position: absolute;
+    border-radius: 5px;
+    background: #f7f2e9;
+    border: 1px solid #ece7de;
+}
+
+.box-one {
+    right: 18px;
+    bottom: 20px;
+    width: 88px;
+    height: 88px;
+}
+
+.box-two {
+    right: 8px;
+    bottom: 118px;
+    width: 54px;
+    height: 54px;
+}
+
+.service-mini {
+    display: flex;
+    align-items: center;
+    gap: 22px;
+    color: #4d5661;
+    font-size: 12px;
+    position: relative;
+    z-index: 2;
+}
+
+.service-mini-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.service-dot {
+    width: 24px;
+    height: 24px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    border: 1px solid #d9dee6;
+    color: #20242a;
+    font-weight: 800;
 }
 
 .signin-panel {
-    padding: 24px;
-    border-radius: var(--radius-lg);
-    background: rgba(5, 14, 23, 0.62);
-    border: 1px solid var(--panel-border-strong);
+    padding: 44px;
     display: flex;
     flex-direction: column;
     justify-content: center;
-    gap: 16px;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+    gap: 18px;
 }
 
-.signin-header {
+.signin-head {
     display: flex;
     flex-direction: column;
     gap: 8px;
 }
 
 .signin-title {
+    color: #111316;
     font-size: 30px;
-    font-weight: 800;
-    letter-spacing: -0.04em;
-    color: var(--text-main);
+    font-weight: 900;
 }
 
-.signin-copy {
-    color: var(--text-muted);
+.signin-copy,
+.hint-copy {
+    color: #69727d;
     font-size: 13px;
     line-height: 1.7;
 }
 
+.context-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.context-item,
 .signin-hint {
-    border: 1px solid var(--panel-border);
-    background: rgba(255, 255, 255, 0.04);
-    border-radius: 20px;
-    padding: 16px;
+    min-width: 0;
+    padding: 14px;
+    border: 1px solid #edf0f4;
+    border-radius: 8px;
+    background: #fbfcfd;
+}
+
+.context-label {
+    color: #8b939e;
+    font-size: 11px;
+    font-weight: 800;
+}
+
+.context-value {
+    display: block;
+    margin-top: 8px;
+    color: #171a1f;
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+}
+
+.signin-hint {
     display: flex;
     flex-direction: column;
     gap: 6px;
 }
 
 .hint-title {
+    color: #111316;
     font-size: 12px;
-    font-weight: 800;
-    color: var(--accent);
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
+    font-weight: 900;
 }
 
-.hint-copy {
-    color: var(--text-muted);
-    font-size: 13px;
-    line-height: 1.7;
-}
-
-.action-button {
+.primary-action,
+.secondary-action {
     width: 100%;
-    min-height: 48px;
+    min-height: 46px;
+    font-size: 13px;
+}
+
+.primary-action {
+    border: 1px solid #111316;
+    background: #111316;
+    color: #ffffff;
+}
+
+.secondary-action {
+    border: 1px solid #d9dee6;
+    background: #ffffff;
+    color: #1d2025;
 }
 
 .divider {
@@ -349,52 +526,68 @@ function backToMarket(): void {
 .divider-line {
     flex: 1;
     height: 1px;
-    background: rgba(148, 163, 184, 0.16);
+    background: #edf0f4;
 }
 
 .divider-text {
-    color: var(--text-soft);
-    font-size: 12px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
+    color: #9aa2ad;
+    font-size: 11px;
+    font-weight: 800;
 }
 
-@media (max-width: 960px) {
-    .auth-main {
-        grid-template-columns: minmax(0, 1fr);
+button::after {
+    border: none;
+}
+
+@media (max-width: 980px) {
+    .login-card {
+        grid-template-columns: 1fr;
     }
 
-    .auth-copy {
-        min-height: auto;
+    .shopping-visual {
+        position: relative;
+        right: auto;
+        bottom: auto;
+        align-self: center;
+        margin: 24px 0;
     }
 }
 
-@media (max-width: 768px) {
-    .page {
+@media (max-width: 640px) {
+    .login-page {
+        padding: 12px 0 32px;
+    }
+
+    .login-shell {
+        width: min(100% - 20px, 720px);
+        gap: 16px;
+    }
+
+    .login-header {
         align-items: flex-start;
-        padding: 12px 0 28px;
+        flex-direction: column;
+        padding: 14px;
     }
 
-    .auth-panel {
-        padding: 18px;
-        gap: 22px;
-        border-radius: 28px;
+    .header-right {
+        width: 100%;
+        justify-content: space-between;
     }
 
-    .auth-main {
-        gap: 20px;
-    }
-
-    .context-grid {
-        grid-template-columns: minmax(0, 1fr);
-    }
-
+    .welcome-panel,
     .signin-panel {
-        padding: 18px;
+        padding: 24px;
     }
 
-    .signin-title {
-        font-size: 26px;
+    .welcome-title {
+        font-size: 32px;
+    }
+
+    .context-grid,
+    .service-mini {
+        grid-template-columns: 1fr;
+        flex-direction: column;
+        align-items: flex-start;
     }
 }
 </style>
