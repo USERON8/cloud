@@ -69,8 +69,14 @@ Assert-DockerDaemonReady
 Push-Location (Join-Path $root "docker")
 try {
     docker compose -f docker-compose.yml up -d --pull missing --build
+    if ($LASTEXITCODE -ne 0) {
+        throw "failed to start core infrastructure containers"
+    }
     if ($WithMonitoring) {
         docker compose -f monitoring-compose.yml up -d --pull missing
+        if ($LASTEXITCODE -ne 0) {
+            throw "failed to start monitoring containers"
+        }
     }
 } finally {
     Pop-Location

@@ -22,7 +22,8 @@ services:
         target: /var/lib/mysql
       - type: bind
         source: ./docker-compose/mysql/config
-        target: /etc/mysql/conf.d
+        target: /opt/mysql/config-source
+        read_only: true
       - type: bind
         source: ./docker-compose/mysql/logs
         target: /var/log/mysql

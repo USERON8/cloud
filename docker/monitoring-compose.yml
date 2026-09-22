@@ -3,7 +3,7 @@ name: monitoring
 services:
   # Prometheus
   prometheus:
-    image: bitnami/prometheus:3.5.0-debian-12-r3
+    image: prom/prometheus:v3.5.0
     container_name: cloud-prometheus
     ports:
       - "${PORT_PROMETHEUS_HTTP:-19099}:9090"
@@ -15,8 +15,8 @@ services:
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
-      - '--web.console.libraries=/etc/prometheus/console_libraries'
-      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
       - '--storage.tsdb.retention.time=200h'
       - '--web.enable-lifecycle'
       - '--web.enable-remote-write-receiver'
@@ -45,6 +45,7 @@ services:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=admin
       - GF_PATHS_PROVISIONING=/etc/grafana/provisioning
+      - GF_PLUGINS_PREINSTALL_DISABLED=true
     networks:
       - monitoring
 

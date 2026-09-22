@@ -9,19 +9,27 @@ import {
     completeOrder,
     listOrders,
 } from "../../../api/order";
-import { resolveApiUrl } from "../../../api/http";
+import { useOrderPayment } from "../../../features/orders/composables/useOrderPayment";
 import {
-    createPaymentCheckoutSession,
-    createPaymentOrder,
-    getPaymentOrderByOrderNo,
-} from "../../../api/payment";
+    actionKey,
+    canApplyAfterSale,
+    canCancel,
+    canCancelAfterSale,
+    canComplete,
+    canPay,
+    canViewRefund,
+    hasMultipleSubOrders,
+    orderItems,
+    orderSubActionTargets,
+    resolveOrderItemName,
+    resolveOrderItemSpec,
+} from "../../../features/orders/model/order-rules";
 import { useLocale } from "../../../i18n/locale";
 import { ensurePageAccess, navigateTo } from "../../../router/navigation";
 import { Routes } from "../../../router/routes";
 import type {
     AfterSaleInfo,
     OrderSummaryDTO,
-    OrderSummaryItem,
 } from "../../../types/domain";
 import {
     formatDate,
@@ -29,13 +37,11 @@ import {
     formatPrice,
     formatRelativeDate,
 } from "../../../utils/format";
-import { openExternalPage } from "../../../utils/external-navigation";
 import { confirm, toast } from "../../../utils/ui";
 
 const rows = ref<OrderSummaryDTO[]>([]);
 const loading = ref(false);
 const refundingOrderKey = ref<string | null>(null);
-const payingOrderKey = ref<string | null>(null);
 const completingOrderId = ref<number | null>(null);
 
 const afterSaleDraft = reactive({
@@ -177,52 +183,7 @@ const copy = computed(() =>
           },
 );
 
-function actionKey(order: OrderSummaryDTO): string {
-    return `${order.id ?? "main"}:${order.subOrderId ?? "sub"}`;
-}
-
-function buildSubOrderActionTarget(
-    order: OrderSummaryDTO,
-    subOrder: NonNullable<OrderSummaryDTO["subOrders"]>[number],
-): OrderSummaryDTO {
-    const items = orderItems(order).filter(
-        (item) =>
-            typeof subOrder.subOrderId !== "number" ||
-            item.subOrderId === subOrder.subOrderId,
-    );
-    return {
-        id: order.id,
-        orderNo: order.orderNo,
-        userId: order.userId,
-        subOrderId: subOrder.subOrderId,
-        subOrderNo: subOrder.subOrderNo,
-        merchantId: subOrder.merchantId,
-        afterSaleId: subOrder.afterSaleId,
-        afterSaleNo: subOrder.afterSaleNo,
-        afterSaleType: subOrder.afterSaleType,
-        refundNo: subOrder.refundNo,
-        totalAmount: subOrder.payAmount ?? order.totalAmount,
-        payAmount: subOrder.payAmount ?? order.payAmount,
-        status: subOrder.status,
-        orderStatusRaw: subOrder.orderStatusRaw,
-        afterSaleStatus: subOrder.afterSaleStatus,
-        createdAt: order.createdAt,
-        items,
-    };
-}
-
-function orderSubActionTargets(order: OrderSummaryDTO): OrderSummaryDTO[] {
-    if (Array.isArray(order.subOrders) && order.subOrders.length > 0) {
-        return order.subOrders.map((subOrder) =>
-            buildSubOrderActionTarget(order, subOrder),
-        );
-    }
-    return [order];
-}
-
-function hasMultipleSubOrders(order: OrderSummaryDTO): boolean {
-    return orderSubActionTargets(order).length > 1;
-}
+const { onPay, payingOrderKey } = useOrderPayment(copy);
 
 const pendingPayCount = computed(() =>
     rows.value.reduce(
@@ -234,96 +195,6 @@ const pendingPayCount = computed(() =>
     ),
 );
 
-function canApplyAfterSale(order: OrderSummaryDTO): boolean {
-    return (
-        typeof order.id === "number" &&
-        typeof order.subOrderId === "number" &&
-        typeof order.merchantId === "number" &&
-        [1, 2, 3].includes(order.status ?? -1) &&
-        (!order.afterSaleStatus || order.afterSaleStatus === "NONE")
-    );
-}
-
-function canCancelAfterSale(order: OrderSummaryDTO): boolean {
-    return (
-        typeof order.afterSaleId === "number" &&
-        ["APPLIED", "WAIT_RETURN"].includes(order.afterSaleStatus ?? "")
-    );
-}
-
-function canPay(order: OrderSummaryDTO): boolean {
-    return (
-        order.status === 0 &&
-        typeof order.userId === "number" &&
-        !!order.orderNo &&
-        !!order.subOrderNo
-    );
-}
-
-function canComplete(order: OrderSummaryDTO): boolean {
-    const subOrders = orderSubActionTargets(order);
-    return (
-        typeof order.id === "number" &&
-        subOrders.length > 0 &&
-        subOrders.every((subOrder) => subOrder.status === 2)
-    );
-}
-
-function canCancel(order: OrderSummaryDTO): boolean {
-    const subOrders = orderSubActionTargets(order);
-    return (
-        typeof order.id === "number" &&
-        subOrders.length > 0 &&
-        subOrders.every((subOrder) => subOrder.status === 0)
-    );
-}
-
-function canViewRefund(order: OrderSummaryDTO): boolean {
-    return (
-        !!order.refundNo &&
-        ["REFUNDING", "REFUNDED"].includes(order.afterSaleStatus ?? "")
-    );
-}
-
-function createPaymentAttemptToken(): string {
-    return `${Date.now().toString(36)}${Math.random()
-        .toString(36)
-        .slice(2, 8)}`;
-}
-
-function buildPaymentIdempotencyKey(
-    order: OrderSummaryDTO,
-    attemptToken: string,
-): string {
-    return `payment:${order.orderNo}:${order.subOrderNo ?? order.id}:${attemptToken}`;
-}
-
-function buildPaymentNo(
-    order: OrderSummaryDTO,
-    attemptToken: string,
-): string {
-    const subOrderNo =
-        order.subOrderNo?.replace(/[^A-Za-z0-9_-]/g, "") || String(order.id);
-    return `PAY-${subOrderNo}-${attemptToken}`;
-}
-
-function openCheckout(url: string, paymentNo: string): void {
-    openExternalPage(url, {
-        query: { paymentNo },
-        guard: {
-            requiresAuth: true,
-            roles: ["USER", "MERCHANT", "ADMIN"],
-        },
-        openWebview(target) {
-            navigateTo(
-                Routes.webview,
-                { url: target.url, ...target.query },
-                target.guard,
-            );
-        },
-    });
-}
-
 function resetAfterSaleDraft(): void {
     afterSaleDraft.orderId = null;
     afterSaleDraft.subOrderId = null;
@@ -331,52 +202,6 @@ function resetAfterSaleDraft(): void {
     afterSaleDraft.reason = "";
     afterSaleDraft.description = "";
     afterSaleDraft.applyAmount = "";
-}
-
-function orderItems(order: OrderSummaryDTO): OrderSummaryItem[] {
-    return Array.isArray(order.items) ? order.items : [];
-}
-
-function readSnapshotText(
-    snapshot: Record<string, unknown> | undefined,
-    key: string,
-): string {
-    const value = snapshot?.[key];
-    return typeof value === "string" ? value.trim() : "";
-}
-
-function formatSpecText(specJson?: string): string {
-    if (!specJson?.trim()) {
-        return "";
-    }
-    try {
-        const parsed = JSON.parse(specJson) as Record<string, unknown>;
-        if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-            return specJson;
-        }
-        return Object.entries(parsed)
-            .filter(([, value]) => value !== null && value !== undefined && String(value).trim())
-            .map(([key, value]) => `${key}: ${value}`)
-            .join(" / ");
-    } catch {
-        return specJson;
-    }
-}
-
-function resolveOrderItemName(item: OrderSummaryItem): string {
-    return (
-        item.latestProduct?.skuName ||
-        item.skuName ||
-        readSnapshotText(item.skuSnapshot, "skuName") ||
-        readSnapshotText(item.skuSnapshot, "spuName") ||
-        `SKU ${item.skuId ?? "--"}`
-    );
-}
-
-function resolveOrderItemSpec(item: OrderSummaryItem): string {
-    return formatSpecText(
-        item.latestProduct?.specJson || readSnapshotText(item.skuSnapshot, "specJson"),
-    );
 }
 
 function openAfterSale(order: OrderSummaryDTO): void {
@@ -453,65 +278,6 @@ async function loadOrders(): Promise<void> {
         toast(error instanceof Error ? error.message : copy.value.loadFailed);
     } finally {
         loading.value = false;
-    }
-}
-
-async function onPay(order: OrderSummaryDTO): Promise<void> {
-    if (!canPay(order) || typeof order.userId !== "number" || !order.subOrderNo) {
-        toast(copy.value.payInfoMissing);
-        return;
-    }
-    const amount = Number(order.payAmount ?? order.totalAmount ?? NaN);
-    if (!Number.isFinite(amount) || amount <= 0) {
-        toast(copy.value.amountUnavailable);
-        return;
-    }
-
-    payingOrderKey.value = actionKey(order);
-    let paymentNo = "";
-    try {
-        const existingOrder = await getPaymentOrderByOrderNo(
-            order.orderNo,
-            order.subOrderNo,
-        );
-        const reusablePayment =
-            existingOrder && existingOrder.status !== "FAILED"
-                ? existingOrder
-                : null;
-        if (reusablePayment?.paymentNo) {
-            paymentNo = reusablePayment.paymentNo;
-        } else {
-            const attemptToken = createPaymentAttemptToken();
-            paymentNo = buildPaymentNo(order, attemptToken);
-            await createPaymentOrder({
-                paymentNo,
-                mainOrderNo: order.orderNo,
-                subOrderNo: order.subOrderNo,
-                userId: order.userId,
-                amount: Number(amount.toFixed(2)),
-                channel: "ALIPAY",
-                idempotencyKey: buildPaymentIdempotencyKey(order, attemptToken),
-            });
-        }
-        const session = await createPaymentCheckoutSession(paymentNo);
-        if (!session.checkoutPath) {
-            throw new Error("Checkout session is missing checkoutPath");
-        }
-        openCheckout(resolveApiUrl(session.checkoutPath), paymentNo);
-    } catch (error) {
-        toast(error instanceof Error ? error.message : copy.value.openCheckoutFailed);
-        if (paymentNo) {
-            navigateTo(
-                Routes.appPayments,
-                { paymentNo, autoPoll: 1 },
-                {
-                    requiresAuth: true,
-                    roles: ["USER", "ADMIN"],
-                },
-            );
-        }
-    } finally {
-        payingOrderKey.value = null;
     }
 }
 

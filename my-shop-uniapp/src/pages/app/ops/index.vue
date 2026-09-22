@@ -1,29 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import AppShell from '../../../components/AppShell.vue'
-import { resolveApiUrl } from '../../../api/http'
-import { getGitHubAuthStatus, getGitHubUserInfo, logoutAllSessions, validateToken } from '../../../api/auth'
-import {
-  addTokenToBlacklist,
-  checkBlacklist,
-  cleanupBlacklist,
-  cleanupExpiredTokens,
-  getAuthorizationDetails,
-  getBlacklistStats,
-  getStorageStructure,
-  getTokenStats,
-  revokeAuthorization
-} from '../../../api/auth-tokens'
-import {
-  createCategoriesBatch,
-  deleteCategoriesBatch,
-  getCategoryById,
-  getCategoryChildren,
-  getCategoryTree,
-  moveCategory,
-  updateCategorySort,
-  updateCategoryStatusBatch
-} from '../../../api/category'
 import {
   advancedSearch,
   basicSearch,
@@ -53,39 +30,19 @@ import {
   searchShopsByLocation,
   type ShopSearchRequest
 } from '../../../api/shop-search'
-import { findUserByUsername, updateUsersBatch } from '../../../api/user-management'
-import { approveMerchantsBatch, deleteMerchantsBatch, updateMerchantStatusBatch } from '../../../api/merchant'
-import { reviewMerchantAuthBatch } from '../../../api/merchant-auth'
-import {
-  createPaymentCheckoutSession,
-  createPaymentOrder,
-  createPaymentRefund,
-  getPaymentOrderByNo,
-  getPaymentOrderByOrderNo,
-  getPaymentStatus
-} from '../../../api/payment'
-import {
-  createSpu,
-  getSpu,
-  listSkuByIds,
-  listSpuByCategory,
-  updateSpu,
-  updateSpuStatus
-} from '../../../api/product-catalog'
-import { getRegistrationTrendRange, getStatisticsOverviewAsync, refreshStatisticsCache } from '../../../api/statistics'
-import { getThreadPoolDetail, getThreadPools } from '../../../api/thread-pool'
-import { openExternalPage } from '../../../utils/external-navigation'
+import { useBatchGovernance } from '../../../features/ops/composables/useBatchGovernance'
+import { useCatalogGovernance } from '../../../features/ops/composables/useCatalogGovernance'
+import { useCategoryGovernance } from '../../../features/ops/composables/useCategoryGovernance'
+import { usePaymentGovernance } from '../../../features/ops/composables/usePaymentGovernance'
+import { useStatisticsGovernance } from '../../../features/ops/composables/useStatisticsGovernance'
+import { useThreadPoolGovernance } from '../../../features/ops/composables/useThreadPoolGovernance'
+import { useTokenGovernance } from '../../../features/ops/composables/useTokenGovernance'
+import { createOpsInputTools } from '../../../features/ops/model/input-tools'
 import type {
-  PaymentOrderCommand,
-  PaymentRefundCommand,
   ProductFilterRequest,
-  ProductSearchRequest,
-  SpuCreateRequest
+  ProductSearchRequest
 } from '../../../types/domain'
-import { navigateTo } from '../../../router/navigation'
-import { Routes } from '../../../router/routes'
-import { isDateAfter } from '../../../utils/format'
-import { confirm, toast } from '../../../utils/ui'
+import { toast } from '../../../utils/ui'
 
 const tabs = [
   { key: 'tokens', label: 'Tokens and authorization' },
@@ -101,98 +58,18 @@ const tabs = [
 
 const activeTab = ref('tokens')
 
-function formatJson(value: unknown): string {
-  if (value == null) {
-    return '--'
-  }
-  try {
-    return JSON.stringify(value, null, 2)
-  } catch {
-    return String(value)
-  }
-}
-
-function parseJson<T>(raw: string, label: string): T | null {
-  if (!raw.trim()) {
-    toast(`${label} JSON cannot be empty`)
-    return null
-  }
-  try {
-    return JSON.parse(raw) as T
-  } catch (error) {
-    toast(error instanceof Error ? error.message : `Failed to parse ${label} JSON`)
-    return null
-  }
-}
-
-function parseNumberList(raw: string): number[] {
-  return raw
-    .split(',')
-    .map((value) => Number(value.trim()))
-    .filter((value) => Number.isFinite(value) && value > 0)
-}
-
-function requirePositiveId(raw: string, label: string): number | null {
-  const value = Number(raw)
-  if (!Number.isFinite(value) || value <= 0) {
-    toast(`Please enter ${label}`)
-    return null
-  }
-  return value
-}
-
-function parseOptionalNumber(raw: string, label: string): number | undefined | null {
-  if (!raw.trim()) {
-    return undefined
-  }
-  const value = Number(raw)
-  if (!Number.isFinite(value)) {
-    toast(`${label} must be numeric`)
-    return null
-  }
-  return value
-}
-
-function parseOptionalBoolean(raw: string, label: string): boolean | undefined | null {
-  const value = raw.trim().toLowerCase()
-  if (!value) {
-    return undefined
-  }
-  if (['true', '1', 'yes'].includes(value)) {
-    return true
-  }
-  if (['false', '0', 'no'].includes(value)) {
-    return false
-  }
-  toast(`${label} must be true or false`)
-  return null
-}
-
-function parseStringList(raw: string): string[] | undefined {
-  const values = raw
-    .split(',')
-    .map((value) => value.trim())
-    .filter((value) => value.length > 0)
-  return values.length > 0 ? values : undefined
-}
-
-function compactPayload<T extends Record<string, unknown>>(payload: T): T {
-  return Object.fromEntries(
-    Object.entries(payload).filter(([, value]) => {
-      if (value === undefined || value === '') {
-        return false
-      }
-      if (Array.isArray(value)) {
-        return value.length > 0
-      }
-      return true
-    })
-  ) as T
-}
-
-function toPrettyJson(value: unknown): string {
-  return JSON.stringify(value, null, 2)
-}
+const opsInputTools = createOpsInputTools((message) => toast(message))
+const {
+  compactPayload,
+  formatJson,
+  parseJson,
+  parseNumberList,
+  parseOptionalBoolean,
+  parseOptionalNumber,
+  parseStringList,
+  requirePositiveId,
+  toPrettyJson
+} = opsInputTools
 
 function resolveSearchPaging(): { page: number; size: number } | null {
   const page = Number(searchPage.value)
@@ -222,412 +99,87 @@ function resolvePriceRange(): { minPrice?: number; maxPrice?: number } | null {
   return { minPrice: minPrice ?? undefined, maxPrice: maxPrice ?? undefined }
 }
 
-function normalizeDateInput(value: string, label: string): string | null {
-  const trimmed = value.trim()
-  if (!trimmed) {
-    toast(`Please enter ${label}`)
-    return null
-  }
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
-    toast(`${label} must use the YYYY-MM-DD format`)
-    return null
-  }
-  return trimmed
-}
-
 // Token and authorization
-const tokenStats = ref<Record<string, unknown> | null>(null)
-const storageStructure = ref<Record<string, unknown> | null>(null)
-const authorizationId = ref('')
-const authorizationDetail = ref<Record<string, unknown> | null>(null)
-const cleanupResult = ref<Record<string, unknown> | null>(null)
-const tokenValidationMessage = ref<string | null>(null)
-const blacklistStats = ref<Record<string, unknown> | null>(null)
-const blacklistToken = ref('')
-const blacklistReason = ref('')
-const blacklistCheckResult = ref<Record<string, unknown> | null>(null)
-const blacklistCleanupResult = ref<Record<string, unknown> | null>(null)
-const logoutUsername = ref('')
-const gitHubStatus = ref<boolean | null>(null)
-const gitHubUserInfo = ref<Record<string, unknown> | null>(null)
+const tokenGovernance = useTokenGovernance()
+const {
+  addBlacklist,
+  authorizationDetail,
+  authorizationId,
+  blacklistCheckResult,
+  blacklistCleanupResult,
+  blacklistReason,
+  blacklistStats,
+  blacklistToken,
+  checkBlacklistStatus,
+  cleanupBlacklistEntries,
+  cleanupResult,
+  gitHubStatus,
+  gitHubUserInfo,
+  loadAuthorizationDetail,
+  loadBlacklistStats,
+  loadGitHubStatus,
+  loadGitHubUser,
+  loadStorageStructure,
+  loadTokenStats,
+  logoutAll,
+  logoutUsername,
+  revokeAuthorizationRow,
+  runTokenCleanup,
+  storageStructure,
+  tokenStats,
+  tokenValidationMessage,
+  validateCurrentToken
+} = tokenGovernance
 
-async function loadTokenStats(): Promise<void> {
-  try {
-    tokenStats.value = await getTokenStats()
-    toast('Token statistics loaded', 'success')
-  } catch (error) {
-    toast(error instanceof Error ? error.message : 'Load failed')
-  }
-}
-
-async function loadAuthorizationDetail(): Promise<void> {
-  if (!authorizationId.value.trim()) {
-    toast('Please enter the authorization ID')
-    return
-  }
-  try {
-    authorizationDetail.value = await getAuthorizationDetails(authorizationId.value.trim())
-    toast('Authorization details loaded', 'success')
-  } catch (error) {
-    toast(error instanceof Error ? error.message : 'Load failed')
-  }
-}
-
-async function revokeAuthorizationRow(): Promise<void> {
-  if (!authorizationId.value.trim()) {
-    toast('Please enter the authorization ID')
-    return
-  }
-  const ok = await confirm('Revoke this authorization?')
-  if (!ok) return
-  try {
-    await revokeAuthorization(authorizationId.value.trim())
-    toast('Authorization revoked', 'success')
-  } catch (error) {
-    toast(error instanceof Error ? error.message : 'Revoke failed')
-  }
-}
-
-async function runTokenCleanup(): Promise<void> {
-  try {
-    cleanupResult.value = await cleanupExpiredTokens()
-    toast('Cleanup triggered', 'success')
-  } catch (error) {
-    toast(error instanceof Error ? error.message : 'Cleanup failed')
-  }
-}
-
-async function validateCurrentToken(): Promise<void> {
-  try {
-    tokenValidationMessage.value = await validateToken()
-    toast('Token validation succeeded', 'success')
-  } catch (error) {
-    toast(error instanceof Error ? error.message : 'Validation failed')
-  }
-}
-
-async function loadStorageStructure(): Promise<void> {
-  try {
-    storageStructure.value = await getStorageStructure()
-    toast('Storage structure loaded', 'success')
-  } catch (error) {
-    toast(error instanceof Error ? error.message : 'Load failed')
-  }
-}
-
-async function loadBlacklistStats(): Promise<void> {
-  try {
-    blacklistStats.value = await getBlacklistStats()
-    toast('Blacklist statistics loaded', 'success')
-  } catch (error) {
-    toast(error instanceof Error ? error.message : 'Load failed')
-  }
-}
-
-async function addBlacklist(): Promise<void> {
-  if (!blacklistToken.value.trim()) {
-    toast('Please enter a token')
-    return
-  }
-  try {
-    await addTokenToBlacklist(blacklistToken.value.trim(), blacklistReason.value.trim() || undefined)
-    toast('Token added to the blacklist', 'success')
-  } catch (error) {
-    toast(error instanceof Error ? error.message : 'Add failed')
-  }
-}
-
-async function checkBlacklistStatus(): Promise<void> {
-  if (!blacklistToken.value.trim()) {
-    toast('Please enter a token')
-    return
-  }
-  try {
-    blacklistCheckResult.value = await checkBlacklist(blacklistToken.value.trim())
-    toast('Blacklist status loaded', 'success')
-  } catch (error) {
-    toast(error instanceof Error ? error.message : 'Query failed')
-  }
-}
-
-async function cleanupBlacklistEntries(): Promise<void> {
-  try {
-    blacklistCleanupResult.value = await cleanupBlacklist()
-    toast('Blacklist cleanup triggered', 'success')
-  } catch (error) {
-    toast(error instanceof Error ? error.message : 'Cleanup failed')
-  }
-}
-
-async function loadGitHubStatus(): Promise<void> {
-  try {
-    gitHubStatus.value = await getGitHubAuthStatus()
-    toast('GitHub authorization status loaded', 'success')
-  } catch (error) {
-    toast(error instanceof Error ? error.message : 'Load failed')
-  }
-}
-
-async function loadGitHubUser(): Promise<void> {
-  try {
-    gitHubUserInfo.value = await getGitHubUserInfo()
-    toast('GitHub user loaded', 'success')
-  } catch (error) {
-    toast(error instanceof Error ? error.message : 'Load failed')
-  }
-}
-
-async function logoutAll(): Promise<void> {
-  if (!logoutUsername.value.trim()) {
-    toast('Please enter a username')
-    return
-  }
-  try {
-    await logoutAllSessions(logoutUsername.value.trim())
-    toast('Global logout triggered', 'success')
-  } catch (error) {
-    toast(error instanceof Error ? error.message : 'Operation failed')
-  }
-}
 // Thread pools
-const threadPools = ref<Record<string, unknown>[] | null>(null)
-const threadPoolName = ref('')
-const threadPoolDetail = ref<Record<string, unknown> | null>(null)
-
-async function loadThreadPools(): Promise<void> {
-  try {
-    threadPools.value = await getThreadPools()
-    toast('Thread pools loaded', 'success')
-  } catch (error) {
-    toast(error instanceof Error ? error.message : 'Load failed')
-  }
-}
-
-async function loadThreadPoolDetail(): Promise<void> {
-  if (!threadPoolName.value.trim()) {
-    toast('Please enter a thread pool name')
-    return
-  }
-  try {
-    threadPoolDetail.value = await getThreadPoolDetail(threadPoolName.value.trim())
-    toast('Thread pool details loaded', 'success')
-  } catch (error) {
-    toast(error instanceof Error ? error.message : 'Load failed')
-  }
-}
+const {
+  loadThreadPoolDetail,
+  loadThreadPools,
+  threadPoolDetail,
+  threadPoolName,
+  threadPools
+} = useThreadPoolGovernance()
 
 // Category operations
-const categoryIdInput = ref('')
-const categorySortInput = ref('')
-const categoryMoveParent = ref('')
-const categoryBatchIds = ref('')
-const categoryBatchStatus = ref('')
-const categoryBatchPayload = ref('')
-const categoryTree = ref<unknown>(null)
-const categoryChildren = ref<unknown>(null)
-const categoryById = ref<unknown>(null)
-const categoryBatchResult = ref<unknown>(null)
+const {
+  categoryBatchIds,
+  categoryBatchPayload,
+  categoryBatchResult,
+  categoryBatchStatus,
+  categoryById,
+  categoryChildren,
+  categoryIdInput,
+  categoryMoveParent,
+  categorySortInput,
+  categoryTree,
+  createCategoriesBatchAction,
+  deleteCategoriesBatchAction,
+  loadCategoryById,
+  loadCategoryChildren,
+  loadCategoryTree,
+  moveCategoryAction,
+  updateCategorySortAction,
+  updateCategoryStatusBatchAction
+} = useCategoryGovernance(opsInputTools)
 
-async function loadCategoryTree(): Promise<void> {
-  try {
-    categoryTree.value = await getCategoryTree(false)
-    toast('Category tree loaded', 'success')
-  } catch (error) {
-    toast(error instanceof Error ? error.message : 'Load failed')
-  }
-}
-
-async function loadCategoryChildren(): Promise<void> {
-  const id = Number(categoryIdInput.value)
-  if (!Number.isFinite(id)) {
-    toast('Please enter a category ID')
-    return
-  }
-  try {
-    categoryChildren.value = await getCategoryChildren(id, false)
-    toast('Child categories loaded', 'success')
-  } catch (error) {
-    toast(error instanceof Error ? error.message : 'Load failed')
-  }
-}
-
-async function loadCategoryById(): Promise<void> {
-  const id = Number(categoryIdInput.value)
-  if (!Number.isFinite(id)) {
-    toast('Please enter a category ID')
-    return
-  }
-  try {
-    categoryById.value = await getCategoryById(id)
-    toast('Category details loaded', 'success')
-  } catch (error) {
-    toast(error instanceof Error ? error.message : 'Load failed')
-  }
-}
-
-async function updateCategoryStatusBatchAction(): Promise<void> {
-  const ids = parseNumberList(categoryBatchIds.value)
-  const status = Number(categoryBatchStatus.value)
-  if (ids.length === 0 || !Number.isFinite(status)) {
-    toast('Please enter batch IDs and a status value')
-    return
-  }
-  try {
-    categoryBatchResult.value = await updateCategoryStatusBatch(ids, status)
-    toast('Batch status updated', 'success')
-  } catch (error) {
-    toast(error instanceof Error ? error.message : 'Update failed')
-  }
-}
-
-async function createCategoriesBatchAction(): Promise<void> {
-  const payload = parseJson<unknown[]>(categoryBatchPayload.value, 'Category batch')
-  if (!payload) return
-  try {
-    categoryBatchResult.value = await createCategoriesBatch(payload as never[])
-    toast('Batch create submitted', 'success')
-  } catch (error) {
-    toast(error instanceof Error ? error.message : 'Create failed')
-  }
-}
-
-async function deleteCategoriesBatchAction(): Promise<void> {
-  const ids = parseNumberList(categoryBatchIds.value)
-  if (ids.length === 0) {
-    toast('Please enter batch IDs')
-    return
-  }
-  try {
-    categoryBatchResult.value = await deleteCategoriesBatch(ids)
-    toast('Batch delete submitted', 'success')
-  } catch (error) {
-    toast(error instanceof Error ? error.message : 'Delete failed')
-  }
-}
-
-async function updateCategorySortAction(): Promise<void> {
-  const id = Number(categoryIdInput.value)
-  const sort = Number(categorySortInput.value)
-  if (!Number.isFinite(id) || !Number.isFinite(sort)) {
-    toast('Please enter a category ID and sort value')
-    return
-  }
-  try {
-    await updateCategorySort(id, sort)
-    toast('Sort order updated', 'success')
-  } catch (error) {
-    toast(error instanceof Error ? error.message : 'Update failed')
-  }
-}
-
-async function moveCategoryAction(): Promise<void> {
-  const id = Number(categoryIdInput.value)
-  const parentId = Number(categoryMoveParent.value)
-  if (!Number.isFinite(id) || !Number.isFinite(parentId)) {
-    toast('Please enter a category ID and new parent ID')
-    return
-  }
-  try {
-    await moveCategory(id, parentId)
-    toast('Category moved', 'success')
-  } catch (error) {
-    toast(error instanceof Error ? error.message : 'Move failed')
-  }
-}
 // Product catalog
-const spuId = ref('')
-const spuStatus = ref('')
-const spuCategoryId = ref('')
-const skuIds = ref('')
-const spuPayloadJson = ref('')
-const spuDetail = ref<unknown>(null)
-const spuList = ref<unknown>(null)
-const skuList = ref<unknown>(null)
-const spuActionResult = ref<unknown>(null)
-
-async function createSpuAction(): Promise<void> {
-  const payload = parseJson<SpuCreateRequest>(spuPayloadJson.value, 'SPU')
-  if (!payload) return
-  try {
-    spuActionResult.value = await createSpu(payload)
-    toast('SPU created', 'success')
-  } catch (error) {
-    toast(error instanceof Error ? error.message : 'Create failed')
-  }
-}
-
-async function updateSpuAction(): Promise<void> {
-  const id = Number(spuId.value)
-  const payload = parseJson<SpuCreateRequest>(spuPayloadJson.value, 'SPU')
-  if (!Number.isFinite(id) || !payload) {
-    toast('Please enter an SPU ID and provide JSON')
-    return
-  }
-  try {
-    spuActionResult.value = await updateSpu(id, payload)
-    toast('SPU updated', 'success')
-  } catch (error) {
-    toast(error instanceof Error ? error.message : 'Update failed')
-  }
-}
-
-async function loadSpuDetail(): Promise<void> {
-  const id = Number(spuId.value)
-  if (!Number.isFinite(id)) {
-    toast('Please enter an SPU ID')
-    return
-  }
-  try {
-    spuDetail.value = await getSpu(id)
-    toast('SPU details loaded', 'success')
-  } catch (error) {
-    toast(error instanceof Error ? error.message : 'Load failed')
-  }
-}
-
-async function loadSpuByCategory(): Promise<void> {
-  const id = Number(spuCategoryId.value)
-  const status = spuStatus.value ? Number(spuStatus.value) : undefined
-  if (!Number.isFinite(id)) {
-    toast('Please enter a category ID')
-    return
-  }
-  try {
-    spuList.value = await listSpuByCategory(id, Number.isFinite(status) ? status : undefined)
-    toast('Category SPUs loaded', 'success')
-  } catch (error) {
-    toast(error instanceof Error ? error.message : 'Load failed')
-  }
-}
-
-async function loadSkuList(): Promise<void> {
-  const ids = parseNumberList(skuIds.value)
-  if (ids.length === 0) {
-    toast('Please enter a list of SKU IDs')
-    return
-  }
-  try {
-    skuList.value = await listSkuByIds(ids)
-    toast('SKU list loaded', 'success')
-  } catch (error) {
-    toast(error instanceof Error ? error.message : 'Load failed')
-  }
-}
-
-async function updateSpuStatusAction(): Promise<void> {
-  const id = Number(spuId.value)
-  const status = Number(spuStatus.value)
-  if (!Number.isFinite(id) || !Number.isFinite(status)) {
-    toast('Please enter an SPU ID and status')
-    return
-  }
-  try {
-    spuActionResult.value = await updateSpuStatus(id, status)
-    toast('Status updated', 'success')
-  } catch (error) {
-    toast(error instanceof Error ? error.message : 'Update failed')
-  }
-}
+const {
+  createSpuAction,
+  loadSkuList,
+  loadSpuByCategory,
+  loadSpuDetail,
+  skuIds,
+  skuList,
+  spuActionResult,
+  spuCategoryId,
+  spuDetail,
+  spuId,
+  spuList,
+  spuPayloadJson,
+  spuStatus,
+  updateSpuAction,
+  updateSpuStatusAction
+} = useCatalogGovernance(opsInputTools)
 
 
 const searchKeyword = ref('')
@@ -1182,242 +734,53 @@ async function searchShopsByGeo(): Promise<void> {
   }
 }
 // Bulk operations
-const userFindUsername = ref('')
-const userBatchJson = ref('')
-const userBatchResult = ref<unknown>(null)
-const userFindResult = ref<unknown>(null)
-const merchantBatchIds = ref('')
-const merchantBatchStatus = ref('')
-const merchantBatchRemark = ref('')
-const merchantAuthBatchIds = ref('')
-const merchantAuthBatchStatus = ref('')
-const merchantAuthBatchRemark = ref('')
-const batchResult = ref<unknown>(null)
-
-async function findUser(): Promise<void> {
-  if (!userFindUsername.value.trim()) {
-    toast('Please enter a username')
-    return
-  }
-  try {
-    userFindResult.value = await findUserByUsername(userFindUsername.value.trim())
-    toast('User loaded', 'success')
-  } catch (error) {
-    toast(error instanceof Error ? error.message : 'Query failed')
-  }
-}
-
-async function updateUsersBatchAction(): Promise<void> {
-  const payload = parseJson<unknown[]>(userBatchJson.value, 'User batch')
-  if (!payload) return
-  try {
-    userBatchResult.value = await updateUsersBatch(payload as never[])
-    toast('Batch update submitted', 'success')
-  } catch (error) {
-    toast(error instanceof Error ? error.message : 'Update failed')
-  }
-}
-
-async function approveMerchantsBatchAction(): Promise<void> {
-  const ids = parseNumberList(merchantBatchIds.value)
-  if (ids.length === 0) {
-    toast('Please enter a list of merchant IDs')
-    return
-  }
-  try {
-    batchResult.value = await approveMerchantsBatch(ids, merchantBatchRemark.value || undefined)
-    toast('Batch approval completed', 'success')
-  } catch (error) {
-    toast(error instanceof Error ? error.message : 'Operation failed')
-  }
-}
-
-async function deleteMerchantsBatchAction(): Promise<void> {
-  const ids = parseNumberList(merchantBatchIds.value)
-  if (ids.length === 0) {
-    toast('Please enter a list of merchant IDs')
-    return
-  }
-  const ok = await confirm('Delete the selected merchants in batch?')
-  if (!ok) return
-  try {
-    batchResult.value = await deleteMerchantsBatch(ids)
-    toast('Batch delete submitted', 'success')
-  } catch (error) {
-    toast(error instanceof Error ? error.message : 'Delete failed')
-  }
-}
-
-async function updateMerchantStatusBatchAction(): Promise<void> {
-  const ids = parseNumberList(merchantBatchIds.value)
-  const status = Number(merchantBatchStatus.value)
-  if (ids.length === 0 || !Number.isFinite(status)) {
-    toast('Please enter merchant IDs and a status value')
-    return
-  }
-  try {
-    batchResult.value = await updateMerchantStatusBatch(ids, status)
-    toast('Batch status updated', 'success')
-  } catch (error) {
-    toast(error instanceof Error ? error.message : 'Update failed')
-  }
-}
-
-async function reviewMerchantAuthBatchAction(): Promise<void> {
-  const ids = parseNumberList(merchantAuthBatchIds.value)
-  const status = Number(merchantAuthBatchStatus.value)
-  if (ids.length === 0 || !Number.isFinite(status)) {
-    toast('Please enter merchant IDs and an auth status')
-    return
-  }
-  try {
-    batchResult.value = await reviewMerchantAuthBatch(ids, status, merchantAuthBatchRemark.value || undefined)
-    toast('Batch auth review submitted', 'success')
-  } catch (error) {
-    toast(error instanceof Error ? error.message : 'Operation failed')
-  }
-}
+const {
+  approveMerchantsBatchAction,
+  batchResult,
+  deleteMerchantsBatchAction,
+  findUser,
+  merchantAuthBatchIds,
+  merchantAuthBatchRemark,
+  merchantAuthBatchStatus,
+  merchantBatchIds,
+  merchantBatchRemark,
+  merchantBatchStatus,
+  reviewMerchantAuthBatchAction,
+  updateMerchantStatusBatchAction,
+  updateUsersBatchAction,
+  userBatchJson,
+  userBatchResult,
+  userFindResult,
+  userFindUsername
+} = useBatchGovernance(opsInputTools)
 
 // Payment operations
-const paymentNoInput = ref('')
-const paymentMainOrderNo = ref('')
-const paymentSubOrderNo = ref('')
-const paymentOrderJson = ref('')
-const paymentRefundJson = ref('')
-const paymentResult = ref<unknown>(null)
-
-async function createPaymentOrderAction(): Promise<void> {
-  const payload = parseJson<PaymentOrderCommand>(paymentOrderJson.value, 'Payment order')
-  if (!payload) return
-  try {
-    paymentResult.value = await createPaymentOrder(payload)
-    toast('Payment order created', 'success')
-  } catch (error) {
-    toast(error instanceof Error ? error.message : 'Create failed')
-  }
-}
-
-async function createPaymentRefundAction(): Promise<void> {
-  const payload = parseJson<PaymentRefundCommand>(paymentRefundJson.value, 'Payment refund')
-  if (!payload) return
-  try {
-    paymentResult.value = await createPaymentRefund(payload)
-    toast('Payment refund created', 'success')
-  } catch (error) {
-    toast(error instanceof Error ? error.message : 'Create failed')
-  }
-}
-
-async function loadPaymentByNoAction(): Promise<void> {
-  if (!paymentNoInput.value.trim()) {
-    toast('Please enter a payment number')
-    return
-  }
-  try {
-    paymentResult.value = await getPaymentOrderByNo(paymentNoInput.value.trim())
-    toast('Payment order loaded', 'success')
-  } catch (error) {
-    toast(error instanceof Error ? error.message : 'Load failed')
-  }
-}
-
-async function loadPaymentByOrderAction(): Promise<void> {
-  if (!paymentMainOrderNo.value.trim() || !paymentSubOrderNo.value.trim()) {
-    toast('Please enter both the main order number and sub order number')
-    return
-  }
-  try {
-    paymentResult.value = await getPaymentOrderByOrderNo(paymentMainOrderNo.value.trim(), paymentSubOrderNo.value.trim())
-    toast('Payment order lookup completed', 'success')
-  } catch (error) {
-    toast(error instanceof Error ? error.message : 'Lookup failed')
-  }
-}
-
-async function refreshPaymentStatusAction(): Promise<void> {
-  if (!paymentNoInput.value.trim()) {
-    toast('Please enter a payment number')
-    return
-  }
-  try {
-    paymentResult.value = await getPaymentStatus(paymentNoInput.value.trim())
-    toast('Payment status loaded', 'success')
-  } catch (error) {
-    toast(error instanceof Error ? error.message : 'Load failed')
-  }
-}
-
-async function openPaymentCheckoutAction(): Promise<void> {
-  if (!paymentNoInput.value.trim()) {
-    toast('Please enter a payment number')
-    return
-  }
-  try {
-    const session = await createPaymentCheckoutSession(paymentNoInput.value.trim())
-    if (!session.checkoutPath) {
-      throw new Error('Checkout session is missing checkoutPath')
-    }
-    openExternalPage(resolveApiUrl(session.checkoutPath), {
-      query: { paymentNo: paymentNoInput.value.trim() },
-      guard: {
-        requiresAuth: true,
-        roles: ['USER', 'MERCHANT', 'ADMIN']
-      },
-      openWebview(target) {
-        navigateTo(
-          Routes.webview,
-          { url: target.url, ...target.query },
-          target.guard
-        )
-      }
-    })
-    toast('Checkout page opened', 'success')
-  } catch (error) {
-    toast(error instanceof Error ? error.message : 'Open checkout failed')
-  }
-}
+const {
+  createPaymentOrderAction,
+  createPaymentRefundAction,
+  loadPaymentByNoAction,
+  loadPaymentByOrderAction,
+  openPaymentCheckoutAction,
+  paymentMainOrderNo,
+  paymentNoInput,
+  paymentOrderJson,
+  paymentRefundJson,
+  paymentResult,
+  paymentSubOrderNo,
+  refreshPaymentStatusAction
+} = usePaymentGovernance(opsInputTools)
 
 // Statistics operations
-const statsStartDate = ref('')
-const statsEndDate = ref('')
-const statsOverviewAsync = ref<unknown>(null)
-const statsTrendRange = ref<unknown>(null)
-const statsRefreshResult = ref<unknown>(null)
-
-async function loadStatsOverviewAsync(): Promise<void> {
-  try {
-    statsOverviewAsync.value = await getStatisticsOverviewAsync()
-    toast('Async statistics loaded', 'success')
-  } catch (error) {
-    toast(error instanceof Error ? error.message : 'Load failed')
-  }
-}
-
-async function loadStatsTrendRange(): Promise<void> {
-  const start = normalizeDateInput(statsStartDate.value, 'Start date')
-  if (!start) return
-  const end = normalizeDateInput(statsEndDate.value, 'End date')
-  if (!end) return
-  if (isDateAfter(start, end)) {
-    toast('Start date cannot be later than end date')
-    return
-  }
-  try {
-    statsTrendRange.value = await getRegistrationTrendRange(start, end)
-    toast('Trend data loaded', 'success')
-  } catch (error) {
-    toast(error instanceof Error ? error.message : 'Load failed')
-  }
-}
-
-async function refreshStatsCache(): Promise<void> {
-  try {
-    statsRefreshResult.value = await refreshStatisticsCache()
-    toast('Statistics cache refresh triggered', 'success')
-  } catch (error) {
-    toast(error instanceof Error ? error.message : 'Refresh failed')
-  }
-}
+const {
+  loadStatsOverviewAsync,
+  loadStatsTrendRange,
+  refreshStatsCache,
+  statsEndDate,
+  statsOverviewAsync,
+  statsRefreshResult,
+  statsStartDate,
+  statsTrendRange
+} = useStatisticsGovernance(opsInputTools)
 </script>
 <template>
   <AppShell title="Ops Center">

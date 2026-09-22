@@ -67,9 +67,7 @@ assert_docker_daemon_ready
 cd "$ROOT_DIR/docker"
 docker compose -f docker-compose.yml up -d --pull missing --build
 if [ "$WITH_MONITORING" = "1" ]; then
-  docker compose -f monitoring-compose.yml up -d --pull missing \
-    prometheus grafana redis-exporter mysqld-exporter \
-    nginx-exporter elasticsearch-exporter blackbox-exporter
+  docker compose -f monitoring-compose.yml up -d --pull missing
 fi
 
 echo "CONTAINERS_START withMonitoring=$WITH_MONITORING status=started"
