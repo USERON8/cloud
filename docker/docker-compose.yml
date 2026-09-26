@@ -46,6 +46,9 @@ services:
       interval: 10s # Raised from 5s to reduce health check frequency.
       timeout: 5s # Health check timeout.
       retries: 8 # Retry count.
+      # A deterministic re-init loads every service schema and test fixture before
+      # the final server starts. On a cold Windows volume this can exceed 80s.
+      start_period: 150s
 
   # Compatibility note standardized.
   redis:
@@ -301,7 +304,10 @@ services:
     networks:
       service_net:
         ipv4_address: 172.28.0.90 # Compatibility note standardized.
-    mem_limit: 1g
+    # Kibana creates its system templates during startup. A 1 GiB hard limit can
+    # OOM-kill Elasticsearch even with a 512 MiB heap because Lucene and Netty
+    # also require off-heap memory.
+    mem_limit: ${ES_SEARCH_MEMORY_LIMIT:-2g}
     environment:
       # Compatibility note standardized.
       - discovery.type=single-node # Compatibility note standardized.
