@@ -255,7 +255,6 @@ function syncEnvironmentFiles(rootPath, preferredLocalIpv4) {
             "VITE_DEV_PROXY_TARGET",
             "VITE_CPOLAR_DOMAIN",
             "VITE_OAUTH_CLIENT_ID",
-            "VITE_OAUTH_REDIRECT_URI",
             "VITE_SEARCH_FALLBACK_TIMEOUT",
         ],
         values: {
@@ -263,7 +262,6 @@ function syncEnvironmentFiles(rootPath, preferredLocalIpv4) {
             VITE_DEV_PROXY_TARGET: localGatewayBaseUrl,
             VITE_CPOLAR_DOMAIN: frontendBaseUrl,
             VITE_OAUTH_CLIENT_ID: "web-client",
-            VITE_OAUTH_REDIRECT_URI: `${frontendBaseUrl}/callback`,
             VITE_SEARCH_FALLBACK_TIMEOUT: "5000",
         },
     };

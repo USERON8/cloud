@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeMount } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import { logout } from "../api/auth";
 import { useRole, type UserRole } from "../auth/permission";
 import { clearSession, isAuthenticated, sessionState } from "../auth/session";
@@ -31,6 +31,7 @@ interface NavItem {
 
 const { role } = useRole();
 const { locale } = useLocale();
+const accessGranted = ref(false);
 
 const navItems: NavItem[] = [
     { key: "home", path: Routes.appHome, roles: ["USER", "MERCHANT", "ADMIN"] },
@@ -200,10 +201,10 @@ function isActive(path: string): boolean {
     return current === path.replace(/^\//, "") || current === path;
 }
 
-function ensureCurrentRouteAccess(): void {
+function ensureCurrentRouteAccess(): boolean {
     const currentPath = props.routePath || currentRoutePath();
     if (!currentPath) {
-        return;
+        return false;
     }
 
     const matchedItem = navItems.find((item) => item.path === currentPath);
@@ -221,17 +222,19 @@ function ensureCurrentRouteAccess(): void {
             : (matchedItem?.roles ?? []);
 
     if (!requiresAuth) {
-        return;
+        return true;
     }
 
     if (!isAuthenticated()) {
         redirectTo(Routes.login, { redirect: currentPath });
-        return;
+        return false;
     }
 
     if (requiredRoles.length > 0 && !requiredRoles.includes(role.value)) {
         redirectTo(Routes.forbidden);
+        return false;
     }
+    return true;
 }
 
 function handleNav(item: NavItem): void {
@@ -257,13 +260,27 @@ async function handleLogout(): Promise<void> {
     }
 }
 
-onBeforeMount(() => {
-    ensureCurrentRouteAccess();
+function refreshCurrentRouteAccess(): void {
+    accessGranted.value = ensureCurrentRouteAccess();
+}
+
+onMounted(() => {
+    refreshCurrentRouteAccess();
+    if (typeof window !== "undefined") {
+        window.addEventListener("hashchange", refreshCurrentRouteAccess);
+        window.setTimeout(refreshCurrentRouteAccess, 0);
+    }
+});
+
+onBeforeUnmount(() => {
+    if (typeof window !== "undefined") {
+        window.removeEventListener("hashchange", refreshCurrentRouteAccess);
+    }
 });
 </script>
 
 <template>
-    <view class="app-shell">
+    <view v-if="accessGranted" class="app-shell">
         <view class="page-container shell-inner">
             <view class="masthead">
                 <view class="masthead-main">

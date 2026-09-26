@@ -140,9 +140,9 @@ public class SecurityFilterChainConfig {
                   .requestMatchers(
                       "/health/**",
                       "/favicon.ico",
-                      "/default-ui.css",
                       "/error",
                       "/login",
+                      "/login/process",
                       "/oauth2/authorization/**",
                       "/login/oauth2/**",
                       "/auth/oauth2/github/**")
@@ -175,7 +175,13 @@ public class SecurityFilterChainConfig {
                               githubErrorRedirectUrl + "?message=" + encodedError);
                         }))
         .httpBasic(AbstractHttpConfigurer::disable)
-        .formLogin(form -> form.loginPage("/login").permitAll())
+        .formLogin(
+            form ->
+                form
+                    .loginPage("/login")
+                    .loginProcessingUrl("/login/process")
+                    .failureUrl("/login?error")
+                    .permitAll())
         .sessionManagement(
             session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED));
 

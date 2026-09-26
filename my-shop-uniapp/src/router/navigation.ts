@@ -93,6 +93,12 @@ export function back(delta = 1): void {
 }
 
 export function currentRoutePath(): string {
+  if (typeof window !== 'undefined') {
+    const hashPath = window.location.hash.replace(/^#/, '').split('?')[0]
+    if (hashPath?.startsWith('/')) {
+      return hashPath
+    }
+  }
   const pages = getCurrentPages()
   const current = pages[pages.length - 1]
   return current?.route ? `/${current.route}` : ''

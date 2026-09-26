@@ -11,6 +11,20 @@
           var search = window.location.search || "";
           var hashTarget = "/#/pages/oauth/success" + search;
           window.location.replace(hashTarget);
+          return;
+        }
+        if (pathname === "/login") {
+          var loginParams = new URLSearchParams(window.location.search || "");
+          var pageParams = new URLSearchParams({ mode: "credentials" });
+          if (loginParams.has("error")) {
+            pageParams.set("error", "invalid_credentials");
+          }
+          if (loginParams.has("logout")) {
+            pageParams.set("logout", "true");
+          }
+          window.location.replace(
+            "/#/pages/login/index?" + pageParams.toString(),
+          );
         }
       })();
     </script>

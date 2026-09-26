@@ -350,7 +350,7 @@ export async function listTodayHotSellingProductsWithFallback(
   const safeSize = Math.max(1, size)
   try {
     const result = await withTimeout(listTodayHotSellingProducts(safePage - 1, safeSize))
-    return {
+    const mappedResult: SmartSearchResult = {
       documents: result.list.map(toSearchDocumentFromProductDocument),
       total: result.total,
       from: result.page * result.size,
@@ -358,6 +358,15 @@ export async function listTodayHotSellingProductsWithFallback(
       aggregations: result.aggregations,
       searchAfter: result.searchAfter
     }
+    if (mappedResult.documents.length > 0 || safePage > 1) {
+      return mappedResult
+    }
+    return smartSearchProductsWithFallback({
+      page: safePage,
+      size: safeSize,
+      sortField: 'hotScore',
+      sortOrder: 'desc'
+    })
   } catch {
     return smartSearchProductsWithFallback({
       page: safePage,

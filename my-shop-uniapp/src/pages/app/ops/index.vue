@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import AppShell from '../../../components/AppShell.vue'
+import { Routes } from '../../../router/routes'
 import {
   advancedSearch,
   basicSearch,
@@ -783,7 +784,7 @@ const {
 } = useStatisticsGovernance(opsInputTools)
 </script>
 <template>
-  <AppShell title="Ops Center">
+  <AppShell title="Ops Center" :route-path="Routes.appOps" :requires-auth="true" :roles="['ADMIN']">
     <view class="tabs">
       <view
         v-for="tab in tabs"

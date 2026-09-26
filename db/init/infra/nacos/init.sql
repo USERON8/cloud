@@ -105,6 +105,14 @@ VALUES (1, 'common.yaml', 'DEFAULT_GROUP',
     ENABLE KEYS */;
 UNLOCK TABLES;
 
+UPDATE `config_info`
+SET `content` = CONCAT(
+        `content`,
+        '\r\napp:\r\n  security:\r\n    internal-hmac:\r\n      enabled: true\r\n      secret: ${GATEWAY_INTERNAL_IDENTITY_SECRET:${GATEWAY_SIGNATURE_SECRET}}\r\n      timestamp-skew-seconds: ${APP_SECURITY_INTERNAL_IDENTITY_TIMESTAMP_SKEW_SECONDS:30}')
+WHERE `data_id` = 'common.yaml'
+  AND `group_id` = 'DEFAULT_GROUP'
+  AND `content` NOT LIKE '%internal-hmac:%';
+
 --
 -- Table structure for table `config_info_gray`
 --

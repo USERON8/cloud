@@ -11,6 +11,11 @@ import { toast } from "../../utils/ui";
 const redirectPath = ref<string>(Routes.appHome);
 const entryType = ref("");
 const startingProvider = ref<"password" | "">("");
+const credentialsMode = ref(false);
+const username = ref("");
+const password = ref("");
+const feedback = ref("");
+const submitting = ref(false);
 
 const { locale } = useLocale();
 
@@ -40,6 +45,16 @@ const copy = computed(() =>
               recommended: "Unified account",
               recommendedBody: "Your role and permissions are resolved after sign-in.",
               action: "Continue with account",
+              username: "Username",
+              usernamePlaceholder: "Enter your username",
+              password: "Password",
+              passwordPlaceholder: "Enter your password",
+              submit: "Sign in securely",
+              github: "Continue with GitHub",
+              invalidCredentials: "The username or password is incorrect.",
+              signedOut: "You have signed out.",
+              required: "Enter both your username and password.",
+              connecting: "Connecting to the secure sign-in service…",
               storefront: "Storefront",
               back: "Back to market",
               error: "Failed to start sign-in",
@@ -56,6 +71,16 @@ const copy = computed(() =>
               recommended: "统一账号入口",
               recommendedBody: "用户、商家和管理员权限会在登录后自动解析。",
               action: "使用账号继续登录",
+              username: "用户名",
+              usernamePlaceholder: "请输入用户名",
+              password: "密码",
+              passwordPlaceholder: "请输入密码",
+              submit: "安全登录",
+              github: "使用 GitHub 继续",
+              invalidCredentials: "用户名或密码不正确，请重新输入。",
+              signedOut: "你已安全退出登录。",
+              required: "请输入用户名和密码。",
+              connecting: "正在连接安全登录服务…",
               storefront: "商城访问",
               back: "返回商城",
               error: "发起登录失败",
@@ -63,6 +88,12 @@ const copy = computed(() =>
 );
 
 onLoad((query) => {
+    credentialsMode.value = query.mode === "credentials";
+    if (query.error === "invalid_credentials") {
+        feedback.value = copy.value.invalidCredentials;
+    } else if (query.logout === "true") {
+        feedback.value = copy.value.signedOut;
+    }
     if (typeof query.redirect === "string") {
         try {
             redirectPath.value = decodeURIComponent(query.redirect);
@@ -73,6 +104,9 @@ onLoad((query) => {
     if (typeof query.entry === "string") {
         entryType.value = query.entry.toLowerCase();
     }
+    if (!credentialsMode.value) {
+        setTimeout(() => void handleAuthorizationStart("password"), 0);
+    }
 });
 
 async function handleAuthorizationStart(provider: "password"): Promise<void> {
@@ -82,6 +116,42 @@ async function handleAuthorizationStart(provider: "password"): Promise<void> {
     } catch (error) {
         toast(error instanceof Error ? error.message : copy.value.error);
         startingProvider.value = "";
+    }
+}
+
+function submitCredentials(): void {
+    if (!username.value.trim() || !password.value) {
+        feedback.value = copy.value.required;
+        return;
+    }
+    if (typeof document === "undefined" || typeof window === "undefined") {
+        toast(copy.value.error);
+        return;
+    }
+
+    submitting.value = true;
+    feedback.value = "";
+    const form = document.createElement("form");
+    form.method = "post";
+    form.action = `${window.location.origin}/login/process`;
+    form.style.display = "none";
+    for (const [name, value] of [
+        ["username", username.value.trim()],
+        ["password", password.value],
+    ]) {
+        const input = document.createElement("input");
+        input.type = "hidden";
+        input.name = name;
+        input.value = value;
+        form.appendChild(input);
+    }
+    document.body.appendChild(form);
+    form.submit();
+}
+
+function continueWithGitHub(): void {
+    if (typeof window !== "undefined") {
+        window.location.assign(`${window.location.origin}/oauth2/authorization/github`);
     }
 }
 
@@ -149,18 +219,62 @@ function backToMarket(): void {
                         </view>
                     </view>
 
-                    <view class="signin-hint">
+                    <view v-if="feedback" class="signin-feedback">
+                        {{ feedback }}
+                    </view>
+
+                    <view v-if="!credentialsMode" class="signin-hint">
                         <text class="hint-title">{{ copy.recommended }}</text>
-                        <text class="hint-copy">{{ copy.recommendedBody }}</text>
+                        <text class="hint-copy">{{ copy.connecting }}</text>
                     </view>
 
                     <button
+                        v-if="!credentialsMode"
                         class="primary-action"
                         :loading="startingProvider === 'password'"
                         @click="handleAuthorizationStart('password')"
                     >
                         {{ copy.action }}
                     </button>
+
+                    <form v-else class="credential-form" @submit="submitCredentials">
+                        <label class="field-group">
+                            <text class="field-label">{{ copy.username }}</text>
+                            <input
+                                v-model="username"
+                                class="field-input"
+                                type="text"
+                                name="username"
+                                autocomplete="username"
+                                :placeholder="copy.usernamePlaceholder"
+                                @confirm="submitCredentials"
+                            />
+                        </label>
+                        <label class="field-group">
+                            <text class="field-label">{{ copy.password }}</text>
+                            <input
+                                v-model="password"
+                                class="field-input"
+                                type="text"
+                                password
+                                name="password"
+                                autocomplete="current-password"
+                                :placeholder="copy.passwordPlaceholder"
+                                confirm-type="done"
+                                @confirm="submitCredentials"
+                            />
+                        </label>
+                        <button
+                            class="primary-action"
+                            :loading="submitting"
+                            form-type="submit"
+                        >
+                            {{ copy.submit }}
+                        </button>
+                        <button class="github-action" @click="continueWithGitHub">
+                            {{ copy.github }}
+                        </button>
+                    </form>
 
                     <view class="divider">
                         <view class="divider-line" />
@@ -470,6 +584,16 @@ function backToMarket(): void {
     background: #fbfcfd;
 }
 
+.signin-feedback {
+    padding: 12px 14px;
+    border: 1px solid rgba(217, 45, 32, 0.18);
+    border-radius: 6px;
+    background: rgba(255, 59, 48, 0.06);
+    color: #b42318;
+    font-size: 12px;
+    line-height: 1.6;
+}
+
 .context-label {
     color: #8b939e;
     font-size: 11px;
@@ -499,7 +623,8 @@ function backToMarket(): void {
 }
 
 .primary-action,
-.secondary-action {
+.secondary-action,
+.github-action {
     width: 100%;
     min-height: 46px;
     font-size: 13px;
@@ -515,6 +640,49 @@ function backToMarket(): void {
     border: 1px solid #d9dee6;
     background: #ffffff;
     color: #1d2025;
+}
+
+.credential-form {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.field-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.field-label {
+    color: #4f5965;
+    font-size: 12px;
+    font-weight: 800;
+}
+
+.field-input {
+    width: 100%;
+    min-height: 46px;
+    padding: 0 14px;
+    border: 1px solid #dfe4ea;
+    border-radius: 4px;
+    background: #fbfcfd;
+    color: #15181d;
+    font-size: 14px;
+}
+
+.field-input:focus {
+    border-color: #111316;
+    box-shadow: 0 0 0 3px rgba(17, 19, 22, 0.08);
+}
+
+.github-action {
+    width: 100%;
+    min-height: 46px;
+    border: 1px solid #d9dee6;
+    background: #ffffff;
+    color: #1d2025;
+    font-size: 13px;
 }
 
 .divider {

@@ -10,7 +10,7 @@ const oauthClientId = import.meta.env.VITE_OAUTH_CLIENT_ID || 'web-client'
 const oauthScope = import.meta.env.VITE_OAUTH_SCOPE || 'openid user.read order.write'
 const defaultRedirectUri =
   typeof window !== 'undefined' && window.location
-    ? `${window.location.origin}/#/pages/oauth/success`
+    ? `${window.location.origin}/callback`
     : ''
 const oauthRedirectUri = import.meta.env.VITE_OAUTH_REDIRECT_URI || defaultRedirectUri
 

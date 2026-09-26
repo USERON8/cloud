@@ -315,7 +315,7 @@ onShow(() => {
                         @confirm="onSearch"
                     />
                     <button class="icon-button" aria-label="Search" @click="onSearch">
-                        ⌕
+                        <view class="search-icon" aria-hidden="true" />
                     </button>
                 </view>
 
@@ -324,7 +324,7 @@ onShow(() => {
                         class="header-action"
                         @click="loggedIn ? goProfile() : goLogin()"
                     >
-                        <text class="action-icon">♙</text>
+                        <view class="action-icon user-icon" aria-hidden="true" />
                         <text>{{ loggedIn ? copy.profile : copy.login }}</text>
                     </button>
                     <button class="header-action">
@@ -345,7 +345,11 @@ onShow(() => {
             <view class="hero-grid">
                 <view class="category-panel">
                     <view class="category-title">
-                        <text class="menu-icon">☰</text>
+                        <view class="menu-icon" aria-hidden="true">
+                            <view class="menu-bar" />
+                            <view class="menu-bar" />
+                            <view class="menu-bar" />
+                        </view>
                         <text>{{ copy.categoryAll }}</text>
                     </view>
                     <button
@@ -671,6 +675,57 @@ onShow(() => {
     font-size: 15px;
 }
 
+.search-icon {
+    position: relative;
+    width: 13px;
+    height: 13px;
+    border: 1.5px solid #25282d;
+    border-radius: 50%;
+}
+
+.search-icon::after {
+    content: "";
+    position: absolute;
+    width: 6px;
+    height: 1.5px;
+    right: -5px;
+    bottom: -2px;
+    border-radius: 999px;
+    background: #25282d;
+    transform: rotate(45deg);
+    transform-origin: left center;
+}
+
+.user-icon {
+    position: relative;
+    width: 15px;
+    height: 15px;
+}
+
+.user-icon::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 50%;
+    width: 5px;
+    height: 5px;
+    border: 1.5px solid #1d2025;
+    border-radius: 50%;
+    transform: translateX(-50%);
+}
+
+.user-icon::after {
+    content: "";
+    position: absolute;
+    left: 2px;
+    right: 2px;
+    bottom: 0;
+    height: 6px;
+    border: 1.5px solid #1d2025;
+    border-bottom: 0;
+    border-radius: 8px 8px 0 0;
+}
+
 .cart-action {
     position: relative;
 }
@@ -722,8 +777,17 @@ onShow(() => {
 }
 
 .menu-icon {
-    font-size: 14px;
-    color: #393f46;
+    width: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.menu-bar {
+    width: 14px;
+    height: 1.5px;
+    border-radius: 999px;
+    background: #393f46;
 }
 
 .category-row {
