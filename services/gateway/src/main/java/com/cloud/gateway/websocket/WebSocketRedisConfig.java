@@ -2,6 +2,7 @@ package com.cloud.gateway.websocket;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.ReactiveRedisConnectionFactory;
@@ -21,7 +22,7 @@ public class WebSocketRedisConfig {
 
   @Bean
   public ReactiveRedisMessageListenerContainer webSocketRedisListenerContainer(
-      ReactiveRedisConnectionFactory connectionFactory) {
+      @Qualifier("redisConnectionFactory") ReactiveRedisConnectionFactory connectionFactory) {
 
     ReactiveRedisMessageListenerContainer container =
         new ReactiveRedisMessageListenerContainer(connectionFactory);

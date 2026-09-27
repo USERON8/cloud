@@ -160,6 +160,7 @@ redisson:
   client-name: payment-service
 
 alipay:
+  enabled: ${ALIPAY_ENABLED:false}
   app-id: ${ALIPAY_APP_ID}
   merchant-id: ${ALIPAY_MERCHANT_ID}
   merchant-private-key: ${ALIPAY_PRIVATE_KEY}

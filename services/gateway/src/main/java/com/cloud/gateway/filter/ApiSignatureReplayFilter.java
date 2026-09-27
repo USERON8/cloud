@@ -10,6 +10,7 @@ import java.util.Base64;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
@@ -53,7 +54,9 @@ public class ApiSignatureReplayFilter implements GlobalFilter, Ordered {
   @Value("${app.security.signature.nonce-expire-seconds:600}")
   private long nonceExpireSeconds;
 
-  public ApiSignatureReplayFilter(ReactiveStringRedisTemplate reactiveStringRedisTemplate) {
+  public ApiSignatureReplayFilter(
+      @Qualifier("reactiveStringRedisTemplate")
+          ReactiveStringRedisTemplate reactiveStringRedisTemplate) {
     this.reactiveStringRedisTemplate = reactiveStringRedisTemplate;
   }
 

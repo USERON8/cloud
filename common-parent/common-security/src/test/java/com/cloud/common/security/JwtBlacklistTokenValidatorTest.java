@@ -9,16 +9,21 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.security.oauth2.jwt.Jwt;
 
 @ExtendWith(MockitoExtension.class)
 class JwtBlacklistTokenValidatorTest {
 
   @Mock private RedisTemplate<String, Object> redisTemplate;
+  @Mock private StringRedisTemplate stringRedisTemplate;
+  @Mock private ValueOperations<String, String> valueOperations;
 
   @Test
   void validateShouldRejectBlacklistedToken() {
-    JwtBlacklistTokenValidator validator = new JwtBlacklistTokenValidator(redisTemplate);
+    JwtBlacklistTokenValidator validator =
+        new JwtBlacklistTokenValidator(redisTemplate, stringRedisTemplate);
     Jwt jwt = newJwt("token-1");
     when(redisTemplate.hasKey("auth:blacklist:token-1")).thenReturn(true);
 
@@ -30,7 +35,8 @@ class JwtBlacklistTokenValidatorTest {
 
   @Test
   void validateShouldDegradeOpenWhenRedisIsUnavailable() {
-    JwtBlacklistTokenValidator validator = new JwtBlacklistTokenValidator(redisTemplate);
+    JwtBlacklistTokenValidator validator =
+        new JwtBlacklistTokenValidator(redisTemplate, stringRedisTemplate);
     Jwt jwt = newJwt("token-2");
     when(redisTemplate.hasKey("auth:blacklist:token-2"))
         .thenThrow(new IllegalStateException("redis down"));
@@ -42,7 +48,8 @@ class JwtBlacklistTokenValidatorTest {
 
   @Test
   void validateShouldUseLocalBlacklistCacheWhenRedisFailsAfterATrueHit() {
-    JwtBlacklistTokenValidator validator = new JwtBlacklistTokenValidator(redisTemplate);
+    JwtBlacklistTokenValidator validator =
+        new JwtBlacklistTokenValidator(redisTemplate, stringRedisTemplate);
     Jwt jwt = newJwt("token-3");
     when(redisTemplate.hasKey("auth:blacklist:token-3"))
         .thenReturn(true)
@@ -59,14 +66,75 @@ class JwtBlacklistTokenValidatorTest {
         .isEqualTo("blacklisted");
   }
 
+  @Test
+  void validateShouldAcceptTokenWhenAuthVersionMatches() {
+    JwtBlacklistTokenValidator validator =
+        new JwtBlacklistTokenValidator(redisTemplate, stringRedisTemplate);
+    Jwt jwt = newJwt("token-4", 42L, 3L);
+    when(redisTemplate.hasKey("auth:blacklist:token-4")).thenReturn(false);
+    when(stringRedisTemplate.opsForValue()).thenReturn(valueOperations);
+    when(valueOperations.get("auth:version:42")).thenReturn("3");
+
+    var result = validator.validate(jwt);
+
+    assertThat(result.hasErrors()).isFalse();
+  }
+
+  @Test
+  void validateShouldRejectTokenWhenAuthVersionIsStale() {
+    JwtBlacklistTokenValidator validator =
+        new JwtBlacklistTokenValidator(redisTemplate, stringRedisTemplate);
+    Jwt jwt = newJwt("token-5", 42L, 2L);
+    when(redisTemplate.hasKey("auth:blacklist:token-5")).thenReturn(false);
+    when(stringRedisTemplate.opsForValue()).thenReturn(valueOperations);
+    when(valueOperations.get("auth:version:42")).thenReturn("3");
+
+    var result = validator.validate(jwt);
+
+    assertThat(result.hasErrors()).isTrue();
+    assertThat(result.getErrors())
+        .singleElement()
+        .extracting("errorCode")
+        .isEqualTo("credentials_stale");
+  }
+
+  @Test
+  void validateShouldRejectLegacyTokenAfterAuthVersionIsPublished() {
+    JwtBlacklistTokenValidator validator =
+        new JwtBlacklistTokenValidator(redisTemplate, stringRedisTemplate);
+    Jwt jwt = newJwt("token-6", 42L, null);
+    when(redisTemplate.hasKey("auth:blacklist:token-6")).thenReturn(false);
+    when(stringRedisTemplate.opsForValue()).thenReturn(valueOperations);
+    when(valueOperations.get("auth:version:42")).thenReturn("3");
+
+    var result = validator.validate(jwt);
+
+    assertThat(result.hasErrors()).isTrue();
+    assertThat(result.getErrors())
+        .singleElement()
+        .extracting("errorCode")
+        .isEqualTo("credentials_stale");
+  }
+
   private Jwt newJwt(String tokenValue) {
+    return newJwt(tokenValue, null, null);
+  }
+
+  private Jwt newJwt(String tokenValue, Long userId, Long authVersion) {
     Instant now = Instant.now();
-    return Jwt.withTokenValue(tokenValue)
+    Jwt.Builder builder =
+        Jwt.withTokenValue(tokenValue)
         .subject("user-1")
         .header("alg", "none")
         .claim("jti", "jwt-1")
         .issuedAt(now)
-        .expiresAt(now.plusSeconds(300))
-        .build();
+        .expiresAt(now.plusSeconds(300));
+    if (userId != null) {
+      builder.claim("user_id", userId);
+    }
+    if (authVersion != null) {
+      builder.claim("auth_version", authVersion);
+    }
+    return builder.build();
   }
 }

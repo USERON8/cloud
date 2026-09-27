@@ -141,10 +141,15 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
       admin.setStatus(STATUS_ENABLED);
     }
 
+    Long principalId =
+        authPrincipalService.createPrincipal(toAuthPrincipalDTO(admin, requestDTO.getPassword()));
+    if (principalId == null) {
+      throw new AdminException("failed to create admin principal");
+    }
+    admin.setPrincipalId(principalId);
     if (!save(admin)) {
       throw new AdminException("failed to create admin");
     }
-    authPrincipalService.createPrincipal(toAuthPrincipalDTO(admin, requestDTO.getPassword()));
     adminCacheService.putTransactional(admin);
     return adminConverter.toDTO(admin);
   }
@@ -178,11 +183,13 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
       if (count > 0) {
         throw new AdminException.AdminAlreadyExistsException(requestDTO.getUsername());
       }
-      authPrincipalService.assertUsernameAvailable(requestDTO.getUsername(), id);
+      authPrincipalService.assertUsernameAvailable(
+          requestDTO.getUsername(), resolvePrincipalId(existingAdmin));
     }
 
     Admin admin = toAdminEntity(requestDTO);
     admin.setId(id);
+    admin.setPrincipalId(resolvePrincipalId(existingAdmin));
     if (StrUtil.isBlank(admin.getUsername())) {
       admin.setUsername(existingAdmin.getUsername());
     }
@@ -224,7 +231,7 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
     }
     boolean removed = removeById(id);
     if (removed) {
-      authPrincipalService.deletePrincipal(id);
+      authPrincipalService.deletePrincipal(resolvePrincipalId(admin));
       adminCacheService.evictTransactional(id, admin.getUsername());
     }
     return removed;
@@ -239,13 +246,10 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
     List<Admin> admins = listByIds(ids);
     boolean removed = removeByIds(ids);
     if (removed) {
-      ids.forEach(
-          id -> {
-            authPrincipalService.deletePrincipal(id);
-          });
       admins.forEach(
           admin -> {
             if (admin != null) {
+              authPrincipalService.deletePrincipal(resolvePrincipalId(admin));
               adminCacheService.evictTransactional(admin.getId(), admin.getUsername());
             }
           });
@@ -266,7 +270,7 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
     boolean updated = updateById(admin);
     if (updated) {
       AuthPrincipalDTO authPrincipalDTO = new AuthPrincipalDTO();
-      authPrincipalDTO.setId(admin.getId());
+      authPrincipalDTO.setId(resolvePrincipalId(admin));
       authPrincipalDTO.setStatus(admin.getStatus());
       authPrincipalService.updatePrincipal(authPrincipalDTO);
       adminCacheService.putTransactional(admin);
@@ -301,7 +305,7 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
     }
 
     AuthPrincipalDTO authPrincipalDTO = new AuthPrincipalDTO();
-    authPrincipalDTO.setId(admin.getId());
+    authPrincipalDTO.setId(resolvePrincipalId(admin));
     authPrincipalDTO.setPassword(newPassword);
     authPrincipalService.updatePrincipal(authPrincipalDTO);
     return true;
@@ -321,7 +325,8 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
       throw new AdminException.AdminNotFoundException(id);
     }
 
-    if (!authPrincipalService.changePassword(id, oldPassword, newPassword)) {
+    if (!authPrincipalService.changePassword(
+        resolvePrincipalId(admin), oldPassword, newPassword)) {
       log.warn("Old password mismatch, adminId={}", id);
       throw new AdminException.AdminPasswordException("old password mismatch");
     }
@@ -346,6 +351,7 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
   private Admin resolveCurrentAdmin(AdminUpsertRequestDTO requestDTO, Admin existingAdmin) {
     Admin merged = new Admin();
     merged.setId(existingAdmin.getId());
+    merged.setPrincipalId(resolvePrincipalId(existingAdmin));
     merged.setUsername(
         StrUtil.blankToDefault(requestDTO.getUsername(), existingAdmin.getUsername()));
     merged.setRealName(
@@ -360,10 +366,18 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
 
   private AuthPrincipalDTO toAuthPrincipalDTO(Admin admin, String password) {
     AuthPrincipalDTO authPrincipalDTO = authPrincipalConverter.toDTO(admin);
+    authPrincipalDTO.setId(admin.getPrincipalId());
     authPrincipalDTO.setPassword(password);
     authPrincipalDTO.setNickname(admin.getRealName());
     authPrincipalDTO.setRoles(resolveAdminRoles(admin.getRole()));
     return authPrincipalDTO;
+  }
+
+  private Long resolvePrincipalId(Admin admin) {
+    if (admin == null) {
+      return null;
+    }
+    return admin.getPrincipalId() == null ? admin.getId() : admin.getPrincipalId();
   }
 
   private void refreshAdminCache(Admin admin, String oldUsername) {

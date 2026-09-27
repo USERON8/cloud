@@ -9,9 +9,9 @@ import com.cloud.gateway.support.GatewayResponseWriter;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
@@ -34,14 +34,22 @@ import reactor.core.publisher.Mono;
 @Slf4j
 @Configuration
 @EnableWebFluxSecurity
-@RequiredArgsConstructor
 public class ResourceServerConfig {
 
   private static final String BLACKLIST_KEY_PREFIX = "auth:blacklist:";
+  private static final String AUTH_VERSION_KEY_PREFIX = "auth:version:";
 
   private final ReactiveStringRedisTemplate reactiveStringRedisTemplate;
   private final GatewayResponseWriter gatewayResponseWriter;
   private final LocalJwtBlacklistCache localBlacklistCache = new LocalJwtBlacklistCache();
+
+  public ResourceServerConfig(
+      @Qualifier("securityReactiveStringRedisTemplate")
+          ReactiveStringRedisTemplate reactiveStringRedisTemplate,
+      GatewayResponseWriter gatewayResponseWriter) {
+    this.reactiveStringRedisTemplate = reactiveStringRedisTemplate;
+    this.gatewayResponseWriter = gatewayResponseWriter;
+  }
 
   @Value(
       "${spring.security.oauth2.resourceserver.jwt.jwk-set-uri:${AUTH_JWK_SET_URI:http://${AUTH_HOST:127.0.0.1}:${AUTH_PORT:8081}/.well-known/jwks.json}}")
@@ -334,10 +342,13 @@ public class ResourceServerConfig {
                 return Mono.error(new BadJwtException("Token is blacklisted"));
               }
               localBlacklistCache.clear(tokenValue);
-              return Mono.just(jwt);
+              return validateAuthVersion(jwt);
             })
         .onErrorResume(
             ex -> {
+              if (ex instanceof BadJwtException) {
+                return Mono.error(ex);
+              }
               if (localBlacklistCache.contains(tokenValue)) {
                 log.warn(
                     "Gateway blacklist validation fell back to local cache: sub={}, jti={}",
@@ -361,5 +372,40 @@ public class ResourceServerConfig {
                   ex);
               return Mono.just(jwt);
             });
+  }
+
+  private Mono<Jwt> validateAuthVersion(Jwt jwt) {
+    String userId = claimAsString(jwt, "user_id");
+    if (userId == null || userId.isBlank()) {
+      userId = claimAsString(jwt, "userId");
+    }
+    if (userId == null || userId.isBlank()) {
+      return Mono.just(jwt);
+    }
+    String versionKey = AUTH_VERSION_KEY_PREFIX + userId;
+    String tokenVersion = claimAsString(jwt, "auth_version");
+    String resolvedUserId = userId;
+    return reactiveStringRedisTemplate
+        .opsForValue()
+        .get(versionKey)
+        .flatMap(
+            currentVersion -> {
+              if (!currentVersion.equals(tokenVersion)) {
+                log.warn(
+                    "JWT credentials are stale: sub={}, userId={}, tokenVersion={}, currentVersion={}",
+                    jwt.getSubject(),
+                    resolvedUserId,
+                    tokenVersion,
+                    currentVersion);
+                return Mono.error(new BadJwtException("Token credentials are stale"));
+              }
+              return Mono.just(jwt);
+            })
+        .switchIfEmpty(Mono.just(jwt));
+  }
+
+  private String claimAsString(Jwt jwt, String claimName) {
+    Object claim = jwt.getClaims().get(claimName);
+    return claim == null ? null : claim.toString();
   }
 }

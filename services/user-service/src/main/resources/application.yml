@@ -14,6 +14,14 @@ spring:
     active: dev
   main:
     allow-bean-definition-overriding: true
+  flyway:
+    enabled: ${DB_MIGRATION_ENABLED:true}
+    baseline-on-migrate: true
+    baseline-version: 0
+    locations: classpath:db/migration
+    validate-on-migrate: true
+    clean-disabled: true
+    out-of-order: false
   cloud:
     nacos:
       discovery:

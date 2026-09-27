@@ -2,6 +2,7 @@ package com.cloud.common.security;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.security.oauth2.core.OAuth2TokenValidator;
 import org.springframework.security.oauth2.core.OAuth2TokenValidatorResult;
@@ -11,12 +12,16 @@ import org.springframework.security.oauth2.jwt.Jwt;
 public class JwtBlacklistTokenValidator implements OAuth2TokenValidator<Jwt> {
 
   private static final String BLACKLIST_KEY_PREFIX = "auth:blacklist:";
+  private static final String AUTH_VERSION_KEY_PREFIX = "auth:version:";
 
   private final RedisTemplate<String, Object> redisTemplate;
+  private final StringRedisTemplate stringRedisTemplate;
   private final LocalJwtBlacklistCache localBlacklistCache = new LocalJwtBlacklistCache();
 
-  public JwtBlacklistTokenValidator(RedisTemplate<String, Object> redisTemplate) {
+  public JwtBlacklistTokenValidator(
+      RedisTemplate<String, Object> redisTemplate, StringRedisTemplate stringRedisTemplate) {
     this.redisTemplate = redisTemplate;
+    this.stringRedisTemplate = stringRedisTemplate;
   }
 
   @Override
@@ -37,6 +42,10 @@ public class JwtBlacklistTokenValidator implements OAuth2TokenValidator<Jwt> {
         return OAuth2TokenValidatorResult.failure(
             new OAuth2Error("blacklisted", "Token is blacklisted", null));
       }
+      OAuth2TokenValidatorResult versionResult = validateAuthVersion(jwt);
+      if (versionResult.hasErrors()) {
+        return versionResult;
+      }
       localBlacklistCache.clear(tokenValue);
       return OAuth2TokenValidatorResult.success();
     } catch (Exception ex) {
@@ -56,5 +65,37 @@ public class JwtBlacklistTokenValidator implements OAuth2TokenValidator<Jwt> {
           ex);
       return OAuth2TokenValidatorResult.success();
     }
+  }
+
+  private OAuth2TokenValidatorResult validateAuthVersion(Jwt jwt) {
+    String userId = claimAsString(jwt, "user_id");
+    if (userId == null || userId.isBlank()) {
+      userId = claimAsString(jwt, "userId");
+    }
+    if (userId == null || userId.isBlank()) {
+      return OAuth2TokenValidatorResult.success();
+    }
+
+    String currentVersion = stringRedisTemplate.opsForValue().get(AUTH_VERSION_KEY_PREFIX + userId);
+    if (currentVersion == null || currentVersion.isBlank()) {
+      return OAuth2TokenValidatorResult.success();
+    }
+    String tokenVersion = claimAsString(jwt, "auth_version");
+    if (!currentVersion.equals(tokenVersion)) {
+      log.warn(
+          "JWT credentials are stale: sub={}, userId={}, tokenVersion={}, currentVersion={}",
+          jwt.getSubject(),
+          userId,
+          tokenVersion,
+          currentVersion);
+      return OAuth2TokenValidatorResult.failure(
+          new OAuth2Error("credentials_stale", "Token credentials are stale", null));
+    }
+    return OAuth2TokenValidatorResult.success();
+  }
+
+  private String claimAsString(Jwt jwt, String claimName) {
+    Object claim = jwt.getClaims().get(claimName);
+    return claim == null ? null : claim.toString();
   }
 }

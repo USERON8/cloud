@@ -1,7 +1,6 @@
 package com.cloud.user.service.impl;
 
 import cn.hutool.core.util.StrUtil;
-import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.cloud.common.annotation.DistributedLock;
@@ -206,12 +205,6 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant>
     }
 
     Merchant merchant = toMerchantEntity(requestDTO);
-    if (merchant.getId() == null) {
-      merchant.setId(IdWorker.getId());
-    }
-    if (merchant.getOwnerUserId() == null) {
-      merchant.setOwnerUserId(merchant.getId());
-    }
     if (merchant.getStatus() == null) {
       merchant.setStatus(STATUS_ENABLED);
     }
@@ -219,11 +212,16 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant>
       merchant.setAuditStatus(STATUS_PENDING);
     }
 
+    Long ownerUserId =
+        authPrincipalService.createPrincipal(
+            toAuthPrincipalDTO(merchant, requestDTO.getEmail(), requestDTO.getPassword()));
+    if (ownerUserId == null) {
+      throw new MerchantException("failed to create merchant principal");
+    }
+    merchant.setOwnerUserId(ownerUserId);
     if (!save(merchant)) {
       throw new MerchantException("failed to create merchant");
     }
-    authPrincipalService.createPrincipal(
-        toAuthPrincipalDTO(merchant, requestDTO.getEmail(), requestDTO.getPassword()));
     merchantCacheService.putTransactional(merchant);
     return toEnrichedDTO(merchant);
   }
@@ -256,7 +254,8 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant>
       if (count > 0) {
         throw new MerchantException.MerchantAlreadyExistsException(requestDTO.getUsername());
       }
-      authPrincipalService.assertUsernameAvailable(requestDTO.getUsername(), id);
+      authPrincipalService.assertUsernameAvailable(
+          requestDTO.getUsername(), resolveOwnerUserId(existing));
     }
 
     if (StrUtil.isNotBlank(requestDTO.getMerchantName())
@@ -316,7 +315,7 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant>
     }
     boolean removed = removeById(id);
     if (removed) {
-      authPrincipalService.deletePrincipal(id);
+      authPrincipalService.deletePrincipal(resolveOwnerUserId(merchant));
       merchantCacheService.evictTransactional(
           id, merchant.getUsername(), merchant.getMerchantName());
     }
@@ -332,13 +331,10 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant>
     List<Merchant> merchants = listByIds(ids);
     boolean removed = removeByIds(ids);
     if (removed) {
-      ids.forEach(
-          id -> {
-            authPrincipalService.deletePrincipal(id);
-          });
       merchants.forEach(
           merchant -> {
             if (merchant != null) {
+              authPrincipalService.deletePrincipal(resolveOwnerUserId(merchant));
               merchantCacheService.evictTransactional(
                   merchant.getId(), merchant.getUsername(), merchant.getMerchantName());
             }
@@ -364,7 +360,7 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant>
       Merchant refreshed = getById(id);
       if (refreshed != null) {
         AuthPrincipalDTO authPrincipalDTO = new AuthPrincipalDTO();
-        authPrincipalDTO.setId(refreshed.getId());
+        authPrincipalDTO.setId(resolveOwnerUserId(refreshed));
         authPrincipalDTO.setStatus(refreshed.getStatus());
         authPrincipalService.updatePrincipal(authPrincipalDTO);
         merchantCacheService.putTransactional(refreshed);
@@ -712,11 +708,19 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant>
 
   private AuthPrincipalDTO toAuthPrincipalDTO(Merchant merchant, String email, String password) {
     AuthPrincipalDTO authPrincipalDTO = authPrincipalConverter.toDTO(merchant);
+    authPrincipalDTO.setId(merchant.getOwnerUserId());
     authPrincipalDTO.setPassword(password);
     authPrincipalDTO.setNickname(merchant.getMerchantName());
     authPrincipalDTO.setEmail(email);
     authPrincipalDTO.setRoles(List.of("ROLE_USER", "ROLE_MERCHANT"));
     return authPrincipalDTO;
+  }
+
+  private Long resolveOwnerUserId(Merchant merchant) {
+    if (merchant == null) {
+      return null;
+    }
+    return merchant.getOwnerUserId() == null ? merchant.getId() : merchant.getOwnerUserId();
   }
 
   private void refreshMerchantCache(Merchant merchant, String oldUsername, String oldMerchantName) {

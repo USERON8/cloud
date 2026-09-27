@@ -17,6 +17,7 @@ import java.math.BigDecimal;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.MediaType;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -26,6 +27,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RawResponse
 @RestController
+@ConditionalOnProperty(prefix = "alipay", name = "enabled", havingValue = "true")
 @RequestMapping("/api/v1/payment/alipay")
 @RequiredArgsConstructor
 @Tag(name = "支付回调接口", description = "外部支付平台回调接口")

@@ -1,2 +1,3 @@
 com.cloud.common.config.SecurityAutoConfiguration
+com.cloud.common.config.SecurityRedisAutoConfiguration
 

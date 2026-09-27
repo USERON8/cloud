@@ -1,6 +1,7 @@
 package com.cloud.governance.config;
 
 import com.cloud.common.config.ServiceSecurityCustomizer;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
@@ -34,7 +35,7 @@ public class ResourceServerConfig {
 
   @Bean
   public RedisTemplate<String, Object> governanceRedisTemplate(
-      RedisConnectionFactory connectionFactory) {
+      @Qualifier("redisConnectionFactory") RedisConnectionFactory connectionFactory) {
     RedisTemplate<String, Object> template = new RedisTemplate<>();
     GenericJackson2JsonRedisSerializer valueSerializer = new GenericJackson2JsonRedisSerializer();
     StringRedisSerializer keySerializer = new StringRedisSerializer();

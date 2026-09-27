@@ -11,6 +11,9 @@ import lombok.EqualsAndHashCode;
 @Data
 public class Admin extends BaseEntity<Admin> {
 
+  @TableField(value = "principal_id")
+  private Long principalId;
+
   @TableField(value = "username")
   private String username;
 

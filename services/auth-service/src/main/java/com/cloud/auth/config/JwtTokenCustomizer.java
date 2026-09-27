@@ -1,6 +1,7 @@
 package com.cloud.auth.config;
 
 import cn.hutool.core.util.StrUtil;
+import com.cloud.auth.service.AuthVersionStateService;
 import com.cloud.auth.service.support.AuthIdentityService;
 import com.cloud.common.domain.dto.auth.AuthPrincipalDTO;
 import java.util.LinkedHashSet;
@@ -22,6 +23,7 @@ import org.springframework.stereotype.Component;
 public class JwtTokenCustomizer implements OAuth2TokenCustomizer<JwtEncodingContext> {
 
   private final AuthIdentityService authIdentityService;
+  private final AuthVersionStateService authVersionStateService;
 
   @Override
   public void customize(JwtEncodingContext context) {
@@ -57,6 +59,10 @@ public class JwtTokenCustomizer implements OAuth2TokenCustomizer<JwtEncodingCont
       }
       if (principal.getStatus() != null) {
         context.getClaims().claim("status", principal.getStatus());
+      }
+      if (principal.getAuthVersion() != null) {
+        context.getClaims().claim("auth_version", principal.getAuthVersion());
+        authVersionStateService.publish(principal.getId(), principal.getAuthVersion());
       }
       if (StrUtil.isNotBlank(principal.getNickname())) {
         context.getClaims().claim("nickname", principal.getNickname());

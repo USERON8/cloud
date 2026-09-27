@@ -10,6 +10,7 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -79,7 +80,8 @@ public class RedisConfig {
   @Primary
   @ConditionalOnMissingBean
   public RedisTemplate<String, Object> redisTemplate(
-      RedisConnectionFactory connectionFactory, GenericJackson2JsonRedisSerializer jsonSerializer) {
+      @Qualifier("redisConnectionFactory") RedisConnectionFactory connectionFactory,
+      GenericJackson2JsonRedisSerializer jsonSerializer) {
 
     RedisTemplate<String, Object> template = new RedisTemplate<>();
     template.setConnectionFactory(connectionFactory);
@@ -101,8 +103,10 @@ public class RedisConfig {
   }
 
   @Bean
+  @Primary
   @ConditionalOnMissingBean
-  public StringRedisTemplate stringRedisTemplate(RedisConnectionFactory connectionFactory) {
+  public StringRedisTemplate stringRedisTemplate(
+      @Qualifier("redisConnectionFactory") RedisConnectionFactory connectionFactory) {
 
     StringRedisTemplate template = new StringRedisTemplate();
     template.setConnectionFactory(connectionFactory);
@@ -114,7 +118,8 @@ public class RedisConfig {
   @Bean("redisCacheManager")
   @ConditionalOnMissingBean(CacheManager.class)
   public CacheManager redisCacheManager(
-      RedisConnectionFactory connectionFactory, GenericJackson2JsonRedisSerializer jsonSerializer) {
+      @Qualifier("redisConnectionFactory") RedisConnectionFactory connectionFactory,
+      GenericJackson2JsonRedisSerializer jsonSerializer) {
     RedisCacheConfiguration defaultConfig =
         createCacheConfig(jsonSerializer, Duration.ofMinutes(30));
     Map<String, RedisCacheConfiguration> cacheConfigurations = new HashMap<>();

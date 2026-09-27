@@ -2,6 +2,7 @@ package com.cloud.gateway.config;
 
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.cloud.gateway.support.GatewayResponseWriter;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -11,10 +12,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
+import org.springframework.data.redis.core.ReactiveValueOperations;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.jwt.BadJwtException;
 import org.springframework.security.oauth2.jwt.ReactiveJwtDecoder;
 import org.springframework.security.web.server.SecurityWebFilterChain;
 import org.springframework.security.web.server.WebFilterChainProxy;
@@ -29,6 +32,8 @@ class ResourceServerConfigTest {
   private static final Instant EXPIRES_AT = Instant.parse("2027-01-01T00:00:00Z");
 
   private WebTestClient webTestClient;
+  private ResourceServerConfig config;
+  private ReactiveValueOperations<String, String> valueOperations;
 
   @BeforeEach
   void setUp() {
@@ -36,7 +41,10 @@ class ResourceServerConfigTest {
         Mockito.mock(ReactiveStringRedisTemplate.class);
     given(reactiveStringRedisTemplate.hasKey(anyString())).willReturn(Mono.just(false));
 
-    ResourceServerConfig config =
+    valueOperations = Mockito.mock(ReactiveValueOperations.class);
+    given(reactiveStringRedisTemplate.opsForValue()).willReturn(valueOperations);
+
+    config =
         new StubJwtResourceServerConfig(
             reactiveStringRedisTemplate, new GatewayResponseWriter(new ObjectMapper()));
     SecurityWebFilterChain securityWebFilterChain =
@@ -96,6 +104,23 @@ class ResourceServerConfigTest {
     exchangeWithoutToken("/api/users/me/cart", HttpMethod.GET).expectStatus().isUnauthorized();
     exchange("/api/users/me/cart", HttpMethod.GET, "cancel").expectStatus().isOk();
     exchange("/api/users/me/cart/items", HttpMethod.PUT, "cancel").expectStatus().isOk();
+  }
+
+  @Test
+  void staleAuthVersionIsRejectedEvenWhenRedisFailurePolicyAllowsDegradation() {
+    Jwt jwt =
+        Jwt.withTokenValue("stale")
+            .header("alg", "none")
+            .subject("test-user")
+            .claim("user_id", 42L)
+            .claim("auth_version", 2L)
+            .issuedAt(ISSUED_AT)
+            .expiresAt(EXPIRES_AT)
+            .build();
+    given(valueOperations.get("auth:version:42")).willReturn(Mono.just("3"));
+
+    assertThatThrownBy(() -> config.validateBlacklist(jwt, "stale").block())
+        .isInstanceOf(BadJwtException.class);
   }
 
   private WebTestClient.ResponseSpec exchange(String uri, HttpMethod method, String token) {

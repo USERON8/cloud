@@ -2,15 +2,14 @@ package com.cloud.gateway.websocket;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Sinks;
 
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class WebSocketSessionRegistry {
 
   private static final String ONLINE_USERS_KEY = "ws:online:users";
@@ -18,6 +17,12 @@ public class WebSocketSessionRegistry {
   private final ReactiveStringRedisTemplate reactiveStringRedisTemplate;
 
   private final Map<String, Map<String, Sinks.Many<String>>> sessions = new ConcurrentHashMap<>();
+
+  public WebSocketSessionRegistry(
+      @Qualifier("reactiveStringRedisTemplate")
+          ReactiveStringRedisTemplate reactiveStringRedisTemplate) {
+    this.reactiveStringRedisTemplate = reactiveStringRedisTemplate;
+  }
 
   public Sinks.Many<String> register(String userId, String sessionId) {
     Sinks.Many<String> sink = Sinks.many().multicast().onBackpressureBuffer();

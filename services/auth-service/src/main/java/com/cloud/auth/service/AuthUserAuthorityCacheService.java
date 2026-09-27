@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -19,14 +18,17 @@ import org.springframework.stereotype.Service;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class AuthUserAuthorityCacheService {
 
   private static final String AUTH_USER_PREFIX = "auth:user:";
   private static final Duration AUTHORITY_TTL = Duration.ofMinutes(30);
 
-  @Qualifier("oauth2MainRedisTemplate")
   private final RedisTemplate<String, Object> redisTemplate;
+
+  public AuthUserAuthorityCacheService(
+      @Qualifier("securityRedisTemplate") RedisTemplate<String, Object> redisTemplate) {
+    this.redisTemplate = redisTemplate;
+  }
 
   public List<SimpleGrantedAuthority> loadAuthorities(Long userId) {
     if (userId == null) {

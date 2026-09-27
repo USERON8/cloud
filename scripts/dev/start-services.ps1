@@ -124,6 +124,41 @@ function Get-ServiceModulePath {
     return Split-Path (Split-Path $JarRelativePath -Parent) -Parent
 }
 
+function Get-NewestServiceSourceWriteTime {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Root,
+        [Parameter(Mandatory = $true)]
+        [string]$ModulePath
+    )
+
+    $sourceFiles = New-Object System.Collections.Generic.List[System.IO.FileInfo]
+    $fixedFiles = @(
+        (Join-Path $Root "pom.xml"),
+        (Join-Path $Root "services\pom.xml"),
+        (Join-Path $Root "common-parent\pom.xml"),
+        (Join-Path $Root (Join-Path $ModulePath "pom.xml"))
+    )
+    foreach ($file in $fixedFiles) {
+        if (Test-Path -LiteralPath $file) {
+            $sourceFiles.Add((Get-Item -LiteralPath $file))
+        }
+    }
+
+    $sourceDirs = @((Join-Path $Root (Join-Path $ModulePath "src")))
+    $sourceDirs += Get-ChildItem -LiteralPath (Join-Path $Root "common-parent") -Directory |
+        ForEach-Object { Join-Path $_.FullName "src" } |
+        Where-Object { Test-Path -LiteralPath $_ }
+    foreach ($dir in $sourceDirs) {
+        Get-ChildItem -LiteralPath $dir -Recurse -File | ForEach-Object { $sourceFiles.Add($_) }
+    }
+
+    if ($sourceFiles.Count -eq 0) {
+        return [DateTime]::MinValue
+    }
+    return ($sourceFiles | Sort-Object LastWriteTimeUtc -Descending | Select-Object -First 1).LastWriteTimeUtc
+}
+
 function Ensure-ServiceArtifacts {
     param(
         [Parameter(Mandatory = $true)]
@@ -132,33 +167,39 @@ function Ensure-ServiceArtifacts {
         [string]$Root
     )
 
-    $missingServices = @()
+    $buildServices = @()
     $modulePaths = New-Object System.Collections.Generic.List[string]
     $moduleSeen = @{}
     foreach ($service in $Services) {
         $jarPath = Join-Path $Root $service.jar
-        if (Test-Path $jarPath) {
+        $modulePath = Get-ServiceModulePath -JarRelativePath $service.jar
+        $needsBuild = -not (Test-Path -LiteralPath $jarPath)
+        if (-not $needsBuild) {
+            $jarWriteTime = (Get-Item -LiteralPath $jarPath).LastWriteTimeUtc
+            $sourceWriteTime = Get-NewestServiceSourceWriteTime -Root $Root -ModulePath $modulePath
+            $needsBuild = $sourceWriteTime -gt $jarWriteTime
+        }
+        if (-not $needsBuild) {
             continue
         }
 
-        $missingServices += $service
-        $modulePath = Get-ServiceModulePath -JarRelativePath $service.jar
+        $buildServices += $service
         if (-not $moduleSeen.ContainsKey($modulePath)) {
             $modulePaths.Add($modulePath)
             $moduleSeen[$modulePath] = $true
         }
     }
 
-    if ($missingServices.Count -eq 0) {
+    if ($buildServices.Count -eq 0) {
         return
     }
 
     $mvnCommand = Get-Command mvn -ErrorAction SilentlyContinue
     if ($null -eq $mvnCommand) {
-        throw "mvn not found, cannot build missing service artifacts"
+        throw "mvn not found, cannot build missing or stale service artifacts"
     }
 
-    $requestedServices = ($missingServices | ForEach-Object { $_.name }) -join ","
+    $requestedServices = ($buildServices | ForEach-Object { $_.name }) -join ","
     $requestedModules = $modulePaths -join ","
     Write-Host ("ARTIFACT_BUILD action=package services={0} modules={1}" -f $requestedServices, $requestedModules)
 
@@ -172,7 +213,7 @@ function Ensure-ServiceArtifacts {
         Pop-Location
     }
 
-    $remainingMissing = $missingServices | Where-Object { -not (Test-Path (Join-Path $Root $_.jar)) }
+    $remainingMissing = $buildServices | Where-Object { -not (Test-Path (Join-Path $Root $_.jar)) }
     if ($remainingMissing.Count -gt 0) {
         throw ("service artifacts still missing after package: {0}" -f (($remainingMissing | ForEach-Object { $_.name }) -join ","))
     }

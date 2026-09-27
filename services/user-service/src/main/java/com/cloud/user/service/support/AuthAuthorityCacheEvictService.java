@@ -3,18 +3,22 @@ package com.cloud.user.service.support;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.Set;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 @Service
-@RequiredArgsConstructor
 public class AuthAuthorityCacheEvictService {
 
   private static final String AUTH_USER_PREFIX = "auth:user:";
   private static final String EVICT_CHANNEL = "auth:cache:evict";
 
   private final RedisTemplate<String, Object> redisTemplate;
+
+  public AuthAuthorityCacheEvictService(
+      @Qualifier("securityRedisTemplate") RedisTemplate<String, Object> redisTemplate) {
+    this.redisTemplate = redisTemplate;
+  }
 
   public void evictUser(Long userId) {
     if (userId == null) {

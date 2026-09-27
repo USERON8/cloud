@@ -7,6 +7,7 @@ import com.cloud.common.domain.dto.user.UserAddressDTO;
 import com.cloud.common.domain.dto.user.UserAddressPageDTO;
 import com.cloud.common.domain.dto.user.UserAddressRequestDTO;
 import com.cloud.common.domain.vo.UserAddressVO;
+import com.cloud.common.enums.ResultCode;
 import com.cloud.common.exception.BizException;
 import com.cloud.common.exception.ResourceNotFoundException;
 import com.cloud.common.result.PageResult;
@@ -223,58 +224,54 @@ public class UserAddressServiceImpl extends ServiceImpl<UserAddressMapper, UserA
   }
 
   @Override
+  @Transactional(rollbackFor = Exception.class)
   public int deleteAddressBatch(List<Long> addressIds, Authentication authentication) {
     if (addressIds == null || addressIds.isEmpty()) {
       return 0;
     }
-    int successCount = 0;
-    for (Long addressId : addressIds) {
-      if (addressId == null) {
-        continue;
-      }
-      try {
-        UserAddressDTO existingAddress = getAddressById(addressId);
-        if (existingAddress == null) {
-          continue;
-        }
-        if (SecurityPermissionUtils.isAdminOrOwner(authentication, existingAddress.getUserId())
-            && removeById(addressId)) {
-          successCount++;
-        }
-      } catch (Exception e) {
-        log.error("Failed to delete address, addressId={}", addressId, e);
-      }
+    if (addressIds.stream().anyMatch(java.util.Objects::isNull)
+        || addressIds.stream().distinct().count() != addressIds.size()) {
+      throw new BizException(ResultCode.BAD_REQUEST, "address ids must be non-null and unique");
     }
-    return successCount;
+    for (Long addressId : addressIds) {
+      UserAddressDTO existingAddress = getAddressById(addressId);
+      if (existingAddress == null) {
+        throw new ResourceNotFoundException("address", String.valueOf(addressId));
+      }
+      if (!SecurityPermissionUtils.isAdminOrOwner(authentication, existingAddress.getUserId())) {
+        throw new BizException(ResultCode.FORBIDDEN, "no permission to delete address " + addressId);
+      }
+      removeById(addressId);
+    }
+    return addressIds.size();
   }
 
   @Override
+  @Transactional(rollbackFor = Exception.class)
   public int updateAddressBatch(
       List<UserAddressRequestDTO> addressList, Authentication authentication) {
     if (addressList == null || addressList.isEmpty()) {
       return 0;
     }
-    int successCount = 0;
-    for (UserAddressRequestDTO addressDTO : addressList) {
-      if (addressDTO == null || addressDTO.getId() == null) {
-        continue;
-      }
-      try {
-        UserAddressDTO existingAddress = getAddressById(addressDTO.getId());
-        if (existingAddress == null) {
-          continue;
-        }
-        if (!SecurityPermissionUtils.isAdminOrOwner(authentication, existingAddress.getUserId())) {
-          continue;
-        }
-        if (updateAddress(addressDTO.getId(), addressDTO) != null) {
-          successCount++;
-        }
-      } catch (Exception e) {
-        log.error("Failed to update address, addressId={}", addressDTO.getId(), e);
-      }
+    if (addressList.stream().anyMatch(dto -> dto == null || dto.getId() == null)) {
+      throw new BizException(ResultCode.BAD_REQUEST, "every address payload must include id");
     }
-    return successCount;
+    if (addressList.stream().map(UserAddressRequestDTO::getId).distinct().count()
+        != addressList.size()) {
+      throw new BizException(ResultCode.BAD_REQUEST, "address ids must be unique");
+    }
+    for (UserAddressRequestDTO addressDTO : addressList) {
+      UserAddressDTO existingAddress = getAddressById(addressDTO.getId());
+      if (existingAddress == null) {
+        throw new ResourceNotFoundException("address", String.valueOf(addressDTO.getId()));
+      }
+      if (!SecurityPermissionUtils.isAdminOrOwner(authentication, existingAddress.getUserId())) {
+        throw new BizException(
+            ResultCode.FORBIDDEN, "no permission to update address " + addressDTO.getId());
+      }
+      updateAddress(addressDTO.getId(), addressDTO);
+    }
+    return addressList.size();
   }
 
   @Transactional(rollbackFor = Exception.class)

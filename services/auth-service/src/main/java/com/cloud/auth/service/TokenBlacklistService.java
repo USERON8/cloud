@@ -25,7 +25,7 @@ public class TokenBlacklistService {
   private final RedisTemplate<String, Object> redisTemplate;
 
   public TokenBlacklistService(
-      @Qualifier("oauth2MainRedisTemplate") RedisTemplate<String, Object> redisTemplate) {
+      @Qualifier("securityRedisTemplate") RedisTemplate<String, Object> redisTemplate) {
     this.redisTemplate = redisTemplate;
   }
 

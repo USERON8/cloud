@@ -3,8 +3,10 @@ package com.cloud.payment.config;
 import cn.hutool.core.util.StrUtil;
 import com.alipay.api.AlipayClient;
 import com.alipay.api.DefaultAlipayClient;
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -16,15 +18,14 @@ import org.springframework.validation.annotation.Validated;
 @Validated
 public class AlipayConfig {
 
-  @NotBlank(message = "Alipay appId cannot be blank")
+  private boolean enabled;
+
   private String appId;
 
   private String merchantId;
 
-  @NotBlank(message = "Alipay merchant private key cannot be blank")
   private String merchantPrivateKey;
 
-  @NotBlank(message = "Alipay public key cannot be blank")
   private String alipayPublicKey;
 
   @NotBlank(message = "Alipay gateway url cannot be blank")
@@ -44,7 +45,16 @@ public class AlipayConfig {
 
   private String timeout = "30m";
 
+  @AssertTrue(message = "Alipay appId, merchant private key and public key are required when enabled")
+  public boolean isCredentialConfigurationValid() {
+    return !enabled
+        || (StrUtil.isNotBlank(appId)
+            && StrUtil.isNotBlank(merchantPrivateKey)
+            && StrUtil.isNotBlank(alipayPublicKey));
+  }
+
   @Bean
+  @ConditionalOnProperty(prefix = "alipay", name = "enabled", havingValue = "true")
   public AlipayClient alipayClient() {
     try {
       com.alipay.api.AlipayConfig sdkConfig = new com.alipay.api.AlipayConfig();

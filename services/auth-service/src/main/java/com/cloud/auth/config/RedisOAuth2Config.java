@@ -2,8 +2,8 @@ package com.cloud.auth.config;
 
 import com.cloud.auth.service.RedisOAuth2AuthorizationConsentService;
 import com.cloud.auth.service.RedisOAuth2AuthorizationService;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -20,12 +20,20 @@ import org.springframework.security.oauth2.server.authorization.settings.Authori
 
 @Slf4j
 @Configuration
-@RequiredArgsConstructor
 public class RedisOAuth2Config {
 
   private final RedisConnectionFactory redisConnectionFactory;
   private final RegisteredClientRepository registeredClientRepository;
   private final AuthorizationServerSettings authorizationServerSettings;
+
+  public RedisOAuth2Config(
+      @Qualifier("redisConnectionFactory") RedisConnectionFactory redisConnectionFactory,
+      RegisteredClientRepository registeredClientRepository,
+      AuthorizationServerSettings authorizationServerSettings) {
+    this.redisConnectionFactory = redisConnectionFactory;
+    this.registeredClientRepository = registeredClientRepository;
+    this.authorizationServerSettings = authorizationServerSettings;
+  }
 
   @Bean
   public OAuth2AuthorizationService authorizationService() {

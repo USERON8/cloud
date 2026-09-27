@@ -21,10 +21,12 @@ import java.time.ZoneId;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 @Component
+@ConditionalOnProperty(prefix = "alipay", name = "enabled", havingValue = "true")
 @RequiredArgsConstructor
 public class AlipayPaymentProviderGateway implements PaymentProviderGateway {
 

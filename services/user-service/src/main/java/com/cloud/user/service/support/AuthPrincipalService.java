@@ -24,6 +24,7 @@ public class AuthPrincipalService {
   private final PermissionQueryService permissionQueryService;
   private final PasswordEncoder passwordEncoder;
   private final AuthPrincipalConverter authPrincipalConverter;
+  private final AuthVersionStateService authVersionStateService;
 
   @Transactional(readOnly = true)
   public void assertUsernameAvailable(String username, Long currentUserId) {
@@ -80,6 +81,8 @@ public class AuthPrincipalService {
     user.setPhone(authPrincipalDTO.getPhone());
     Integer status = authPrincipalDTO.getStatus() == null ? 1 : authPrincipalDTO.getStatus();
     user.setStatus(status);
+    user.setAuthVersion(
+        existing == null ? 1L : authVersionStateService.nextVersion(existing.getAuthVersion()));
 
     if (existing == null) {
       userMapper.insert(user);
@@ -92,6 +95,7 @@ public class AuthPrincipalService {
             ? List.of("ROLE_USER")
             : authPrincipalDTO.getRoles();
     roleAssignmentService.replaceRoles(user.getId(), roles);
+    authVersionStateService.publish(user.getId(), user.getAuthVersion());
     return user.getId();
   }
 
@@ -132,9 +136,21 @@ public class AuthPrincipalService {
       update.setPhone(authPrincipalDTO.getPhone());
     }
 
+    boolean securityStateChanged =
+        StrUtil.isNotBlank(newUsername)
+            || StrUtil.isNotBlank(authPrincipalDTO.getPassword())
+            || authPrincipalDTO.getStatus() != null
+            || authPrincipalDTO.getRoles() != null;
+    if (securityStateChanged) {
+      update.setAuthVersion(authVersionStateService.nextVersion(existing.getAuthVersion()));
+    }
+
     boolean updated = userMapper.updateById(update) > 0;
     if (updated && authPrincipalDTO.getRoles() != null) {
       roleAssignmentService.replaceRoles(authPrincipalDTO.getId(), authPrincipalDTO.getRoles());
+    }
+    if (updated && securityStateChanged) {
+      authVersionStateService.publish(authPrincipalDTO.getId(), update.getAuthVersion());
     }
     return updated;
   }
@@ -144,8 +160,17 @@ public class AuthPrincipalService {
     if (userId == null) {
       return false;
     }
+    User existing = userMapper.selectById(userId);
+    if (existing == null) {
+      return false;
+    }
+    long invalidatedVersion = authVersionStateService.nextVersion(existing.getAuthVersion());
     roleAssignmentService.replaceRoles(userId, List.of());
-    return userMapper.deleteById(userId) > 0;
+    boolean deleted = userMapper.deleteById(userId) > 0;
+    if (deleted) {
+      authVersionStateService.publish(userId, invalidatedVersion);
+    }
+    return deleted;
   }
 
   @Transactional(rollbackFor = Exception.class)
@@ -168,7 +193,12 @@ public class AuthPrincipalService {
     User update = new User();
     update.setId(userId);
     update.setPassword(normalizePassword(newPassword));
-    return userMapper.updateById(update) > 0;
+    update.setAuthVersion(authVersionStateService.nextVersion(existing.getAuthVersion()));
+    boolean updated = userMapper.updateById(update) > 0;
+    if (updated) {
+      authVersionStateService.publish(userId, update.getAuthVersion());
+    }
+    return updated;
   }
 
   @Transactional(readOnly = true)
