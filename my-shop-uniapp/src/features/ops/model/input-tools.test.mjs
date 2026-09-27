@@ -14,7 +14,7 @@ test('ops input tools report invalid optional values without throwing', () => {
 test('ops input tools normalize lists and compact request payloads', () => {
   const tools = createOpsInputTools(() => {})
 
-  assert.deepEqual(tools.parseNumberList('1, nope, 2, -3'), [1, 2])
+  assert.deepEqual(tools.parseIdList('1, nope, 9007199254740993, -3'), ['1', '9007199254740993'])
   assert.deepEqual(tools.parseStringList('new, , hot'), ['new', 'hot'])
   assert.deepEqual(
     tools.compactPayload({ keyword: 'phone', status: '', tags: [], page: 0, enabled: false }),

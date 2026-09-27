@@ -3,16 +3,16 @@ import { defineStore } from 'pinia'
 import { getCurrentUserId, isAuthenticated, sessionState, subscribeSessionChange } from '../auth/session'
 import { pinia } from '../stores/pinia'
 import { getCurrentCart, syncCurrentCart } from '../api/cart'
-import type { CartSyncPayload, RemoteCart, UserInfo } from '../types/domain'
+import type { CartSyncPayload, EntityId, RemoteCart, UserInfo } from '../types/domain'
 import { getStorage, removeStorage, setStorage } from '../utils/storage'
 
 export interface CartEntry {
-  productId: number
-  skuId: number
+  productId: EntityId
+  skuId: EntityId
   productName: string
   price: number
   quantity: number
-  shopId: number
+  shopId: EntityId
 }
 
 const CART_KEY_PREFIX = 'shop.cart'
@@ -34,23 +34,30 @@ function hasCurrentUserSession(): boolean {
   return isAuthenticated()
 }
 
+function normalizeStoredId(value: unknown): EntityId | null {
+  if (typeof value !== 'string' && typeof value !== 'number') return null
+  const normalized = String(value).trim()
+  return /^\d+$/.test(normalized) && normalized !== '0' ? normalized : null
+}
+
 function normalizeCartEntries(parsed: CartEntry[] | null): CartEntry[] {
   if (!Array.isArray(parsed)) {
     return []
   }
-  return parsed.filter(
-    (item) =>
-      typeof item.productId === 'number' &&
-      typeof item.skuId === 'number' &&
-      typeof item.shopId === 'number' &&
-      item.shopId > 0 &&
+  return parsed.flatMap((item) => {
+    const productId = normalizeStoredId(item.productId)
+    const skuId = normalizeStoredId(item.skuId)
+    const shopId = normalizeStoredId(item.shopId)
+    return productId && skuId && shopId &&
       typeof item.productName === 'string' &&
       item.productName.trim().length > 0 &&
       typeof item.price === 'number' &&
       item.price > 0 &&
       typeof item.quantity === 'number' &&
       item.quantity > 0
-  )
+      ? [{ ...item, productId, skuId, shopId }]
+      : []
+  })
 }
 
 function readCart(key: string): CartEntry[] {
@@ -62,7 +69,7 @@ const useCartStore = defineStore('cart', {
     items: [] as CartEntry[],
     activeCartKey: resolveCartStorageKey(sessionState.user),
     hasHydrated: false,
-    remoteCartId: null as number | string | null
+    remoteCartId: null as EntityId | null
   }),
   getters: {
     cartCount: (state) => state.items.reduce((sum, item) => sum + item.quantity, 0),
@@ -74,7 +81,7 @@ const useCartStore = defineStore('cart', {
     },
     applyRemoteCart(cart: RemoteCart | null): void {
       this.remoteCartId =
-        typeof cart?.id === 'number' || typeof cart?.id === 'string' ? cart.id : null
+        typeof cart?.id === 'string' ? cart.id : null
       const remoteItems = Array.isArray(cart?.items)
         ? cart.items
             .map((item) => ({
@@ -83,14 +90,13 @@ const useCartStore = defineStore('cart', {
               productName: item.productName?.trim() || item.skuName?.trim() || `SKU ${item.skuId}`,
               price: item.unitPrice,
               quantity: item.quantity,
-              shopId: item.shopId ?? 0
+              shopId: item.shopId ?? ''
             }))
             .filter(
               (item) =>
-                typeof item.productId === 'number' &&
-                typeof item.skuId === 'number' &&
-                typeof item.shopId === 'number' &&
-                item.shopId > 0 &&
+                typeof item.productId === 'string' && item.productId.length > 0 &&
+                typeof item.skuId === 'string' && item.skuId.length > 0 &&
+                typeof item.shopId === 'string' && item.shopId.length > 0 &&
                 typeof item.productName === 'string' &&
                 item.productName.trim().length > 0 &&
                 typeof item.price === 'number' &&
@@ -125,7 +131,7 @@ const useCartStore = defineStore('cart', {
       const cart = await getCurrentCart()
       this.applyRemoteCart(cart)
     },
-    async syncRemoteCart(): Promise<number | string | null> {
+    async syncRemoteCart(): Promise<EntityId | null> {
       if (!hasCurrentUserSession()) {
         this.remoteCartId = null
         return null
@@ -191,7 +197,7 @@ const useCartStore = defineStore('cart', {
       this.persist()
       this.triggerRemoteSync()
     },
-    remove(productId: number, skuId: number): void {
+    remove(productId: EntityId, skuId: EntityId): void {
       const idx = this.items.findIndex((item) => item.productId === productId && item.skuId === skuId)
       if (idx !== -1) {
         this.items.splice(idx, 1)
@@ -199,7 +205,7 @@ const useCartStore = defineStore('cart', {
         this.triggerRemoteSync()
       }
     },
-    setQuantity(productId: number, skuId: number, quantity: number): void {
+    setQuantity(productId: EntityId, skuId: EntityId, quantity: number): void {
       const item = this.items.find((candidate) => candidate.productId === productId && candidate.skuId === skuId)
       if (!item) {
         return
@@ -226,7 +232,7 @@ export function hydrateCartFromStorage(): void {
   cartStore.hydrateFromStorage()
 }
 
-export async function syncCartNow(): Promise<number | string | null> {
+export async function syncCartNow(): Promise<EntityId | null> {
   return cartStore.syncRemoteCart()
 }
 
@@ -234,11 +240,11 @@ export function addToCart(entry: Omit<CartEntry, 'quantity'> & { quantity?: numb
   cartStore.add(entry)
 }
 
-export function removeFromCart(productId: number, skuId: number): void {
+export function removeFromCart(productId: EntityId, skuId: EntityId): void {
   cartStore.remove(productId, skuId)
 }
 
-export function setCartItemQuantity(productId: number, skuId: number, quantity: number): void {
+export function setCartItemQuantity(productId: EntityId, skuId: EntityId, quantity: number): void {
   cartStore.setQuantity(productId, skuId, quantity)
 }
 

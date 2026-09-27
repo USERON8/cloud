@@ -6,7 +6,8 @@ import type {
   OrderAggregateResponse,
   OrderSummaryDTO,
   OrderPage,
-  OrderQuery
+  OrderQuery,
+  EntityId
 } from '../types/domain'
 import { getCurrentUserId } from '../auth/session'
 
@@ -33,7 +34,7 @@ export function createOrder(payload: CreateOrderPayload): Promise<OrderAggregate
   if (!userId) {
     return Promise.reject(new Error('User session is required'))
   }
-  if (typeof payload.skuId !== 'number') {
+  if (!payload.skuId.trim()) {
     return Promise.reject(new Error('skuId is required'))
   }
   if (!payload.receiverName.trim() || !payload.receiverPhone.trim() || !payload.receiverAddress.trim()) {
@@ -67,12 +68,8 @@ export function createCartOrder(payload: CreateCartOrderPayload): Promise<OrderA
   if (!userId) {
     return Promise.reject(new Error('User session is required'))
   }
-  const cartId =
-    typeof payload.cartId === 'string' ? payload.cartId.trim() : payload.cartId
-  if (
-    (typeof cartId !== 'number' && typeof cartId !== 'string') ||
-    (typeof cartId === 'string' && cartId.length === 0)
-  ) {
+  const cartId = payload.cartId.trim()
+  if (!cartId) {
     return Promise.reject(new Error('cartId is required'))
   }
   if (!payload.receiverName.trim() || !payload.receiverPhone.trim() || !payload.receiverAddress.trim()) {
@@ -102,39 +99,39 @@ export function listOrders(params: OrderQuery = {}): Promise<OrderPage> {
   })
 }
 
-export function getOrderById(id: number): Promise<OrderSummaryDTO> {
+export function getOrderById(id: EntityId): Promise<OrderSummaryDTO> {
   return http.get<OrderSummaryDTO, OrderSummaryDTO>(`/api/orders/${id}`)
 }
 
-export function cancelOrder(id: number, reason?: string): Promise<boolean> {
+export function cancelOrder(id: EntityId, reason?: string): Promise<boolean> {
   return http.post<boolean, boolean>(`/api/orders/${id}/cancellation`, null, {
     params: { cancelReason: reason }
   })
 }
 
-export function shipOrder(id: number, shippingCompany: string, trackingNumber: string): Promise<boolean> {
+export function shipOrder(id: EntityId, shippingCompany: string, trackingNumber: string): Promise<boolean> {
   return http.post<boolean, boolean>(`/api/orders/${id}/shipments`, null, {
     params: { shippingCompany, trackingNumber }
   })
 }
 
-export function completeOrder(id: number): Promise<boolean> {
+export function completeOrder(id: EntityId): Promise<boolean> {
   return http.post<boolean, boolean>(`/api/orders/${id}/completion`)
 }
 
-export function batchCancelOrders(ids: number[], reason?: string): Promise<number> {
+export function batchCancelOrders(ids: EntityId[], reason?: string): Promise<number> {
   return http.post<number, number>('/api/orders/bulk/cancellations', ids, {
     params: { cancelReason: reason }
   })
 }
 
-export function batchShipOrders(ids: number[], shippingCompany: string, trackingNumber: string): Promise<number> {
+export function batchShipOrders(ids: EntityId[], shippingCompany: string, trackingNumber: string): Promise<number> {
   return http.post<number, number>('/api/orders/bulk/shipments', ids, {
     params: { shippingCompany, trackingNumber }
   })
 }
 
-export function batchCompleteOrders(ids: number[]): Promise<number> {
+export function batchCompleteOrders(ids: EntityId[]): Promise<number> {
   return http.post<number, number>('/api/orders/bulk/completions', ids)
 }
 
@@ -142,7 +139,7 @@ export function applyAfterSale(payload: AfterSaleInfo): Promise<AfterSaleInfo> {
   return http.post<AfterSaleInfo, AfterSaleInfo>('/api/after-sales', payload)
 }
 
-export function advanceAfterSaleStatus(afterSaleId: number, action: string, remark?: string): Promise<AfterSaleInfo> {
+export function advanceAfterSaleStatus(afterSaleId: EntityId, action: string, remark?: string): Promise<AfterSaleInfo> {
   return http.post<AfterSaleInfo, AfterSaleInfo>(`/api/after-sales/${afterSaleId}/events`, null, {
     params: { action, remark }
   })

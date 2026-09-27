@@ -11,7 +11,7 @@ import type { SkuDetail, SpuCreateRequest, SpuDetail } from '../../../types/doma
 import { toast } from '../../../utils/ui'
 import type { OpsInputTools } from '../model/input-tools'
 
-type CatalogInputTools = Pick<OpsInputTools, 'parseJson' | 'parseNumberList'>
+type CatalogInputTools = Pick<OpsInputTools, 'parseJson' | 'parseIdList' | 'requirePositiveId'>
 
 export function useCatalogGovernance(input: CatalogInputTools) {
   const spuId = ref('')
@@ -22,7 +22,7 @@ export function useCatalogGovernance(input: CatalogInputTools) {
   const spuDetail = ref<SpuDetail | null>(null)
   const spuList = ref<SpuDetail[] | null>(null)
   const skuList = ref<SkuDetail[] | null>(null)
-  const spuActionResult = ref<number | boolean | null>(null)
+  const spuActionResult = ref<string | boolean | null>(null)
 
   async function createSpuAction(): Promise<void> {
     const payload = input.parseJson<SpuCreateRequest>(spuPayloadJson.value, 'SPU')
@@ -36,9 +36,9 @@ export function useCatalogGovernance(input: CatalogInputTools) {
   }
 
   async function updateSpuAction(): Promise<void> {
-    const id = Number(spuId.value)
+    const id = input.requirePositiveId(spuId.value, 'SPU ID')
     const payload = input.parseJson<SpuCreateRequest>(spuPayloadJson.value, 'SPU')
-    if (!Number.isFinite(id) || !payload) {
+    if (!id || !payload) {
       toast('Please enter an SPU ID and provide JSON')
       return
     }
@@ -51,8 +51,8 @@ export function useCatalogGovernance(input: CatalogInputTools) {
   }
 
   async function loadSpuDetail(): Promise<void> {
-    const id = Number(spuId.value)
-    if (!Number.isFinite(id)) {
+    const id = input.requirePositiveId(spuId.value, 'SPU ID')
+    if (!id) {
       toast('Please enter an SPU ID')
       return
     }
@@ -65,9 +65,9 @@ export function useCatalogGovernance(input: CatalogInputTools) {
   }
 
   async function loadSpuByCategory(): Promise<void> {
-    const id = Number(spuCategoryId.value)
+    const id = input.requirePositiveId(spuCategoryId.value, 'category ID')
     const status = spuStatus.value ? Number(spuStatus.value) : undefined
-    if (!Number.isFinite(id)) {
+    if (!id) {
       toast('Please enter a category ID')
       return
     }
@@ -80,7 +80,7 @@ export function useCatalogGovernance(input: CatalogInputTools) {
   }
 
   async function loadSkuList(): Promise<void> {
-    const ids = input.parseNumberList(skuIds.value)
+    const ids = input.parseIdList(skuIds.value)
     if (ids.length === 0) {
       toast('Please enter a list of SKU IDs')
       return
@@ -94,9 +94,9 @@ export function useCatalogGovernance(input: CatalogInputTools) {
   }
 
   async function updateSpuStatusAction(): Promise<void> {
-    const id = Number(spuId.value)
+    const id = input.requirePositiveId(spuId.value, 'SPU ID')
     const status = Number(spuStatus.value)
-    if (!Number.isFinite(id) || !Number.isFinite(status)) {
+    if (!id || !Number.isFinite(status)) {
       toast('Please enter an SPU ID and status')
       return
     }

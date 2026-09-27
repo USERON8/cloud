@@ -1,6 +1,6 @@
 import http from './http'
-import type { StockLedger } from '../types/domain'
+import type { EntityId, StockLedger } from '../types/domain'
 
-export function getStockLedger(skuId: number): Promise<StockLedger> {
+export function getStockLedger(skuId: EntityId): Promise<StockLedger> {
   return http.get<StockLedger, StockLedger>(`/api/admin/stocks/ledger/${skuId}`)
 }

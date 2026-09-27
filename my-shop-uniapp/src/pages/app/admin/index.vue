@@ -216,8 +216,8 @@ function reviewRowTitle(row: MerchantAuthInfo): string {
 }
 
 async function approveReview(row: MerchantAuthInfo): Promise<void> {
-    const merchantId = Number(row.merchantId);
-    if (!Number.isFinite(merchantId)) {
+    const merchantId = row.merchantId;
+    if (!merchantId) {
         toast("Merchant ID is missing");
         return;
     }
@@ -235,8 +235,8 @@ async function approveReview(row: MerchantAuthInfo): Promise<void> {
 }
 
 async function rejectReview(row: MerchantAuthInfo): Promise<void> {
-    const merchantId = Number(row.merchantId);
-    if (!Number.isFinite(merchantId)) {
+    const merchantId = row.merchantId;
+    if (!merchantId) {
         toast("Merchant ID is missing");
         return;
     }

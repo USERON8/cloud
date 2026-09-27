@@ -25,16 +25,16 @@ export function createOpsInputTools(reportError: InputErrorReporter) {
     }
   }
 
-  function parseNumberList(raw: string): number[] {
+  function parseIdList(raw: string): string[] {
     return raw
       .split(',')
-      .map((value) => Number(value.trim()))
-      .filter((value) => Number.isFinite(value) && value > 0)
+      .map((value) => value.trim())
+      .filter((value) => /^\d+$/.test(value) && value !== '0')
   }
 
-  function requirePositiveId(raw: string, label: string): number | null {
-    const value = Number(raw)
-    if (!Number.isFinite(value) || value <= 0) {
+  function requirePositiveId(raw: string, label: string): string | null {
+    const value = raw.trim()
+    if (!/^\d+$/.test(value) || value === '0') {
       reportError(`Please enter ${label}`)
       return null
     }
@@ -48,6 +48,16 @@ export function createOpsInputTools(reportError: InputErrorReporter) {
     const value = Number(raw)
     if (!Number.isFinite(value)) {
       reportError(`${label} must be numeric`)
+      return null
+    }
+    return value
+  }
+
+  function parseOptionalId(raw: string, label: string): string | undefined | null {
+    const value = raw.trim()
+    if (!value) return undefined
+    if (!/^\d+$/.test(value) || value === '0') {
+      reportError(`${label} must be a positive integer ID`)
       return null
     }
     return value
@@ -105,8 +115,9 @@ export function createOpsInputTools(reportError: InputErrorReporter) {
     formatJson,
     normalizeDateInput,
     parseJson,
-    parseNumberList,
+    parseIdList,
     parseOptionalBoolean,
+    parseOptionalId,
     parseOptionalNumber,
     parseStringList,
     requirePositiveId,

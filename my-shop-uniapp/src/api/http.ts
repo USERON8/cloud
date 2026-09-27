@@ -2,6 +2,7 @@ import axios, { AxiosHeaders, type AxiosRequestConfig, type AxiosResponse, isAxi
 import { clearSession, getAccessToken } from '../auth/session'
 import { resolveApiErrorCategory } from '../platform/http/error-category'
 import { reportHttpFailure } from '../platform/http/failure-events'
+import { normalizeResponseData } from '../platform/http/response-normalizer'
 import { BusinessError, SUCCESS_CODE, type ResultEnvelope } from '../types/api'
 import { buildApiUrl } from './runtime-base'
 
@@ -77,32 +78,6 @@ function normalizeHeaders(headers?: AxiosRequestConfig['headers']): Record<strin
   return normalized
 }
 
-function parseJsonTextWithLongIntegers(payload: string): unknown {
-  const normalized = payload.replace(/([:\[,]\s*)(-?\d{16,})(?=\s*[,}\]])/g, '$1"$2"')
-  return JSON.parse(normalized)
-}
-
-function normalizeResponseData(data: unknown, responseType?: 'json' | 'text'): unknown {
-  if (responseType !== 'text' || typeof data !== 'string') {
-    return data
-  }
-  const trimmed = data.trim()
-  if (!trimmed) {
-    return data
-  }
-  if (
-    (trimmed.startsWith('{') && trimmed.endsWith('}')) ||
-    (trimmed.startsWith('[') && trimmed.endsWith(']'))
-  ) {
-    try {
-      return parseJsonTextWithLongIntegers(trimmed)
-    } catch {
-      return data
-    }
-  }
-  return data
-}
-
 function isResultEnvelope(payload: unknown): payload is ResultEnvelope<unknown> {
   if (typeof payload !== 'object' || payload === null) {
     return false
@@ -173,7 +148,7 @@ const httpClient = axios.create({
         method: (config.method || 'GET').toUpperCase() as any,
         data: payload as any,
         header: headers,
-        dataType: (config as InternalRequestConfig).responseType === 'text' ? 'text' : 'json',
+        dataType: 'text',
         timeout: config.timeout,
         withCredentials: true,
         success: (res) => {
@@ -228,12 +203,12 @@ async function request<T>(method: HttpMethod, url: string, config: RequestConfig
       headers: config.headers,
       raw: config.raw,
       skipAuth: config.skipAuth,
-      responseType: config.responseType
+      // Keep the transport payload as text until the lossless Java Long parser runs.
+      // Axios' default JSON transform would otherwise round 64-bit identifiers first.
+      responseType: 'text'
     } as InternalRequestConfig)
     .then((response) => {
-      const responseData = config.raw
-        ? response.data
-        : normalizeResponseData(response.data, config.responseType)
+      const responseData = normalizeResponseData(response.data)
         if (response.status === 401) {
           clearSession()
         }
@@ -242,7 +217,7 @@ async function request<T>(method: HttpMethod, url: string, config: RequestConfig
           reportHttpFailure({ kind: 'response', error, status: response.status })
           throw error
         }
-      return config.raw ? (response.data as T) : unwrapPayload<T>(responseData, response.status)
+      return config.raw ? (responseData as T) : unwrapPayload<T>(responseData, response.status)
     })
     .catch((error) => {
       if (error instanceof BusinessError) {
@@ -250,7 +225,7 @@ async function request<T>(method: HttpMethod, url: string, config: RequestConfig
       }
       if (isAxiosError(error) && error.response) {
         const normalizedError = normalizeError(
-          normalizeResponseData(error.response.data, config.responseType),
+          normalizeResponseData(error.response.data),
           'Network request failed',
           error.response.status
         )

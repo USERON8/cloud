@@ -2,6 +2,7 @@ import http from './http'
 import { searchProducts as searchProductsByName } from './product'
 import type {
   ProductDocument,
+  EntityId,
   ProductFilterRequest,
   ProductSearchRequest,
   SearchProductDocument,
@@ -178,7 +179,7 @@ export function searchProducts(params: {
 }
 
 export function searchByCategory(
-  categoryId: number,
+  categoryId: EntityId,
   params: { keyword?: string; page?: number; size?: number; searchAfter?: string } = {}
 ): Promise<SearchResult<ProductDocument>> {
   return http.get<SearchResult<ProductDocument>, SearchResult<ProductDocument>>(`/api/search/categories/${categoryId}/products`, {
@@ -187,7 +188,7 @@ export function searchByCategory(
 }
 
 export function searchByShop(
-  shopId: number,
+  shopId: EntityId,
   params: { keyword?: string; page?: number; size?: number; searchAfter?: string } = {}
 ): Promise<SearchResult<ProductDocument>> {
   return http.get<SearchResult<ProductDocument>, SearchResult<ProductDocument>>(`/api/search/shops/${shopId}/products`, {
@@ -379,11 +380,11 @@ export async function listTodayHotSellingProductsWithFallback(
 
 export interface CombinedSearchParams {
   keyword?: string
-  categoryId?: number
-  brandId?: number
+  categoryId?: EntityId
+  brandId?: EntityId
   minPrice?: number
   maxPrice?: number
-  shopId?: number
+  shopId?: EntityId
   sortBy?: string
   sortOrder?: 'asc' | 'desc'
   page?: number
@@ -419,7 +420,7 @@ export function filterSearch(
 }
 
 export function filterByCategory(
-  categoryId: number,
+  categoryId: EntityId,
   params: { page?: number; size?: number; searchAfter?: string } = {}
 ): Promise<SearchResult<ProductDocument>> {
   return filterSearch(
@@ -433,7 +434,7 @@ export function filterByCategory(
 }
 
 export function filterByBrand(
-  brandId: number,
+  brandId: EntityId,
   params: { page?: number; size?: number; searchAfter?: string } = {}
 ): Promise<SearchResult<ProductDocument>> {
   return filterSearch(
@@ -465,7 +466,7 @@ export function filterByPrice(params: {
 }
 
 export function filterByShop(
-  shopId: number,
+  shopId: EntityId,
   params: { page?: number; size?: number; searchAfter?: string } = {}
 ): Promise<SearchResult<ProductDocument>> {
   return filterSearch(

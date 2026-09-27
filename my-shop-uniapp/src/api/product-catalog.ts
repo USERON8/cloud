@@ -1,28 +1,28 @@
 import http from './http'
-import type { SpuCreateRequest, SpuDetail, SkuDetail } from '../types/domain'
+import type { EntityId, SpuCreateRequest, SpuDetail, SkuDetail } from '../types/domain'
 
-export function createSpu(payload: SpuCreateRequest): Promise<number> {
-  return http.post<number, number>('/api/spus', payload)
+export function createSpu(payload: SpuCreateRequest): Promise<EntityId> {
+  return http.post<number | string, number | string>('/api/spus', payload).then(String)
 }
 
-export function updateSpu(spuId: number | string, payload: SpuCreateRequest): Promise<boolean> {
+export function updateSpu(spuId: EntityId, payload: SpuCreateRequest): Promise<boolean> {
   return http.put<boolean, boolean>(`/api/spus/${spuId}`, payload)
 }
 
-export function getSpu(spuId: number | string): Promise<SpuDetail> {
+export function getSpu(spuId: EntityId): Promise<SpuDetail> {
   return http.get<SpuDetail, SpuDetail>(`/api/spus/${spuId}`)
 }
 
-export function listSpuByCategory(categoryId: number | string, status?: number): Promise<SpuDetail[]> {
+export function listSpuByCategory(categoryId: EntityId, status?: number): Promise<SpuDetail[]> {
   return http.get<SpuDetail[], SpuDetail[]>(`/api/categories/${categoryId}/spus`, { params: { status } })
 }
 
-export function listSkuByIds(skuIds: (number | string)[]): Promise<SkuDetail[]> {
+export function listSkuByIds(skuIds: EntityId[]): Promise<SkuDetail[]> {
   return http.get<SkuDetail[], SkuDetail[]>('/api/skus', {
     params: { ids: skuIds }
   })
 }
 
-export function updateSpuStatus(spuId: number | string, status: number): Promise<boolean> {
+export function updateSpuStatus(spuId: EntityId, status: number): Promise<boolean> {
   return http.patch<boolean, boolean>(`/api/spus/${spuId}/status`, null, { params: { status } })
 }

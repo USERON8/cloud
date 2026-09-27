@@ -128,11 +128,10 @@ function normalizeUserInfo(user: UserInfo | null | undefined): UserInfo | null {
     id: (() => {
       const value = user.id
       if (typeof value === 'number' && Number.isFinite(value)) {
-        return value
+        return String(value)
       }
       if (typeof value === 'string' && /^\d+$/.test(value)) {
-        const parsed = Number(value)
-        return Number.isSafeInteger(parsed) ? parsed : undefined
+        return value
       }
       return undefined
     })(),
@@ -159,10 +158,11 @@ function buildUserInfo(accessPayload: JwtPayload, idPayload: JwtPayload): UserIn
       const rawUserId =
         readRawLongClaim(accessPayload, 'user_id') || readRawLongClaim(accessPayload, 'userId')
       if (rawUserId) {
-        const parsed = Number(rawUserId)
-        return Number.isSafeInteger(parsed) ? parsed : undefined
+        return rawUserId
       }
-      return readNumberClaim(accessClaims, 'user_id') ?? readNumberClaim(accessClaims, 'userId')
+      const numericUserId =
+        readNumberClaim(accessClaims, 'user_id') ?? readNumberClaim(accessClaims, 'userId')
+      return numericUserId === undefined ? undefined : String(numericUserId)
     })(),
     username,
     nickname,

@@ -64,8 +64,8 @@ const {
   compactPayload,
   formatJson,
   parseJson,
-  parseNumberList,
   parseOptionalBoolean,
+  parseOptionalId,
   parseOptionalNumber,
   parseStringList,
   requirePositiveId,
@@ -367,11 +367,11 @@ function buildProductSearchRequest(): ProductSearchRequest | null {
   if (!paging) return null
   const priceRange = resolvePriceRange()
   if (!priceRange) return null
-  const categoryId = parseOptionalNumber(searchCategoryId.value, 'Category ID')
+  const categoryId = parseOptionalId(searchCategoryId.value, 'Category ID')
   if (categoryId === null) return null
-  const shopId = parseOptionalNumber(searchShopId.value, 'Shop ID')
+  const shopId = parseOptionalId(searchShopId.value, 'Shop ID')
   if (shopId === null) return null
-  const brandId = parseOptionalNumber(searchBrandId.value, 'Brand ID')
+  const brandId = parseOptionalId(searchBrandId.value, 'Brand ID')
   if (brandId === null) return null
   const status = parseOptionalNumber(searchStatus.value, 'Status')
   if (status === null) return null
@@ -423,11 +423,11 @@ function buildProductFilterRequest(): ProductFilterRequest | null {
   if (!paging) return null
   const priceRange = resolvePriceRange()
   if (!priceRange) return null
-  const categoryId = parseOptionalNumber(searchCategoryId.value, 'Category ID')
+  const categoryId = parseOptionalId(searchCategoryId.value, 'Category ID')
   if (categoryId === null) return null
-  const shopId = parseOptionalNumber(searchShopId.value, 'Shop ID')
+  const shopId = parseOptionalId(searchShopId.value, 'Shop ID')
   if (shopId === null) return null
-  const brandId = parseOptionalNumber(searchBrandId.value, 'Brand ID')
+  const brandId = parseOptionalId(searchBrandId.value, 'Brand ID')
   if (brandId === null) return null
   const minSalesCount = parseOptionalNumber(searchMinSalesCount.value, 'Minimum sales count')
   if (minSalesCount === null) return null
@@ -514,11 +514,11 @@ async function runCombinedSearch(): Promise<void> {
   if (!paging) return
   const priceRange = resolvePriceRange()
   if (!priceRange) return
-  const categoryId = parseOptionalNumber(searchCategoryId.value, 'Category ID')
+  const categoryId = parseOptionalId(searchCategoryId.value, 'Category ID')
   if (categoryId === null) return
-  const brandId = parseOptionalNumber(searchBrandId.value, 'Brand ID')
+  const brandId = parseOptionalId(searchBrandId.value, 'Brand ID')
   if (brandId === null) return
-  const shopId = parseOptionalNumber(searchShopId.value, 'Shop ID')
+  const shopId = parseOptionalId(searchShopId.value, 'Shop ID')
   if (shopId === null) return
   try {
     searchResult.value = await combinedSearchProducts({
@@ -606,7 +606,7 @@ const shopSearchJson = ref('')
 const shopResult = ref<unknown>(null)
 
 function buildShopSearchRequest(): ShopSearchRequest | null {
-  const merchantId = parseOptionalNumber(shopMerchantId.value, 'Merchant ID')
+  const merchantId = parseOptionalId(shopMerchantId.value, 'Merchant ID')
   if (merchantId === null) return null
   const status = parseOptionalNumber(shopStatus.value, 'Status')
   if (status === null) return null
@@ -665,8 +665,8 @@ async function runShopSearch(): Promise<void> {
 }
 
 async function loadShopById(): Promise<void> {
-  const id = Number(shopId.value)
-  if (!Number.isFinite(id)) {
+  const id = requirePositiveId(shopId.value, 'shop ID')
+  if (!id) {
     toast('Please enter a shop ID')
     return
   }

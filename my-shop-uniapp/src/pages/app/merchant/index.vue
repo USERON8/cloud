@@ -17,7 +17,7 @@ import {
 import { Routes } from "../../../router/routes";
 import { ensurePageAccess, navigateTo } from "../../../router/navigation";
 import { confirm, toast } from "../../../utils/ui";
-import type { MerchantInfo, MerchantAuthInfo } from "../../../types/domain";
+import type { EntityId, MerchantInfo, MerchantAuthInfo } from "../../../types/domain";
 
 const merchantInfo = ref<MerchantInfo | null>(null);
 const authInfo = ref<MerchantAuthInfo | null>(null);
@@ -25,9 +25,9 @@ const stats = ref<Record<string, unknown> | null>(null);
 const loading = ref(false);
 const saving = ref(false);
 const authSaving = ref(false);
-const merchantId = ref<number | null>(null);
+const merchantId = ref<EntityId | null>(null);
 
-let merchantIdPromise: Promise<number | null> | null = null;
+let merchantIdPromise: Promise<EntityId | null> | null = null;
 
 const uploadState = reactive({
     businessLicenseUrl: false,
@@ -126,8 +126,8 @@ function authTone(status?: number): string {
     return "neutral";
 }
 
-async function resolveMerchantId(): Promise<number | null> {
-    if (typeof merchantId.value === "number") {
+async function resolveMerchantId(): Promise<EntityId | null> {
+    if (typeof merchantId.value === "string") {
         return merchantId.value;
     }
     if (!getCurrentUserId()) {
@@ -141,7 +141,7 @@ async function resolveMerchantId(): Promise<number | null> {
         .then((result) => {
             const currentMerchantId = result.records[0]?.id;
             merchantId.value =
-                typeof currentMerchantId === "number" ? currentMerchantId : null;
+                typeof currentMerchantId === "string" ? currentMerchantId : null;
             return merchantId.value;
         })
         .finally(() => {
@@ -151,7 +151,7 @@ async function resolveMerchantId(): Promise<number | null> {
     return merchantIdPromise;
 }
 
-async function requireMerchantId(): Promise<number | null> {
+async function requireMerchantId(): Promise<EntityId | null> {
     try {
         const currentMerchantId = await resolveMerchantId();
         if (!currentMerchantId) {

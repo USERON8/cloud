@@ -13,7 +13,7 @@ import type { CategoryItem } from '../../../types/domain'
 import { toast } from '../../../utils/ui'
 import type { OpsInputTools } from '../model/input-tools'
 
-type CategoryInputTools = Pick<OpsInputTools, 'parseJson' | 'parseNumberList'>
+type CategoryInputTools = Pick<OpsInputTools, 'parseJson' | 'parseIdList' | 'requirePositiveId'>
 
 export function useCategoryGovernance(input: CategoryInputTools) {
   const categoryIdInput = ref('')
@@ -37,8 +37,8 @@ export function useCategoryGovernance(input: CategoryInputTools) {
   }
 
   async function loadCategoryChildren(): Promise<void> {
-    const id = Number(categoryIdInput.value)
-    if (!Number.isFinite(id)) {
+    const id = input.requirePositiveId(categoryIdInput.value, 'category ID')
+    if (!id) {
       toast('Please enter a category ID')
       return
     }
@@ -51,8 +51,8 @@ export function useCategoryGovernance(input: CategoryInputTools) {
   }
 
   async function loadCategoryById(): Promise<void> {
-    const id = Number(categoryIdInput.value)
-    if (!Number.isFinite(id)) {
+    const id = input.requirePositiveId(categoryIdInput.value, 'category ID')
+    if (!id) {
       toast('Please enter a category ID')
       return
     }
@@ -65,7 +65,7 @@ export function useCategoryGovernance(input: CategoryInputTools) {
   }
 
   async function updateCategoryStatusBatchAction(): Promise<void> {
-    const ids = input.parseNumberList(categoryBatchIds.value)
+    const ids = input.parseIdList(categoryBatchIds.value)
     const status = Number(categoryBatchStatus.value)
     if (ids.length === 0 || !Number.isFinite(status)) {
       toast('Please enter batch IDs and a status value')
@@ -91,7 +91,7 @@ export function useCategoryGovernance(input: CategoryInputTools) {
   }
 
   async function deleteCategoriesBatchAction(): Promise<void> {
-    const ids = input.parseNumberList(categoryBatchIds.value)
+    const ids = input.parseIdList(categoryBatchIds.value)
     if (ids.length === 0) {
       toast('Please enter batch IDs')
       return
@@ -105,9 +105,9 @@ export function useCategoryGovernance(input: CategoryInputTools) {
   }
 
   async function updateCategorySortAction(): Promise<void> {
-    const id = Number(categoryIdInput.value)
+    const id = input.requirePositiveId(categoryIdInput.value, 'category ID')
     const sort = Number(categorySortInput.value)
-    if (!Number.isFinite(id) || !Number.isFinite(sort)) {
+    if (!id || !Number.isFinite(sort)) {
       toast('Please enter a category ID and sort value')
       return
     }
@@ -120,9 +120,9 @@ export function useCategoryGovernance(input: CategoryInputTools) {
   }
 
   async function moveCategoryAction(): Promise<void> {
-    const id = Number(categoryIdInput.value)
-    const parentId = Number(categoryMoveParent.value)
-    if (!Number.isFinite(id) || !Number.isFinite(parentId)) {
+    const id = input.requirePositiveId(categoryIdInput.value, 'category ID')
+    const parentId = input.requirePositiveId(categoryMoveParent.value, 'new parent ID')
+    if (!id || !parentId) {
       toast('Please enter a category ID and new parent ID')
       return
     }

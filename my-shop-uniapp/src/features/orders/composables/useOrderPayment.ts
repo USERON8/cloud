@@ -45,7 +45,7 @@ export function useOrderPayment(copy: ComputedRef<OrderPaymentMessages>) {
     const subOrderNo = order.subOrderNo
     if (
       !canPay(order) ||
-      typeof order.userId !== 'number' ||
+      typeof order.userId !== 'string' ||
       !orderNo ||
       !subOrderNo
     ) {

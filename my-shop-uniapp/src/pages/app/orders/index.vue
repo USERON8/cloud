@@ -29,6 +29,7 @@ import { ensurePageAccess, navigateTo } from "../../../router/navigation";
 import { Routes } from "../../../router/routes";
 import type {
     AfterSaleInfo,
+    EntityId,
     OrderSummaryDTO,
 } from "../../../types/domain";
 import {
@@ -42,11 +43,11 @@ import { confirm, toast } from "../../../utils/ui";
 const rows = ref<OrderSummaryDTO[]>([]);
 const loading = ref(false);
 const refundingOrderKey = ref<string | null>(null);
-const completingOrderId = ref<number | null>(null);
+const completingOrderId = ref<EntityId | null>(null);
 
 const afterSaleDraft = reactive({
-    orderId: null as number | null,
-    subOrderId: null as number | null,
+    orderId: null as EntityId | null,
+    subOrderId: null as EntityId | null,
     afterSaleType: "REFUND",
     reason: "",
     description: "",
@@ -238,9 +239,9 @@ function selectedOrderKey(): string | null {
 
 function buildAfterSalePayload(order: OrderSummaryDTO): AfterSaleInfo | null {
     if (
-        typeof order.id !== "number" ||
-        typeof order.subOrderId !== "number" ||
-        typeof order.merchantId !== "number"
+        typeof order.id !== "string" ||
+        typeof order.subOrderId !== "string" ||
+        typeof order.merchantId !== "string"
     ) {
         toast(copy.value.orderMetaMissing);
         return null;
@@ -282,7 +283,7 @@ async function loadOrders(): Promise<void> {
 }
 
 async function onCancel(order: OrderSummaryDTO): Promise<void> {
-    if (typeof order.id !== "number") {
+    if (typeof order.id !== "string") {
         return;
     }
     const ok = await confirm(copy.value.cancelConfirm(order.orderNo));
@@ -299,7 +300,7 @@ async function onCancel(order: OrderSummaryDTO): Promise<void> {
 }
 
 async function onComplete(order: OrderSummaryDTO): Promise<void> {
-    if (!canComplete(order) || typeof order.id !== "number") {
+    if (!canComplete(order) || typeof order.id !== "string") {
         toast(copy.value.completeUnavailable);
         return;
     }
@@ -338,8 +339,8 @@ async function submitAfterSale(): Promise<void> {
     const order = selectedOrder();
     if (
         !order ||
-        typeof order.id !== "number" ||
-        typeof order.subOrderId !== "number"
+        typeof order.id !== "string" ||
+        typeof order.subOrderId !== "string"
     ) {
         toast(copy.value.selectOrderFirst);
         return;
@@ -370,7 +371,7 @@ async function submitAfterSale(): Promise<void> {
 }
 
 async function cancelAfterSale(order: OrderSummaryDTO): Promise<void> {
-    if (!canCancelAfterSale(order) || typeof order.afterSaleId !== "number") {
+    if (!canCancelAfterSale(order) || typeof order.afterSaleId !== "string") {
         toast(copy.value.afterSaleCannotCancel);
         return;
     }

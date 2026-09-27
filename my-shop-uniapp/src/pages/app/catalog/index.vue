@@ -13,7 +13,7 @@ import { useLocale } from "../../../i18n/locale";
 import { navigateTo } from "../../../router/navigation";
 import { Routes } from "../../../router/routes";
 import { addToCart } from "../../../store/cart";
-import type { ProductItem } from "../../../types/domain";
+import type { EntityId, ProductItem } from "../../../types/domain";
 import { formatPrice } from "../../../utils/format";
 import { resolveProductImageUrl } from "../../../utils/image";
 import {
@@ -22,8 +22,8 @@ import {
 } from "../../../utils/product";
 import { toast } from "../../../utils/ui";
 
-const skuIdCache = new Map<number | string, number | null>();
-const skuLookupCache = new Map<number | string, Promise<number | null>>();
+const skuIdCache = new Map<EntityId, EntityId | null>();
+const skuLookupCache = new Map<EntityId, Promise<EntityId | null>>();
 
 const { isAdmin, isMerchant } = useRole();
 const { locale } = useLocale();
@@ -152,7 +152,7 @@ async function onAddToCart(item: ProductItem): Promise<void> {
         toast(copy.value.invalidPrice);
         return;
     }
-    if (typeof item.shopId !== "number" || item.shopId <= 0) {
+    if (typeof item.shopId !== "string" || !item.shopId) {
         toast(copy.value.invalidShop);
         return;
     }
@@ -162,7 +162,7 @@ async function onAddToCart(item: ProductItem): Promise<void> {
     }
     try {
         const skuId = await resolveCartSkuId(item, skuIdCache, skuLookupCache);
-        if (typeof skuId !== "number") {
+        if (typeof skuId !== "string") {
             return;
         }
         addToCart({

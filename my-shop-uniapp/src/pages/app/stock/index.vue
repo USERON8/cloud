@@ -80,8 +80,8 @@ async function queryLedger(): Promise<void> {
     if (!ensureAdminAccess()) {
         return;
     }
-    const id = Number(skuId.value);
-    if (!Number.isFinite(id) || id <= 0) {
+    const id = skuId.value.trim();
+    if (!/^\d+$/.test(id) || id === "0") {
         toast("Enter a valid SKU ID");
         return;
     }

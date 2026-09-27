@@ -4,7 +4,8 @@ import type {
   ProductItem,
   ProductPage,
   ProductQuery,
-  SearchResult
+  SearchResult,
+  EntityId
 } from '../types/domain'
 
 export function listProducts(params: ProductQuery = {}): Promise<ProductPage> {
@@ -20,7 +21,7 @@ export function searchProducts(name: string): Promise<ProductItem[]> {
   return http.get<SearchResult<ProductDocument>, SearchResult<ProductDocument>>('/api/search/products', {
     params: { keyword: name, page: 0, size: 20 }
   }).then(result => result.list.map(doc => ({
-    id: doc.productId || 0,
+    id: doc.productId || '',
     name: doc.productName || '',
     price: doc.price,
     stockQuantity: doc.stockQuantity,
@@ -33,6 +34,6 @@ export function searchProducts(name: string): Promise<ProductItem[]> {
   } as ProductItem)))
 }
 
-export function updateProductStatus(spuId: number | string, status: 0 | 1): Promise<boolean> {
+export function updateProductStatus(spuId: EntityId, status: 0 | 1): Promise<boolean> {
   return http.patch<boolean, boolean>(`/api/spus/${spuId}/status`, null, { params: { status } })
 }

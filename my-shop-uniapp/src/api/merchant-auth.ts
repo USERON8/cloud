@@ -1,7 +1,7 @@
 import { getAccessToken } from '../auth/session'
 import http from './http'
 import { BusinessError, SUCCESS_CODE, type PageResult, type ResultEnvelope } from '../types/api'
-import type { MerchantAuthInfo, MerchantAuthPayload, MerchantAuthUploadResult } from '../types/domain'
+import type { EntityId, MerchantAuthInfo, MerchantAuthPayload, MerchantAuthUploadResult } from '../types/domain'
 import { buildApiUrl } from './runtime-base'
 
 const merchantAuthUploadPathMap = {
@@ -29,19 +29,19 @@ function parseUploadResponse(payload: string): MerchantAuthUploadResult {
   return parsed as MerchantAuthUploadResult
 }
 
-export function applyMerchantAuth(merchantId: number, payload: MerchantAuthPayload): Promise<MerchantAuthInfo> {
+export function applyMerchantAuth(merchantId: EntityId, payload: MerchantAuthPayload): Promise<MerchantAuthInfo> {
   return http.put<MerchantAuthInfo, MerchantAuthInfo>(`/api/merchants/${merchantId}/authentication`, payload)
 }
 
-export function getMerchantAuth(merchantId: number): Promise<MerchantAuthInfo | null> {
+export function getMerchantAuth(merchantId: EntityId): Promise<MerchantAuthInfo | null> {
   return http.get<MerchantAuthInfo | null, MerchantAuthInfo | null>(`/api/merchants/${merchantId}/authentication`)
 }
 
-export function revokeMerchantAuth(merchantId: number): Promise<boolean> {
+export function revokeMerchantAuth(merchantId: EntityId): Promise<boolean> {
   return http.delete<boolean, boolean>(`/api/merchants/${merchantId}/authentication`)
 }
 
-export function reviewMerchantAuth(merchantId: number, authStatus: number, remark?: string): Promise<boolean> {
+export function reviewMerchantAuth(merchantId: EntityId, authStatus: number, remark?: string): Promise<boolean> {
   return http.post<boolean, boolean>(`/api/merchants/${merchantId}/authentication/reviews`, null, {
     params: { authStatus, remark }
   })
@@ -59,21 +59,21 @@ export function listMerchantAuthByStatus(
   })
 }
 
-export function reviewMerchantAuthBatch(merchantIds: number[], authStatus: number, remark?: string): Promise<boolean> {
+export function reviewMerchantAuthBatch(merchantIds: EntityId[], authStatus: number, remark?: string): Promise<boolean> {
   return http.post<boolean, boolean>('/api/merchant-authentications/bulk/reviews', merchantIds, {
     params: { authStatus, remark }
   })
 }
 
 export function uploadMerchantBusinessLicense(
-  merchantId: number,
+  merchantId: EntityId,
   filePath: string
 ): Promise<MerchantAuthUploadResult> {
   return uploadMerchantAuthFile(merchantId, 'businessLicenseUrl', filePath)
 }
 
 export function uploadMerchantAuthFile(
-  merchantId: number,
+  merchantId: EntityId,
   field: MerchantAuthUploadField,
   filePath: string
 ): Promise<MerchantAuthUploadResult> {

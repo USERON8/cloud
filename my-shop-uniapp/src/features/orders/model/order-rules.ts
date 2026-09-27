@@ -13,7 +13,7 @@ export function buildSubOrderActionTarget(
   subOrder: NonNullable<OrderSummaryDTO['subOrders']>[number]
 ): OrderSummaryDTO {
   const items = orderItems(order).filter(
-    (item) => typeof subOrder.subOrderId !== 'number' || item.subOrderId === subOrder.subOrderId
+    (item) => typeof subOrder.subOrderId !== 'string' || item.subOrderId === subOrder.subOrderId
   )
   return {
     id: order.id,
@@ -48,9 +48,9 @@ export function hasMultipleSubOrders(order: OrderSummaryDTO): boolean {
 
 export function canApplyAfterSale(order: OrderSummaryDTO): boolean {
   return (
-    typeof order.id === 'number' &&
-    typeof order.subOrderId === 'number' &&
-    typeof order.merchantId === 'number' &&
+    typeof order.id === 'string' &&
+    typeof order.subOrderId === 'string' &&
+    typeof order.merchantId === 'string' &&
     [1, 2, 3].includes(order.status ?? -1) &&
     (!order.afterSaleStatus || order.afterSaleStatus === 'NONE')
   )
@@ -58,7 +58,7 @@ export function canApplyAfterSale(order: OrderSummaryDTO): boolean {
 
 export function canCancelAfterSale(order: OrderSummaryDTO): boolean {
   return (
-    typeof order.afterSaleId === 'number' &&
+    typeof order.afterSaleId === 'string' &&
     ['APPLIED', 'WAIT_RETURN'].includes(order.afterSaleStatus ?? '')
   )
 }
@@ -66,7 +66,7 @@ export function canCancelAfterSale(order: OrderSummaryDTO): boolean {
 export function canPay(order: OrderSummaryDTO): boolean {
   return (
     order.status === 0 &&
-    typeof order.userId === 'number' &&
+    typeof order.userId === 'string' &&
     Boolean(order.orderNo) &&
     Boolean(order.subOrderNo)
   )
@@ -75,7 +75,7 @@ export function canPay(order: OrderSummaryDTO): boolean {
 export function canComplete(order: OrderSummaryDTO): boolean {
   const subOrders = orderSubActionTargets(order)
   return (
-    typeof order.id === 'number' &&
+    typeof order.id === 'string' &&
     subOrders.length > 0 &&
     subOrders.every((subOrder) => subOrder.status === 2)
   )
@@ -84,7 +84,7 @@ export function canComplete(order: OrderSummaryDTO): boolean {
 export function canCancel(order: OrderSummaryDTO): boolean {
   const subOrders = orderSubActionTargets(order)
   return (
-    typeof order.id === 'number' &&
+    typeof order.id === 'string' &&
     subOrders.length > 0 &&
     subOrders.every((subOrder) => subOrder.status === 0)
   )

@@ -16,13 +16,14 @@ import {
 } from "../../../utils/format";
 import { confirm, toast } from "../../../utils/ui";
 import type {
+    EntityId,
     OrderSummaryDTO,
     OrderSummaryItem,
 } from "../../../types/domain";
 
 const rows = ref<OrderSummaryDTO[]>([]);
 const loading = ref(false);
-const afterSaleActingOrderId = ref<number | null>(null);
+const afterSaleActingOrderId = ref<EntityId | null>(null);
 const expandedRows = reactive<Record<string, boolean>>({});
 const shippingForm = reactive({
     shippingCompany: "",
@@ -106,28 +107,28 @@ function requireShippingField(value: string, label: string): string | null {
 
 function canAuditAfterSale(order: OrderSummaryDTO): boolean {
     return (
-        typeof order.afterSaleId === "number" &&
+        typeof order.afterSaleId === "string" &&
         order.afterSaleStatus === "APPLIED"
     );
 }
 
 function canApproveAfterSale(order: OrderSummaryDTO): boolean {
     return (
-        typeof order.afterSaleId === "number" &&
+        typeof order.afterSaleId === "string" &&
         order.afterSaleStatus === "AUDITING"
     );
 }
 
 function canRejectAfterSale(order: OrderSummaryDTO): boolean {
     return (
-        typeof order.afterSaleId === "number" &&
+        typeof order.afterSaleId === "string" &&
         ["APPLIED", "AUDITING"].includes(order.afterSaleStatus ?? "")
     );
 }
 
 function canWaitReturn(order: OrderSummaryDTO): boolean {
     return (
-        typeof order.afterSaleId === "number" &&
+        typeof order.afterSaleId === "string" &&
         order.afterSaleStatus === "APPROVED" &&
         order.afterSaleType === "RETURN_REFUND"
     );
@@ -135,7 +136,7 @@ function canWaitReturn(order: OrderSummaryDTO): boolean {
 
 function canProcessRefund(order: OrderSummaryDTO): boolean {
     return (
-        typeof order.afterSaleId === "number" &&
+        typeof order.afterSaleId === "string" &&
         ((order.afterSaleStatus === "APPROVED" &&
             order.afterSaleType === "REFUND") ||
             order.afterSaleStatus === "RECEIVED")
@@ -144,7 +145,7 @@ function canProcessRefund(order: OrderSummaryDTO): boolean {
 
 function canMarkReceived(order: OrderSummaryDTO): boolean {
     return (
-        typeof order.afterSaleId === "number" &&
+        typeof order.afterSaleId === "string" &&
         order.afterSaleStatus === "RETURNED"
     );
 }
@@ -220,7 +221,7 @@ async function onShip(order: OrderSummaryDTO): Promise<void> {
         toast("This order cannot be shipped right now");
         return;
     }
-    if (typeof order.id !== "number") return;
+    if (typeof order.id !== "string") return;
     const shippingCompany = requireShippingField(
         shippingForm.shippingCompany,
         "Shipping company",
@@ -246,7 +247,7 @@ async function onAdvanceAfterSale(
     order: OrderSummaryDTO,
     action: AfterSaleAction,
 ): Promise<void> {
-    if (typeof order.afterSaleId !== "number" || typeof order.id !== "number") {
+    if (typeof order.afterSaleId !== "string" || typeof order.id !== "string") {
         toast("This order is missing after-sale metadata");
         return;
     }

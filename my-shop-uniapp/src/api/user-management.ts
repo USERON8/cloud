@@ -1,6 +1,6 @@
 import http from './http'
 import type { PageResult } from '../types/api'
-import type { UserSummary, UserUpsertPayload } from '../types/domain'
+import type { EntityId, UserSummary, UserUpsertPayload } from '../types/domain'
 
 export interface UserSearchParams {
   page?: number
@@ -25,15 +25,15 @@ export function searchUsers(params: UserSearchParams): Promise<PageResult<UserSu
   return http.get<PageResult<UserSummary>, PageResult<UserSummary>>('/api/admin/users', { params })
 }
 
-export function updateUser(id: number, payload: UserUpsertPayload): Promise<boolean> {
+export function updateUser(id: EntityId, payload: UserUpsertPayload): Promise<boolean> {
   return http.put<boolean, boolean>(`/api/admin/users/${id}`, payload)
 }
 
-export function deleteUser(id: number): Promise<boolean> {
+export function deleteUser(id: EntityId): Promise<boolean> {
   return http.delete<boolean, boolean>(`/api/admin/users/${id}`)
 }
 
-export function deleteUsersBatch(ids: number[]): Promise<boolean> {
+export function deleteUsersBatch(ids: EntityId[]): Promise<boolean> {
   return http.delete<boolean, boolean>('/api/admin/users/batch', { data: ids })
 }
 
@@ -41,7 +41,7 @@ export function updateUsersBatch(payload: UserUpsertPayload[]): Promise<boolean>
   return http.put<boolean, boolean>('/api/admin/users/batch', payload)
 }
 
-export function updateUserStatusBatch(ids: number[], status: number): Promise<boolean> {
+export function updateUserStatusBatch(ids: EntityId[], status: number): Promise<boolean> {
   return http.patch<boolean, boolean>('/api/admin/users/status/batch', null, {
     params: {
       ids: ids.join(','),

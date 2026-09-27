@@ -1,5 +1,5 @@
 import { getSpu } from '../api/product-catalog'
-import type { ProductItem, SearchProductDocument } from '../types/domain'
+import type { EntityId, ProductItem, SearchProductDocument } from '../types/domain'
 import { toast } from './ui'
 
 /**
@@ -8,7 +8,7 @@ import { toast } from './ui'
  */
 export function mapSearchDocumentToProduct(item: SearchProductDocument): ProductItem {
   return {
-    id: typeof item.productId === 'number' ? item.productId : 0,
+    id: item.productId || '',
     shopId: item.shopId,
     name: item.productName || 'Unnamed product',
     price: item.price,
@@ -27,9 +27,9 @@ export function mapSearchDocumentToProduct(item: SearchProductDocument): Product
  */
 export async function resolveCartSkuId(
   item: ProductItem,
-  skuIdCache: Map<number | string, number | null>,
-  skuLookupCache: Map<number | string, Promise<number | null>>,
-): Promise<number | null> {
+  skuIdCache: Map<EntityId, EntityId | null>,
+  skuLookupCache: Map<EntityId, Promise<EntityId | null>>,
+): Promise<EntityId | null> {
   const cachedSkuId = skuIdCache.get(item.id)
   if (cachedSkuId !== undefined) {
     return cachedSkuId
@@ -39,7 +39,7 @@ export async function resolveCartSkuId(
     return inflightLookup
   }
 
-  if (typeof item.skuId === 'number' && item.skuId > 0) {
+  if (typeof item.skuId === 'string' && item.skuId.length > 0) {
     skuIdCache.set(item.id, item.skuId)
     return item.skuId
   }
@@ -47,9 +47,9 @@ export async function resolveCartSkuId(
   const lookupPromise = (async () => {
     const spu = await getSpu(item.id)
     const availableSkus = (spu?.skus || []).filter(
-      (sku) => typeof sku.skuId === 'number' && sku.skuId > 0,
+      (sku) => typeof sku.skuId === 'string' && sku.skuId.length > 0,
     )
-    if (availableSkus.length === 1 && typeof availableSkus[0]?.skuId === 'number') {
+    if (availableSkus.length === 1 && typeof availableSkus[0]?.skuId === 'string') {
       const resolvedSkuId = availableSkus[0].skuId
       skuIdCache.set(item.id, resolvedSkuId)
       return resolvedSkuId
@@ -60,7 +60,7 @@ export async function resolveCartSkuId(
       return null
     }
     const selectedSkuId = availableSkus[0]?.skuId
-    if (typeof selectedSkuId !== 'number') {
+    if (typeof selectedSkuId !== 'string') {
       skuIdCache.set(item.id, null)
       toast('SKU information is unavailable')
       return null

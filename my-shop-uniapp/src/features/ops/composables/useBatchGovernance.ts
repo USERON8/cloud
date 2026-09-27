@@ -10,7 +10,7 @@ import type { UserSummary, UserUpsertPayload } from '../../../types/domains/user
 import { confirm, toast } from '../../../utils/ui'
 import type { OpsInputTools } from '../model/input-tools'
 
-type BatchInputTools = Pick<OpsInputTools, 'parseJson' | 'parseNumberList'>
+type BatchInputTools = Pick<OpsInputTools, 'parseJson' | 'parseIdList'>
 
 export function useBatchGovernance(input: BatchInputTools) {
   const userFindUsername = ref('')
@@ -51,7 +51,7 @@ export function useBatchGovernance(input: BatchInputTools) {
   }
 
   async function approveMerchantsBatchAction(): Promise<void> {
-    const ids = input.parseNumberList(merchantBatchIds.value)
+    const ids = input.parseIdList(merchantBatchIds.value)
     if (ids.length === 0) {
       toast('Please enter a list of merchant IDs')
       return
@@ -68,7 +68,7 @@ export function useBatchGovernance(input: BatchInputTools) {
   }
 
   async function deleteMerchantsBatchAction(): Promise<void> {
-    const ids = input.parseNumberList(merchantBatchIds.value)
+    const ids = input.parseIdList(merchantBatchIds.value)
     if (ids.length === 0) {
       toast('Please enter a list of merchant IDs')
       return
@@ -83,7 +83,7 @@ export function useBatchGovernance(input: BatchInputTools) {
   }
 
   async function updateMerchantStatusBatchAction(): Promise<void> {
-    const ids = input.parseNumberList(merchantBatchIds.value)
+    const ids = input.parseIdList(merchantBatchIds.value)
     const status = Number(merchantBatchStatus.value)
     if (ids.length === 0 || !Number.isFinite(status)) {
       toast('Please enter merchant IDs and a status value')
@@ -98,7 +98,7 @@ export function useBatchGovernance(input: BatchInputTools) {
   }
 
   async function reviewMerchantAuthBatchAction(): Promise<void> {
-    const ids = input.parseNumberList(merchantAuthBatchIds.value)
+    const ids = input.parseIdList(merchantAuthBatchIds.value)
     const status = Number(merchantAuthBatchStatus.value)
     if (ids.length === 0 || !Number.isFinite(status)) {
       toast('Please enter merchant IDs and an auth status')

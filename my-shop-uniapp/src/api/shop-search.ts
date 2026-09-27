@@ -1,9 +1,9 @@
 import http from './http'
-import type { SearchResult, ShopDocument } from '../types/domain'
+import type { EntityId, SearchResult, ShopDocument } from '../types/domain'
 
 export interface ShopSearchRequest {
   keyword?: string
-  merchantId?: number
+  merchantId?: EntityId
   status?: number
   minRating?: number
   minProductCount?: number
@@ -34,7 +34,7 @@ export function listHotShops(size = 10): Promise<ShopDocument[]> {
   return http.get<ShopDocument[], ShopDocument[]>('/api/search/shops/popular', { params: { size } })
 }
 
-export function getShopById(shopId: number): Promise<ShopDocument> {
+export function getShopById(shopId: EntityId): Promise<ShopDocument> {
   return http.get<ShopDocument, ShopDocument>(`/api/shops/${shopId}`)
 }
 

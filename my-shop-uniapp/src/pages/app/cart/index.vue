@@ -22,7 +22,7 @@ import { ensurePageAccess, navigateTo } from "../../../router/navigation";
 import { Routes } from "../../../router/routes";
 
 interface ShopGroup {
-    shopId: number;
+    shopId: string;
     items: CartEntry[];
     subtotal: number;
 }
@@ -35,7 +35,7 @@ const checkoutFingerprint = ref("");
 const userId = computed(() => getCurrentUserId());
 
 const shopGroups = computed<ShopGroup[]>(() => {
-    const map = new Map<number, CartEntry[]>();
+    const map = new Map<string, CartEntry[]>();
     for (const item of cartItems.value) {
         const list = map.get(item.shopId);
         if (list) {

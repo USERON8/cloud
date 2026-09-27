@@ -1,7 +1,9 @@
 import type { PageResult } from './api'
 
+export type EntityId = string
+
 export interface UserInfo {
-  id?: number
+  id?: EntityId
   username?: string
   nickname?: string
   avatarUrl?: string
@@ -41,7 +43,7 @@ export interface RegisterRequest {
 }
 
 export interface RegisterResponse {
-  id: number
+  id: EntityId
   username: string
   phone: string
   nickname: string
@@ -49,30 +51,30 @@ export interface RegisterResponse {
 }
 
 export interface ProductItem {
-  id: number | string
-  skuId?: number | string
-  shopId?: number | string
+  id: EntityId
+  skuId?: EntityId
+  shopId?: EntityId
   name: string
   price?: number
   stockQuantity?: number
-  categoryId?: number | string
-  brandId?: number | string
+  categoryId?: EntityId
+  brandId?: EntityId
   status?: number
   description?: string
   imageUrl?: string
 }
 
 export interface SearchProductDocument {
-  productId?: number
-  shopId?: number
+  productId?: EntityId
+  shopId?: EntityId
   shopName?: string
   productName?: string
   categoryName?: string
   brandName?: string
   price?: number
   stockQuantity?: number
-  categoryId?: number
-  brandId?: number
+  categoryId?: EntityId
+  brandId?: EntityId
   status?: number
   description?: string
   imageUrl?: string
@@ -88,7 +90,7 @@ export interface SearchProductDocument {
   recommended?: boolean
   isNew?: boolean
   isHot?: boolean
-  merchantId?: number
+  merchantId?: EntityId
   merchantName?: string
   remark?: string
 }
@@ -103,14 +105,14 @@ export interface SmartSearchResult {
 }
 
 export interface OrderSummaryDTO {
-  id?: number
+  id?: EntityId
   orderNo?: string
-  userId?: number
+  userId?: EntityId
   subOrders?: OrderSubSummaryDTO[]
-  subOrderId?: number
+  subOrderId?: EntityId
   subOrderNo?: string
-  merchantId?: number
-  afterSaleId?: number
+  merchantId?: EntityId
+  afterSaleId?: EntityId
   afterSaleNo?: string
   afterSaleType?: string
   refundNo?: string
@@ -124,10 +126,10 @@ export interface OrderSummaryDTO {
 }
 
 export interface OrderSubSummaryDTO {
-  subOrderId?: number
+  subOrderId?: EntityId
   subOrderNo?: string
-  merchantId?: number
-  afterSaleId?: number
+  merchantId?: EntityId
+  afterSaleId?: EntityId
   afterSaleNo?: string
   afterSaleType?: string
   refundNo?: string
@@ -138,10 +140,10 @@ export interface OrderSubSummaryDTO {
 }
 
 export interface OrderSummaryItem {
-  id?: number
-  subOrderId?: number
-  spuId?: number
-  skuId?: number
+  id?: EntityId
+  subOrderId?: EntityId
+  spuId?: EntityId
+  skuId?: EntityId
   skuCode?: string
   skuName?: string
   quantity?: number
@@ -152,8 +154,8 @@ export interface OrderSummaryItem {
 }
 
 export interface LatestOrderProduct {
-  spuId?: number
-  skuId?: number
+  spuId?: EntityId
+  skuId?: EntityId
   spuName?: string
   skuCode?: string
   skuName?: string
@@ -165,27 +167,27 @@ export interface LatestOrderProduct {
   status?: number
   brandName?: string
   categoryName?: string
-  merchantId?: number
+  merchantId?: EntityId
   shopName?: string
 }
 
 export interface OrderItem {
-  id: number
+  id: EntityId
   orderNo: string
-  userId: number
-  subOrderId?: number
+  userId: EntityId
+  subOrderId?: EntityId
   subOrderNo?: string
-  merchantId?: number
-  afterSaleId?: number
+  merchantId?: EntityId
+  afterSaleId?: EntityId
   afterSaleNo?: string
   afterSaleType?: string
   refundNo?: string
-  shopId?: number
+  shopId?: EntityId
   totalAmount?: number
   payAmount?: number
   status?: number
   afterSaleStatus?: string
-  addressId?: number
+  addressId?: EntityId
   createdAt?: string
 }
 
@@ -193,23 +195,23 @@ export interface ProductQuery {
   page?: number
   size?: number
   name?: string
-  categoryId?: number | string
-  brandId?: number | string
-  merchantId?: number | string
+  categoryId?: EntityId
+  brandId?: EntityId
+  merchantId?: EntityId
   status?: number
 }
 
 export interface OrderQuery {
   page?: number
   size?: number
-  userId?: number
-  merchantId?: number
+  userId?: EntityId
+  merchantId?: EntityId
   status?: number
 }
 
 export interface CreateOrderPayload {
-  spuId: number
-  skuId: number
+  spuId: EntityId
+  skuId: EntityId
   quantity: number
   price: number
   clientOrderId?: string
@@ -219,7 +221,7 @@ export interface CreateOrderPayload {
 }
 
 export interface CreateCartOrderPayload {
-  cartId: number | string
+  cartId: EntityId
   clientOrderId?: string
   receiverName: string
   receiverPhone: string
@@ -227,23 +229,23 @@ export interface CreateCartOrderPayload {
 }
 
 export interface RemoteCartItem {
-  id?: number | string
-  cartId?: number | string
-  spuId: number
-  skuId: number
+  id?: EntityId
+  cartId?: EntityId
+  spuId: EntityId
+  skuId: EntityId
   skuName: string
   unitPrice: number
   quantity: number
   selected?: number
   checkedOut?: number
-  shopId?: number
+  shopId?: EntityId
   productName?: string
 }
 
 export interface RemoteCart {
-  id?: number | string
+  id?: EntityId
   cartNo?: string
-  userId?: number | string
+  userId?: EntityId
   cartStatus?: string
   selectedCount?: number
   totalAmount?: number
@@ -251,13 +253,13 @@ export interface RemoteCart {
 }
 
 export interface CartSyncItemPayload {
-  spuId: number
-  skuId: number
+  spuId: EntityId
+  skuId: EntityId
   skuName: string
   unitPrice: number
   quantity: number
   selected?: number
-  shopId?: number
+  shopId?: EntityId
 }
 
 export interface CartSyncPayload {
@@ -265,8 +267,8 @@ export interface CartSyncPayload {
 }
 
 export interface UserAddress {
-  id?: number | string
-  userId?: number | string
+  id?: EntityId
+  userId?: EntityId
   receiverName: string
   receiverPhone: string
   province: string
@@ -305,7 +307,7 @@ export interface UserAddressRequestPayload {
 }
 
 export interface UserSummary {
-  id: number
+  id: EntityId
   username: string
   phone?: string
   nickname?: string
@@ -319,7 +321,7 @@ export interface UserSummary {
 }
 
 export interface UserUpsertPayload {
-  id?: number
+  id?: EntityId
   username?: string
   phone?: string
   nickname?: string
@@ -331,7 +333,7 @@ export interface UserUpsertPayload {
 }
 
 export interface AdminInfo {
-  id: number
+  id: EntityId
   username: string
   realName?: string
   phone?: string
@@ -351,7 +353,8 @@ export interface AdminUpsertPayload {
 }
 
 export interface MerchantInfo {
-  id: number
+  id: EntityId
+  ownerUserId?: EntityId
   username?: string
   merchantName?: string
   email?: string
@@ -375,8 +378,8 @@ export interface MerchantUpsertPayload {
 }
 
 export interface MerchantAuthInfo {
-  id?: number
-  merchantId?: number
+  id?: EntityId
+  merchantId?: EntityId
   businessLicenseNumber?: string
   businessLicenseUrl?: string
   idCardFrontUrl?: string
@@ -404,8 +407,8 @@ export interface MerchantAuthUploadResult {
 }
 
 export interface CategoryItem {
-  id?: number | string
-  parentId?: number | string
+  id?: EntityId
+  parentId?: EntityId
   name: string
   description?: string
   iconUrl?: string
@@ -447,8 +450,8 @@ export interface SearchResult<T> {
 }
 
 export interface ShopDocument {
-  shopId?: number
-  merchantId?: number
+  shopId?: EntityId
+  merchantId?: EntityId
   shopName?: string
   avatarUrl?: string
   description?: string
@@ -467,15 +470,15 @@ export interface ShopDocument {
 }
 
 export interface ProductDocument {
-  productId?: number
-  shopId?: number
+  productId?: EntityId
+  shopId?: EntityId
   shopName?: string
   productName?: string
   price?: number
   stockQuantity?: number
-  categoryId?: number
+  categoryId?: EntityId
   categoryName?: string
-  brandId?: number
+  brandId?: EntityId
   brandName?: string
   status?: number
   description?: string
@@ -495,17 +498,17 @@ export interface ProductDocument {
   recommended?: boolean
   isNew?: boolean
   isHot?: boolean
-  merchantId?: number
+  merchantId?: EntityId
   merchantName?: string
   remark?: string
 }
 
 export interface PaymentOrderInfo {
-  id?: number
+  id?: EntityId
   paymentNo?: string
   mainOrderNo?: string
   subOrderNo?: string
-  userId?: number
+  userId?: EntityId
   amount?: number
   channel?: string
   status?: string
@@ -528,7 +531,7 @@ export interface PaymentCheckoutSession {
 }
 
 export interface PaymentRefundInfo {
-  id?: number
+  id?: EntityId
   refundNo?: string
   paymentNo?: string
   afterSaleNo?: string
@@ -545,7 +548,7 @@ export interface PaymentOrderCommand {
   paymentNo: string
   mainOrderNo: string
   subOrderNo: string
-  userId: number
+  userId: EntityId
   amount: number
   channel: string
   idempotencyKey: string
@@ -561,12 +564,12 @@ export interface PaymentRefundCommand {
 }
 
 export interface AfterSaleInfo {
-  id?: number
+  id?: EntityId
   afterSaleNo?: string
-  mainOrderId: number
-  subOrderId: number
-  userId?: number
-  merchantId?: number
+  mainOrderId: EntityId
+  subOrderId: EntityId
+  userId?: EntityId
+  merchantId?: EntityId
   afterSaleType: string
   status?: string
   reason: string
@@ -586,11 +589,11 @@ export interface AfterSaleInfo {
 }
 
 export interface OrderAggregateItem {
-  id?: number
-  mainOrderId?: number
-  subOrderId?: number
-  spuId?: number
-  skuId?: number
+  id?: EntityId
+  mainOrderId?: EntityId
+  subOrderId?: EntityId
+  spuId?: EntityId
+  skuId?: EntityId
   skuCode?: string
   skuName?: string
   skuSnapshot?: string
@@ -603,10 +606,10 @@ export interface OrderAggregateItem {
 }
 
 export interface OrderAggregateSubOrder {
-  id?: number
-  mainOrderId?: number
+  id?: EntityId
+  mainOrderId?: EntityId
   subOrderNo?: string
-  merchantId?: number
+  merchantId?: EntityId
   orderStatus?: string
   shippingStatus?: string
   afterSaleStatus?: string
@@ -630,9 +633,9 @@ export interface OrderAggregateSubOrder {
 }
 
 export interface OrderAggregateMainOrder {
-  id?: number
+  id?: EntityId
   mainOrderNo?: string
-  userId?: number
+  userId?: EntityId
   orderStatus?: string
   totalAmount?: number
   payableAmount?: number
@@ -656,7 +659,7 @@ export interface OrderAggregateResponse {
 }
 
 export interface StockLedger {
-  skuId?: number
+  skuId?: EntityId
   availableQty?: number
   lockedQty?: number
   soldQty?: number
@@ -669,7 +672,7 @@ export interface StockLedger {
 
 export interface StockOperatePayload {
   subOrderNo: string
-  skuId: number
+  skuId: EntityId
   quantity: number
   reason?: string
 }
@@ -697,11 +700,11 @@ export interface TokenBlacklistStats {
 
 export interface ProductSearchRequest {
   keyword?: string
-  shopId?: number
+  shopId?: EntityId
   shopName?: string
-  categoryId?: number
+  categoryId?: EntityId
   categoryName?: string
-  brandId?: number
+  brandId?: EntityId
   brandName?: string
   minPrice?: number
   maxPrice?: number
@@ -723,9 +726,9 @@ export interface ProductSearchRequest {
 
 export interface ProductFilterRequest {
   keyword?: string
-  categoryId?: number
-  brandId?: number
-  shopId?: number
+  categoryId?: EntityId
+  brandId?: EntityId
+  shopId?: EntityId
   minPrice?: number
   maxPrice?: number
   minSalesCount?: number
@@ -752,19 +755,19 @@ export interface SpringPage<T> {
 }
 
 export interface SpuDto {
-  spuId?: number | string
+  spuId?: EntityId
   spuName: string
   subtitle?: string
-  categoryId: number | string
-  brandId?: number | string
-  merchantId: number | string
+  categoryId: EntityId
+  brandId?: EntityId
+  merchantId: EntityId
   status?: number
   description?: string
   mainImage?: string
 }
 
 export interface SkuDto {
-  skuId?: number | string
+  skuId?: EntityId
   skuCode: string
   skuName: string
   specJson?: string
@@ -781,8 +784,8 @@ export interface SpuCreateRequest {
 }
 
 export interface SkuDetail {
-  skuId?: number | string
-  spuId?: number | string
+  skuId?: EntityId
+  spuId?: EntityId
   skuCode?: string
   skuName?: string
   specJson?: string
@@ -796,12 +799,12 @@ export interface SkuDetail {
 }
 
 export interface SpuDetail {
-  spuId?: number | string
+  spuId?: EntityId
   spuName?: string
   subtitle?: string
-  categoryId?: number | string
-  brandId?: number | string
-  merchantId?: number | string
+  categoryId?: EntityId
+  brandId?: EntityId
+  merchantId?: EntityId
   status?: number
   description?: string
   mainImage?: string
