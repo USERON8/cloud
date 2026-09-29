@@ -3,6 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23111316'/%3E%3Cpath d='M18 21h28l-2 27H20z' fill='white'/%3E%3Cpath d='M25 25v-5a7 7 0 0 1 14 0v5' fill='none' stroke='%23111316' stroke-width='4'/%3E%3C/svg%3E" />
     <title>My Shop</title>
     <script>
       (function () {
@@ -15,12 +16,16 @@
         }
         if (pathname === "/login") {
           var loginParams = new URLSearchParams(window.location.search || "");
-          var pageParams = new URLSearchParams({ mode: "credentials" });
+          var pageParams = new URLSearchParams();
           if (loginParams.has("error")) {
+            pageParams.set("mode", "credentials");
+            pageParams.set("source", "authorization-server");
             pageParams.set("error", "invalid_credentials");
-          }
-          if (loginParams.has("logout")) {
+          } else if (loginParams.has("logout")) {
             pageParams.set("logout", "true");
+          } else {
+            pageParams.set("mode", "credentials");
+            pageParams.set("source", "authorization-server");
           }
           window.location.replace(
             "/#/pages/login/index?" + pageParams.toString(),

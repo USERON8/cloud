@@ -2,29 +2,13 @@ package com.cloud.auth.config;
 
 import com.cloud.auth.service.CustomUserDetailsServiceImpl;
 import jakarta.annotation.PostConstruct;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.authentication.AuthenticationProvider;
-import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 @Slf4j
 @Configuration
-@RequiredArgsConstructor
 public class AuthenticationProviderConfig {
-
-  private final CustomUserDetailsServiceImpl customUserDetailsService;
-  private final PasswordEncoder passwordEncoder;
-
-  @Bean
-  public AuthenticationProvider daoAuthenticationProvider() {
-    DaoAuthenticationProvider provider = new DaoAuthenticationProvider(customUserDetailsService);
-    provider.setPasswordEncoder(passwordEncoder);
-    return provider;
-  }
 
   @Component
   @Slf4j

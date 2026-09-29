@@ -117,6 +117,7 @@ app:
                 id: ${APP_OAUTH2_WEB_CLIENT_ID:web-client}
                 secret: ${APP_OAUTH2_WEB_CLIENT_SECRET}
                 redirect-uris: ${APP_OAUTH2_WEB_REDIRECT_URIS:http://127.0.0.1:${PORT_NGINX_HTTP:18080}/callback,http://127.0.0.1:3000/callback,http://127.0.0.1:5173/callback,http://localhost:5173/callback,http://127.0.0.1:5173/#/pages/oauth/success,http://localhost:5173/#/pages/oauth/success}
+                post-logout-redirect-uris: ${APP_OAUTH2_WEB_POST_LOGOUT_REDIRECT_URIS:http://127.0.0.1:${PORT_NGINX_HTTP:18080}/login?logout=true,http://127.0.0.1:5173/login?logout=true,http://localhost:5173/login?logout=true}
             mobile:
                 id: ${APP_OAUTH2_MOBILE_CLIENT_ID:mobile-client}
                 secret: ${APP_OAUTH2_MOBILE_CLIENT_SECRET}

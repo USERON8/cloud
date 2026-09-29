@@ -5,6 +5,8 @@ import { Routes } from '../router/routes'
 import { openExternalPage } from '../utils/external-navigation'
 import { getStorage, removeStorage, setStorage } from '../utils/storage'
 import { buildApiUrl } from './runtime-base'
+import { getIdToken } from '../auth/session'
+import { buildOidcLogoutPath } from '../platform/auth/oauth-navigation'
 
 const oauthClientId = import.meta.env.VITE_OAUTH_CLIENT_ID || 'web-client'
 const oauthScope = import.meta.env.VITE_OAUTH_SCOPE || 'openid user.read order.write'
@@ -172,6 +174,25 @@ export function register(payload: RegisterRequest): Promise<RegisterResponse> {
 
 export function logout(): Promise<void> {
   return http.delete<never, void>('/auth/sessions')
+}
+
+export function revokeAccessTokenForOidcLogout(): Promise<void> {
+  return http.delete<never, void>('/auth/sessions/access-token')
+}
+
+export function buildLogoutUrl(): string {
+  const idToken = getIdToken()
+  if (!idToken || typeof window === 'undefined' || !window.location) {
+    return ''
+  }
+  const postLogoutRedirectUri = `${window.location.origin}/login?logout=true`
+  return buildApiUrl(
+    buildOidcLogoutPath({
+      idToken,
+      clientId: oauthClientId,
+      postLogoutRedirectUri
+    })
+  )
 }
 
 export function logoutAllSessions(username: string): Promise<string> {

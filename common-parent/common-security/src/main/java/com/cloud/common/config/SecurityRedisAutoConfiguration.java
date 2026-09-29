@@ -1,5 +1,7 @@
 package com.cloud.common.config;
 
+import com.fasterxml.jackson.databind.json.JsonMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -51,14 +53,20 @@ public class SecurityRedisAutoConfiguration {
     RedisTemplate<String, Object> template = new RedisTemplate<>();
     template.setConnectionFactory(securityRedisConnectionFactory);
     StringRedisSerializer keySerializer = new StringRedisSerializer();
-    GenericJackson2JsonRedisSerializer valueSerializer =
-        new GenericJackson2JsonRedisSerializer();
+    GenericJackson2JsonRedisSerializer valueSerializer = securityValueSerializer();
     template.setKeySerializer(keySerializer);
     template.setHashKeySerializer(keySerializer);
     template.setValueSerializer(valueSerializer);
     template.setHashValueSerializer(valueSerializer);
     template.afterPropertiesSet();
     return template;
+  }
+
+  static GenericJackson2JsonRedisSerializer securityValueSerializer() {
+    return GenericJackson2JsonRedisSerializer.builder()
+        .objectMapper(JsonMapper.builder().addModule(new JavaTimeModule()).build())
+        .defaultTyping(true)
+        .build();
   }
 
   @Bean(name = "securityStringRedisTemplate", defaultCandidate = false)

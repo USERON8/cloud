@@ -100,7 +100,8 @@ public class ResourceServerConfig {
                           "/auth/cleanups/**",
                           "/auth/blacklist-entries/**")
                       .hasRole("ADMIN")
-                      .pathMatchers("/auth/**", "/oauth2/**", "/.well-known/**")
+                      .pathMatchers(
+                          "/auth/**", "/oauth2/**", "/connect/**", "/.well-known/**")
                       .permitAll()
                       .pathMatchers("/ws/**")
                       .authenticated()

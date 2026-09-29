@@ -9,6 +9,7 @@ import org.springframework.security.oauth2.core.OAuth2AccessToken;
 import org.springframework.security.oauth2.core.OAuth2RefreshToken;
 import org.springframework.security.oauth2.core.OAuth2Token;
 import org.springframework.security.oauth2.core.endpoint.OAuth2ParameterNames;
+import org.springframework.security.oauth2.core.oidc.OidcIdToken;
 import org.springframework.security.oauth2.server.authorization.OAuth2Authorization;
 import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationCode;
 import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationService;
@@ -23,10 +24,12 @@ public class RedisOAuth2AuthorizationService implements OAuth2AuthorizationServi
   private static final String TOKEN_PREFIX = "oauth2:token:";
   private static final String ACCESS_PREFIX = "oauth2:access:";
   private static final String REFRESH_PREFIX = "oauth2:refresh:";
+  private static final String ID_TOKEN_PREFIX = "oauth2:id-token:";
   private static final String CODE_PREFIX = "oauth2:code:";
   private static final String PRINCIPAL_PREFIX = "oauth2:principal:";
   private static final OAuth2TokenType AUTHORIZATION_CODE =
       new OAuth2TokenType(OAuth2ParameterNames.CODE);
+  private static final OAuth2TokenType ID_TOKEN = new OAuth2TokenType("id_token");
   private final RedisTemplate<String, Object> redisTemplate;
   private final RegisteredClientRepository registeredClientRepository;
   private final AuthorizationServerSettings authorizationServerSettings;
@@ -94,6 +97,18 @@ public class RedisOAuth2AuthorizationService implements OAuth2AuthorizationServi
               TimeUnit.SECONDS);
     }
 
+    OAuth2Authorization.Token<OidcIdToken> idToken = authorization.getToken(OidcIdToken.class);
+    if (idToken != null && idToken.getToken() != null) {
+      String idTokenKey = ID_TOKEN_PREFIX + idToken.getToken().getTokenValue();
+      redisTemplate
+          .opsForValue()
+          .set(
+              idTokenKey,
+              authorization.getId(),
+              getExpireSeconds(idToken.getToken()),
+              TimeUnit.SECONDS);
+    }
+
     if (authorization.getPrincipalName() != null && !authorization.getPrincipalName().isBlank()) {
       String principalKey = PRINCIPAL_PREFIX + authorization.getPrincipalName();
       redisTemplate.opsForSet().add(principalKey, authorization.getId());
@@ -131,6 +146,11 @@ public class RedisOAuth2AuthorizationService implements OAuth2AuthorizationServi
       redisTemplate.delete(accessTokenKey);
     }
 
+    OAuth2Authorization.Token<OidcIdToken> idToken = authorization.getToken(OidcIdToken.class);
+    if (idToken != null && idToken.getToken() != null) {
+      redisTemplate.delete(ID_TOKEN_PREFIX + idToken.getToken().getTokenValue());
+    }
+
     if (authorization.getPrincipalName() != null && !authorization.getPrincipalName().isBlank()) {
       String principalKey = PRINCIPAL_PREFIX + authorization.getPrincipalName();
       redisTemplate.opsForSet().remove(principalKey, authorization.getId());
@@ -161,6 +181,9 @@ public class RedisOAuth2AuthorizationService implements OAuth2AuthorizationServi
       if (OAuth2TokenType.REFRESH_TOKEN.equals(tokenType)) {
         return findByAuthorizationId(REFRESH_PREFIX + token);
       }
+      if (ID_TOKEN.equals(tokenType)) {
+        return findByAuthorizationId(ID_TOKEN_PREFIX + token);
+      }
     }
 
     OAuth2Authorization authorization = findByAuthorizationId(ACCESS_PREFIX + token);
@@ -168,6 +191,10 @@ public class RedisOAuth2AuthorizationService implements OAuth2AuthorizationServi
       return authorization;
     }
     authorization = findByAuthorizationId(REFRESH_PREFIX + token);
+    if (authorization != null) {
+      return authorization;
+    }
+    authorization = findByAuthorizationId(ID_TOKEN_PREFIX + token);
     if (authorization != null) {
       return authorization;
     }
@@ -199,6 +226,12 @@ public class RedisOAuth2AuthorizationService implements OAuth2AuthorizationServi
       return refreshToken != null
           && refreshToken.getToken() != null
           && token.equals(refreshToken.getToken().getTokenValue());
+    }
+    if (ID_TOKEN.equals(tokenType)) {
+      OAuth2Authorization.Token<OidcIdToken> idToken = authorization.getToken(OidcIdToken.class);
+      return idToken != null
+          && idToken.getToken() != null
+          && token.equals(idToken.getToken().getTokenValue());
     }
     if (AUTHORIZATION_CODE.equals(tokenType)) {
       OAuth2Authorization.Token<OAuth2AuthorizationCode> code =

@@ -107,6 +107,14 @@ class GatewayRouteDefinitionTest {
   }
 
   @Test
+  void authRouteIncludesOidcLogoutEndpoint() throws Exception {
+    Map<String, Object> authRoute = routeById("auth-service-api");
+
+    assertThat(asStringList(authRoute.get("predicates")))
+        .contains("Path=/auth/**,/oauth2/**,/connect/**,/.well-known/**");
+  }
+
+  @Test
   void adminAccountRoutesBelongToUserServiceNotGovernanceService() throws Exception {
     Map<String, Object> userAdminRoute = routeById("user-service-admin");
     Map<String, Object> governanceRoute = routeById("governance-service-admin");

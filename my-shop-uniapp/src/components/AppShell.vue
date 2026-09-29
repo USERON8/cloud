@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
-import { logout } from "../api/auth";
+import { buildLogoutUrl, logout, revokeAccessTokenForOidcLogout } from "../api/auth";
 import { useRole, type UserRole } from "../auth/permission";
 import { clearSession, isAuthenticated, sessionState } from "../auth/session";
 import { type Locale, useLocale } from "../i18n/locale";
@@ -249,6 +249,17 @@ function handleLogin(): void {
 }
 
 async function handleLogout(): Promise<void> {
+    const oidcLogoutUrl = buildLogoutUrl();
+    if (oidcLogoutUrl && typeof window !== "undefined") {
+        try {
+            await revokeAccessTokenForOidcLogout();
+        } catch {
+            // Continue with the identity-provider logout even if token revocation is unavailable.
+        }
+        clearSession();
+        window.location.assign(oidcLogoutUrl);
+        return;
+    }
     try {
         await logout();
     } catch {
@@ -256,7 +267,7 @@ async function handleLogout(): Promise<void> {
     } finally {
         clearSession();
         uni.showToast({ title: copy.value.logoutSuccess, icon: "success" });
-        redirectTo(Routes.login);
+        redirectTo(Routes.login, { logout: true });
     }
 }
 

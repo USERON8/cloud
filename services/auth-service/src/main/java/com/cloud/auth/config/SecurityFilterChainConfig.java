@@ -1,6 +1,7 @@
 package com.cloud.auth.config;
 
 import com.cloud.auth.handler.OAuth2AuthenticationSuccessHandler;
+import com.cloud.auth.service.CustomUserDetailsServiceImpl;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import lombok.extern.slf4j.Slf4j;
@@ -14,10 +15,21 @@ import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.authentication.ProviderManager;
+import org.springframework.security.core.session.SessionRegistry;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationService;
+import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.config.annotation.web.configurers.OAuth2AuthorizationServerConfigurer;
+import org.springframework.security.oauth2.server.authorization.oidc.authentication.OidcLogoutAuthenticationProvider;
+import org.springframework.security.oauth2.server.authorization.oidc.web.OidcLogoutEndpointFilter;
+import org.springframework.security.oauth2.server.authorization.settings.AuthorizationServerSettings;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.session.RegisterSessionAuthenticationStrategy;
+import org.springframework.security.web.authentication.logout.LogoutFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -29,6 +41,12 @@ public class SecurityFilterChainConfig {
   private final JwtDecoder jwtDecoder;
   private final JwtAuthenticationConverter jwtAuthenticationConverter;
   private final OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler;
+  private final RegisteredClientRepository registeredClientRepository;
+  private final OAuth2AuthorizationService authorizationService;
+  private final SessionRegistry sessionRegistry;
+  private final CustomUserDetailsServiceImpl customUserDetailsService;
+  private final PasswordEncoder passwordEncoder;
+  private final AuthorizationServerSettings authorizationServerSettings;
 
   @Value(
       "${app.oauth2.github.redirect.error-url:${APP_OAUTH2_GITHUB_ERROR_URL:http://127.0.0.1:3000/auth/error}}")
@@ -48,10 +66,22 @@ public class SecurityFilterChainConfig {
       JwtDecoder jwtDecoder,
       @Qualifier("enhancedJwtAuthenticationConverter")
           JwtAuthenticationConverter jwtAuthenticationConverter,
-      OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler) {
+      OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler,
+      RegisteredClientRepository registeredClientRepository,
+      OAuth2AuthorizationService authorizationService,
+      SessionRegistry sessionRegistry,
+      CustomUserDetailsServiceImpl customUserDetailsService,
+      PasswordEncoder passwordEncoder,
+      AuthorizationServerSettings authorizationServerSettings) {
     this.jwtDecoder = jwtDecoder;
     this.jwtAuthenticationConverter = jwtAuthenticationConverter;
     this.oAuth2AuthenticationSuccessHandler = oAuth2AuthenticationSuccessHandler;
+    this.registeredClientRepository = registeredClientRepository;
+    this.authorizationService = authorizationService;
+    this.sessionRegistry = sessionRegistry;
+    this.customUserDetailsService = customUserDetailsService;
+    this.passwordEncoder = passwordEncoder;
+    this.authorizationServerSettings = authorizationServerSettings;
   }
 
   @Bean
@@ -60,10 +90,20 @@ public class SecurityFilterChainConfig {
       throws Exception {
     OAuth2AuthorizationServerConfigurer authorizationServerConfigurer =
         OAuth2AuthorizationServerConfigurer.authorizationServer();
-    authorizationServerConfigurer.oidc(Customizer.withDefaults());
+    OidcLogoutAuthenticationProvider oidcLogoutAuthenticationProvider =
+        new OidcLogoutAuthenticationProvider(
+            registeredClientRepository, authorizationService, sessionRegistry);
+    OidcLogoutEndpointFilter oidcLogoutEndpointFilter =
+        new OidcLogoutEndpointFilter(
+            new ProviderManager(oidcLogoutAuthenticationProvider),
+            authorizationServerSettings.getOidcLogoutEndpoint());
 
+    http.setSharedObject(SessionRegistry.class, sessionRegistry);
     http.securityMatcher(authorizationServerConfigurer.getEndpointsMatcher())
-        .with(authorizationServerConfigurer, Customizer.withDefaults())
+        .with(
+            authorizationServerConfigurer,
+            authorizationServer -> authorizationServer.oidc(Customizer.withDefaults()))
+        .addFilterBefore(oidcLogoutEndpointFilter, LogoutFilter.class)
         .csrf(AbstractHttpConfigurer::disable)
         .cors(Customizer.withDefaults())
         .authorizeHttpRequests(authorize -> authorize.anyRequest().authenticated())
@@ -182,10 +222,21 @@ public class SecurityFilterChainConfig {
                     .loginProcessingUrl("/login/process")
                     .failureUrl("/login?error")
                     .permitAll())
+        .authenticationProvider(daoAuthenticationProvider())
         .sessionManagement(
-            session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED));
+            session ->
+                session
+                    .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
+                    .sessionAuthenticationStrategy(
+                        new RegisterSessionAuthenticationStrategy(sessionRegistry)));
 
     return http.build();
+  }
+
+  private DaoAuthenticationProvider daoAuthenticationProvider() {
+    DaoAuthenticationProvider provider = new DaoAuthenticationProvider(customUserDetailsService);
+    provider.setPasswordEncoder(passwordEncoder);
+    return provider;
   }
 
   @Bean

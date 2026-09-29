@@ -50,6 +50,10 @@ public class OAuth21AuthorizationServerConfig {
       "${app.oauth2.clients.web.redirect-uris:http://127.0.0.1:${PORT_NGINX_HTTP:18080}/callback}")
   private String webRedirectUris;
 
+  @Value(
+      "${app.oauth2.clients.web.post-logout-redirect-uris:http://127.0.0.1:${PORT_NGINX_HTTP:18080}/login?logout=true}")
+  private String webPostLogoutRedirectUris;
+
   @Value("${app.oauth2.clients.internal.id:client-service}")
   private String internalClientId;
 
@@ -141,6 +145,7 @@ public class OAuth21AuthorizationServerConfig {
                     .build())
             .tokenSettings(userTokenSettings());
     applyRedirectUris(userClient, webRedirectUris);
+    applyPostLogoutRedirectUris(userClient, webPostLogoutRedirectUris);
 
     RegisteredClient serviceClient =
         RegisteredClient.withId(UUID.randomUUID().toString())
@@ -209,6 +214,24 @@ public class OAuth21AuthorizationServerConfig {
       throw new IllegalStateException("OAuth2 redirect URIs must contain at least one valid URI");
     }
     validRedirectUris.forEach(builder::redirectUri);
+  }
+
+  private void applyPostLogoutRedirectUris(
+      RegisteredClient.Builder builder, String postLogoutRedirectUris) {
+    if (!StringUtils.hasText(postLogoutRedirectUris)) {
+      throw new IllegalStateException("OAuth2 post logout redirect URIs must not be empty");
+    }
+    java.util.List<String> validRedirectUris =
+        Arrays.stream(postLogoutRedirectUris.split(","))
+            .map(String::trim)
+            .filter(StringUtils::hasText)
+            .filter(this::isValidRedirectUri)
+            .toList();
+    if (CollectionUtils.isEmpty(validRedirectUris)) {
+      throw new IllegalStateException(
+          "OAuth2 post logout redirect URIs must contain at least one valid URI");
+    }
+    validRedirectUris.forEach(builder::postLogoutRedirectUri);
   }
 
   private boolean isValidRedirectUri(String redirectUri) {

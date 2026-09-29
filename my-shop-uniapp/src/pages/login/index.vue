@@ -2,16 +2,19 @@
 import { computed, ref } from "vue";
 import { onLoad } from "@dcloudio/uni-app";
 import { startAuthorization } from "../../api/auth";
+import { clearSession } from "../../auth/session";
 import LocaleSwitch from "../../components/LocaleSwitch.vue";
 import { useLocale } from "../../i18n/locale";
 import { navigateTo } from "../../router/navigation";
 import { Routes } from "../../router/routes";
 import { toast } from "../../utils/ui";
+import { buildApiUrl } from "../../api/runtime-base";
 
 const redirectPath = ref<string>(Routes.appHome);
 const entryType = ref("");
 const startingProvider = ref<"password" | "">("");
 const credentialsMode = ref(false);
+const signedOutLanding = ref(false);
 const username = ref("");
 const password = ref("");
 const feedback = ref("");
@@ -88,11 +91,15 @@ const copy = computed(() =>
 );
 
 onLoad((query) => {
-    credentialsMode.value = query.mode === "credentials";
+    credentialsMode.value =
+        query.mode === "credentials" &&
+        query.source === "authorization-server";
+    signedOutLanding.value = query.logout === "true";
     if (query.error === "invalid_credentials") {
         feedback.value = copy.value.invalidCredentials;
     } else if (query.logout === "true") {
         feedback.value = copy.value.signedOut;
+        void completeSignedOutSession();
     }
     if (typeof query.redirect === "string") {
         try {
@@ -104,10 +111,14 @@ onLoad((query) => {
     if (typeof query.entry === "string") {
         entryType.value = query.entry.toLowerCase();
     }
-    if (!credentialsMode.value) {
+    if (!credentialsMode.value && !signedOutLanding.value) {
         setTimeout(() => void handleAuthorizationStart("password"), 0);
     }
 });
+
+async function completeSignedOutSession(): Promise<void> {
+    clearSession();
+}
 
 async function handleAuthorizationStart(provider: "password"): Promise<void> {
     startingProvider.value = provider;
@@ -133,7 +144,7 @@ function submitCredentials(): void {
     feedback.value = "";
     const form = document.createElement("form");
     form.method = "post";
-    form.action = `${window.location.origin}/login/process`;
+    form.action = buildApiUrl("/login/process");
     form.style.display = "none";
     for (const [name, value] of [
         ["username", username.value.trim()],
@@ -151,7 +162,7 @@ function submitCredentials(): void {
 
 function continueWithGitHub(): void {
     if (typeof window !== "undefined") {
-        window.location.assign(`${window.location.origin}/oauth2/authorization/github`);
+        window.location.assign(buildApiUrl("/oauth2/authorization/github"));
     }
 }
 
@@ -225,7 +236,9 @@ function backToMarket(): void {
 
                     <view v-if="!credentialsMode" class="signin-hint">
                         <text class="hint-title">{{ copy.recommended }}</text>
-                        <text class="hint-copy">{{ copy.connecting }}</text>
+                        <text class="hint-copy">
+                            {{ signedOutLanding ? copy.recommendedBody : copy.connecting }}
+                        </text>
                     </view>
 
                     <button

@@ -107,6 +107,11 @@ class ResourceServerConfigTest {
   }
 
   @Test
+  void oidcLogoutEndpointAllowsBrowserNavigationWithoutBearerToken() {
+    exchangeWithoutToken("/connect/logout", HttpMethod.GET).expectStatus().isOk();
+  }
+
+  @Test
   void staleAuthVersionIsRejectedEvenWhenRedisFailurePolicyAllowsDegradation() {
     Jwt jwt =
         Jwt.withTokenValue("stale")

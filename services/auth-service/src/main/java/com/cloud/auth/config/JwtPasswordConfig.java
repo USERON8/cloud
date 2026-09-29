@@ -3,6 +3,7 @@ package com.cloud.auth.config;
 import cn.hutool.core.util.StrUtil;
 import com.cloud.common.security.JwtAuthorityUtils;
 import com.cloud.common.security.PasswordEncoderFactory;
+import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
@@ -71,11 +72,17 @@ public class JwtPasswordConfig {
   }
 
   @Bean
-  public JWKSource<SecurityContext> jwkSource(KeyPair keyPair) {
+  public JWKSource<SecurityContext> jwkSource(KeyPair keyPair) throws JOSEException {
     RSAPublicKey publicKey = (RSAPublicKey) keyPair.getPublic();
     RSAPrivateKey privateKey = (RSAPrivateKey) keyPair.getPrivate();
 
-    RSAKey rsaKey = new RSAKey.Builder(publicKey).privateKey(privateKey).keyID(keyId).build();
+    RSAKey.Builder rsaKeyBuilder = new RSAKey.Builder(publicKey).privateKey(privateKey);
+    if (StrUtil.isBlank(configuredPrivateKey)) {
+      rsaKeyBuilder.keyIDFromThumbprint();
+    } else {
+      rsaKeyBuilder.keyID(keyId);
+    }
+    RSAKey rsaKey = rsaKeyBuilder.build();
 
     return new ImmutableJWKSet<>(new JWKSet(rsaKey));
   }

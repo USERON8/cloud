@@ -101,6 +101,22 @@ public class AuthController {
     return Result.success("Logout successful", null);
   }
 
+  @DeleteMapping("/sessions/access-token")
+  @PreAuthorize("isAuthenticated()")
+  @Operation(summary = "在 OIDC 注销前撤销当前访问令牌")
+  public Result<Void> revokeAccessToken(jakarta.servlet.http.HttpServletRequest request) {
+    String authorizationHeader = request.getHeader("Authorization");
+    if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+      throw new BizException(ResultCode.UNAUTHORIZED);
+    }
+    String accessToken = authorizationHeader.substring(7);
+    if (!tokenManagementService.blacklistAccessToken(accessToken, "oidc_logout")) {
+      throw new BizException(ResultCode.UNAUTHORIZED);
+    }
+    authorityCacheService.evictByAccessToken(accessToken, jwtDecoder);
+    return Result.success();
+  }
+
   @DeleteMapping("/users/{username}/sessions")
   @PreAuthorize("hasAuthority('admin:all')")
   @Operation(summary = "退出指定用户的全部会话")

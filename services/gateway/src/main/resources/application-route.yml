@@ -8,7 +8,7 @@ spring:
               uri: ${GATEWAY_ROUTE_AUTH_URI:lb://auth-service}
               order: 10
               predicates:
-                - Path=/auth/**,/oauth2/**,/.well-known/**
+                - Path=/auth/**,/oauth2/**,/connect/**,/.well-known/**
               filters:
                 - name: RequestRateLimiter
                   args:

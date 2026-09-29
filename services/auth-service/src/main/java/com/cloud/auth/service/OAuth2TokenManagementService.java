@@ -182,6 +182,20 @@ public class OAuth2TokenManagementService {
     return revoked;
   }
 
+  public boolean blacklistAccessToken(String accessToken, String reason) {
+    if (StrUtil.isBlank(accessToken)) {
+      return false;
+    }
+    OAuth2Authorization authorization = findByToken(accessToken);
+    if (authorization == null || authorization.getAccessToken() == null) {
+      return false;
+    }
+    long ttl = resolveTokenTtlSeconds(authorization, accessToken, 3600);
+    tokenBlacklistService.addToBlacklist(
+        accessToken, authorization.getPrincipalName(), ttl, reason);
+    return true;
+  }
+
   public long resolveTokenTtlSeconds(
       OAuth2Authorization authorization, String tokenValue, long fallbackTtlSeconds) {
     if (authorization == null || StrUtil.isBlank(tokenValue)) {

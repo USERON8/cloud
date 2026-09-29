@@ -7,6 +7,7 @@ const SESSION_KEY = 'shop.session'
 
 interface SessionState {
   accessToken: string
+  idToken: string
   tokenType: string
   expiresAt: number
   scope: string
@@ -15,6 +16,7 @@ interface SessionState {
 
 interface StoredSession {
   accessToken: string
+  idToken?: string
   tokenType: string
   expiresAt: number
   scope: string
@@ -174,6 +176,7 @@ function buildUserInfo(accessPayload: JwtPayload, idPayload: JwtPayload): UserIn
 export const useSessionStore = defineStore('session', {
   state: (): SessionState => ({
     accessToken: '',
+    idToken: '',
     tokenType: 'Bearer',
     expiresAt: 0,
     scope: '',
@@ -183,6 +186,7 @@ export const useSessionStore = defineStore('session', {
     persist(): void {
       const payload: StoredSession = {
         accessToken: this.accessToken,
+        idToken: this.idToken,
         tokenType: this.tokenType,
         expiresAt: this.expiresAt,
         scope: this.scope,
@@ -211,6 +215,7 @@ export const useSessionStore = defineStore('session', {
       }
 
       this.accessToken = payload.accessToken
+      this.idToken = payload.idToken || ''
       this.tokenType = payload.tokenType || 'Bearer'
       this.expiresAt = payload.expiresAt
       this.scope = payload.scope || ''
@@ -222,6 +227,7 @@ export const useSessionStore = defineStore('session', {
       const idPayload = parseJwtPayload(payload.id_token)
 
       this.accessToken = payload.access_token
+      this.idToken = payload.id_token || ''
       this.tokenType = payload.token_type || 'Bearer'
       this.expiresAt = Date.now() + (payload.expires_in || 0) * 1000
       this.scope = payload.scope || ''
@@ -231,6 +237,7 @@ export const useSessionStore = defineStore('session', {
     },
     clear(): void {
       this.accessToken = ''
+      this.idToken = ''
       this.tokenType = 'Bearer'
       this.expiresAt = 0
       this.scope = ''
@@ -276,6 +283,10 @@ export function patchSessionUser(patch: Partial<UserInfo>): void {
 
 export function getAccessToken(): string {
   return sessionState.readAccessToken()
+}
+
+export function getIdToken(): string {
+  return sessionState.idToken
 }
 
 export function getCurrentUserId(): string {
